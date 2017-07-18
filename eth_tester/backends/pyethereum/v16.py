@@ -1,9 +1,51 @@
-class BaseChainBackend(object):
+from __future__ import absolute_import
+
+import pkg_resources
+
+from semantic_version import (
+    Spec,
+)
+
+from eth_utils import (
+    to_checksum_address,
+    to_tuple,
+)
+
+from ..base import BaseChainBackend
+from .utils import (
+    get_pyethereum_version,
+    is_pyethereum16_available,
+)
+
+
+class PyEthereum16Backend(BaseChainBackend):
+    tester_module = None
+
+    def __init__(self):
+        if not is_pyethereum16_available():
+            version = get_pyethereum_version()
+            if version is None:
+                raise pkg_resources.DistributionNotFound(
+                    "The `ethereum` package is not available.  The "
+                    "`PyEthereum16Backend` requires a 1.6.x version of the "
+                    "ethereum package to be installed."
+                )
+            elif version not in Spec('>=1.6.0,<1.7.0'):
+                raise pkg_resources.DistributionNotFound(
+                    "The `PyEthereum16Backend` requires a 1.6.x version of the "
+                    "`ethereum` package.  Found {0}".format(version)
+                )
+        from ethereum import tester
+        self.tester_module = tester
+        self.evm = tester.state()
+
     #
     # Accounts
     #
+    @to_tuple
     def get_accounts(self):
-        raise NotImplementedError("Must be implemented by subclasses")
+        for account in self.tester_module.accounts:
+            yield to_checksum_address(account)
 
     #
     # Chain data
