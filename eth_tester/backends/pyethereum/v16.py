@@ -7,6 +7,7 @@ from semantic_version import (
 )
 
 from eth_utils import (
+    remove_0x_prefix,
     to_checksum_address,
     to_tuple,
 )
@@ -68,13 +69,14 @@ class PyEthereum16Backend(BaseChainBackend):
     #
     # Account state
     #
-    def get_nonce(self, account, block_number):
+    def get_nonce(self, account, block_number=None):
         raise NotImplementedError("Must be implemented by subclasses")
 
-    def get_balance(self, account, block_number):
-        raise NotImplementedError("Must be implemented by subclasses")
+    def get_balance(self, account, block_number=None):
+        block = self.evm.block
+        return block.get_balance(remove_0x_prefix(account))
 
-    def get_code(self, account, block_number):
+    def get_code(self, account, block_number=None):
         raise NotImplementedError("Must be implemented by subclasses")
 
     #

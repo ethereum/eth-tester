@@ -68,13 +68,13 @@ class PyEthereum20Backend(BaseChainBackend):
     #
     # Account state
     #
-    def get_nonce(self, account, block_number):
+    def get_nonce(self, account, block_number=None):
         raise NotImplementedError("Must be implemented by subclasses")
 
-    def get_balance(self, account, block_number):
-        raise NotImplementedError("Must be implemented by subclasses")
+    def get_balance(self, account, block_number=None):
+        return self.evm.head_state.get_balance(account)
 
-    def get_code(self, account, block_number):
+    def get_code(self, account, block_number=None):
         raise NotImplementedError("Must be implemented by subclasses")
 
     #
