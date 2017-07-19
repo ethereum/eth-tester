@@ -1,9 +1,9 @@
 import pkg_resources
 
-from .main import (
+from .main import (  # noqa: F401
     EthereumTester,
 )
-from .backends import (
+from .backends import (  # noqa: F401
     PyEthereum16Backend,
     PyEthereum20Backend,
 )

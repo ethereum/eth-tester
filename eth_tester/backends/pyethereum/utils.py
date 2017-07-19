@@ -7,6 +7,7 @@ from semantic_version import (
     Spec,
 )
 
+
 def get_pyethereum_version():
     try:
         return Version(pkg_resources.get_distribution("ethereum").version)
