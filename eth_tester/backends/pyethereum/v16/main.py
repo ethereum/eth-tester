@@ -10,6 +10,7 @@ from eth_utils import (
     remove_0x_prefix,
     to_checksum_address,
     to_tuple,
+    decode_hex,
 )
 
 from ..base import BaseChainBackend
@@ -17,6 +18,51 @@ from .utils import (
     get_pyethereum_version,
     is_pyethereum16_available,
 )
+
+
+#
+# Internal getters for EVM objects
+#
+def _get_transaction_by_hash(evm, txn_hash):
+    # TODO: Add caching.
+    txn_hash_as_bytes = decode_hex(txn_hash)
+
+    for block in reversed(evm.blocks):
+        for index, candidate in enumerate(block.get_transaction_hashes()):
+            if candidate == txn_hash_as_bytes:
+                transaction = block.transaction_list[index]
+                return block, transaction, index
+    else:
+        raise ValueError("Transaction not found")
+
+
+def _get_block_by_number(evm, block_number="latest"):
+    if block_number == "latest":
+        if len(evm.blocks) == 0:
+            raise ValueError("Chain has no blocks")
+        elif len(evm.blocks) == 1:
+            return evm.blocks[0]
+        else:
+            return evm.blocks[-2]
+    elif block_number == "earliest":
+        return evm.blocks[0]
+    elif block_number == "pending":
+        return evm.block
+    else:
+        if block_number >= len(evm.blocks):
+            raise ValueError("Block number is longer than current chain.")
+        return evm.blocks[block_number]
+
+
+def _get_block_by_hash(evm, block_hash):
+    # TODO: Add caching.
+    block_hash_as_bytes = decode_hex(block_hash)
+
+    for block in reversed(evm.blocks):
+        if block.hash == block_hash_as_bytes:
+            return block
+    else:
+        raise ValueError("Could not find block for provided hash")
 
 
 class PyEthereum16Backend(BaseChainBackend):
@@ -70,9 +116,14 @@ class PyEthereum16Backend(BaseChainBackend):
     # Account state
     #
     def get_nonce(self, account, block_number=None):
-        raise NotImplementedError("Must be implemented by subclasses")
+        if block_number is not None:
+            raise NotImplementedError("Not yet handled")
+        block = self.evm.block
+        return block.get_nonce(remove_0x_prefix(account))
 
     def get_balance(self, account, block_number=None):
+        if block_number is not None:
+            raise NotImplementedError("Not yet handled")
         block = self.evm.block
         return block.get_balance(remove_0x_prefix(account))
 

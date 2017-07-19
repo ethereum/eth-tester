@@ -11,7 +11,8 @@ from eth_tester.backends.pyethereum.utils import (
 )
 
 from eth_tester.utils.backend_testing import (
-    BaseTestEthereumTester,
+    BaseTestBackendDirect,
+    BaseTestBackendFuzz,
 )
 
 
@@ -23,5 +24,9 @@ def eth_tester():
     return EthereumTester(backend=backend)
 
 
-class TestPyEthereum20Backend(BaseTestEthereumTester):
+class TestPyEthereum20BackendDirect(BaseTestBackendDirect):
+    pass
+
+
+class TestPyEthereum20BackendFuzz(BaseTestBackendFuzz):
     pass

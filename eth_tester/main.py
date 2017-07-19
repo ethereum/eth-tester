@@ -13,3 +13,4 @@ class EthereumTester(object):
 
     get_accounts = backend_proxy_method('get_accounts')
     get_balance = backend_proxy_method('get_balance')
+    get_nonce = backend_proxy_method('get_nonce')
