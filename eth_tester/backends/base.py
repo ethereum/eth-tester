@@ -26,7 +26,7 @@ class BaseChainBackend(object):
     def get_transaction_by_hash(self, transaction_hash):
         raise NotImplementedError("Must be implemented by subclasses")
 
-    def get_transaction_receipt(self, txn_hash):
+    def get_transaction_receipt(self, transaction_hash):
         raise NotImplementedError("Must be implemented by subclasses")
 
     #

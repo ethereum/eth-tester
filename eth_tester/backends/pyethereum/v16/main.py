@@ -1,16 +1,26 @@
 from __future__ import absolute_import
 
+import operator
 import pkg_resources
 
 from semantic_version import (
     Spec,
 )
 
+from toolz.functoolz import (
+    compose,
+    do,
+    partial,
+    pipe,
+)
+from toolz.dicttoolz import (
+    assoc,
+)
+
 from eth_utils import (
     remove_0x_prefix,
     to_checksum_address,
     to_tuple,
-    decode_hex,
 )
 
 from eth_tester.backends.base import BaseChainBackend
@@ -19,25 +29,28 @@ from eth_tester.backends.pyethereum.utils import (
     is_pyethereum16_available,
 )
 
+from .normalizers import (
+    normalize_transaction,
+)
 from .serializers import (
-    serialize_txn_receipt,
-    serialize_txn,
-    serialize_txn_hash,
+    serialize_transaction_receipt,
+    serialize_transaction,
+    serialize_transaction_hash,
     serialize_block,
     serialize_log,
+)
+from .validation import (
+    validate_transaction,
 )
 
 
 #
 # Internal getters for EVM objects
 #
-def _get_transaction_by_hash(evm, txn_hash):
-    # TODO: Add caching.
-    txn_hash_as_bytes = decode_hex(txn_hash)
-
+def _get_transaction_by_hash(evm, transaction_hash):
     for block in reversed(evm.blocks):
         for index, candidate in enumerate(block.get_transaction_hashes()):
-            if candidate == txn_hash_as_bytes:
+            if candidate == transaction_hash:
                 transaction = block.transaction_list[index]
                 return block, transaction, index
     else:
@@ -63,14 +76,40 @@ def _get_block_by_number(evm, block_number="latest"):
 
 
 def _get_block_by_hash(evm, block_hash):
-    # TODO: Add caching.
-    block_hash_as_bytes = decode_hex(block_hash)
+    block_hash = block_hash
 
     for block in reversed(evm.blocks):
-        if block.hash == block_hash_as_bytes:
+        if block.hash == block_hash:
             return block
     else:
         raise ValueError("Could not find block for provided hash")
+
+
+def _send_evm_transaction(tester_module, evm, transaction):
+    try:
+        # record the current gas price so that it can be reset after sending
+        # the transaction.
+        pre_transaction_gas_price = tester_module.gas_price
+        pre_transaction_gas_limit = tester_module.gas_limit
+        # set the evm gas price to the one specified by the transaction.
+        tester_module.gas_price = transaction['gas_price']
+        tester_module.gas_limit = transaction['gas']
+
+        # get the private key of the sender.
+        sender = tester_module.keys[tester_module.accounts.index(transaction['from'])]
+
+        output = evm.send(
+            sender=sender,
+            to=transaction['to'],
+            value=transaction['value'],
+            evmdata=transaction['data'],
+        )
+    finally:
+        # revert the tester_module gas price back to the original value.
+        tester_module.gas_price = pre_transaction_gas_price
+        tester_module.gas_limit = pre_transaction_gas_limit
+
+    return output
 
 
 class PyEthereum16Backend(BaseChainBackend):
@@ -95,6 +134,17 @@ class PyEthereum16Backend(BaseChainBackend):
         self.evm = tester.state()
 
     #
+    # Mining
+    #
+    def mine_blocks(self, num_blocks=1, coinbase=None):
+        if coinbase is None:
+            coinbase = self.tester_module.DEFAULT_ACCOUNT
+        self.evm.mine(
+            number_of_blocks=num_blocks,
+            coinbase=coinbase,
+        )
+
+    #
     # Accounts
     #
     @to_tuple
@@ -107,47 +157,51 @@ class PyEthereum16Backend(BaseChainBackend):
     #
     def get_block_by_number(self, block_number, full_transactions=False):
         if full_transactions:
-            txn_serialize_fn = serialize_txn
+            transaction_serialize_fn = serialize_transaction
         else:
-            txn_serialize_fn = serialize_txn_hash
+            transaction_serialize_fn = serialize_transaction_hash
 
         block = _get_block_by_number(
             self.evm,
             block_number,
-            txn_serialize_fn,
+            transaction_serialize_fn,
         )
         return serialize_block(block)
 
     def get_block_by_hash(self, block_hash, full_transactions=False):
         if full_transactions:
-            txn_serialize_fn = serialize_txn
+            transaction_serialize_fn = serialize_transaction
         else:
-            txn_serialize_fn = serialize_txn_hash
+            transaction_serialize_fn = serialize_transaction_hash
 
         block = _get_block_by_hash(
             self.evm,
             block_hash,
-            txn_serialize_fn,
+            transaction_serialize_fn,
         )
         return serialize_block(block)
 
     def get_latest_block(self, full_transactions=False):
         if full_transactions:
-            txn_serialize_fn = serialize_txn
+            transaction_serialize_fn = serialize_transaction
         else:
-            txn_serialize_fn = serialize_txn_hash
+            transaction_serialize_fn = serialize_transaction_hash
 
-        block = _get_block_by_hash(
-            self.evm,
-            block_hash,
-        )
-        return serialize_block(self.evm.block, txn_serialize_fn)
+        return serialize_block(self.evm.block, transaction_serialize_fn)
 
     def get_transaction_by_hash(self, transaction_hash):
-        raise NotImplementedError("Must be implemented by subclasses")
+        block, transaction, transaction_index = _get_transaction_by_hash(
+            self.evm,
+            transaction_hash,
+        )
+        return serialize_transaction(block, transaction, transaction_index)
 
-    def get_transaction_receipt(self, txn_hash):
-        raise NotImplementedError("Must be implemented by subclasses")
+    def get_transaction_receipt(self, transaction_hash):
+        block, transaction, transaction_index = _get_transaction_by_hash(
+            self.evm,
+            transaction_hash,
+        )
+        return serialize_transaction_receipt(block, transaction, transaction_index)
 
     #
     # Account state
@@ -171,7 +225,18 @@ class PyEthereum16Backend(BaseChainBackend):
     # Transactions
     #
     def send_transaction(self, transaction):
-        raise NotImplementedError("Must be implemented by subclasses")
+        validate_transaction(transaction)
+        _send_evm_transaction(
+            tester_module=self.tester_module,
+            evm=self.evm,
+            transaction=normalize_transaction(
+                transaction,
+                data=b'',
+                value=0,
+                gas_price=self.tester_module.gas_price,
+            ),
+        )
+        return self.evm.last_tx.hash
 
     def estimate_gas(self, transaction):
         raise NotImplementedError("Must be implemented by subclasses")
