@@ -1,5 +1,11 @@
 class BaseChainBackend(object):
     #
+    # Mining
+    #
+    def mine_blocks(self, num_blocks=1, coinbase=None):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    #
     # Accounts
     #
     def get_accounts(self):

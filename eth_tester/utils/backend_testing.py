@@ -48,6 +48,14 @@ class BaseTestBackendDirect(object):
         assert nonce >= UINT256_MIN
         assert nonce <= UINT256_MAX
 
+    def test_mine_block_single(self, eth_tester):
+        before_block_number = eth_tester.get_latest_block()['number']
+        eth_tester.mine_blocks()
+        after_block_number = eth_tester.get_latest_block()['number']
+        assert is_integer(before_block_number)
+        assert is_integer(after_block_number)
+        assert before_block_number == after_block_number - 1
+
     def test_send_transaction(self, eth_tester):
         accounts = eth_tester.get_accounts()
         assert accounts, "No accounts available for transaction sending"

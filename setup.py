@@ -24,7 +24,7 @@ setup(
     url='https://github.com/pipermerriam/ethereum-tester',
     include_package_data=True,
     install_requires=[
-        "ethereum-utils>=0.3.0",
+        "ethereum-utils>=0.3.1",
         "semantic_version>=2.6.0",
     ],
     py_modules=['eth_tester'],

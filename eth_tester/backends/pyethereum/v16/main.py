@@ -13,10 +13,18 @@ from eth_utils import (
     decode_hex,
 )
 
-from ..base import BaseChainBackend
-from .utils import (
+from eth_tester.backends.base import BaseChainBackend
+from eth_tester.backends.pyethereum.utils import (
     get_pyethereum_version,
     is_pyethereum16_available,
+)
+
+from .serializers import (
+    serialize_txn_receipt,
+    serialize_txn,
+    serialize_txn_hash,
+    serialize_block,
+    serialize_log,
 )
 
 
@@ -97,14 +105,43 @@ class PyEthereum16Backend(BaseChainBackend):
     #
     # Chain data
     #
-    def get_block_by_number(self, block_number):
-        raise NotImplementedError("Must be implemented by subclasses")
+    def get_block_by_number(self, block_number, full_transactions=False):
+        if full_transactions:
+            txn_serialize_fn = serialize_txn
+        else:
+            txn_serialize_fn = serialize_txn_hash
 
-    def get_block_by_hash(self, block_hash):
-        raise NotImplementedError("Must be implemented by subclasses")
+        block = _get_block_by_number(
+            self.evm,
+            block_number,
+            txn_serialize_fn,
+        )
+        return serialize_block(block)
 
-    def get_latest_block(self):
-        raise NotImplementedError("Must be implemented by subclasses")
+    def get_block_by_hash(self, block_hash, full_transactions=False):
+        if full_transactions:
+            txn_serialize_fn = serialize_txn
+        else:
+            txn_serialize_fn = serialize_txn_hash
+
+        block = _get_block_by_hash(
+            self.evm,
+            block_hash,
+            txn_serialize_fn,
+        )
+        return serialize_block(block)
+
+    def get_latest_block(self, full_transactions=False):
+        if full_transactions:
+            txn_serialize_fn = serialize_txn
+        else:
+            txn_serialize_fn = serialize_txn_hash
+
+        block = _get_block_by_hash(
+            self.evm,
+            block_hash,
+        )
+        return serialize_block(self.evm.block, txn_serialize_fn)
 
     def get_transaction_by_hash(self, transaction_hash):
         raise NotImplementedError("Must be implemented by subclasses")
