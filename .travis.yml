@@ -7,7 +7,7 @@ env:
     - TOX_POSARGS="-e py27-pyethereum16 -e py34-pyethereum16 -e py35-pyethereum16"
     # pyethereum 2.0.x
     #- TOX_POSARGS="-e py27-pyethereum20 -e py34-pyethereum20 -e py35-pyethereum20"
-    - TOX_POSARGS=flake8
+    - TOX_POSARGS="-e flake8"
 cache:
   pip: true
 install:
