@@ -1,20 +1,9 @@
 from __future__ import absolute_import
 
-import operator
 import pkg_resources
 
 from semantic_version import (
     Spec,
-)
-
-from toolz.functoolz import (
-    compose,
-    do,
-    partial,
-    pipe,
-)
-from toolz.dicttoolz import (
-    assoc,
 )
 
 from eth_utils import (
@@ -37,7 +26,6 @@ from .serializers import (
     serialize_transaction,
     serialize_transaction_hash,
     serialize_block,
-    serialize_log,
 )
 from .validation import (
     validate_transaction,
