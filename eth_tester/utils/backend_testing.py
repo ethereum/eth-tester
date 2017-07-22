@@ -162,6 +162,9 @@ class BaseTestBackendDirect(object):
         assert receipt is None
 
 
+from toolz.dicttoolz import (
+    merge,
+)
 from hypothesis import (
     strategies as st,
     given,
@@ -172,6 +175,13 @@ from hypothesis.stateful import (
     Bundle,
     rule,
 )
+
+
+address = st.binary(
+    min_size=20,
+    max_size=20,
+).map(to_normalized_address)
+
 
 class BaseTestBackendFuzz(object):
     @given(account=address)
@@ -191,39 +201,61 @@ class BaseTestBackendFuzz(object):
         assert nonce <= UINT256_MAX
 
 
-address = st.binary(
-    min_size=20,
-    max_size=20,
-).map(to_normalized_address)
 tx_gas = st.integers(min_value=0, max_value=10000000)
 tx_gas_price = st.integers(min_value=1, max_value=1e15)
 tx_value = st.integers(min_value=0, max_value=1e21)
 
 transaction_st = st.tuples(
-    st.oneof(
+    st.one_of(
         st.fixed_dictionaries({}),
         st.fixed_dictionaries({'from': address}),
     ),
-    st.oneof(
+    st.one_of(
         st.fixed_dictionaries({}),
         st.fixed_dictionaries({'to': address}),
     ),
-    st.oneof(
+    st.one_of(
         st.fixed_dictionaries({}),
         st.fixed_dictionaries({'value': tx_value}),
     ),
-    st.oneof(
+    st.one_of(
         st.fixed_dictionaries({}),
         st.fixed_dictionaries({'gas': tx_gas}),
     ),
-    st.oneof(
+    st.one_of(
         st.fixed_dictionaries({}),
         st.fixed_dictionaries({'gas_price': tx_gas_price}),
     ),
-).map(
+).map(lambda parts: merge(*parts))
 
 
-class BaseEVMStateFuzzer(RuleBasedStateMachine):
-    transactions = Bundle('Transactions')
+class EVMStateFuzzer(RuleBasedStateMachine):
+    sent_transactions = Bundle('Transactions')
 
-    @rule(target=transactions, transaction=transaction_st)
+    def __init__(self, *args, **kwargs):
+        from eth_tester import (
+            EthereumTester,
+            PyEthereum16Backend,
+        )
+        backend = PyEthereum16Backend()
+        self.eth_tester = EthereumTester(backend=backend)
+        super(EVMStateFuzzer, self).__init__(*args, **kwargs)
+
+    #@rule(target=transactions, transaction=transaction_st)
+    @rule(target=sent_transactions)
+    def apply_transaction(self):
+        transaction = {
+            "from": self.eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+        }
+        return (
+            transaction,
+            self.eth_tester.send_transaction(transaction),
+        )
+
+    @rule(sent_transaction=sent_transactions)
+    def check_transaction_hashes(self, sent_transaction):
+        transaction, transaction_hash = sent_transaction
+        actual_transaction = self.eth_tester.get_transaction_by_hash(transaction_hash)
+        assert actual_transaction['hash'] == transaction_hash
