@@ -124,13 +124,17 @@ class PyEthereum16Backend(BaseChainBackend):
     #
     # Mining
     #
+    @to_tuple
     def mine_blocks(self, num_blocks=1, coinbase=None):
         if coinbase is None:
             coinbase = self.tester_module.DEFAULT_ACCOUNT
+
         self.evm.mine(
             number_of_blocks=num_blocks,
             coinbase=coinbase,
         )
+        for block in self.evm.blocks[-1 * num_blocks - 2:-1]:
+            yield block.hash
 
     #
     # Accounts

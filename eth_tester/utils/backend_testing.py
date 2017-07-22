@@ -128,10 +128,18 @@ class BaseTestBackendDirect(object):
         assert block['number'] == 0
 
     def test_get_block_by_number(self, eth_tester):
-        eth_tester.mine_blocks(10)
-        for block_number in range(11):
+        mined_block_hashes = eth_tester.mine_blocks(10)
+        for block_number, block_hash in enumerate(mined_block_hashes):
             block = eth_tester.get_block_by_number(block_number)
             assert block['number'] == block_number
+            assert block['hash'] == block_hash
+
+    def test_get_block_by_hash(self, eth_tester):
+        mined_block_hashes = eth_tester.mine_blocks(10)
+        for block_number, block_hash in enumerate(mined_block_hashes):
+            block = eth_tester.get_block_by_hash(block_hash)
+            assert block['number'] == block_number
+            assert block['hash'] == block_hash
 
 
 class BaseTestBackendFuzz(object):
