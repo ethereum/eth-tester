@@ -1,9 +1,3 @@
-from hypothesis import (
-    strategies as st,
-    given,
-    settings,
-)
-
 from eth_utils import (
     to_normalized_address,
     is_address,
@@ -16,12 +10,6 @@ from eth_tester.constants import (
     UINT256_MAX,
     BURN_ADDRESS,
 )
-
-
-address = st.binary(
-    min_size=20,
-    max_size=20,
-).map(to_normalized_address)
 
 
 class BaseTestBackendDirect(object):
@@ -174,6 +162,17 @@ class BaseTestBackendDirect(object):
         assert receipt is None
 
 
+from hypothesis import (
+    strategies as st,
+    given,
+    settings,
+)
+from hypothesis.stateful import (
+    RuleBasedStateMachine,
+    Bundle,
+    rule,
+)
+
 class BaseTestBackendFuzz(object):
     @given(account=address)
     @settings(max_examples=10)
@@ -190,3 +189,41 @@ class BaseTestBackendFuzz(object):
         assert is_integer(nonce)
         assert nonce >= UINT256_MIN
         assert nonce <= UINT256_MAX
+
+
+address = st.binary(
+    min_size=20,
+    max_size=20,
+).map(to_normalized_address)
+tx_gas = st.integers(min_value=0, max_value=10000000)
+tx_gas_price = st.integers(min_value=1, max_value=1e15)
+tx_value = st.integers(min_value=0, max_value=1e21)
+
+transaction_st = st.tuples(
+    st.oneof(
+        st.fixed_dictionaries({}),
+        st.fixed_dictionaries({'from': address}),
+    ),
+    st.oneof(
+        st.fixed_dictionaries({}),
+        st.fixed_dictionaries({'to': address}),
+    ),
+    st.oneof(
+        st.fixed_dictionaries({}),
+        st.fixed_dictionaries({'value': tx_value}),
+    ),
+    st.oneof(
+        st.fixed_dictionaries({}),
+        st.fixed_dictionaries({'gas': tx_gas}),
+    ),
+    st.oneof(
+        st.fixed_dictionaries({}),
+        st.fixed_dictionaries({'gas_price': tx_gas_price}),
+    ),
+).map(
+
+
+class BaseEVMStateFuzzer(RuleBasedStateMachine):
+    transactions = Bundle('Transactions')
+
+    @rule(target=transactions, transaction=transaction_st)
