@@ -5,11 +5,39 @@ def backend_proxy_method(backend_method_name):
     return proxy_method
 
 
+def get_default_config():
+    return {
+        'auto_mine_transactions': True,
+        'auto_mine_interval': None,
+    }
+
+
+def get_tester_backend():
+    raise NotImplementedError("Not yet implemented")
+
+
 class EthereumTester(object):
     backend = None
 
-    def __init__(self, backend):
+    def __init__(self, backend=None, config=None):
+        if backend is None:
+            backend = get_tester_backend()
+
+        if config is None:
+            config = get_default_config()
+
         self.backend = backend
+        self.config = config
+
+    def configure(self, **kwargs):
+        for key, value in kwargs.items():
+            if key in self.config:
+                self.config[key] = value
+            else:
+                raise KeyError(
+                    "Cannot set config values that are not already present in "
+                    "config"
+                )
 
     get_accounts = backend_proxy_method('get_accounts')
     get_balance = backend_proxy_method('get_balance')
@@ -24,3 +52,9 @@ class EthereumTester(object):
 
     def mine_block(self, coinbase=None):
         return self.mine_blocks(1, coinbase=coinbase)
+
+    def send_transaction(self, transaction):
+        transaction_hash = self.backend.send_transaction(transaction)
+        if self.config['auto_mine_transactions']:
+            self.mine_block()
+        return transaction_hash

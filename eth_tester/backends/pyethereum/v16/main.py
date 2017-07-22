@@ -152,9 +152,8 @@ class PyEthereum16Backend(BaseChainBackend):
         block = _get_block_by_number(
             self.evm,
             block_number,
-            transaction_serialize_fn,
         )
-        return serialize_block(block)
+        return serialize_block(block, transaction_serialize_fn)
 
     def get_block_by_hash(self, block_hash, full_transactions=False):
         if full_transactions:
@@ -165,9 +164,8 @@ class PyEthereum16Backend(BaseChainBackend):
         block = _get_block_by_hash(
             self.evm,
             block_hash,
-            transaction_serialize_fn,
         )
-        return serialize_block(block)
+        return serialize_block(block, transaction_serialize_fn)
 
     def get_latest_block(self, full_transactions=False):
         if full_transactions:

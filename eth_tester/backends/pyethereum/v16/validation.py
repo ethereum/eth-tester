@@ -18,6 +18,7 @@ TRANSACTION_KEYS = {
 
 
 def validate_transaction(transaction):
+    # TODO: refactor this so that it's not gross.
     if 'from' not in transaction:
         raise ValidationError("Transactions must specify a 'from' address")
     elif not is_address(transaction['from']):

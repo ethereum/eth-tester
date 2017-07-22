@@ -25,6 +25,9 @@ address = st.binary(
 
 
 class BaseTestBackendDirect(object):
+    #
+    # Accounts
+    #
     def test_get_accounts(self, eth_tester):
         accounts = eth_tester.get_accounts()
         assert accounts
@@ -48,6 +51,9 @@ class BaseTestBackendDirect(object):
         assert nonce >= UINT256_MIN
         assert nonce <= UINT256_MAX
 
+    #
+    # Mining
+    #
     def test_mine_block_single(self, eth_tester):
         before_block_number = eth_tester.get_latest_block()['number']
         eth_tester.mine_blocks()
@@ -56,6 +62,18 @@ class BaseTestBackendDirect(object):
         assert is_integer(after_block_number)
         assert before_block_number == after_block_number - 1
 
+    def test_mine_multiple_blocks(self, eth_tester):
+        before_block_number = eth_tester.get_latest_block()['number']
+        eth_tester.mine_blocks(10)
+        after_block_number = eth_tester.get_latest_block()['number']
+        assert is_integer(before_block_number)
+        assert is_integer(after_block_number)
+        assert before_block_number == after_block_number - 10
+
+
+    #
+    # Transaction Sending
+    #
     def test_send_transaction(self, eth_tester):
         accounts = eth_tester.get_accounts()
         assert accounts, "No accounts available for transaction sending"
@@ -75,6 +93,46 @@ class BaseTestBackendDirect(object):
         assert txn['gas_price'] == transaction['gas_price']
         assert txn['gas'] == transaction['gas']
         assert txn['value'] == transaction['value']
+
+    def test_auto_mine_transactions_enabled(self, eth_tester):
+        eth_tester.configure(auto_mine_transactions=True)
+        before_block_number = eth_tester.get_latest_block()['number']
+        eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+        })
+        after_block_number = eth_tester.get_latest_block()['number']
+        assert before_block_number == after_block_number - 1
+
+    def test_auto_mine_transactions_disabled(self, eth_tester):
+        eth_tester.configure(auto_mine_transactions=False)
+        before_block_number = eth_tester.get_latest_block()['number']
+        eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+        })
+        after_block_number = eth_tester.get_latest_block()['number']
+        assert before_block_number == after_block_number
+
+    #
+    # Blocks
+    #
+    def test_get_genesis_block_by_number(self, eth_tester):
+        block = eth_tester.get_block_by_number(0)
+        assert block['number'] == 0
+
+    def test_get_genesis_block_by_hash(self, eth_tester):
+        genesis_hash = eth_tester.get_block_by_number(0)['hash']
+        block = eth_tester.get_block_by_hash(genesis_hash)
+        assert block['number'] == 0
+
+    def test_get_block_by_number(self, eth_tester):
+        eth_tester.mine_blocks(10)
+        for block_number in range(11):
+            block = eth_tester.get_block_by_number(block_number)
+            assert block['number'] == block_number
 
 
 class BaseTestBackendFuzz(object):
