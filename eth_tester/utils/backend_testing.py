@@ -70,7 +70,6 @@ class BaseTestBackendDirect(object):
         assert is_integer(after_block_number)
         assert before_block_number == after_block_number - 10
 
-
     #
     # Transaction Sending
     #
