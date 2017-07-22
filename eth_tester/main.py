@@ -1,3 +1,8 @@
+from eth_tester.exceptions import (
+    TransactionNotFound,
+)
+
+
 def backend_proxy_method(backend_method_name):
     def proxy_method(self, *args, **kwargs):
         backend_method = getattr(self.backend, backend_method_name)
@@ -57,3 +62,9 @@ class EthereumTester(object):
         if self.config['auto_mine_transactions']:
             self.mine_block()
         return transaction_hash
+
+    def get_transaction_receipt(self, transaction_hash):
+        try:
+            return self.backend.get_transaction_receipt(transaction_hash)
+        except TransactionNotFound:
+            return None

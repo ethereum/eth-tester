@@ -10,8 +10,12 @@ from eth_utils import (
     remove_0x_prefix,
     to_checksum_address,
     to_tuple,
+    encode_hex,
 )
 
+from eth_tester.exceptions import (
+    TransactionNotFound,
+)
 from eth_tester.backends.base import BaseChainBackend
 from eth_tester.backends.pyethereum.utils import (
     get_pyethereum_version,
@@ -35,14 +39,18 @@ from .validation import (
 #
 # Internal getters for EVM objects
 #
-def _get_transaction_by_hash(evm, transaction_hash):
-    for block in reversed(evm.blocks):
+def _get_transaction_by_hash(evm, transaction_hash, mined=True):
+    for block in reversed(evm.blocks[:-1]):
         for index, candidate in enumerate(block.get_transaction_hashes()):
             if candidate == transaction_hash:
                 transaction = block.transaction_list[index]
                 return block, transaction, index
     else:
-        raise ValueError("Transaction not found")
+        raise TransactionNotFound(
+            "No transaction found for transaction hash {0}".format(
+                encode_hex(transaction_hash),
+            )
+        )
 
 
 def _get_block_by_number(evm, block_number="latest"):
