@@ -23,7 +23,10 @@ setup(
     author_email='pipermerriam@gmail.com',
     url='https://github.com/pipermerriam/ethereum-tester',
     include_package_data=True,
-    install_requires=[],
+    install_requires=[
+        "ethereum-utils>=0.3.1",
+        "semantic_version>=2.6.0",
+    ],
     py_modules=['eth_tester'],
     license="MIT",
     zip_safe=False,

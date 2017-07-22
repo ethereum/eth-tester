@@ -1,15 +1,51 @@
-class BaseChainBackend(object):
-    #
-    # Mining
-    #
-    def mine_blocks(self, num_blocks=1, coinbase=None):
-        raise NotImplementedError("Must be implemented by subclasses")
+from __future__ import absolute_import
+
+import pkg_resources
+
+from semantic_version import (
+    Spec,
+)
+
+from eth_utils import (
+    to_checksum_address,
+    to_tuple,
+)
+
+from ..base import BaseChainBackend
+from .utils import (
+    get_pyethereum_version,
+    is_pyethereum20_available,
+)
+
+
+class PyEthereum20Backend(BaseChainBackend):
+    tester_module = None
+
+    def __init__(self):
+        if not is_pyethereum20_available():
+            version = get_pyethereum_version()
+            if version is None:
+                raise pkg_resources.DistributionNotFound(
+                    "The `ethereum` package is not available.  The "
+                    "`PyEthereum20Backend` requires a 2.0.x version of the "
+                    "ethereum package to be installed."
+                )
+            elif version not in Spec('>=2.0.0,<2.1.0'):
+                raise pkg_resources.DistributionNotFound(
+                    "The `PyEthereum20Backend` requires a 2.0.x version of the "
+                    "`ethereum` package.  Found {0}".format(version)
+                )
+        from ethereum.tools import tester
+        self.tester_module = tester
+        self.evm = tester.Chain()
 
     #
     # Accounts
     #
+    @to_tuple
     def get_accounts(self):
-        raise NotImplementedError("Must be implemented by subclasses")
+        for account in self.tester_module.accounts:
+            yield to_checksum_address(account)
 
     #
     # Chain data
@@ -26,7 +62,7 @@ class BaseChainBackend(object):
     def get_transaction_by_hash(self, transaction_hash):
         raise NotImplementedError("Must be implemented by subclasses")
 
-    def get_transaction_receipt(self, transaction_hash):
+    def get_transaction_receipt(self, txn_hash):
         raise NotImplementedError("Must be implemented by subclasses")
 
     #
@@ -36,7 +72,7 @@ class BaseChainBackend(object):
         raise NotImplementedError("Must be implemented by subclasses")
 
     def get_balance(self, account, block_number=None):
-        raise NotImplementedError("Must be implemented by subclasses")
+        return self.evm.head_state.get_balance(account)
 
     def get_code(self, account, block_number=None):
         raise NotImplementedError("Must be implemented by subclasses")
