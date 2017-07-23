@@ -1,3 +1,17 @@
+from toolz.dicttoolz import (
+    merge,
+)
+from hypothesis import (
+    strategies as st,
+    given,
+    settings,
+)
+from hypothesis.stateful import (
+    RuleBasedStateMachine,
+    Bundle,
+    rule,
+)
+
 from eth_utils import (
     to_normalized_address,
     is_address,
@@ -161,20 +175,46 @@ class BaseTestBackendDirect(object):
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
         assert receipt is None
 
+    #
+    # Filters
+    #
+    def test_block_filter(self, eth_tester):
+        # first mine 10 blocks in
+        blocks_0_to_9 = eth_tester.mine_blocks(10)
 
-from toolz.dicttoolz import (
-    merge,
-)
-from hypothesis import (
-    strategies as st,
-    given,
-    settings,
-)
-from hypothesis.stateful import (
-    RuleBasedStateMachine,
-    Bundle,
-    rule,
-)
+        # setup a filter
+        filter_a_id = eth_tester.create_block_filter()
+
+        # mine another 5 blocks
+        blocks_10_to_14 = eth_tester.mine_blocks(5)
+
+        # setup another filter
+        filter_b_id = eth_tester.create_block_filter()
+
+        # mine another 8 blocks
+        blocks_15_to_22 = eth_tester.mine_blocks(8)
+
+        filter_a_changes_part_1 = eth_tester.get_filter_changes(filter_a_id)
+        filter_a_logs_part_1 = eth_tester.get_filter_logs(filter_a_id)
+        filter_b_logs_part_1 = eth_tester.get_filter_logs(filter_b_id)
+
+        assert len(filter_a_changes_part_1) == 13
+        assert len(filter_a_logs_part_1) == 13
+        assert len(filter_b_logs_part_1) == 8
+
+        # mine another 7 blocks
+        blocks_23_to_29 = eth_tester.mine_blocks(7)
+
+        filter_a_changes_part_2 = eth_tester.get_filter_changes(filter_a_id)
+        filter_b_changes = eth_tester.get_filter_changes(filter_b_id)
+        filter_a_logs_part_2 = eth_tester.get_filter_logs(filter_a_id)
+        filter_b_logs_part_2 = eth_tester.get_filter_logs(filter_b_id)
+
+        assert len(filter_a_changes_part_2) == 7
+        assert len(filter_b_changes) == 15
+        assert len(filter_a_logs_part_2) == 20
+        assert len(filter_b_logs_part_2) == 15
+
 
 
 address = st.binary(
@@ -243,16 +283,14 @@ class EVMStateFuzzer(RuleBasedStateMachine):
 
     #@rule(target=transactions, transaction=transaction_st)
     @rule(target=sent_transactions)
-    def apply_transaction(self):
+    def send_transaction(self, transaction=transaction_st):
         transaction = {
             "from": self.eth_tester.get_accounts()[0],
             "to": BURN_ADDRESS,
             "gas": 21000,
         }
-        return (
-            transaction,
-            self.eth_tester.send_transaction(transaction),
-        )
+        transaction_hash = self.eth_tester.send_transaction(transaction)
+        return (transaction, transaction_hash)
 
     @rule(sent_transaction=sent_transactions)
     def check_transaction_hashes(self, sent_transaction):

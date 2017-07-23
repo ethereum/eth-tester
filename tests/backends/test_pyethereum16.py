@@ -38,5 +38,5 @@ class TestPyEthereum16BackendFuzz(BaseTestBackendFuzz):
 
 
 
-TestPyEthereum16EVMStateFuzzer = EVMStateFuzzer.TestCase
-TestPyEthereum16EVMStateFuzzer.settings = settings(max_examples=20, stateful_step_count=50)
+#TestPyEthereum16EVMStateFuzzer = EVMStateFuzzer.TestCase
+#TestPyEthereum16EVMStateFuzzer.settings = settings(max_examples=20, stateful_step_count=50)
