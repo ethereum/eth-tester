@@ -202,6 +202,10 @@ class BaseTestBackendDirect(object):
         assert len(filter_a_logs_part_1) == 13
         assert len(filter_b_logs_part_1) == 8
 
+        assert set(filter_a_changes_part_1) == set(filter_a_logs_part_1)
+        assert set(filter_a_changes_part_1) == set(blocks_10_to_14).union(blocks_15_to_22)
+        assert set(filter_b_logs_part_1) == set(blocks_15_to_22)
+
         # mine another 7 blocks
         blocks_23_to_29 = eth_tester.mine_blocks(7)
 
@@ -215,6 +219,10 @@ class BaseTestBackendDirect(object):
         assert len(filter_a_logs_part_2) == 20
         assert len(filter_b_logs_part_2) == 15
 
+        assert set(filter_a_changes_part_2) == set(blocks_23_to_29)
+        assert set(filter_b_changes) == set(blocks_15_to_22).union(blocks_23_to_29)
+        assert set(filter_a_logs_part_2) == set(blocks_10_to_14).union(blocks_15_to_22).union(blocks_23_to_29)
+        assert set(filter_b_logs_part_2) == set(blocks_15_to_22).union(blocks_23_to_29)
 
 
 address = st.binary(

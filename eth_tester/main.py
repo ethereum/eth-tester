@@ -66,6 +66,7 @@ class EthereumTester(object):
 
     def mine_blocks(self, num_blocks=1, coinbase=None):
         block_hashes = self.backend.mine_blocks(num_blocks, coinbase)
+        assert len(block_hashes) == num_blocks
         for _, block_filter in self._block_filters.items():
             block_filter.extend(block_hashes)
         return block_hashes

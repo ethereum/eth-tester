@@ -141,7 +141,7 @@ class PyEthereum16Backend(BaseChainBackend):
             number_of_blocks=num_blocks,
             coinbase=coinbase,
         )
-        for block in self.evm.blocks[-1 * num_blocks - 2:-1]:
+        for block in self.evm.blocks[-1 * num_blocks - 1:-1]:
             yield block.hash
 
     #
