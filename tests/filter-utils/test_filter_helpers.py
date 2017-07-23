@@ -399,7 +399,7 @@ def test_check_if_address_match(address, addresses, expected):
 def _make_log(block_number=10, topics=None, address=ADDRESS_A, _type='mined', **kwargs):
     return dict(
         block_number=block_number,
-        topics=topics or [],
+        topics=topics or tuple(),
         address=address,
         type=_type,
         **kwargs
@@ -418,7 +418,38 @@ def _make_filter(from_block=None, to_block=None, topics=None, addresses=None):
 @pytest.mark.parametrize(
     'log_entry,filter_params,expected',
     (
+        # block numbers
         (_make_log(), _make_filter(), True),
+        (_make_log(block_number=10), _make_filter(from_block=11), False),
+        (_make_log(block_number=30), _make_filter(from_block=10), True),
+        (_make_log(block_number=30), _make_filter(from_block=10, to_block=20), False),
+        (_make_log(block_number=30), _make_filter(to_block=20), False),
+        (_make_log(block_number=20), _make_filter(to_block=20), True),
+        # topics
+        (_make_log(topics=(TOPIC_A,)), _make_filter(topics=FILTER_MATCH_ALL), True),
+        (_make_log(topics=(TOPIC_A, TOPIC_B)), _make_filter(topics=FILTER_MATCH_ALL), True),
+        (_make_log(topics=(TOPIC_A,)), _make_filter(topics=FILTER_MATCH_ONLY_A), True),
+        (_make_log(topics=(TOPIC_B,)), _make_filter(topics=FILTER_MATCH_ONLY_A), False),
+        (_make_log(topics=(TOPIC_A, TOPIC_A)), _make_filter(topics=FILTER_MATCH_A_ANY), True),
+        (_make_log(topics=(TOPIC_A, TOPIC_B)), _make_filter(topics=FILTER_MATCH_A_ANY), True),
+        (_make_log(topics=(TOPIC_B, TOPIC_A)), _make_filter(topics=FILTER_MATCH_A_ANY), False),
+        (_make_log(topics=TOPICS_A_B), _make_filter(topics=FILTER_MATCH_A_ANY), True),
+        (_make_log(topics=TOPICS_B_A), _make_filter(topics=FILTER_MATCH_A_ANY), False),
+        (
+            _make_log(topics=TOPICS_A_B),
+            _make_filter(topics=(FILTER_MATCH_A_B, FILTER_MATCH_B_C)),
+            True,
+        ),
+        (
+            _make_log(topics=TOPICS_B_A),
+            _make_filter(topics=(FILTER_MATCH_A_B, FILTER_MATCH_B_C)),
+            False,
+        ),
+        (
+            _make_log(topics=TOPICS_B_C),
+            _make_filter(topics=(FILTER_MATCH_A_B, FILTER_MATCH_B_C)),
+            True,
+        ),
     ),
 )
 def test_check_if_log_matches(log_entry, filter_params, expected):
