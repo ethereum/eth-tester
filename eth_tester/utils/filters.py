@@ -107,7 +107,9 @@ def check_if_log_matches_flat_topics(log_topics, filter_topics):
 
 
 def check_if_topics_match(log_topics, filter_topics):
-    if is_flat_topic_array(filter_topics):
+    if filter_topics is None:
+        return True
+    elif is_flat_topic_array(filter_topics):
         return check_if_log_matches_flat_topics(log_topics, filter_topics)
     elif is_nested_topic_array(filter_topics):
         return any(

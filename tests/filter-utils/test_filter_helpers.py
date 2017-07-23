@@ -8,6 +8,7 @@ from eth_tester.utils.filters import (
     check_if_to_block_match,
     check_if_topics_match,
     check_if_address_match,
+    check_if_log_matches,
     is_topic,
     is_flat_topic_array,
     is_nested_topic_array,
@@ -393,3 +394,33 @@ ADDRESS_D = b'\x00' * 19 + b'\x03'
 def test_check_if_address_match(address, addresses, expected):
     actual = check_if_address_match(address, addresses)
     assert actual is expected
+
+
+def _make_log(block_number=10, topics=None, address=ADDRESS_A, _type='mined', **kwargs):
+    return dict(
+        block_number=block_number,
+        topics=topics or [],
+        address=address,
+        type=_type,
+        **kwargs
+    )
+
+
+def _make_filter(from_block=None, to_block=None, topics=None, addresses=None):
+    return {
+        'from_block': from_block,
+        'to_block': to_block,
+        'topics': topics,
+        'addresses': addresses,
+    }
+
+
+@pytest.mark.parametrize(
+    'log_entry,filter_params,expected',
+    (
+        (_make_log(), _make_filter(), True),
+    ),
+)
+def test_check_if_log_matches(log_entry, filter_params, expected):
+    actual = check_if_log_matches(log_entry, **filter_params)
+    assert actual == expected
