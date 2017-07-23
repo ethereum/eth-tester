@@ -61,7 +61,7 @@ def is_topic_array(value):
     return is_flat_topic_array(value) or is_nested_topic_array(value)
 
 
-def check_single_topic_match(filter_topic, log_topic):
+def check_single_topic_match(log_topic, filter_topic):
     if filter_topic is None:
         return True
     return filter_topic == log_topic
@@ -120,6 +120,8 @@ def check_if_topics_match(log_topics, filter_topics):
 
 
 def check_if_address_match(address, addresses):
+    if addresses is None:
+        return True
     if is_tuple(addresses):
         return any(
             is_same_address(address, item)
@@ -137,9 +139,13 @@ def check_if_log_matches(log_entry,
                          to_block,
                          addresses,
                          topics):
-    return all((
-        check_if_from_block_match(log_entry['block_number'], log_entry['type'], from_block),
-        check_if_to_block_match(log_entry['block_number'], log_entry['type'], to_block),
-        check_if_address_match(log_entry['address'], addresses),
-        check_if_topics_match(log_entry['topics'], topics),
-    ))
+    if not check_if_from_block_match(log_entry['block_number'], log_entry['type'], from_block):
+        return False
+    elif not check_if_to_block_match(log_entry['block_number'], log_entry['type'], to_block):
+        return False
+    elif not check_if_address_match(log_entry['address'], addresses):
+        return False
+    elif not check_if_topics_match(log_entry['topics'], topics):
+        return False
+    else:
+        return True

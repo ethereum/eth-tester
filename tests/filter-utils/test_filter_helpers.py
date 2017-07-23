@@ -7,6 +7,7 @@ from eth_tester.utils.filters import (
     check_if_from_block_match,
     check_if_to_block_match,
     check_if_topics_match,
+    check_if_address_match,
     is_topic,
     is_flat_topic_array,
     is_nested_topic_array,
@@ -185,8 +186,8 @@ TOPIC_B_AS_TEXT = '\x00' * 31 + '\x01'
         # good values
         (TOPIC_A, TOPIC_A, True),
         (TOPIC_B, TOPIC_B, True),
-        (None, TOPIC_A, True),
-        (None, TOPIC_B, True),
+        (TOPIC_A, None, True),
+        (TOPIC_B, None, True),
     )
 )
 def test_check_single_topic_match(value, topic, expected):
@@ -194,64 +195,45 @@ def test_check_single_topic_match(value, topic, expected):
     assert actual is expected
 
 
-def _make_log(block_number, _type='mined', topics=None, **kwargs):
-    if topics is None:
-        topics = []
-    return dict(
-        block_number=block_number,
-        type=_type,
-        topics=topics,
-        **kwargs
-    )
-
-
 @pytest.mark.parametrize(
-    'log_entry,from_block,expected',
+    'block_number,_type,from_block,expected',
     (
         # bad values
-        (_make_log(10), 11, False),
-        (_make_log(10), 'pending', False),
-        (_make_log(10), 'earliest', False),
+        (10, 'mined', 11, False),
+        (10, 'mined', 'pending', False),
+        (10, 'mined', 'earliest', False),
         # good values
-        (_make_log(10), None, True),
-        (_make_log(10), 10, True),
-        (_make_log(20), 10, True),
-        (_make_log(10), 'latest', True),
-        (_make_log(10, _type='pending'), 'pending', True),
-        (_make_log(10, _type='pending'), 'earliest', True),
+        (10, 'mined', None, True),
+        (10, 'mined', 10, True),
+        (20, 'mined', 10, True),
+        (10, 'mined', 'latest', True),
+        (10, 'pending', 'pending', True),
+        (10, 'pending', 'earliest', True),
     )
 )
-def test_check_if_from_block_match(log_entry, from_block, expected):
-    actual =  check_if_from_block_match(
-        log_entry['block_number'],
-        log_entry['type'],
-        from_block,
-    )
+def test_check_if_from_block_match(block_number, _type, from_block, expected):
+    actual =  check_if_from_block_match(block_number, _type, from_block)
     assert actual is expected
 
 
 @pytest.mark.parametrize(
-    'log_entry,to_block,expected',
+    'block_number,_type,to_block,expected',
     (
         # bad values
-        (_make_log(11), 10, False),
-        (_make_log(10), 'pending', False),
-        (_make_log(10), 'earliest', False),
+        (11, 'mined', 10, False),
+        (10, 'mined', 'pending', False),
+        (10, 'mined', 'earliest', False),
         # good values
-        (_make_log(10), None, True),
-        (_make_log(10), 10, True),
-        (_make_log(9), 10, True),
-        (_make_log(10), 'latest', True),
-        (_make_log(10, _type='pending'), 'pending', True),
-        (_make_log(10, _type='pending'), 'earliest', True),
+        (10, 'mined', None, True),
+        (10, 'mined', 10, True),
+        (9, 'mined', 10, True),
+        (10, 'mined', 'latest', True),
+        (10, 'pending', 'pending', True),
+        (10, 'pending', 'earliest', True),
     )
 )
-def test_check_if_to_block_match(log_entry, to_block, expected):
-    actual = check_if_to_block_match(
-        log_entry['block_number'],
-        log_entry['type'],
-        to_block,
-    )
+def test_check_if_to_block_match(block_number, _type, to_block, expected):
+    actual = check_if_to_block_match(block_number, _type, to_block)
     assert actual is expected
 
 
@@ -259,6 +241,7 @@ TOPICS_EMPTY = tuple()
 TOPICS_ONLY_A = (TOPIC_A,)
 TOPICS_ONLY_B = (TOPIC_B,)
 TOPICS_ONLY_C = (TOPIC_C,)
+TOPICS_A_A = (TOPIC_A, TOPIC_A)
 TOPICS_A_B = (TOPIC_A, TOPIC_B)
 TOPICS_A_C = (TOPIC_A, TOPIC_C)
 TOPICS_A_B_C = (TOPIC_A, TOPIC_B, TOPIC_C)
@@ -276,51 +259,137 @@ FILTER_MATCH_ANY_THREE = (None, None, None)
 FILTER_MATCH_ONLY_A = (TOPIC_A,)
 FILTER_MATCH_ONLY_B = (TOPIC_B,)
 FILTER_MATCH_ONLY_C = (TOPIC_C,)
+FILTER_MATCH_A_ANY = (TOPIC_A, None)
+FILTER_MATCH_B_ANY = (TOPIC_B, None)
+FILTER_MATCH_C_ANY = (TOPIC_C, None)
+FILTER_MATCH_ANY_A = (None, TOPIC_A)
+FILTER_MATCH_ANY_B = (None, TOPIC_B)
+FILTER_MATCH_ANY_C = (None, TOPIC_C)
 FILTER_MATCH_A_B = (TOPIC_A, TOPIC_B)
+FILTER_MATCH_B_C = (TOPIC_B, TOPIC_C)
+FILTER_MATCH_A_B_C = (TOPIC_A, TOPIC_B, TOPIC_C)
+FILTER_MATCH_A_C_B = (TOPIC_A, TOPIC_C, TOPIC_B)
 
 
 @pytest.mark.parametrize(
-    'log_entry,filter_topics,expected',
+    'log_topics,filter_topics,expected',
     (
         # match all values
-        #(_make_log(10, topics=TOPICS_EMPTY), FILTER_MATCH_ALL, True),
-        #(_make_log(10, topics=TOPICS_ONLY_A), FILTER_MATCH_ALL, True),
-        #(_make_log(10, topics=TOPICS_ONLY_B), FILTER_MATCH_ALL, True),
-        #(_make_log(10, topics=TOPICS_ONLY_C), FILTER_MATCH_ALL, True),
-        #(_make_log(10, topics=TOPICS_A_B), FILTER_MATCH_ALL, True),
-        #(_make_log(10, topics=TOPICS_A_C), FILTER_MATCH_ALL, True),
-        #(_make_log(10, topics=TOPICS_B_C), FILTER_MATCH_ALL, True),
-        #(_make_log(10, topics=TOPICS_B_A), FILTER_MATCH_ALL, True),
-        #(_make_log(10, topics=TOPICS_A_B_C), FILTER_MATCH_ALL, True),
-        #(_make_log(10, topics=TOPICS_A_C_B), FILTER_MATCH_ALL, True),
-        #(_make_log(10, topics=TOPICS_B_A_C), FILTER_MATCH_ALL, True),
-        #(_make_log(10, topics=TOPICS_B_C_A), FILTER_MATCH_ALL, True),
+        (TOPICS_EMPTY, FILTER_MATCH_ALL, True),
+        (TOPICS_ONLY_A, FILTER_MATCH_ALL, True),
+        (TOPICS_ONLY_B, FILTER_MATCH_ALL, True),
+        (TOPICS_ONLY_C, FILTER_MATCH_ALL, True),
+        (TOPICS_A_A, FILTER_MATCH_ALL, True),
+        (TOPICS_A_B, FILTER_MATCH_ALL, True),
+        (TOPICS_A_C, FILTER_MATCH_ALL, True),
+        (TOPICS_B_C, FILTER_MATCH_ALL, True),
+        (TOPICS_B_A, FILTER_MATCH_ALL, True),
+        (TOPICS_A_B_C, FILTER_MATCH_ALL, True),
+        (TOPICS_A_C_B, FILTER_MATCH_ALL, True),
+        (TOPICS_B_A_C, FILTER_MATCH_ALL, True),
+        (TOPICS_B_C_A, FILTER_MATCH_ALL, True),
         # length 1 matches
-        #(_make_log(10, topics=TOPICS_EMPTY), FILTER_MATCH_ANY_ONE, False),
-        #(_make_log(10, topics=TOPICS_ONLY_A), FILTER_MATCH_ANY_ONE, True),
-        #(_make_log(10, topics=TOPICS_ONLY_B), FILTER_MATCH_ANY_ONE, True),
-        #(_make_log(10, topics=TOPICS_ONLY_C), FILTER_MATCH_ANY_ONE, True),
-        #(_make_log(10, topics=TOPICS_EMPTY), FILTER_MATCH_ONLY_A, False),
-        #(_make_log(10, topics=TOPICS_EMPTY), FILTER_MATCH_ONLY_B, False),
-        #(_make_log(10, topics=TOPICS_EMPTY), FILTER_MATCH_ONLY_C, False),
-        #(_make_log(10, topics=TOPICS_ONLY_A), FILTER_MATCH_ONLY_A, True),
-        #(_make_log(10, topics=TOPICS_ONLY_B), FILTER_MATCH_ONLY_B, True),
-        #(_make_log(10, topics=TOPICS_ONLY_C), FILTER_MATCH_ONLY_C, True),
-        #(_make_log(10, topics=TOPICS_ONLY_B), FILTER_MATCH_ONLY_A, False),
-        #(_make_log(10, topics=TOPICS_ONLY_C), FILTER_MATCH_ONLY_A, False),
-        #(_make_log(10, topics=TOPICS_ONLY_A), FILTER_MATCH_ONLY_B, False),
-        #(_make_log(10, topics=TOPICS_ONLY_C), FILTER_MATCH_ONLY_B, False),
-        #(_make_log(10, topics=TOPICS_ONLY_A), FILTER_MATCH_ONLY_C, False),
-        #(_make_log(10, topics=TOPICS_ONLY_B), FILTER_MATCH_ONLY_C, False),
-        #(_make_log(10, topics=TOPICS_A_B), FILTER_MATCH_ONLY_A, False),
-        #(_make_log(10, topics=TOPICS_A_C), FILTER_MATCH_ONLY_A, False),
-        #(_make_log(10, topics=TOPICS_A_B_C), FILTER_MATCH_ONLY_A, False),
-        #(_make_log(10, topics=TOPICS_A_C_B), FILTER_MATCH_ONLY_A, False),
+        (TOPICS_EMPTY, FILTER_MATCH_ANY_ONE, False),
+        (TOPICS_ONLY_A, FILTER_MATCH_ANY_ONE, True),
+        (TOPICS_ONLY_B, FILTER_MATCH_ANY_ONE, True),
+        (TOPICS_ONLY_C, FILTER_MATCH_ANY_ONE, True),
+        (TOPICS_EMPTY, FILTER_MATCH_ONLY_A, False),
+        (TOPICS_EMPTY, FILTER_MATCH_ONLY_B, False),
+        (TOPICS_EMPTY, FILTER_MATCH_ONLY_C, False),
+        (TOPICS_ONLY_A, FILTER_MATCH_ONLY_A, True),
+        (TOPICS_ONLY_B, FILTER_MATCH_ONLY_B, True),
+        (TOPICS_ONLY_C, FILTER_MATCH_ONLY_C, True),
+        (TOPICS_ONLY_B, FILTER_MATCH_ONLY_A, False),
+        (TOPICS_ONLY_C, FILTER_MATCH_ONLY_A, False),
+        (TOPICS_ONLY_A, FILTER_MATCH_ONLY_B, False),
+        (TOPICS_ONLY_C, FILTER_MATCH_ONLY_B, False),
+        (TOPICS_ONLY_A, FILTER_MATCH_ONLY_C, False),
+        (TOPICS_ONLY_B, FILTER_MATCH_ONLY_C, False),
+        (TOPICS_A_A, FILTER_MATCH_ONLY_A, False),
+        (TOPICS_A_B, FILTER_MATCH_ONLY_A, False),
+        (TOPICS_A_C, FILTER_MATCH_ONLY_A, False),
+        (TOPICS_A_B_C, FILTER_MATCH_ONLY_A, False),
+        (TOPICS_A_C_B, FILTER_MATCH_ONLY_A, False),
         # length 2 matches
-        #(_make_log(10, topics=TOPICS_EMPTY), FILTER_MATCH_ANY_TWO, False),
-        (_make_log(10, topics=TOPICS_A_B), FILTER_MATCH_ANY_TWO, True),
+        (TOPICS_EMPTY, FILTER_MATCH_ANY_TWO, False),
+        (TOPICS_A_A, FILTER_MATCH_ANY_TWO, True),
+        (TOPICS_A_B, FILTER_MATCH_ANY_TWO, True),
+        (TOPICS_ONLY_A, FILTER_MATCH_ANY_TWO, False),
+        (TOPICS_ONLY_B, FILTER_MATCH_ANY_TWO, False),
+        (TOPICS_ONLY_C, FILTER_MATCH_ANY_TWO, False),
+        (TOPICS_A_A, FILTER_MATCH_A_B, False),
+        (TOPICS_A_B, FILTER_MATCH_A_B, True),
+        (TOPICS_A_C, FILTER_MATCH_A_B, False),
+        (TOPICS_A_C, FILTER_MATCH_B_C, False),
+        (TOPICS_B_C, FILTER_MATCH_B_C, True),
+        (TOPICS_A_A, FILTER_MATCH_A_ANY, True),
+        (TOPICS_A_B, FILTER_MATCH_A_ANY, True),
+        (TOPICS_A_C, FILTER_MATCH_A_ANY, True),
+        (TOPICS_B_C, FILTER_MATCH_A_ANY, False),
+        (TOPICS_A_B, FILTER_MATCH_B_ANY, False),
+        (TOPICS_A_C, FILTER_MATCH_B_ANY, False),
+        (TOPICS_B_C, FILTER_MATCH_B_ANY, True),
+        (TOPICS_B_A, FILTER_MATCH_B_ANY, True),
+        (TOPICS_A_A, FILTER_MATCH_ANY_A, True),
+        (TOPICS_A_B, FILTER_MATCH_ANY_A, False),
+        (TOPICS_B_A, FILTER_MATCH_ANY_A, True),
+        (TOPICS_A_B, FILTER_MATCH_ANY_B, True),
+        (TOPICS_A_B, FILTER_MATCH_ANY_C, False),
+        # length 3 matches
+        (TOPICS_EMPTY, FILTER_MATCH_ANY_THREE, False),
+        (TOPICS_A_B_C, FILTER_MATCH_ANY_THREE, True),
+        (TOPICS_A_C_B, FILTER_MATCH_ANY_THREE, True),
+        (TOPICS_B_A_C, FILTER_MATCH_ANY_THREE, True),
+        (TOPICS_B_C_A, FILTER_MATCH_ANY_THREE, True),
+        (TOPICS_A_A, FILTER_MATCH_ANY_THREE, False),
+        # nested matches
+        (TOPICS_EMPTY, (FILTER_MATCH_ONLY_A, FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), False),
+        (TOPICS_ONLY_A, (FILTER_MATCH_ONLY_A, FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), True),
+        (TOPICS_ONLY_B, (FILTER_MATCH_ONLY_A, FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), True),
+        (TOPICS_ONLY_C, (FILTER_MATCH_ONLY_A, FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), True),
+        (TOPICS_A_B, (FILTER_MATCH_ONLY_A, FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), False),
+        (TOPICS_A_B, (FILTER_MATCH_ONLY_A, FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), False),
+        (TOPICS_A_C, (FILTER_MATCH_A_ANY, FILTER_MATCH_ANY_A), True),
+        (TOPICS_B_A, (FILTER_MATCH_A_ANY, FILTER_MATCH_ANY_A), True),
+        (TOPICS_B_C, (FILTER_MATCH_A_ANY, FILTER_MATCH_ANY_A), False),
     )
 )
-def test_check_if_topics_match(log_entry, filter_topics, expected):
-    actual = check_if_topics_match(log_entry['topics'], filter_topics)
+def test_check_if_topics_match(log_topics, filter_topics, expected):
+    actual = check_if_topics_match(log_topics, filter_topics)
+    assert actual is expected
+
+
+ADDRESS_A = b'\x00' * 20
+ADDRESS_B = b'\x00' * 19 + b'\x01'
+ADDRESS_C = b'\x00' * 19 + b'\x02'
+ADDRESS_D = b'\x00' * 19 + b'\x03'
+
+
+@pytest.mark.parametrize(
+    'address,addresses,expected',
+    (
+        (ADDRESS_A, None, True),
+        (ADDRESS_B, None, True),
+        (ADDRESS_C, None, True),
+        (ADDRESS_D, None, True),
+        (ADDRESS_A, ADDRESS_A, True),
+        (ADDRESS_B, ADDRESS_A, False),
+        (ADDRESS_C, ADDRESS_A, False),
+        (ADDRESS_D, ADDRESS_A, False),
+        (ADDRESS_A, (ADDRESS_A,), True),
+        (ADDRESS_B, (ADDRESS_A,), False),
+        (ADDRESS_C, (ADDRESS_A,), False),
+        (ADDRESS_D, (ADDRESS_A,), False),
+        (ADDRESS_A, (ADDRESS_A, ADDRESS_B), True),
+        (ADDRESS_B, (ADDRESS_A, ADDRESS_B), True),
+        (ADDRESS_C, (ADDRESS_A, ADDRESS_B), False),
+        (ADDRESS_D, (ADDRESS_A, ADDRESS_B), False),
+        (ADDRESS_A, (ADDRESS_B, ADDRESS_A), True),
+        (ADDRESS_B, (ADDRESS_B, ADDRESS_A), True),
+        (ADDRESS_C, (ADDRESS_B, ADDRESS_A), False),
+        (ADDRESS_D, (ADDRESS_B, ADDRESS_A), False),
+    ),
+)
+def test_check_if_address_match(address, addresses, expected):
+    actual = check_if_address_match(address, addresses)
     assert actual is expected
