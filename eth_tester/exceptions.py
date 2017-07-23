@@ -4,3 +4,7 @@ class ValidationError(Exception):
 
 class TransactionNotFound(Exception):
     pass
+
+
+class FilterNotFound(Exception):
+    pass

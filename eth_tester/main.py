@@ -2,6 +2,7 @@ import itertools
 
 from eth_tester.exceptions import (
     TransactionNotFound,
+    FilterNotFound,
 )
 
 from eth_tester.utils.filters import (
@@ -43,6 +44,7 @@ class EthereumTester(object):
         #
         self._filter_counter = itertools.count()
         self._block_filters = {}
+        self._pending_transaction_filters = {}
 
     def configure(self, **kwargs):
         for key, value in kwargs.items():
@@ -67,8 +69,11 @@ class EthereumTester(object):
     def mine_blocks(self, num_blocks=1, coinbase=None):
         block_hashes = self.backend.mine_blocks(num_blocks, coinbase)
         assert len(block_hashes) == num_blocks
+
+        # feed the block hashes to any block filters
         for _, block_filter in self._block_filters.items():
-            block_filter.extend(block_hashes)
+            block_filter.add(*block_hashes)
+
         return block_hashes
 
     def mine_block(self, coinbase=None):
@@ -76,8 +81,15 @@ class EthereumTester(object):
 
     def send_transaction(self, transaction):
         transaction_hash = self.backend.send_transaction(transaction)
+
+        # feed the transaction hash to any pending transaction filters.
+        for _, filter in self._pending_transaction_filters.items():
+            filter.add(transaction_hash)
+
+        # mine the transaction if auto-transaction-mining is enabled.
         if self.config['auto_mine_transactions']:
             self.mine_block()
+
         return transaction_hash
 
     def get_transaction_receipt(self, transaction_hash):
@@ -86,21 +98,45 @@ class EthereumTester(object):
         except TransactionNotFound:
             return None
 
-    def create_block_filter(self):
-        filter_id = next(self._filter_counter)
-        self._block_filters[filter_id] = Filter()
-        return filter_id
-
     def get_filter_changes(self, filter_id):
         if filter_id in self._block_filters:
             filter = self._block_filters[filter_id]
+        elif filter_id in self._pending_transaction_filters:
+            filter = self._pending_transaction_filters[filter_id]
         else:
-            raise ValueError("Unknown filter id")
+            raise FilterNotFound("Unknown filter id")
         return filter.get_changes()
 
     def get_filter_logs(self, filter_id):
         if filter_id in self._block_filters:
             filter = self._block_filters[filter_id]
+        elif filter_id in self._pending_transaction_filters:
+            filter = self._pending_transaction_filters[filter_id]
         else:
-            raise ValueError("Unknown filter id")
+            raise FilterNotFound("Unknown filter id")
         return filter.get_all()
+
+    #
+    # Filters
+    #
+    def create_block_filter(self):
+        filter_id = next(self._filter_counter)
+        self._block_filters[filter_id] = Filter()
+        return filter_id
+
+    def create_pending_transaction_filter(self, *args, **kwargs):
+        filter_id = next(self._filter_counter)
+        self._pending_transaction_filters[filter_id] = Filter()
+        return filter_id
+
+    def create_logfilter(self, from_block=None, to_block=None, address=None, topics=None):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    def delete_filter(self, filter_id):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    def get_only_filter_changes(self, filter_id):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    def get_all_filter_logs(self, filter_id):
+        raise NotImplementedError("Must be implemented by subclasses")

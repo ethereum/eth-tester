@@ -52,24 +52,3 @@ class BaseChainBackend(object):
 
     def call(self, transaction):
         raise NotImplementedError("Must be implemented by subclasses")
-
-    #
-    # Filters
-    #
-    def create_block_filter(self, *args, **kwargs):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def create_pending_transaction_filter(self, *args, **kwargs):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def create_logfilter(self, from_block=None, to_block=None, address=None, topics=None):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def delete_filter(self, filter_id):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def get_only_filter_changes(self, filter_id):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def get_all_filter_logs(self, filter_id):
-        raise NotImplementedError("Must be implemented by subclasses")

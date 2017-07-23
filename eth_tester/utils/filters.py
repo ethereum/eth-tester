@@ -27,10 +27,7 @@ class Filter(object):
     def get_all(self):
         return tuple(self.values)
 
-    def append(self, value):
-        self.values.append(value)
-        self.queue.put_nowait(value)
-
-    def extend(self, values):
+    def add(self, *values):
         for value in values:
-            self.append(value)
+            self.values.append(value)
+            self.queue.put_nowait(value)

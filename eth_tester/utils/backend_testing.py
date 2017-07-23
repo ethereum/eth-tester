@@ -180,7 +180,7 @@ class BaseTestBackendDirect(object):
     #
     def test_block_filter(self, eth_tester):
         # first mine 10 blocks in
-        blocks_0_to_9 = eth_tester.mine_blocks(10)
+        eth_tester.mine_blocks(10)
 
         # setup a filter
         filter_a_id = eth_tester.create_block_filter()
@@ -221,8 +221,68 @@ class BaseTestBackendDirect(object):
 
         assert set(filter_a_changes_part_2) == set(blocks_23_to_29)
         assert set(filter_b_changes) == set(blocks_15_to_22).union(blocks_23_to_29)
+        assert set(filter_b_changes) == set(filter_b_logs_part_2)
         assert set(filter_a_logs_part_2) == set(blocks_10_to_14).union(blocks_15_to_22).union(blocks_23_to_29)
         assert set(filter_b_logs_part_2) == set(blocks_15_to_22).union(blocks_23_to_29)
+
+    def test_pending_transaction_filter(self, eth_tester):
+        transaction = {
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+        }
+
+        # send a few initial transactions
+        for _ in range(5):
+            eth_tester.send_transaction(transaction)
+
+        # setup a filter
+        filter_a_id = eth_tester.create_pending_transaction_filter()
+
+        # send 8 transactions
+        transactions_0_to_7 = [
+            eth_tester.send_transaction(transaction)
+            for _ in range(8)
+        ]
+
+        # setup another filter
+        filter_b_id = eth_tester.create_pending_transaction_filter()
+
+        # send 5 transactions
+        transactions_8_to_12 = [
+            eth_tester.send_transaction(transaction)
+            for _ in range(5)
+        ]
+
+        filter_a_changes_part_1 = eth_tester.get_filter_changes(filter_a_id)
+        filter_a_logs_part_1 = eth_tester.get_filter_logs(filter_a_id)
+        filter_b_logs_part_1 = eth_tester.get_filter_logs(filter_b_id)
+
+        assert set(filter_a_changes_part_1) == set(filter_a_logs_part_1)
+        assert set(filter_a_changes_part_1) == set(transactions_0_to_7).union(transactions_8_to_12)
+        assert set(filter_b_logs_part_1) == set(transactions_8_to_12)
+
+        # send 7 transactions
+        transactions_13_to_20 = [
+            eth_tester.send_transaction(transaction)
+            for _ in range(7)
+        ]
+
+        filter_a_changes_part_2 = eth_tester.get_filter_changes(filter_a_id)
+        filter_b_changes = eth_tester.get_filter_changes(filter_b_id)
+        filter_a_logs_part_2 = eth_tester.get_filter_logs(filter_a_id)
+        filter_b_logs_part_2 = eth_tester.get_filter_logs(filter_b_id)
+
+        assert len(filter_a_changes_part_2) == 7
+        assert len(filter_b_changes) == 12
+        assert len(filter_a_logs_part_2) == 20
+        assert len(filter_b_logs_part_2) == 12
+
+        assert set(filter_a_changes_part_2) == set(transactions_13_to_20)
+        assert set(filter_b_changes) == set(filter_b_logs_part_2)
+        assert set(filter_b_changes) == set(transactions_8_to_12).union(transactions_13_to_20)
+        assert set(filter_a_logs_part_2) == set(transactions_0_to_7).union(transactions_8_to_12).union(transactions_13_to_20)
+        assert set(filter_b_logs_part_2) == set(transactions_8_to_12).union(transactions_13_to_20)
 
 
 address = st.binary(
