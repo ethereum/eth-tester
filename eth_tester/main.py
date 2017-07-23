@@ -43,6 +43,7 @@ class EthereumTester(object):
 
         #
         self._filter_counter = itertools.count()
+        self._log_filters = {}
         self._block_filters = {}
         self._pending_transaction_filters = {}
 
@@ -85,6 +86,12 @@ class EthereumTester(object):
         # feed the transaction hash to any pending transaction filters.
         for _, filter in self._pending_transaction_filters.items():
             filter.add(transaction_hash)
+
+        if self._log_filters:
+            transaction_receipt = self.backend.get_transaction_receipt(transaction_hash)
+            for _, log_entry in transaction_receipt['logs']:
+                for _, filter in self._log_filters.items():
+                    if check_if_log_matches(
 
         # mine the transaction if auto-transaction-mining is enabled.
         if self.config['auto_mine_transactions']:
