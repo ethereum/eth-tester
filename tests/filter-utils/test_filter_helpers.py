@@ -3,10 +3,10 @@ from __future__ import unicode_literals
 import pytest
 
 from eth_tester.utils.filters import (
-    check_if_topic_match,
-    check_if_log_matches_from_block,
-    check_if_log_matches_to_block,
-    check_if_log_matches_topics,
+    check_single_topic_match,
+    check_if_from_block_match,
+    check_if_to_block_match,
+    check_if_topics_match,
     is_topic,
     is_flat_topic_array,
     is_nested_topic_array,
@@ -189,8 +189,8 @@ TOPIC_B_AS_TEXT = '\x00' * 31 + '\x01'
         (None, TOPIC_B, True),
     )
 )
-def test_check_topic_match(value, topic, expected):
-    actual = check_if_topic_match(value, topic)
+def test_check_single_topic_match(value, topic, expected):
+    actual = check_single_topic_match(value, topic)
     assert actual is expected
 
 
@@ -221,8 +221,12 @@ def _make_log(block_number, _type='mined', topics=None, **kwargs):
         (_make_log(10, _type='pending'), 'earliest', True),
     )
 )
-def test_check_if_log_matches_from_block(log_entry, from_block, expected):
-    actual = check_if_log_matches_from_block(log_entry, from_block)
+def test_check_if_from_block_match(log_entry, from_block, expected):
+    actual =  check_if_from_block_match(
+        log_entry['block_number'],
+        log_entry['type'],
+        from_block,
+    )
     assert actual is expected
 
 
@@ -242,11 +246,16 @@ def test_check_if_log_matches_from_block(log_entry, from_block, expected):
         (_make_log(10, _type='pending'), 'earliest', True),
     )
 )
-def test_check_if_log_matches_to_block(log_entry, to_block, expected):
-    actual = check_if_log_matches_to_block(log_entry, to_block)
+def test_check_if_to_block_match(log_entry, to_block, expected):
+    actual = check_if_to_block_match(
+        log_entry['block_number'],
+        log_entry['type'],
+        to_block,
+    )
     assert actual is expected
 
 
+TOPICS_EMPTY = tuple()
 TOPICS_ONLY_A = (TOPIC_A,)
 TOPICS_ONLY_B = (TOPIC_B,)
 TOPICS_ONLY_C = (TOPIC_C,)
@@ -261,9 +270,9 @@ TOPICS_B_C_A = (TOPIC_B, TOPIC_C, TOPIC_A)
 
 
 FILTER_MATCH_ALL = tuple()
-FILTER_MATCH_ONE_ANY = (None,)
-FILTER_MATCH_TWO_ANY = (None, None)
-FILTER_MATCH_THREE_ANY = (None, None, None)
+FILTER_MATCH_ANY_ONE = (None,)
+FILTER_MATCH_ANY_TWO = (None, None)
+FILTER_MATCH_ANY_THREE = (None, None, None)
 FILTER_MATCH_ONLY_A = (TOPIC_A,)
 FILTER_MATCH_ONLY_B = (TOPIC_B,)
 FILTER_MATCH_ONLY_C = (TOPIC_C,)
@@ -273,21 +282,45 @@ FILTER_MATCH_A_B = (TOPIC_A, TOPIC_B)
 @pytest.mark.parametrize(
     'log_entry,filter_topics,expected',
     (
-        # bad values
-        # good values
-        (_make_log(10, topics=TOPICS_ONLY_A), FILTER_MATCH_ALL, True),
-        (_make_log(10, topics=TOPICS_ONLY_B), FILTER_MATCH_ALL, True),
-        (_make_log(10, topics=TOPICS_ONLY_C), FILTER_MATCH_ALL, True),
-        (_make_log(10, topics=TOPICS_A_B), FILTER_MATCH_ALL, True),
-        (_make_log(10, topics=TOPICS_A_C), FILTER_MATCH_ALL, True),
-        (_make_log(10, topics=TOPICS_B_C), FILTER_MATCH_ALL, True),
-        (_make_log(10, topics=TOPICS_B_A), FILTER_MATCH_ALL, True),
-        (_make_log(10, topics=TOPICS_A_B_C), FILTER_MATCH_ALL, True),
-        (_make_log(10, topics=TOPICS_A_C_B), FILTER_MATCH_ALL, True),
-        (_make_log(10, topics=TOPICS_B_A_C), FILTER_MATCH_ALL, True),
-        (_make_log(10, topics=TOPICS_B_C_A), FILTER_MATCH_ALL, True),
+        # match all values
+        #(_make_log(10, topics=TOPICS_EMPTY), FILTER_MATCH_ALL, True),
+        #(_make_log(10, topics=TOPICS_ONLY_A), FILTER_MATCH_ALL, True),
+        #(_make_log(10, topics=TOPICS_ONLY_B), FILTER_MATCH_ALL, True),
+        #(_make_log(10, topics=TOPICS_ONLY_C), FILTER_MATCH_ALL, True),
+        #(_make_log(10, topics=TOPICS_A_B), FILTER_MATCH_ALL, True),
+        #(_make_log(10, topics=TOPICS_A_C), FILTER_MATCH_ALL, True),
+        #(_make_log(10, topics=TOPICS_B_C), FILTER_MATCH_ALL, True),
+        #(_make_log(10, topics=TOPICS_B_A), FILTER_MATCH_ALL, True),
+        #(_make_log(10, topics=TOPICS_A_B_C), FILTER_MATCH_ALL, True),
+        #(_make_log(10, topics=TOPICS_A_C_B), FILTER_MATCH_ALL, True),
+        #(_make_log(10, topics=TOPICS_B_A_C), FILTER_MATCH_ALL, True),
+        #(_make_log(10, topics=TOPICS_B_C_A), FILTER_MATCH_ALL, True),
+        # length 1 matches
+        #(_make_log(10, topics=TOPICS_EMPTY), FILTER_MATCH_ANY_ONE, False),
+        #(_make_log(10, topics=TOPICS_ONLY_A), FILTER_MATCH_ANY_ONE, True),
+        #(_make_log(10, topics=TOPICS_ONLY_B), FILTER_MATCH_ANY_ONE, True),
+        #(_make_log(10, topics=TOPICS_ONLY_C), FILTER_MATCH_ANY_ONE, True),
+        #(_make_log(10, topics=TOPICS_EMPTY), FILTER_MATCH_ONLY_A, False),
+        #(_make_log(10, topics=TOPICS_EMPTY), FILTER_MATCH_ONLY_B, False),
+        #(_make_log(10, topics=TOPICS_EMPTY), FILTER_MATCH_ONLY_C, False),
+        #(_make_log(10, topics=TOPICS_ONLY_A), FILTER_MATCH_ONLY_A, True),
+        #(_make_log(10, topics=TOPICS_ONLY_B), FILTER_MATCH_ONLY_B, True),
+        #(_make_log(10, topics=TOPICS_ONLY_C), FILTER_MATCH_ONLY_C, True),
+        #(_make_log(10, topics=TOPICS_ONLY_B), FILTER_MATCH_ONLY_A, False),
+        #(_make_log(10, topics=TOPICS_ONLY_C), FILTER_MATCH_ONLY_A, False),
+        #(_make_log(10, topics=TOPICS_ONLY_A), FILTER_MATCH_ONLY_B, False),
+        #(_make_log(10, topics=TOPICS_ONLY_C), FILTER_MATCH_ONLY_B, False),
+        #(_make_log(10, topics=TOPICS_ONLY_A), FILTER_MATCH_ONLY_C, False),
+        #(_make_log(10, topics=TOPICS_ONLY_B), FILTER_MATCH_ONLY_C, False),
+        #(_make_log(10, topics=TOPICS_A_B), FILTER_MATCH_ONLY_A, False),
+        #(_make_log(10, topics=TOPICS_A_C), FILTER_MATCH_ONLY_A, False),
+        #(_make_log(10, topics=TOPICS_A_B_C), FILTER_MATCH_ONLY_A, False),
+        #(_make_log(10, topics=TOPICS_A_C_B), FILTER_MATCH_ONLY_A, False),
+        # length 2 matches
+        #(_make_log(10, topics=TOPICS_EMPTY), FILTER_MATCH_ANY_TWO, False),
+        (_make_log(10, topics=TOPICS_A_B), FILTER_MATCH_ANY_TWO, True),
     )
 )
-def test_check_if_log_matches_topics(log_entry, filter_topics, expected):
-    actual = check_if_log_matches_topics(log_entry, filter_topics)
+def test_check_if_topics_match(log_entry, filter_topics, expected):
+    actual = check_if_topics_match(log_entry['topics'], filter_topics)
     assert actual is expected

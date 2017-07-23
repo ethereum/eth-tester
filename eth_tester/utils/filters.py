@@ -61,34 +61,34 @@ def is_topic_array(value):
     return is_flat_topic_array(value) or is_nested_topic_array(value)
 
 
-def check_if_topic_match(filter_topic, log_topic):
+def check_single_topic_match(filter_topic, log_topic):
     if filter_topic is None:
         return True
     return filter_topic == log_topic
 
 
-def check_if_log_matches_from_block(log_entry, from_block):
+def check_if_from_block_match(block_number, _type, from_block):
     if from_block is None:
         return True
     elif from_block == "latest":
         return True
     elif from_block in {"earliest", "pending"}:
-        return log_entry["type"] == "pending"
+        return _type == "pending"
     elif is_integer(from_block):
-        return log_entry["block_number"] >= from_block
+        return block_number >= from_block
     else:
         raise ValueError("Unrecognized from_block format: {0}".format(from_block))
 
 
-def check_if_log_matches_to_block(log_entry, to_block):
+def check_if_to_block_match(block_number, _type, to_block):
     if to_block is None:
         return True
     elif to_block == "latest":
         return True
     elif to_block in {"earliest", "pending"}:
-        return log_entry["type"] == "pending"
+        return _type == "pending"
     elif is_integer(to_block):
-        return log_entry["block_number"] <= to_block
+        return block_number <= to_block
     else:
         raise ValueError("Unrecognized to_block format: {0}".format(to_block))
 
@@ -100,18 +100,18 @@ def check_if_log_matches_flat_topics(log_topics, filter_topics):
         return False
     else:
         return all(
-            check_if_topic_match(left, right)
+            check_single_topic_match(left, right)
             for left, right
             in zip(log_topics, filter_topics)
         )
 
 
-def check_if_log_matches_topics(log_entry, filter_topics):
+def check_if_topics_match(log_topics, filter_topics):
     if is_flat_topic_array(filter_topics):
-        return check_if_log_matches_flat_topics(log_entry['topics'], filter_topics)
+        return check_if_log_matches_flat_topics(log_topics, filter_topics)
     elif is_nested_topic_array(filter_topics):
         return any(
-            check_if_log_matches_flat_topics(log_entry['topics'], sub_filter_topics)
+            check_if_log_matches_flat_topics(log_topics, sub_filter_topics)
             for sub_filter_topics
             in filter_topics
         )
@@ -119,15 +119,15 @@ def check_if_log_matches_topics(log_entry, filter_topics):
         raise ValueError("Unrecognized topics format: {0}".format(filter_topics))
 
 
-def check_if_log_matches_addresses(log_entry, addresses):
+def check_if_address_match(address, addresses):
     if is_tuple(addresses):
         return any(
-            is_same_address(log_entry['address'], item)
+            is_same_address(address, item)
             for item
             in addresses
         )
     elif is_address(addresses):
-        return is_same_address(addresses, log_entry['address'])
+        return is_same_address(addresses, address)
     else:
         raise ValueError("Unrecognized address format: {0}".format(addresses))
 
@@ -138,8 +138,8 @@ def check_if_log_matches(log_entry,
                          addresses,
                          topics):
     return all((
-        check_if_log_matches_from_block(log_entry, from_block),
-        check_if_log_matches_to_block(log_entry, to_block),
-        check_if_log_matches_addresses(log_entry, addresses),
-        check_if_log_matches_topics(log_entry, topics),
+        check_if_from_block_match(log_entry['block_number'], log_entry['type'], from_block),
+        check_if_to_block_match(log_entry['block_number'], log_entry['type'], to_block),
+        check_if_address_match(log_entry['address'], addresses),
+        check_if_topics_match(log_entry['topics'], topics),
     ))
