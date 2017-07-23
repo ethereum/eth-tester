@@ -5,7 +5,7 @@ from queue import (
 
 from eth_utils import (
     to_tuple,
-    is_string,
+    is_bytes,
     is_address,
     is_same_address,
     is_integer,
@@ -37,27 +37,31 @@ class Filter(object):
             self.queue.put_nowait(item)
 
 
-def is_array(value):
-    return isinstance(value, (list, tuple))
+def is_tuple(value):
+    return isinstance(value, tuple)
 
 
-def is_string_or_none(value):
-    return is_string(value) or value is None
+def is_topic_string(value):
+    return is_bytes(value) and len(value) == 32
+
+
+def is_topic(value):
+    return value is None or is_topic_string(value)
 
 
 def is_flat_topic_array(value):
-    return is_array(value) and all(is_string_or_none(item) for item in value)
+    return is_tuple(value) and all(is_topic(item) for item in value)
 
 
 def is_nested_topic_array(value):
-    return is_array(value) and all((is_topic_array(item) for item in value))
+    return bool(value) and is_tuple(value) and all((is_topic_array(item) for item in value))
 
 
 def is_topic_array(value):
     return is_flat_topic_array(value) or is_nested_topic_array(value)
 
 
-def check_topic_match(filter_topic, log_topic):
+def check_if_topic_match(filter_topic, log_topic):
     if filter_topic is None:
         return True
     return filter_topic == log_topic
@@ -68,12 +72,12 @@ def check_if_log_matches_from_block(log_entry, from_block):
         return True
     elif from_block == "latest":
         return True
-    elif from_block in {"earliest", "pending"} and log_entry["type"] == "pending":
-        return True
-    elif is_integer(from_block) and log_entry["block_number"] >= from_block:
-        return True
+    elif from_block in {"earliest", "pending"}:
+        return log_entry["type"] == "pending"
+    elif is_integer(from_block):
+        return log_entry["block_number"] >= from_block
     else:
-        return False
+        raise ValueError("Unrecognized from_block format: {0}".format(from_block))
 
 
 def check_if_log_matches_to_block(log_entry, to_block):
@@ -81,22 +85,25 @@ def check_if_log_matches_to_block(log_entry, to_block):
         return True
     elif to_block == "latest":
         return True
-    elif to_block in {"earliest", "pending"} and log_entry["type"] == "pending":
-        return True
-    elif is_integer(to_block) and log_entry["block_number"] <= to_block:
-        return True
+    elif to_block in {"earliest", "pending"}:
+        return log_entry["type"] == "pending"
+    elif is_integer(to_block):
+        return log_entry["block_number"] <= to_block
     else:
-        return False
+        raise ValueError("Unrecognized to_block format: {0}".format(to_block))
 
 
 def check_if_log_matches_flat_topics(log_topics, filter_topics):
-    if len(log_topics) != len(filter_topics):
+    if not filter_topics:
+        return True
+    elif len(log_topics) != len(filter_topics):
         return False
-    return all(
-        check_topic_match(left, right)
-        for left, right
-        in zip(log_topics, filter_topics)
-    )
+    else:
+        return all(
+            check_if_topic_match(left, right)
+            for left, right
+            in zip(log_topics, filter_topics)
+        )
 
 
 def check_if_log_matches_topics(log_entry, filter_topics):
@@ -113,7 +120,7 @@ def check_if_log_matches_topics(log_entry, filter_topics):
 
 
 def check_if_log_matches_addresses(log_entry, addresses):
-    if is_array(addresses):
+    if is_tuple(addresses):
         return any(
             is_same_address(log_entry['address'], item)
             for item
