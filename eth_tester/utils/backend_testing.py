@@ -292,6 +292,13 @@ class BaseTestBackendDirect(object):
         assert set(filter_b_logs_part_2) == set(transactions_8_to_12).union(transactions_13_to_20)
 
     def test_log_filter(self, eth_tester):
+        """
+        Cases to test:
+        - filter multiple transactions in one block.
+        - filter pending
+        - filter mined
+        - filter against topics
+        """
         emitter_address = _deploy_emitter(eth_tester)
         emit_a_hash = _call_emitter(
             eth_tester,
@@ -311,6 +318,7 @@ class BaseTestBackendDirect(object):
 
         logs_changes = eth_tester.get_filter_changes(filter_any_id)
         logs_all = eth_tester.get_filter_logs(filter_any_id)
+        assert len(logs_changes) == len(logs_all) == 1
         assert False
 
 

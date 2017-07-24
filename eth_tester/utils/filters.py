@@ -71,10 +71,8 @@ def check_single_topic_match(log_topic, filter_topic):
 
 
 def check_if_from_block_match(block_number, _type, from_block):
-    if from_block is None:
-        return True
-    elif from_block == "latest":
-        return True
+    if from_block is None or from_block == "latest":
+        return _type == "mined"
     elif from_block in {"earliest", "pending"}:
         return _type == "pending"
     elif is_integer(from_block):
@@ -84,10 +82,8 @@ def check_if_from_block_match(block_number, _type, from_block):
 
 
 def check_if_to_block_match(block_number, _type, to_block):
-    if to_block is None:
-        return True
-    elif to_block == "latest":
-        return True
+    if to_block is None or to_block == "latest":
+        return _type == "mined"
     elif to_block in {"earliest", "pending"}:
         return _type == "pending"
     elif is_integer(to_block):

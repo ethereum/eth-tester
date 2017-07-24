@@ -40,6 +40,13 @@ from .validation import (
 # Internal getters for EVM objects
 #
 def _get_transaction_by_hash(evm, transaction_hash, mined=True):
+    # first check unmined transactions
+    for index, candidate in enumerate(evm.block.get_transaction_hashes()):
+        if candidate == transaction_hash:
+            transaction = evm.block.transaction_list[index]
+            return evm.block, transaction, index
+
+    # then check work backwards through the blocks looking for mined transactions.
     for block in reversed(evm.blocks[:-1]):
         for index, candidate in enumerate(block.get_transaction_hashes()):
             if candidate == transaction_hash:
@@ -192,14 +199,16 @@ class PyEthereum16Backend(BaseChainBackend):
             self.evm,
             transaction_hash,
         )
-        return serialize_transaction(block, transaction, transaction_index)
+        is_pending = block.number == self.evm.block.number
+        return serialize_transaction(block, transaction, transaction_index, is_pending)
 
     def get_transaction_receipt(self, transaction_hash):
         block, transaction, transaction_index = _get_transaction_by_hash(
             self.evm,
             transaction_hash,
         )
-        return serialize_transaction_receipt(block, transaction, transaction_index)
+        is_pending = block.number == self.evm.block.number
+        return serialize_transaction_receipt(block, transaction, transaction_index, is_pending)
 
     #
     # Account state

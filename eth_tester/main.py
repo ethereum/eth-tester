@@ -77,8 +77,17 @@ class EthereumTester(object):
         assert len(block_hashes) == num_blocks
 
         # feed the block hashes to any block filters
-        for _, block_filter in self._block_filters.items():
-            block_filter.add(*block_hashes)
+        for block_hash in block_hashes:
+            block = self.get_block_by_hash(block_hash)
+
+            for _, block_filter in self._block_filters.items():
+                block_filter.add(*block_hashes)
+
+            for _, filter in self._log_filters.items():
+                for transaction_hash in block['transactions']:
+                    receipt = self.get_transaction_receipt(transaction_hash)
+                    for log_entry in receipt['logs']:
+                        filter.add(log_entry)
 
         return block_hashes
 
@@ -93,8 +102,8 @@ class EthereumTester(object):
             filter.add(transaction_hash)
 
         if self._log_filters:
-            transaction_receipt = self.backend.get_transaction_receipt(transaction_hash)
-            for log_entry in transaction_receipt['logs']:
+            receipt = self.backend.get_transaction_receipt(transaction_hash)
+            for log_entry in receipt['logs']:
                 for _, filter in self._log_filters.items():
                     filter.add(log_entry)
 
@@ -115,6 +124,8 @@ class EthereumTester(object):
             filter = self._block_filters[filter_id]
         elif filter_id in self._pending_transaction_filters:
             filter = self._pending_transaction_filters[filter_id]
+        elif filter_id in self._log_filters:
+            filter = self._log_filters[filter_id]
         else:
             raise FilterNotFound("Unknown filter id")
         return filter.get_changes()
@@ -124,6 +135,8 @@ class EthereumTester(object):
             filter = self._block_filters[filter_id]
         elif filter_id in self._pending_transaction_filters:
             filter = self._pending_transaction_filters[filter_id]
+        elif filter_id in self._log_filters:
+            filter = self._log_filters[filter_id]
         else:
             raise FilterNotFound("Unknown filter id")
         return filter.get_all()

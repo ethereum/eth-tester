@@ -1,7 +1,7 @@
 import rlp
 
 
-def serialize_transaction_receipt(block, transaction, transaction_index):
+def serialize_transaction_receipt(block, transaction, transaction_index, is_pending):
     transaction_receipt = block.get_receipt(transaction_index)
     origin_gas = block.transaction_list[0].startgas
 
@@ -12,14 +12,14 @@ def serialize_transaction_receipt(block, transaction, transaction_index):
 
     return {
         "transaction_hash": transaction.hash,
-        "transaction_index": transaction_index,
-        "block_number": block.number,
-        "block_hash": block.hash,
+        "transaction_index": None if is_pending else transaction_index,
+        "block_number": None if is_pending else block.number,
+        "block_hash": None if is_pending else block.hash,
         "cumulative_gas_used": origin_gas - transaction.startgas + transaction_receipt.gas_used,
         "gas_used": transaction_receipt.gas_used,
         "contract_address": contract_addr,
         "logs": [
-            serialize_log(block, transaction, transaction_index, log, log_index)
+            serialize_log(block, transaction, transaction_index, log, log_index, is_pending)
             for log_index, log in enumerate(transaction_receipt.logs)
         ],
     }
@@ -29,13 +29,13 @@ def serialize_transaction_hash(block, transaction, transaction_index):
     return transaction.hash
 
 
-def serialize_transaction(block, transaction, transaction_index):
+def serialize_transaction(block, transaction, transaction_index, is_pending):
     return {
         "hash": transaction.hash,
         "nonce": transaction.nonce,
-        "block_hash": block.hash,
-        "block_number": block.number,
-        "transaction_index": transaction_index,
+        "block_hash": None if is_pending else block.hash,
+        "block_number": None if is_pending else block.number,
+        "transaction_index": None if is_pending else transaction_index,
         "from": transaction.sender,
         "to": transaction.to,
         "value": transaction.value,
@@ -45,14 +45,14 @@ def serialize_transaction(block, transaction, transaction_index):
     }
 
 
-def serialize_log(block, transaction, transaction_index, log, log_index):
+def serialize_log(block, transaction, transaction_index, log, log_index, is_pending):
     return {
-        "type": "mined",
+        "type": "pending" if is_pending else "mined",
         "log_index": log_index,
-        "transaction_index": transaction_index,
+        "transaction_index": None if is_pending else transaction_index,
         "transaction_hash": transaction.hash,
-        "block_hash": block.hash,
-        "block_number": block.number,
+        "block_hash": None if is_pending else block.hash,
+        "block_number": None if is_pending else block.number,
         "address": log.address,
         "data": log.data,
         "topics": log.topics,
