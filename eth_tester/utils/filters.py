@@ -76,7 +76,7 @@ def check_if_from_block_match(block_number, _type, from_block):
     elif from_block in {"earliest", "pending"}:
         return _type == "pending"
     elif is_integer(from_block):
-        return block_number >= from_block
+        return is_integer(block_number) and block_number >= from_block
     else:
         raise ValueError("Unrecognized from_block format: {0}".format(from_block))
 
@@ -87,7 +87,7 @@ def check_if_to_block_match(block_number, _type, to_block):
     elif to_block in {"earliest", "pending"}:
         return _type == "pending"
     elif is_integer(to_block):
-        return block_number <= to_block
+        return is_integer(block_number) and block_number <= to_block
     else:
         raise ValueError("Unrecognized to_block format: {0}".format(to_block))
 

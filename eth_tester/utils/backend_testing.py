@@ -291,13 +291,14 @@ class BaseTestBackendDirect(object):
         assert set(filter_a_logs_part_2) == set(transactions_0_to_7).union(transactions_8_to_12).union(transactions_13_to_20)
         assert set(filter_b_logs_part_2) == set(transactions_8_to_12).union(transactions_13_to_20)
 
-    def test_log_filter(self, eth_tester):
+    def test_log_filter_picks_up_new_logs(self, eth_tester):
         """
         Cases to test:
         - filter multiple transactions in one block.
-        - filter pending
-        - filter mined
-        - filter against topics
+        - filter pending (make sure that from_block and to_block checks don't skip these).
+        - filter mined.
+        - filter against topics.
+        - filter against blocks numbers that are already mined.
         """
         emitter_address = _deploy_emitter(eth_tester)
         emit_a_hash = _call_emitter(
@@ -319,7 +320,36 @@ class BaseTestBackendDirect(object):
         logs_changes = eth_tester.get_filter_changes(filter_any_id)
         logs_all = eth_tester.get_filter_logs(filter_any_id)
         assert len(logs_changes) == len(logs_all) == 1
-        assert False
+
+    def test_log_filter_includes_old_logs(self, eth_tester):
+        """
+        Cases to test:
+        - filter multiple transactions in one block.
+        - filter pending (make sure that from_block and to_block checks don't skip these).
+        - filter mined.
+        - filter against topics.
+        - filter against blocks numbers that are already mined.
+        """
+        emitter_address = _deploy_emitter(eth_tester)
+        emit_a_hash = _call_emitter(
+            eth_tester,
+            emitter_address,
+            'logSingle',
+            [EMITTER_ENUM['LogSingleWithIndex'], 1],
+        )
+        emit_a_receipt = eth_tester.get_transaction_receipt(emit_a_hash)
+
+        filter_any_id = eth_tester.create_log_filter(from_block=0)
+        _call_emitter(
+            eth_tester,
+            emitter_address,
+            'logSingle',
+            [EMITTER_ENUM['LogSingleWithIndex'], 2],
+        )
+
+        logs_changes = eth_tester.get_filter_changes(filter_any_id)
+        logs_all = eth_tester.get_filter_logs(filter_any_id)
+        assert len(logs_changes) == len(logs_all) == 2
 
 
 address = st.binary(
