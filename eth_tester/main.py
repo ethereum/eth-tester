@@ -1,5 +1,9 @@
 import itertools
 
+from toolz.functools import (
+    partial,
+)
+
 from eth_tester.exceptions import (
     TransactionNotFound,
     FilterNotFound,
@@ -7,6 +11,7 @@ from eth_tester.exceptions import (
 
 from eth_tester.utils.filters import (
     Filter,
+    check_if_log_matches,
 )
 
 
@@ -89,9 +94,9 @@ class EthereumTester(object):
 
         if self._log_filters:
             transaction_receipt = self.backend.get_transaction_receipt(transaction_hash)
-            for _, log_entry in transaction_receipt['logs']:
+            for log_entry in transaction_receipt['logs']:
                 for _, filter in self._log_filters.items():
-                    if check_if_log_matches(
+                    filter.add(log_entry)
 
         # mine the transaction if auto-transaction-mining is enabled.
         if self.config['auto_mine_transactions']:
@@ -137,7 +142,16 @@ class EthereumTester(object):
         return filter_id
 
     def create_logfilter(self, from_block=None, to_block=None, address=None, topics=None):
-        raise NotImplementedError("Must be implemented by subclasses")
+        filter_id = next(self._filter_counter)
+        filter_fn = partial(
+            check_if_log_matches,
+            from_block=from_block,
+            to_block=to_block,
+            addresses=address,
+            topics=topics,
+        )
+        self._log_filters[filter_id] = Filter(filter_fn=filter_fn)
+        return filter_id
 
     def delete_filter(self, filter_id):
         raise NotImplementedError("Must be implemented by subclasses")

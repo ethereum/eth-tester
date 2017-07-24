@@ -19,6 +19,7 @@ class Filter(object):
     def __init__(self, filter_fn=None):
         self.values = []
         self.queue = Queue()
+        self.filter_fn = filter_fn
 
     @to_tuple
     def get_changes(self):
@@ -33,7 +34,7 @@ class Filter(object):
 
     def add(self, *values):
         for item in values:
-            if self.filter_fn(item):
+            if self.filter_fn is not None and not self.filter_fn(item):
                 continue
             self.values.append(item)
             self.queue.put_nowait(item)

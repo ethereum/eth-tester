@@ -284,6 +284,9 @@ class BaseTestBackendDirect(object):
         assert set(filter_a_logs_part_2) == set(transactions_0_to_7).union(transactions_8_to_12).union(transactions_13_to_20)
         assert set(filter_b_logs_part_2) == set(transactions_8_to_12).union(transactions_13_to_20)
 
+    def test_log_filter(self, eth_tester):
+        pass
+
 
 address = st.binary(
     min_size=20,
