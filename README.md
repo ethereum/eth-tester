@@ -85,6 +85,11 @@ TODO:
 * fork blocks (homestead, dao, anti-dos, state-clearing)
 
 
+### Snapshots and Resetting
+
+TODO
+
+
 ### Errors and Exceptions
 
 TODO

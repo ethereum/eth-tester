@@ -33,11 +33,11 @@ def backend_proxy_method(backend_method_name):
 def get_default_config():
     return {
         'auto_mine_transactions': True,
-        'auto_mine_interval': None,
-        'fork_homestead_block': 0,
-        'fork_dao_block': 0,
-        'fork_anti_dos_block': 0,
-        'fork_state_cleanup_block': 0,
+        'auto_mine_interval': None,  # TODO
+        'fork_homestead_block': 0,  # TODO
+        'fork_dao_block': 0,  # TODO
+        'fork_anti_dos_block': 0,  # TODO
+        'fork_state_cleanup_block': 0,  # TODO
     }
 
 
@@ -60,6 +60,9 @@ class EthereumTester(object):
         self._block_filters = {}
         self._pending_transaction_filters = {}
 
+    #
+    # Configuration
+    #
     def configure(self, **kwargs):
         for key, value in kwargs.items():
             if key in self.config:
@@ -70,13 +73,36 @@ class EthereumTester(object):
                     "config"
                 )
 
+    #
+    # Configuration
+    #
+    def time_travel(self, to_timestamp):
+        # TODO
+        raise NotImplementedError("not yet impleented")
+
+    #
+    # Accounts
+    #
     get_accounts = backend_proxy_method('get_accounts')
     get_balance = backend_proxy_method('get_balance')
     get_nonce = backend_proxy_method('get_nonce')
+
+    #
+    # Blocks, Transactions, Receipts
+    #
     get_transaction_by_hash = backend_proxy_method('get_transaction_by_hash')
     get_block_by_number = backend_proxy_method('get_block_by_number')
     get_block_by_hash = backend_proxy_method('get_block_by_hash')
 
+    def get_transaction_receipt(self, transaction_hash):
+        try:
+            return self.backend.get_transaction_receipt(transaction_hash)
+        except TransactionNotFound:
+            return None
+
+    #
+    # Mining
+    #
     def mine_blocks(self, num_blocks=1, coinbase=None):
         block_hashes = self.backend.mine_blocks(num_blocks, coinbase)
         assert len(block_hashes) == num_blocks
@@ -92,16 +118,12 @@ class EthereumTester(object):
 
         return block_hashes
 
-    def _process_block_logs(self, block):
-        for _, filter in self._log_filters.items():
-            for transaction_hash in block['transactions']:
-                receipt = self.get_transaction_receipt(transaction_hash)
-                for log_entry in receipt['logs']:
-                    filter.add(log_entry)
-
     def mine_block(self, coinbase=None):
         return self.mine_blocks(1, coinbase=coinbase)[0]
 
+    #
+    # Transaction Sending
+    #
     def send_transaction(self, transaction):
         transaction_hash = self.backend.send_transaction(transaction)
 
@@ -121,11 +143,28 @@ class EthereumTester(object):
 
         return transaction_hash
 
-    def get_transaction_receipt(self, transaction_hash):
-        try:
-            return self.backend.get_transaction_receipt(transaction_hash)
-        except TransactionNotFound:
-            return None
+    def call(self, transaction):
+        # TODO
+        raise NotImplementedError("not yet implemented")
+
+    def estimate_gas(self, transaction):
+        # TODO
+        raise NotImplementedError("not yet implemented")
+
+    #
+    # Snapshot and Revert
+    #
+    def take_snapshot(self):
+        # TODO
+        raise NotImplementedError("not yet implemented")
+
+    def revert_to_snapshot(self):
+        # TODO
+        raise NotImplementedError("not yet implemented")
+
+    def reset_to_genesis(self):
+        # TODO
+        raise NotImplementedError("not yet implemented")
 
     #
     # Filters
@@ -195,3 +234,13 @@ class EthereumTester(object):
         else:
             raise FilterNotFound("Unknown filter id")
         return filter.get_all()
+
+    #
+    # Private API
+    #
+    def _process_block_logs(self, block):
+        for _, filter in self._log_filters.items():
+            for transaction_hash in block['transactions']:
+                receipt = self.get_transaction_receipt(transaction_hash)
+                for log_entry in receipt['logs']:
+                    filter.add(log_entry)

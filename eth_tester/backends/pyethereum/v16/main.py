@@ -242,20 +242,17 @@ class PyEthereum16Backend(BaseChainBackend):
     #
     # Account state
     #
-    def get_nonce(self, account, block_number=None):
-        if block_number is not None:
-            raise NotImplementedError("Not yet handled")
-        block = self.evm.block
+    def get_nonce(self, account, block_number="latest"):
+        block = self.get_block_by_number(block_number)
         return block.get_nonce(remove_0x_prefix(account))
 
-    def get_balance(self, account, block_number=None):
-        if block_number is not None:
-            raise NotImplementedError("Not yet handled")
-        block = self.evm.block
+    def get_balance(self, account, block_number="latest"):
+        block = self.get_block_by_number(block_number)
         return block.get_balance(remove_0x_prefix(account))
 
-    def get_code(self, account, block_number=None):
-        raise NotImplementedError("Must be implemented by subclasses")
+    def get_code(self, account, block_number="latest"):
+        block = self.get_block_by_number(block_number)
+        return block.get_code(remove_0x_prefix(account))
 
     #
     # Transactions

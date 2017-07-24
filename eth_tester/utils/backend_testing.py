@@ -398,6 +398,12 @@ class BaseTestBackendDirect(object):
         with pytest.raises(FilterNotFound):
             eth_tester.delete_filter(12345)
 
+    #
+    # Time Travel
+    #
+    def test_time_traveling(self, eth_tester):
+        assert False
+
 
 address = st.binary(
     min_size=20,
