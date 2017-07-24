@@ -17,7 +17,6 @@ from eth_utils import (
     is_address,
     is_integer,
     is_same_address,
-    encode_hex,
 )
 
 from eth_tester.constants import (
@@ -180,7 +179,7 @@ class BaseTestBackendDirect(object):
             "gas": 21000,
         })
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
-        assert receipt is None
+        assert receipt['block_number'] is None
 
     #
     # Filters
@@ -201,9 +200,9 @@ class BaseTestBackendDirect(object):
         # mine another 8 blocks
         blocks_15_to_22 = eth_tester.mine_blocks(8)
 
-        filter_a_changes_part_1 = eth_tester.get_filter_changes(filter_a_id)
-        filter_a_logs_part_1 = eth_tester.get_filter_logs(filter_a_id)
-        filter_b_logs_part_1 = eth_tester.get_filter_logs(filter_b_id)
+        filter_a_changes_part_1 = eth_tester.get_only_filter_changes(filter_a_id)
+        filter_a_logs_part_1 = eth_tester.get_all_filter_logs(filter_a_id)
+        filter_b_logs_part_1 = eth_tester.get_all_filter_logs(filter_b_id)
 
         assert len(filter_a_changes_part_1) == 13
         assert len(filter_a_logs_part_1) == 13
@@ -216,10 +215,10 @@ class BaseTestBackendDirect(object):
         # mine another 7 blocks
         blocks_23_to_29 = eth_tester.mine_blocks(7)
 
-        filter_a_changes_part_2 = eth_tester.get_filter_changes(filter_a_id)
-        filter_b_changes = eth_tester.get_filter_changes(filter_b_id)
-        filter_a_logs_part_2 = eth_tester.get_filter_logs(filter_a_id)
-        filter_b_logs_part_2 = eth_tester.get_filter_logs(filter_b_id)
+        filter_a_changes_part_2 = eth_tester.get_only_filter_changes(filter_a_id)
+        filter_b_changes = eth_tester.get_only_filter_changes(filter_b_id)
+        filter_a_logs_part_2 = eth_tester.get_all_filter_logs(filter_a_id)
+        filter_b_logs_part_2 = eth_tester.get_all_filter_logs(filter_b_id)
 
         assert len(filter_a_changes_part_2) == 7
         assert len(filter_b_changes) == 15
@@ -261,9 +260,9 @@ class BaseTestBackendDirect(object):
             for _ in range(5)
         ]
 
-        filter_a_changes_part_1 = eth_tester.get_filter_changes(filter_a_id)
-        filter_a_logs_part_1 = eth_tester.get_filter_logs(filter_a_id)
-        filter_b_logs_part_1 = eth_tester.get_filter_logs(filter_b_id)
+        filter_a_changes_part_1 = eth_tester.get_only_filter_changes(filter_a_id)
+        filter_a_logs_part_1 = eth_tester.get_all_filter_logs(filter_a_id)
+        filter_b_logs_part_1 = eth_tester.get_all_filter_logs(filter_b_id)
 
         assert set(filter_a_changes_part_1) == set(filter_a_logs_part_1)
         assert set(filter_a_changes_part_1) == set(transactions_0_to_7).union(transactions_8_to_12)
@@ -275,10 +274,10 @@ class BaseTestBackendDirect(object):
             for _ in range(7)
         ]
 
-        filter_a_changes_part_2 = eth_tester.get_filter_changes(filter_a_id)
-        filter_b_changes = eth_tester.get_filter_changes(filter_b_id)
-        filter_a_logs_part_2 = eth_tester.get_filter_logs(filter_a_id)
-        filter_b_logs_part_2 = eth_tester.get_filter_logs(filter_b_id)
+        filter_a_changes_part_2 = eth_tester.get_only_filter_changes(filter_a_id)
+        filter_b_changes = eth_tester.get_only_filter_changes(filter_b_id)
+        filter_a_logs_part_2 = eth_tester.get_all_filter_logs(filter_a_id)
+        filter_b_logs_part_2 = eth_tester.get_all_filter_logs(filter_b_id)
 
         assert len(filter_a_changes_part_2) == 7
         assert len(filter_b_changes) == 12
@@ -307,7 +306,7 @@ class BaseTestBackendDirect(object):
             'logSingle',
             [EMITTER_ENUM['LogSingleWithIndex'], 1],
         )
-        emit_a_receipt = eth_tester.get_transaction_receipt(emit_a_hash)
+        eth_tester.get_transaction_receipt(emit_a_hash)
 
         filter_any_id = eth_tester.create_log_filter()
         _call_emitter(
@@ -317,8 +316,8 @@ class BaseTestBackendDirect(object):
             [EMITTER_ENUM['LogSingleWithIndex'], 2],
         )
 
-        logs_changes = eth_tester.get_filter_changes(filter_any_id)
-        logs_all = eth_tester.get_filter_logs(filter_any_id)
+        logs_changes = eth_tester.get_only_filter_changes(filter_any_id)
+        logs_all = eth_tester.get_all_filter_logs(filter_any_id)
         assert len(logs_changes) == len(logs_all) == 1
 
     def test_log_filter_includes_old_logs(self, eth_tester):
@@ -331,13 +330,12 @@ class BaseTestBackendDirect(object):
         - filter against blocks numbers that are already mined.
         """
         emitter_address = _deploy_emitter(eth_tester)
-        emit_a_hash = _call_emitter(
+        _call_emitter(
             eth_tester,
             emitter_address,
             'logSingle',
             [EMITTER_ENUM['LogSingleWithIndex'], 1],
         )
-        emit_a_receipt = eth_tester.get_transaction_receipt(emit_a_hash)
 
         filter_any_id = eth_tester.create_log_filter(from_block=0)
         _call_emitter(
@@ -347,8 +345,8 @@ class BaseTestBackendDirect(object):
             [EMITTER_ENUM['LogSingleWithIndex'], 2],
         )
 
-        logs_changes = eth_tester.get_filter_changes(filter_any_id)
-        logs_all = eth_tester.get_filter_logs(filter_any_id)
+        logs_changes = eth_tester.get_only_filter_changes(filter_any_id)
+        logs_all = eth_tester.get_all_filter_logs(filter_any_id)
         assert len(logs_changes) == len(logs_all) == 2
 
 
@@ -416,8 +414,7 @@ class EVMStateFuzzer(RuleBasedStateMachine):
         self.eth_tester = EthereumTester(backend=backend)
         super(EVMStateFuzzer, self).__init__(*args, **kwargs)
 
-    #@rule(target=transactions, transaction=transaction_st)
-    @rule(target=sent_transactions)
+    @rule(target=sent_transactions, transaction=transaction_st)
     def send_transaction(self, transaction=transaction_st):
         transaction = {
             "from": self.eth_tester.get_accounts()[0],

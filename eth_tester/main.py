@@ -4,6 +4,10 @@ from toolz.functoolz import (
     partial,
 )
 
+from eth_utils import (
+    is_integer,
+)
+
 from eth_tester.exceptions import (
     TransactionNotFound,
     FilterNotFound,
@@ -81,15 +85,18 @@ class EthereumTester(object):
             block = self.get_block_by_hash(block_hash)
 
             for _, block_filter in self._block_filters.items():
-                block_filter.add(*block_hashes)
+                block_filter.add(block_hash)
 
-            for _, filter in self._log_filters.items():
-                for transaction_hash in block['transactions']:
-                    receipt = self.get_transaction_receipt(transaction_hash)
-                    for log_entry in receipt['logs']:
-                        filter.add(log_entry)
+            self._process_block_logs(block)
 
         return block_hashes
+
+    def _process_block_logs(self, block):
+        for _, filter in self._log_filters.items():
+            for transaction_hash in block['transactions']:
+                receipt = self.get_transaction_receipt(transaction_hash)
+                for log_entry in receipt['logs']:
+                    filter.add(log_entry)
 
     def mine_block(self, coinbase=None):
         return self.mine_blocks(1, coinbase=coinbase)[0]
@@ -119,7 +126,47 @@ class EthereumTester(object):
         except TransactionNotFound:
             return None
 
-    def get_filter_changes(self, filter_id):
+    #
+    # Filters
+    #
+    def create_block_filter(self):
+        filter_id = next(self._filter_counter)
+        self._block_filters[filter_id] = Filter(filter_params=None)
+        return filter_id
+
+    def create_pending_transaction_filter(self, *args, **kwargs):
+        filter_id = next(self._filter_counter)
+        self._pending_transaction_filters[filter_id] = Filter(filter_params=None)
+        return filter_id
+
+    def create_log_filter(self, from_block=None, to_block=None, address=None, topics=None):
+        filter_id = next(self._filter_counter)
+        filter_params = {
+            'from_block': from_block,
+            'to_block': to_block,
+            'addresses': address,
+            'topics': topics,
+        }
+        filter_fn = partial(
+            check_if_log_matches,
+            **filter_params
+        )
+        self._log_filters[filter_id] = Filter(filter_params=filter_params, filter_fn=filter_fn)
+        if is_integer(from_block):
+            if is_integer(to_block):
+                upper_bound = to_block
+            else:
+                upper_bound = self.get_latest_block()['number']
+            for block_number in range(from_block, upper_bound):
+                block = self.get_block_by_number(block_number)
+                self._process_block_logs(block)
+
+        return filter_id
+
+    def delete_filter(self, filter_id):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    def get_only_filter_changes(self, filter_id):
         if filter_id in self._block_filters:
             filter = self._block_filters[filter_id]
         elif filter_id in self._pending_transaction_filters:
@@ -130,7 +177,7 @@ class EthereumTester(object):
             raise FilterNotFound("Unknown filter id")
         return filter.get_changes()
 
-    def get_filter_logs(self, filter_id):
+    def get_all_filter_logs(self, filter_id):
         if filter_id in self._block_filters:
             filter = self._block_filters[filter_id]
         elif filter_id in self._pending_transaction_filters:
@@ -140,37 +187,3 @@ class EthereumTester(object):
         else:
             raise FilterNotFound("Unknown filter id")
         return filter.get_all()
-
-    #
-    # Filters
-    #
-    def create_block_filter(self):
-        filter_id = next(self._filter_counter)
-        self._block_filters[filter_id] = Filter()
-        return filter_id
-
-    def create_pending_transaction_filter(self, *args, **kwargs):
-        filter_id = next(self._filter_counter)
-        self._pending_transaction_filters[filter_id] = Filter()
-        return filter_id
-
-    def create_log_filter(self, from_block=None, to_block=None, address=None, topics=None):
-        filter_id = next(self._filter_counter)
-        filter_fn = partial(
-            check_if_log_matches,
-            from_block=from_block,
-            to_block=to_block,
-            addresses=address,
-            topics=topics,
-        )
-        self._log_filters[filter_id] = Filter(filter_fn=filter_fn)
-        return filter_id
-
-    def delete_filter(self, filter_id):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def get_only_filter_changes(self, filter_id):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def get_all_filter_logs(self, filter_id):
-        raise NotImplementedError("Must be implemented by subclasses")

@@ -13,13 +13,18 @@ from eth_utils import (
 
 
 class Filter(object):
+    filter_params = None
+    filter_fn = None
+
     values = None
     queue = None
 
-    def __init__(self, filter_fn=None):
+    def __init__(self, filter_params, filter_fn=None):
+        self.filter_params = filter_params
+        self.filter_fn = filter_fn
+
         self.values = []
         self.queue = Queue()
-        self.filter_fn = filter_fn
 
     @to_tuple
     def get_changes(self):
