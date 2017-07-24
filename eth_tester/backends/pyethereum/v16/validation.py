@@ -25,9 +25,7 @@ def validate_transaction(transaction):
         raise ValidationError("transaction[from]: Unrecognized address format: {0}".format(
             transaction['from'],
         ))
-    elif 'to' not in transaction:
-        raise ValidationError("Transactions must specify a 'to' address")
-    elif not is_address(transaction['to']):
+    elif 'to' in transaction and not is_address(transaction['to']):
         raise ValidationError("transaction[to]: Unrecognized address format: {0}".format(
             transaction['to'],
         ))

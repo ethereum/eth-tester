@@ -1,6 +1,6 @@
 import itertools
 
-from toolz.functools import (
+from toolz.functoolz import (
     partial,
 )
 
