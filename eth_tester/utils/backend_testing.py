@@ -1,3 +1,5 @@
+import pytest
+
 from toolz.dicttoolz import (
     merge,
 )
@@ -23,6 +25,9 @@ from eth_tester.constants import (
     UINT256_MIN,
     UINT256_MAX,
     BURN_ADDRESS,
+)
+from eth_tester.exceptions import (
+    FilterNotFound,
 )
 
 from .emitter import (
@@ -63,17 +68,19 @@ class BaseTestBackendDirect(object):
     # Mining
     #
     def test_mine_block_single(self, eth_tester):
-        before_block_number = eth_tester.get_latest_block()['number']
         eth_tester.mine_blocks()
-        after_block_number = eth_tester.get_latest_block()['number']
+        before_block_number = eth_tester.get_block_by_number('latest')['number']
+        eth_tester.mine_blocks()
+        after_block_number = eth_tester.get_block_by_number('latest')['number']
         assert is_integer(before_block_number)
         assert is_integer(after_block_number)
         assert before_block_number == after_block_number - 1
 
     def test_mine_multiple_blocks(self, eth_tester):
-        before_block_number = eth_tester.get_latest_block()['number']
+        eth_tester.mine_blocks()
+        before_block_number = eth_tester.get_block_by_number('latest')['number']
         eth_tester.mine_blocks(10)
-        after_block_number = eth_tester.get_latest_block()['number']
+        after_block_number = eth_tester.get_block_by_number('latest')['number']
         assert is_integer(before_block_number)
         assert is_integer(after_block_number)
         assert before_block_number == after_block_number - 10
@@ -102,25 +109,27 @@ class BaseTestBackendDirect(object):
         assert txn['value'] == transaction['value']
 
     def test_auto_mine_transactions_enabled(self, eth_tester):
+        eth_tester.mine_blocks()
         eth_tester.configure(auto_mine_transactions=True)
-        before_block_number = eth_tester.get_latest_block()['number']
+        before_block_number = eth_tester.get_block_by_number('latest')['number']
         eth_tester.send_transaction({
             "from": eth_tester.get_accounts()[0],
             "to": BURN_ADDRESS,
             "gas": 21000,
         })
-        after_block_number = eth_tester.get_latest_block()['number']
+        after_block_number = eth_tester.get_block_by_number('latest')['number']
         assert before_block_number == after_block_number - 1
 
     def test_auto_mine_transactions_disabled(self, eth_tester):
+        eth_tester.mine_blocks()
         eth_tester.configure(auto_mine_transactions=False)
-        before_block_number = eth_tester.get_latest_block()['number']
+        before_block_number = eth_tester.get_block_by_number('latest')['number']
         eth_tester.send_transaction({
             "from": eth_tester.get_accounts()[0],
             "to": BURN_ADDRESS,
             "gas": 21000,
         })
-        after_block_number = eth_tester.get_latest_block()['number']
+        after_block_number = eth_tester.get_block_by_number('latest')['number']
         assert before_block_number == after_block_number
 
     #
@@ -149,8 +158,29 @@ class BaseTestBackendDirect(object):
             assert block['number'] == block_number
             assert block['hash'] == block_hash
 
-    # TODO: get_block_by_number('latest')
-    # TODO: get_block_by_number('earliest')
+    def test_get_block_by_earliest(self, eth_tester):
+        eth_tester.mine_blocks(10)
+        block = eth_tester.get_block_by_number('earliest')
+        assert block['number'] == 0
+
+    def test_get_block_by_latest_unmined_genesis(self, eth_tester):
+        block = eth_tester.get_block_by_number('latest')
+        assert block['number'] == 0
+
+    def test_get_block_by_latest_only_genesis(self, eth_tester):
+        eth_tester.mine_blocks()
+        block = eth_tester.get_block_by_number('latest')
+        assert block['number'] == 0
+
+    def test_get_block_by_latest(self, eth_tester):
+        eth_tester.mine_blocks(10)
+        block = eth_tester.get_block_by_number('latest')
+        assert block['number'] == 9
+
+    def test_get_block_by_pending(self, eth_tester):
+        eth_tester.mine_blocks(10)
+        block = eth_tester.get_block_by_number('pending')
+        assert block['number'] == 10
 
     # Transactions
     def test_get_transaction_by_hash(self, eth_tester):
@@ -348,6 +378,25 @@ class BaseTestBackendDirect(object):
         logs_changes = eth_tester.get_only_filter_changes(filter_any_id)
         logs_all = eth_tester.get_all_filter_logs(filter_any_id)
         assert len(logs_changes) == len(logs_all) == 2
+
+    def test_delete_filter(self, eth_tester):
+        filter_id = eth_tester.create_block_filter()
+
+        eth_tester.get_all_filter_logs(filter_id)
+        eth_tester.get_only_filter_changes(filter_id)
+
+        eth_tester.delete_filter(filter_id)
+
+        with pytest.raises(FilterNotFound):
+            eth_tester.get_all_filter_logs(filter_id)
+        with pytest.raises(FilterNotFound):
+            eth_tester.get_only_filter_changes(filter_id)
+
+        with pytest.raises(FilterNotFound):
+            eth_tester.delete_filter(filter_id)
+
+        with pytest.raises(FilterNotFound):
+            eth_tester.delete_filter(12345)
 
 
 address = st.binary(

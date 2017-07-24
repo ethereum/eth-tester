@@ -6,11 +6,14 @@ from semantic_version import (
     Spec,
 )
 
+import rlp
+
 from eth_utils import (
     remove_0x_prefix,
     to_checksum_address,
     to_tuple,
     encode_hex,
+    decode_hex,
 )
 
 from eth_tester.exceptions import (
@@ -135,6 +138,32 @@ class PyEthereum16Backend(BaseChainBackend):
         from ethereum import tester
         self.tester_module = tester
         self.evm = tester.state()
+
+    #
+    # Meta
+    #
+    def time_travel(self, to_timestamp):
+        if to_timestamp <= self.evm.block.timestamp:
+            raise ValueError(
+                "Space time continuum distortion detected.  Traveling backwards "
+                "in time violates interdimensional ordinance 31415-926."
+            )
+        self.evm.block.finalize()
+        self.evm.block.commit_state()
+        self.evm.db.put(
+            self.evm.block.hash,
+            rlp.encode(self.evm.block),
+        )
+
+        block = self.evm.block.init_from_parent(
+            self.evm.block,
+            decode_hex(self.self.tester_module.DEFAULT_ACCOUNT),
+            timestamp=to_timestamp,
+        )
+
+        self.evm.block = block
+        self.evm.blocks.append(block)
+        return to_timestamp
 
     #
     # Mining

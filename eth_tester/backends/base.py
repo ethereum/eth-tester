@@ -1,5 +1,11 @@
 class BaseChainBackend(object):
     #
+    # Meta
+    #
+    def time_travel(self, timestamp):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    #
     # Mining
     #
     def mine_blocks(self, num_blocks=1, coinbase=None):
@@ -18,9 +24,6 @@ class BaseChainBackend(object):
         raise NotImplementedError("Must be implemented by subclasses")
 
     def get_block_by_hash(self, block_hash):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def get_latest_block(self):
         raise NotImplementedError("Must be implemented by subclasses")
 
     def get_transaction_by_hash(self, transaction_hash):

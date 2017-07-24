@@ -13,6 +13,10 @@ from eth_tester.exceptions import (
     FilterNotFound,
 )
 
+from eth_tester.backends import (
+    get_tester_backend,
+)
+
 from eth_tester.utils.filters import (
     Filter,
     check_if_log_matches,
@@ -30,11 +34,11 @@ def get_default_config():
     return {
         'auto_mine_transactions': True,
         'auto_mine_interval': None,
+        'fork_homestead_block': 0,
+        'fork_dao_block': 0,
+        'fork_anti_dos_block': 0,
+        'fork_state_cleanup_block': 0,
     }
-
-
-def get_tester_backend():
-    raise NotImplementedError("Not yet implemented")
 
 
 class EthereumTester(object):
@@ -69,12 +73,9 @@ class EthereumTester(object):
     get_accounts = backend_proxy_method('get_accounts')
     get_balance = backend_proxy_method('get_balance')
     get_nonce = backend_proxy_method('get_nonce')
-    get_latest_block = backend_proxy_method('get_latest_block')
     get_transaction_by_hash = backend_proxy_method('get_transaction_by_hash')
     get_block_by_number = backend_proxy_method('get_block_by_number')
     get_block_by_hash = backend_proxy_method('get_block_by_hash')
-    get_transaction_receipt = backend_proxy_method('get_transaction_receipt')
-    mine_blocks = backend_proxy_method('mine_blocks')
 
     def mine_blocks(self, num_blocks=1, coinbase=None):
         block_hashes = self.backend.mine_blocks(num_blocks, coinbase)
@@ -156,7 +157,7 @@ class EthereumTester(object):
             if is_integer(to_block):
                 upper_bound = to_block
             else:
-                upper_bound = self.get_latest_block()['number']
+                upper_bound = self.get_block_by_number('pending')['number']
             for block_number in range(from_block, upper_bound):
                 block = self.get_block_by_number(block_number)
                 self._process_block_logs(block)
@@ -164,7 +165,14 @@ class EthereumTester(object):
         return filter_id
 
     def delete_filter(self, filter_id):
-        raise NotImplementedError("Must be implemented by subclasses")
+        if filter_id in self._block_filters:
+            del self._block_filters[filter_id]
+        elif filter_id in self._pending_transaction_filters:
+            del self._pending_transaction_filters[filter_id]
+        elif filter_id in self._log_filters:
+            del self._log_filters[filter_id]
+        else:
+            raise FilterNotFound("Unknown filter id")
 
     def get_only_filter_changes(self, filter_id):
         if filter_id in self._block_filters:
