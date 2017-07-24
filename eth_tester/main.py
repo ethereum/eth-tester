@@ -141,7 +141,7 @@ class EthereumTester(object):
         self._pending_transaction_filters[filter_id] = Filter()
         return filter_id
 
-    def create_logfilter(self, from_block=None, to_block=None, address=None, topics=None):
+    def create_log_filter(self, from_block=None, to_block=None, address=None, topics=None):
         filter_id = next(self._filter_counter)
         filter_fn = partial(
             check_if_log_matches,

@@ -96,7 +96,7 @@ def _send_evm_transaction(tester_module, evm, transaction):
 
         output = evm.send(
             sender=sender,
-            to=transaction['to'],
+            to=transaction.get('to', b''),
             value=transaction['value'],
             evmdata=transaction['data'],
         )
