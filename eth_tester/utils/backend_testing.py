@@ -258,7 +258,9 @@ class BaseTestBackendDirect(object):
         assert set(filter_a_changes_part_2) == set(blocks_23_to_29)
         assert set(filter_b_changes) == set(blocks_15_to_22).union(blocks_23_to_29)
         assert set(filter_b_changes) == set(filter_b_logs_part_2)
-        assert set(filter_a_logs_part_2) == set(blocks_10_to_14).union(blocks_15_to_22).union(blocks_23_to_29)
+        assert set(filter_a_logs_part_2) == set(blocks_10_to_14).union(
+            blocks_15_to_22,
+        ).union(blocks_23_to_29)
         assert set(filter_b_logs_part_2) == set(blocks_15_to_22).union(blocks_23_to_29)
 
     def test_pending_transaction_filter(self, eth_tester):
@@ -317,7 +319,9 @@ class BaseTestBackendDirect(object):
         assert set(filter_a_changes_part_2) == set(transactions_13_to_20)
         assert set(filter_b_changes) == set(filter_b_logs_part_2)
         assert set(filter_b_changes) == set(transactions_8_to_12).union(transactions_13_to_20)
-        assert set(filter_a_logs_part_2) == set(transactions_0_to_7).union(transactions_8_to_12).union(transactions_13_to_20)
+        assert set(filter_a_logs_part_2) == set(transactions_0_to_7).union(
+            transactions_8_to_12,
+        ).union(transactions_13_to_20)
         assert set(filter_b_logs_part_2) == set(transactions_8_to_12).union(transactions_13_to_20)
 
     def test_log_filter_picks_up_new_logs(self, eth_tester):
