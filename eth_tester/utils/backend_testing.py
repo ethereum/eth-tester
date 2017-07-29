@@ -30,10 +30,14 @@ from eth_tester.exceptions import (
     FilterNotFound,
 )
 
-from .emitter import (
+from .emitter_contract import (
     _deploy_emitter,
     _call_emitter,
     EMITTER_ENUM,
+)
+from .math_contract import (
+    _deploy_math,
+    _make_call_math_transaction,
 )
 
 
@@ -210,6 +214,16 @@ class BaseTestBackendDirect(object):
         })
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
         assert receipt['block_number'] is None
+
+    def test_call(self, eth_tester):
+        math_address = _deploy_math(eth_tester)
+        call_math_transaction = _make_call_math_transaction(
+            eth_tester,
+            math_address,
+            'return13',
+        )
+        result = eth_tester.call(call_math_transaction)
+        assert result is False
 
     #
     # Filters
