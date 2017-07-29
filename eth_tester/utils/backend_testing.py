@@ -406,7 +406,30 @@ class BaseTestBackendDirect(object):
     # Time Travel
     #
     def test_time_traveling(self, eth_tester):
-        assert False
+        # first mine a few blocks
+        eth_tester.mine_blocks(3)
+
+        # check the time
+        before_timestamp = eth_tester.get_block_by_number('pending')['timestamp']
+
+        # now travel forward 2 minutes
+        eth_tester.time_travel(before_timestamp + 120)
+
+        # now check the time
+        after_timestamp = eth_tester.get_block_by_number('pending')['timestamp']
+
+        assert before_timestamp + 120 == after_timestamp
+
+    def test_time_traveling_backwards_not_allowed(self, eth_tester):
+        # first mine a few blocks
+        eth_tester.mine_blocks(3)
+
+        # check the time
+        before_timestamp = eth_tester.get_block_by_number('pending')['timestamp']
+
+        # now travel forward 2 minutes
+        with pytest.raises(ValueError):
+            eth_tester.time_travel(before_timestamp - 10)
 
 
 address = st.binary(

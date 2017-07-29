@@ -74,11 +74,9 @@ class EthereumTester(object):
                 )
 
     #
-    # Configuration
+    # Time Traveling
     #
-    def time_travel(self, to_timestamp):
-        # TODO
-        raise NotImplementedError("not yet impleented")
+    time_travel = backend_proxy_method('time_travel')
 
     #
     # Accounts
@@ -143,13 +141,8 @@ class EthereumTester(object):
 
         return transaction_hash
 
-    def call(self, transaction):
-        # TODO
-        raise NotImplementedError("not yet implemented")
-
-    def estimate_gas(self, transaction):
-        # TODO
-        raise NotImplementedError("not yet implemented")
+    call = backend_proxy_method('call')
+    estimate_gas = backend_proxy_method('estimate_gas')
 
     #
     # Snapshot and Revert

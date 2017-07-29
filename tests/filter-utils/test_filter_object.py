@@ -7,7 +7,7 @@ from eth_tester.utils.filters import (
 
 @pytest.fixture
 def f():
-    _f = Filter()
+    _f = Filter(None)
     return _f
 
 

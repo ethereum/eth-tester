@@ -13,7 +13,6 @@ from eth_utils import (
     to_checksum_address,
     to_tuple,
     encode_hex,
-    decode_hex,
 )
 
 from eth_tester.exceptions import (
@@ -158,7 +157,7 @@ class PyEthereum16Backend(BaseChainBackend):
 
         block = self.evm.block.init_from_parent(
             self.evm.block,
-            decode_hex(tester.DEFAULT_ACCOUNT),
+            tester.DEFAULT_ACCOUNT,
             timestamp=to_timestamp,
         )
 
@@ -277,8 +276,26 @@ class PyEthereum16Backend(BaseChainBackend):
         )
         return self.evm.last_tx.hash
 
-    def estimate_gas(self, transaction):
-        raise NotImplementedError("Must be implemented by subclasses")
+    def call(self, transaction, block_number="latest"):
+        from ethereum import tester
+        validate_transaction(transaction)
 
-    def call(self, transaction):
+        if block_number != "latest":
+            raise NotImplementedError("Block number must be 'latest'.")
+
+        snapshot = self.take_snapshot()
+        output = _send_evm_transaction(
+            tester_module=tester,
+            evm=self.evm,
+            transaction=normalize_transaction(
+                transaction,
+                data=b'',
+                value=0,
+                gas_price=tester.gas_price,
+            ),
+        )
+        self.revert_to_snapshot(snapshot)
+        return output
+
+    def estimate_gas(self, transaction):
         raise NotImplementedError("Must be implemented by subclasses")
