@@ -293,10 +293,11 @@ class BaseTestBackendDirect(object):
         # setup a filter
         filter_a_id = eth_tester.create_block_filter()
         filter_b_id = eth_tester.create_block_filter()
-        snapshot_id = eth_tester.take_snapshot()
 
-        # first mine 10 blocks in
-        eth_tester.mine_blocks(5)
+        # mine 5 blocks before the snapshot
+        common_blocks = eth_tester.mine_blocks(5)
+
+        snapshot_id = eth_tester.take_snapshot()
 
         # mine another 5 blocks
         eth_tester.send_transaction({

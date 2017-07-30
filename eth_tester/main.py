@@ -190,12 +190,11 @@ class EthereumTester(object):
 
     def _revert_block_filter(self, filter):
         is_invalid_block_hash = excepts(
-            BlockNotFound,
+            (BlockNotFound,),
             complement(compose(bool, self.get_block_by_hash)),
             lambda v: True,
         )
         values_to_remove = remove(is_invalid_block_hash, filter.get_all())
-        assert False
         filter.remove(*values_to_remove)
 
     def _revert_pending_transaction_filter(self, filter):

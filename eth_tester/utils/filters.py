@@ -56,7 +56,7 @@ class Filter(object):
         for value in queued_values:
             if value in values_to_remove:
                 continue
-            self.add(value)
+            self.queue.put_nowait(value)
 
 
 def is_tuple(value):
