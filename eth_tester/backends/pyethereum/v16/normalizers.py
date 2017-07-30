@@ -6,16 +6,16 @@ from toolz.functoolz import (
 )
 
 from eth_utils import (
-    force_bytes,
     to_dict,
     to_canonical_address,
+    decode_hex,
 )
 
 
 TRANSACTION_NORMALIZERS = {
     'from': to_canonical_address,
     'to': to_canonical_address,
-    'data': force_bytes,
+    'data': decode_hex,
 }
 
 

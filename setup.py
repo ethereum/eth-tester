@@ -25,6 +25,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "ethereum-utils>=0.3.1",
+        "rlp==0.5.1",
         "semantic_version>=2.6.0",
     ],
     py_modules=['eth_tester'],

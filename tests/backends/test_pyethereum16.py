@@ -1,5 +1,9 @@
 import pytest
 
+from hypothesis import (
+    settings,
+)
+
 from eth_utils import is_address
 from eth_tester import (
     EthereumTester,
@@ -13,6 +17,7 @@ from eth_tester.backends.pyethereum.utils import (
 from eth_tester.utils.backend_testing import (
     BaseTestBackendDirect,
     BaseTestBackendFuzz,
+    EVMStateFuzzer,
 )
 
 
@@ -30,3 +35,8 @@ class TestPyEthereum16BackendDirect(BaseTestBackendDirect):
 
 class TestPyEthereum16BackendFuzz(BaseTestBackendFuzz):
     pass
+
+
+
+#TestPyEthereum16EVMStateFuzzer = EVMStateFuzzer.TestCase
+#TestPyEthereum16EVMStateFuzzer.settings = settings(max_examples=20, stateful_step_count=50)

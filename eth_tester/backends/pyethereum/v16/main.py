@@ -6,12 +6,18 @@ from semantic_version import (
     Spec,
 )
 
+import rlp
+
 from eth_utils import (
     remove_0x_prefix,
     to_checksum_address,
     to_tuple,
+    encode_hex,
 )
 
+from eth_tester.exceptions import (
+    TransactionNotFound,
+)
 from eth_tester.backends.base import BaseChainBackend
 from eth_tester.backends.pyethereum.utils import (
     get_pyethereum_version,
@@ -35,14 +41,25 @@ from .validation import (
 #
 # Internal getters for EVM objects
 #
-def _get_transaction_by_hash(evm, transaction_hash):
-    for block in reversed(evm.blocks):
+def _get_transaction_by_hash(evm, transaction_hash, mined=True):
+    # first check unmined transactions
+    for index, candidate in enumerate(evm.block.get_transaction_hashes()):
+        if candidate == transaction_hash:
+            transaction = evm.block.transaction_list[index]
+            return evm.block, transaction, index
+
+    # then check work backwards through the blocks looking for mined transactions.
+    for block in reversed(evm.blocks[:-1]):
         for index, candidate in enumerate(block.get_transaction_hashes()):
             if candidate == transaction_hash:
                 transaction = block.transaction_list[index]
                 return block, transaction, index
     else:
-        raise ValueError("Transaction not found")
+        raise TransactionNotFound(
+            "No transaction found for transaction hash {0}".format(
+                encode_hex(transaction_hash),
+            )
+        )
 
 
 def _get_block_by_number(evm, block_number="latest"):
@@ -74,35 +91,35 @@ def _get_block_by_hash(evm, block_hash):
 
 
 def _send_evm_transaction(tester_module, evm, transaction):
+    from ethereum import tester
+
     try:
         # record the current gas price so that it can be reset after sending
         # the transaction.
-        pre_transaction_gas_price = tester_module.gas_price
-        pre_transaction_gas_limit = tester_module.gas_limit
+        pre_transaction_gas_price = tester.gas_price
+        pre_transaction_gas_limit = tester.gas_limit
         # set the evm gas price to the one specified by the transaction.
-        tester_module.gas_price = transaction['gas_price']
-        tester_module.gas_limit = transaction['gas']
+        tester.gas_price = transaction['gas_price']
+        tester.gas_limit = transaction['gas']
 
         # get the private key of the sender.
-        sender = tester_module.keys[tester_module.accounts.index(transaction['from'])]
+        sender = tester.keys[tester.accounts.index(transaction['from'])]
 
         output = evm.send(
             sender=sender,
-            to=transaction['to'],
+            to=transaction.get('to', b''),
             value=transaction['value'],
             evmdata=transaction['data'],
         )
     finally:
-        # revert the tester_module gas price back to the original value.
-        tester_module.gas_price = pre_transaction_gas_price
-        tester_module.gas_limit = pre_transaction_gas_limit
+        # revert the tester gas price back to the original value.
+        tester.gas_price = pre_transaction_gas_price
+        tester.gas_limit = pre_transaction_gas_limit
 
     return output
 
 
 class PyEthereum16Backend(BaseChainBackend):
-    tester_module = None
-
     def __init__(self):
         if not is_pyethereum16_available():
             version = get_pyethereum_version()
@@ -117,27 +134,89 @@ class PyEthereum16Backend(BaseChainBackend):
                     "The `PyEthereum16Backend` requires a 1.6.x version of the "
                     "`ethereum` package.  Found {0}".format(version)
                 )
+        self.reset_to_genesis()
+
+    def take_snapshot(self):
+        return (self.evm.block.number, self.evm.snapshot())
+
+    def revert_to_snapshot(self, snapshot):
         from ethereum import tester
-        self.tester_module = tester
+
+        block_number, snapshot_data = snapshot
+
+        # Remove all blocks after our saved block number.
+        del self.evm.blocks[block_number:]
+
+        self.evm.revert(snapshot_data)
+
+        if self.evm.blocks:
+            block = self.evm.block.init_from_parent(
+                self.evm.blocks[-1],
+                tester.DEFAULT_ACCOUNT,
+            )
+
+            self.evm.block = block
+            self.evm.blocks.append(block)
+        else:
+            self.evm.blocks.append(self.evm.block)
+
+    def reset_to_genesis(self):
+        from ethereum import tester
         self.evm = tester.state()
+
+    #
+    # Meta
+    #
+    def time_travel(self, to_timestamp):
+        from ethereum import tester
+
+        if to_timestamp <= self.evm.block.timestamp:
+            raise ValueError(
+                "Space time continuum distortion detected.  Traveling backwards "
+                "in time violates interdimensional ordinance 31415-926."
+            )
+        self.evm.block.finalize()
+        self.evm.block.commit_state()
+        self.evm.db.put(
+            self.evm.block.hash,
+            rlp.encode(self.evm.block),
+        )
+
+        block = self.evm.block.init_from_parent(
+            self.evm.block,
+            tester.DEFAULT_ACCOUNT,
+            timestamp=to_timestamp,
+        )
+
+        self.evm.block = block
+        self.evm.blocks.append(block)
+        return to_timestamp
 
     #
     # Mining
     #
+    @to_tuple
     def mine_blocks(self, num_blocks=1, coinbase=None):
+        from ethereum import tester
+
         if coinbase is None:
-            coinbase = self.tester_module.DEFAULT_ACCOUNT
+            coinbase = tester.DEFAULT_ACCOUNT
+
         self.evm.mine(
             number_of_blocks=num_blocks,
             coinbase=coinbase,
         )
+        for block in self.evm.blocks[-1 * num_blocks - 1:-1]:
+            yield block.hash
 
     #
     # Accounts
     #
     @to_tuple
     def get_accounts(self):
-        for account in self.tester_module.accounts:
+        from ethereum import tester
+
+        for account in tester.accounts:
             yield to_checksum_address(account)
 
     #
@@ -180,73 +259,87 @@ class PyEthereum16Backend(BaseChainBackend):
             self.evm,
             transaction_hash,
         )
-        return serialize_transaction(block, transaction, transaction_index)
+        is_pending = block.number == self.evm.block.number
+        return serialize_transaction(block, transaction, transaction_index, is_pending)
 
     def get_transaction_receipt(self, transaction_hash):
         block, transaction, transaction_index = _get_transaction_by_hash(
             self.evm,
             transaction_hash,
         )
-        return serialize_transaction_receipt(block, transaction, transaction_index)
+        is_pending = block.number == self.evm.block.number
+        return serialize_transaction_receipt(block, transaction, transaction_index, is_pending)
 
     #
     # Account state
     #
-    def get_nonce(self, account, block_number=None):
-        if block_number is not None:
-            raise NotImplementedError("Not yet handled")
-        block = self.evm.block
+    def get_nonce(self, account, block_number="latest"):
+        block = _get_block_by_number(self.evm, block_number)
         return block.get_nonce(remove_0x_prefix(account))
 
-    def get_balance(self, account, block_number=None):
-        if block_number is not None:
-            raise NotImplementedError("Not yet handled")
-        block = self.evm.block
+    def get_balance(self, account, block_number="latest"):
+        block = _get_block_by_number(self.evm, block_number)
         return block.get_balance(remove_0x_prefix(account))
 
-    def get_code(self, account, block_number=None):
-        raise NotImplementedError("Must be implemented by subclasses")
+    def get_code(self, account, block_number="latest"):
+        block = _get_block_by_number(self.evm, block_number)
+        return block.get_code(remove_0x_prefix(account))
 
     #
     # Transactions
     #
     def send_transaction(self, transaction):
+        from ethereum import tester
         validate_transaction(transaction)
         _send_evm_transaction(
-            tester_module=self.tester_module,
+            tester_module=tester,
             evm=self.evm,
             transaction=normalize_transaction(
                 transaction,
                 data=b'',
                 value=0,
-                gas_price=self.tester_module.gas_price,
+                gas_price=tester.gas_price,
             ),
         )
         return self.evm.last_tx.hash
 
+    def call(self, transaction, block_number="latest"):
+        from ethereum import tester
+        validate_transaction(transaction)
+
+        if block_number != "latest":
+            raise NotImplementedError("Block number must be 'latest'.")
+
+        snapshot = self.take_snapshot()
+        output = _send_evm_transaction(
+            tester_module=tester,
+            evm=self.evm,
+            transaction=normalize_transaction(
+                transaction,
+                data=b'',
+                value=0,
+                gas_price=tester.gas_price,
+            ),
+        )
+        self.revert_to_snapshot(snapshot)
+        return output
+
     def estimate_gas(self, transaction):
-        raise NotImplementedError("Must be implemented by subclasses")
+        from ethereum import tester
+        validate_transaction(transaction)
 
-    def call(self, transaction):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    #
-    # Filters
-    #
-    def new_block_filter(self, *args, **kwargs):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def new_pending_transaction_filter(self, *args, **kwargs):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def create_filter(self, from_block=None, to_block=None, address=None, topics=None):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def delete_filter(self, filter_id):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def get_filter_changes(self, filter_id):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def get_filter_logs(self, filter_id):
-        raise NotImplementedError("Must be implemented by subclasses")
+        snapshot = self.take_snapshot()
+        _send_evm_transaction(
+            tester_module=tester,
+            evm=self.evm,
+            transaction=normalize_transaction(
+                transaction,
+                data=b'',
+                value=0,
+                gas_price=tester.gas_price,
+            ),
+        )
+        txn_hash = self.evm.last_tx.hash
+        receipt = self.get_transaction_receipt(txn_hash)
+        self.revert_to_snapshot(snapshot)
+        return receipt['gas_used']
