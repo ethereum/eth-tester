@@ -72,7 +72,8 @@ def is_topic_array(value):
 def check_single_topic_match(log_topic, filter_topic):
     if filter_topic is None:
         return True
-    return filter_topic == log_topic
+    # python2 thinks string and bytes values can be equal.
+    return filter_topic == log_topic and type(log_topic) is type(filter_topic)
 
 
 def check_if_from_block_match(block_number, _type, from_block):
