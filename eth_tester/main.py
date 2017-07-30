@@ -9,8 +9,9 @@ from eth_utils import (
 )
 
 from eth_tester.exceptions import (
-    TransactionNotFound,
     FilterNotFound,
+    SnapshotNotFound,
+    TransactionNotFound,
 )
 
 from eth_tester.backends import (
@@ -54,11 +55,21 @@ class EthereumTester(object):
         self.backend = backend
         self.config = config
 
-        #
+        self._reset_local_state()
+
+    #
+    # Private API
+    #
+    def _reset_local_state(self):
+        # filter tracking
         self._filter_counter = itertools.count()
         self._log_filters = {}
         self._block_filters = {}
         self._pending_transaction_filters = {}
+
+        # snapshot tracking
+        self._snapshot_counter = itertools.count()
+        self._snapshots = {}
 
     #
     # Configuration
@@ -148,16 +159,24 @@ class EthereumTester(object):
     # Snapshot and Revert
     #
     def take_snapshot(self):
-        # TODO
-        raise NotImplementedError("not yet implemented")
+        snapshot = self.backend.take_snapshot()
+        snapshot_id = next(self._snapshot_counter)
+        self._snapshots[snapshot_id] = snapshot
+        return snapshot_id
 
-    def revert_to_snapshot(self):
-        # TODO
-        raise NotImplementedError("not yet implemented")
+    def revert_to_snapshot(self, snapshot_id):
+        # TODO: this should also purge any log entries that "no longer exist"
+        # due to state reversion....
+        try:
+            snapshot = self._snapshots[snapshot_id]
+        except KeyError:
+            raise SnapshotNotFound("No snapshot found for id: {0}".format(snapshot_id))
+        else:
+            self.backend.revert_to_snapshot(snapshot)
 
     def reset_to_genesis(self):
-        # TODO
-        raise NotImplementedError("not yet implemented")
+        self.backend.reset_to_genesis()
+        self._reset_local_state()
 
     #
     # Filters

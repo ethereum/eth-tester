@@ -128,3 +128,16 @@ def _make_call_math_transaction(eth_tester, contract_address, fn_name, fn_args=N
         "data": encode_hex(fn_selector + encode_abi(arg_types, fn_args)),
     }
     return transaction
+
+
+def _decode_math_result(fn_name, result):
+    from eth_abi import decode_abi
+
+    fn_abi = MATH_ABI[fn_name]
+    output_types = [
+        output_abi['type']
+        for output_abi
+        in fn_abi['outputs']
+    ]
+
+    return decode_abi(output_types, result)

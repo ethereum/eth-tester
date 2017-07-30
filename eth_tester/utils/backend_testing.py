@@ -38,6 +38,7 @@ from .emitter_contract import (
 from .math_contract import (
     _deploy_math,
     _make_call_math_transaction,
+    _decode_math_result,
 )
 
 
@@ -215,15 +216,72 @@ class BaseTestBackendDirect(object):
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
         assert receipt['block_number'] is None
 
-    def test_call(self, eth_tester):
+    def test_call_return13(self, eth_tester):
         math_address = _deploy_math(eth_tester)
         call_math_transaction = _make_call_math_transaction(
             eth_tester,
             math_address,
             'return13',
         )
-        result = eth_tester.call(call_math_transaction)
-        assert result is False
+        raw_result = eth_tester.call(call_math_transaction)
+        result = _decode_math_result('return13', raw_result)
+        assert result == (13,)
+
+    def test_call_add(self, eth_tester):
+        math_address = _deploy_math(eth_tester)
+        call_math_transaction = _make_call_math_transaction(
+            eth_tester,
+            math_address,
+            'add',
+            fn_args=(7, 13),
+        )
+        raw_result = eth_tester.call(call_math_transaction)
+        result = _decode_math_result('add', raw_result)
+        assert result == (20,)
+
+    #
+    # Snapshot and Revert
+    #
+    def test_genesis_snapshot_and_revert(self, eth_tester):
+        assert eth_tester.get_block_by_number('latest')['number'] == 0
+        assert eth_tester.get_block_by_number('pending')['number'] == 0
+        snapshot_id = eth_tester.take_snapshot()
+
+        # now mine 10 blocks in
+        eth_tester.mine_blocks(10)
+        assert eth_tester.get_block_by_number('latest')['number'] == 9
+        assert eth_tester.get_block_by_number('pending')['number'] == 10
+
+        eth_tester.revert_to_snapshot(snapshot_id)
+        assert eth_tester.get_block_by_number('latest')['number'] == 0
+        assert eth_tester.get_block_by_number('pending')['number'] == 0
+
+    def test_snapshot_and_revert_post_genesis(self, eth_tester):
+        eth_tester.mine_blocks(5)
+
+        assert eth_tester.get_block_by_number('latest')['number'] == 4
+        assert eth_tester.get_block_by_number('pending')['number'] == 5
+        snapshot_id = eth_tester.take_snapshot()
+
+        # now mine 10 blocks in
+        eth_tester.mine_blocks(10)
+        assert eth_tester.get_block_by_number('latest')['number'] == 14
+        assert eth_tester.get_block_by_number('pending')['number'] == 15
+
+        eth_tester.revert_to_snapshot(snapshot_id)
+        assert eth_tester.get_block_by_number('latest')['number'] == 4
+        assert eth_tester.get_block_by_number('pending')['number'] == 5
+
+    def test_reset_to_genesis(self, eth_tester):
+        eth_tester.mine_blocks(5)
+
+        assert eth_tester.get_block_by_number('latest')['number'] == 4
+        assert eth_tester.get_block_by_number('pending')['number'] == 5
+
+        eth_tester.reset_to_genesis()
+
+        assert eth_tester.get_block_by_number('latest')['number'] == 0
+        assert eth_tester.get_block_by_number('pending')['number'] == 0
 
     #
     # Filters

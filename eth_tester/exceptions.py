@@ -8,3 +8,7 @@ class TransactionNotFound(Exception):
 
 class FilterNotFound(Exception):
     pass
+
+
+class SnapshotNotFound(Exception):
+    pass

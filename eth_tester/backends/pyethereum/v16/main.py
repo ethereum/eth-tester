@@ -134,6 +134,33 @@ class PyEthereum16Backend(BaseChainBackend):
                     "The `PyEthereum16Backend` requires a 1.6.x version of the "
                     "`ethereum` package.  Found {0}".format(version)
                 )
+        self.reset_to_genesis()
+
+    def take_snapshot(self):
+        return (self.evm.block.number, self.evm.snapshot())
+
+    def revert_to_snapshot(self, snapshot):
+        from ethereum import tester
+
+        block_number, snapshot_data = snapshot
+
+        # Remove all blocks after our saved block number.
+        del self.evm.blocks[block_number:]
+
+        self.evm.revert(snapshot_data)
+
+        if self.evm.blocks:
+            block = self.evm.block.init_from_parent(
+                self.evm.blocks[-1],
+                tester.DEFAULT_ACCOUNT,
+            )
+
+            self.evm.block = block
+            self.evm.blocks.append(block)
+        else:
+            self.evm.blocks.append(self.evm.block)
+
+    def reset_to_genesis(self):
         from ethereum import tester
         self.evm = tester.state()
 
