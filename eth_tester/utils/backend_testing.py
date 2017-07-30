@@ -2,6 +2,7 @@ import pytest
 
 from toolz.dicttoolz import (
     merge,
+    assoc,
 )
 from hypothesis import (
     strategies as st,
@@ -238,6 +239,19 @@ class BaseTestBackendDirect(object):
         raw_result = eth_tester.call(call_math_transaction)
         result = _decode_math_result('add', raw_result)
         assert result == (20,)
+
+    def test_estimate_gas(self, eth_tester):
+        math_address = _deploy_math(eth_tester)
+        estimate_call_math_transaction = _make_call_math_transaction(
+            eth_tester,
+            math_address,
+            'increment',
+        )
+        gas_estimation = eth_tester.estimate_gas(estimate_call_math_transaction)
+        call_math_transaction = assoc(estimate_call_math_transaction, 'gas', gas_estimation)
+        transaction_hash = eth_tester.send_transaction(call_math_transaction)
+        receipt = eth_tester.get_transaction_receipt(transaction_hash)
+        assert receipt['gas_used'] == gas_estimation
 
     #
     # Snapshot and Revert

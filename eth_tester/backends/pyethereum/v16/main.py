@@ -325,4 +325,21 @@ class PyEthereum16Backend(BaseChainBackend):
         return output
 
     def estimate_gas(self, transaction):
-        raise NotImplementedError("Must be implemented by subclasses")
+        from ethereum import tester
+        validate_transaction(transaction)
+
+        snapshot = self.take_snapshot()
+        _send_evm_transaction(
+            tester_module=tester,
+            evm=self.evm,
+            transaction=normalize_transaction(
+                transaction,
+                data=b'',
+                value=0,
+                gas_price=tester.gas_price,
+            ),
+        )
+        txn_hash = self.evm.last_tx.hash
+        receipt = self.get_transaction_receipt(txn_hash)
+        self.revert_to_snapshot(snapshot)
+        return receipt['gas_used']
