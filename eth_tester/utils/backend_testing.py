@@ -286,6 +286,61 @@ class BaseTestBackendDirect(object):
         assert eth_tester.get_block_by_number('latest')['number'] == 4
         assert eth_tester.get_block_by_number('pending')['number'] == 5
 
+    def test_revert_cleans_up_invalidated_pending_block_logs(self, eth_tester):
+        # first mine 10 blocks in
+        eth_tester.mine_blocks(5)
+
+        # setup a filter
+        filter_a_id = eth_tester.create_block_filter()
+        filter_b_id = eth_tester.create_block_filter()
+        snapshot_id = eth_tester.take_snapshot()
+
+        # first mine 10 blocks in
+        eth_tester.mine_blocks(5)
+
+        # mine another 5 blocks
+        eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+            "value": 1,
+        })
+        fork_a_blocks = eth_tester.mine_blocks(5)
+
+        before_revert_changes_logs_a = eth_tester.get_all_filter_logs(filter_a_id)
+        before_revert_all_logs_a = eth_tester.get_all_filter_logs(filter_a_id)
+        before_revert_all_logs_b = eth_tester.get_all_filter_logs(filter_b_id)
+
+        # sanity check that the filters picked up on the log changes.
+        assert len(before_revert_changes_logs_a) == 11
+        assert len(before_revert_all_logs_a) == 11
+        assert len(before_revert_all_logs_b) == 11
+
+        # now revert to snapshot
+        eth_tester.revert_to_snapshot(snapshot_id)
+
+        # send a different transaction to ensure our new blocks are different
+        eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+            "value": 2,
+        })
+        fork_b_blocks = eth_tester.mine_blocks(5)
+
+        # check that are blocks don't intersect
+        assert not set(fork_a_blocks).intersection(fork_b_blocks)
+
+        after_revert_changes_logs_a = eth_tester.get_all_filter_logs(filter_a_id)
+        after_revert_changes_logs_b = eth_tester.get_all_filter_logs(filter_b_id)
+        after_revert_all_logs_a = eth_tester.get_all_filter_logs(filter_a_id)
+        after_revert_all_logs_b = eth_tester.get_all_filter_logs(filter_b_id)
+
+        assert len(after_revert_changes_logs_a) == 11
+        assert len(after_revert_changes_logs_b) == 11
+        assert len(after_revert_all_logs_a) == 11
+        assert len(after_revert_all_logs_b) == 11
+
     def test_reset_to_genesis(self, eth_tester):
         eth_tester.mine_blocks(5)
 

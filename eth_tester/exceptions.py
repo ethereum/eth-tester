@@ -2,6 +2,10 @@ class ValidationError(Exception):
     pass
 
 
+class BlockNotFound(Exception):
+    pass
+
+
 class TransactionNotFound(Exception):
     pass
 

@@ -44,6 +44,20 @@ class Filter(object):
             self.values.append(item)
             self.queue.put_nowait(item)
 
+    def remove(self, *values):
+        values_to_remove = set(values)
+        queued_values = self.get_changes()
+        self.values = [
+            value
+            for value
+            in self.values
+            if value not in values_to_remove
+        ]
+        for value in queued_values:
+            if value in values_to_remove:
+                continue
+            self.add(value)
+
 
 def is_tuple(value):
     return isinstance(value, tuple)
