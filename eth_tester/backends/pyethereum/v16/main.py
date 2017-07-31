@@ -206,11 +206,6 @@ class PyEthereum16Backend(BaseChainBackend):
     def time_travel(self, to_timestamp):
         from ethereum import tester
 
-        if to_timestamp <= self.evm.block.timestamp:
-            raise ValueError(
-                "Space time continuum distortion detected.  Traveling backwards "
-                "in time violates interdimensional ordinance 31415-926."
-            )
         self.evm.block.finalize()
         self.evm.block.commit_state()
         self.evm.db.put(

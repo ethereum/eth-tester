@@ -98,7 +98,14 @@ class EthereumTester(object):
     #
     # Time Traveling
     #
-    time_travel = backend_proxy_method('time_travel')
+    def time_travel(self, to_timestamp):
+        current_timestamp = self.get_block_by_number('pending')['timestamp']
+        if to_timestamp <= current_timestamp:
+            raise ValueError(
+                "Space time continuum distortion detected.  Traveling backwards "
+                "in time violates interdimensional ordinance 31415-926."
+            )
+        self.backend.time_travel(to_timestamp)
 
     #
     # Accounts
