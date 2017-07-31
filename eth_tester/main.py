@@ -1,10 +1,10 @@
 import itertools
+import operator
 
 from toolz.itertoolz import (
     remove,
 )
 from toolz.functoolz import (
-    complement,
     compose,
     excepts,
     partial,
@@ -186,22 +186,38 @@ class EthereumTester(object):
         for pending_transaction_filter in self._pending_transaction_filters.values():
             self._revert_pending_transaction_filter(pending_transaction_filter)
         for log_filter in self._log_filters.values():
-            self._revert_log_filter(filter)
+            self._revert_log_filter(log_filter)
 
     def _revert_block_filter(self, filter):
-        is_invalid_block_hash = excepts(
+        is_valid_block_hash = excepts(
             (BlockNotFound,),
-            complement(compose(bool, self.get_block_by_hash)),
-            lambda v: True,
+            compose(bool, self.get_block_by_hash),
+            lambda v: False,
         )
-        values_to_remove = remove(is_invalid_block_hash, filter.get_all())
+        values_to_remove = remove(is_valid_block_hash, filter.get_all())
         filter.remove(*values_to_remove)
 
     def _revert_pending_transaction_filter(self, filter):
-        raise NotImplementedError("not yet implemented")
+        is_valid_transaction_hash = excepts(
+            (TransactionNotFound,),
+            compose(bool, self.get_transaction_by_hash),
+            lambda v: False,
+        )
+        values_to_remove = remove(is_valid_transaction_hash, filter.get_all())
+        filter.remove(*values_to_remove)
 
     def _revert_log_filter(self, filter):
-        raise NotImplementedError("not yet implemented")
+        is_valid_transaction_hash = excepts(
+            (TransactionNotFound,),
+            compose(
+                bool,
+                self.get_transaction_by_hash,
+                operator.itemgetter('transaction_hash'),
+            ),
+            lambda v: False,
+        )
+        values_to_remove = remove(is_valid_transaction_hash, filter.get_all())
+        filter.remove(*values_to_remove)
 
     def reset_to_genesis(self):
         self.backend.reset_to_genesis()

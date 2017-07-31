@@ -75,6 +75,8 @@ def _get_block_by_number(evm, block_number="latest"):
         return evm.blocks[0]
     elif block_number == "pending":
         return evm.block
+    elif block_number == evm.block.number:
+        return evm.block
     else:
         if block_number >= len(evm.blocks):
             raise BlockNotFound("Block number is longer than current chain.")
@@ -88,6 +90,8 @@ def _get_block_by_hash(evm, block_hash):
         if block.hash == block_hash:
             return block
     else:
+        if block_hash == evm.block.hash:
+            return evm.block
         raise BlockNotFound("Could not find block for provided hash")
 
 

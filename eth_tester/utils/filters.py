@@ -45,12 +45,17 @@ class Filter(object):
             self.queue.put_nowait(item)
 
     def remove(self, *values):
-        values_to_remove = set(values)
+        try:
+            values_to_remove = set(values)
+        except TypeError:
+            # log filters are dicts which are not hashable
+            values_to_remove = values
+
         queued_values = self.get_changes()
         self.values = [
             value
             for value
-            in self.values
+            in self.get_all()
             if value not in values_to_remove
         ]
         for value in queued_values:
