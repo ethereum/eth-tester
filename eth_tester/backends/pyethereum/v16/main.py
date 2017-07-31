@@ -17,6 +17,7 @@ from eth_utils import (
 
 from eth_tester.exceptions import (
     TransactionNotFound,
+    BlockNotFound,
 )
 from eth_tester.backends.base import BaseChainBackend
 from eth_tester.backends.pyethereum.utils import (
@@ -74,9 +75,11 @@ def _get_block_by_number(evm, block_number="latest"):
         return evm.blocks[0]
     elif block_number == "pending":
         return evm.block
+    elif block_number == evm.block.number:
+        return evm.block
     else:
         if block_number >= len(evm.blocks):
-            raise ValueError("Block number is longer than current chain.")
+            raise BlockNotFound("Block number is longer than current chain.")
         return evm.blocks[block_number]
 
 
@@ -87,7 +90,9 @@ def _get_block_by_hash(evm, block_hash):
         if block.hash == block_hash:
             return block
     else:
-        raise ValueError("Could not find block for provided hash")
+        if block_hash == evm.block.hash:
+            return evm.block
+        raise BlockNotFound("Could not find block for provided hash")
 
 
 def _send_evm_transaction(tester_module, evm, transaction):

@@ -286,6 +286,190 @@ class BaseTestBackendDirect(object):
         assert eth_tester.get_block_by_number('latest')['number'] == 4
         assert eth_tester.get_block_by_number('pending')['number'] == 5
 
+    def test_revert_cleans_up_invalidated_pending_block_filters(self, eth_tester):
+        # first mine 10 blocks in
+        eth_tester.mine_blocks(2)
+
+        # setup a filter
+        filter_a_id = eth_tester.create_block_filter()
+        filter_b_id = eth_tester.create_block_filter()
+
+        # mine 5 blocks before the snapshot
+        common_blocks = set(eth_tester.mine_blocks(2))
+
+        snapshot_id = eth_tester.take_snapshot()
+
+        # mine another 5 blocks
+        fork_a_transaction_hash = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+            "value": 1,
+        })
+        fork_a_transaction_block_hash = eth_tester.get_transaction_by_hash(
+            fork_a_transaction_hash,
+        )['block_hash']
+        fork_a_blocks = eth_tester.mine_blocks(2)
+
+        before_revert_changes_logs_a = eth_tester.get_only_filter_changes(filter_a_id)
+        before_revert_all_logs_a = eth_tester.get_all_filter_logs(filter_a_id)
+        before_revert_all_logs_b = eth_tester.get_all_filter_logs(filter_b_id)
+
+        assert common_blocks.intersection(before_revert_changes_logs_a) == common_blocks
+        assert common_blocks.intersection(before_revert_all_logs_a) == common_blocks
+        assert common_blocks.intersection(before_revert_all_logs_b) == common_blocks
+
+        expected_before_block_hashes = common_blocks.union([
+            fork_a_transaction_block_hash,
+        ]).union(fork_a_blocks)
+
+        # sanity check that the filters picked up on the log changes.
+        assert set(before_revert_changes_logs_a) == expected_before_block_hashes
+        assert set(before_revert_changes_logs_a) == expected_before_block_hashes
+        assert set(before_revert_all_logs_a) == expected_before_block_hashes
+        assert set(before_revert_all_logs_b) == expected_before_block_hashes
+
+        # now revert to snapshot
+        eth_tester.revert_to_snapshot(snapshot_id)
+
+        # send a different transaction to ensure our new blocks are different
+        fork_b_transaction_hash = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+            "value": 2,
+        })
+        fork_b_transaction_block_hash = eth_tester.get_transaction_by_hash(
+            fork_b_transaction_hash,
+        )['block_hash']
+        fork_b_blocks = eth_tester.mine_blocks(2)
+
+        # check that are blocks don't intersect
+        assert not set(fork_a_blocks).intersection(fork_b_blocks)
+
+        after_revert_changes_logs_a = eth_tester.get_only_filter_changes(filter_a_id)
+        after_revert_changes_logs_b = eth_tester.get_only_filter_changes(filter_b_id)
+        after_revert_all_logs_a = eth_tester.get_all_filter_logs(filter_a_id)
+        after_revert_all_logs_b = eth_tester.get_all_filter_logs(filter_b_id)
+
+        expected_all_after_blocks = common_blocks.union([
+            fork_b_transaction_block_hash,
+        ]).union(fork_b_blocks)
+        expected_new_after_blocks = set(fork_b_blocks).union([
+            fork_b_transaction_block_hash,
+        ])
+
+        assert set(after_revert_changes_logs_a) == expected_new_after_blocks
+        assert set(after_revert_changes_logs_b) == expected_all_after_blocks
+        assert set(after_revert_all_logs_a) == expected_all_after_blocks
+        assert set(after_revert_all_logs_b) == expected_all_after_blocks
+
+    def test_revert_cleans_up_invalidated_pending_transaction_filters(self, eth_tester):
+        def _transaction(**kwargs):
+            return merge(
+                {"from": eth_tester.get_accounts()[0], "to": BURN_ADDRESS, "gas": 21000},
+                kwargs,
+            )
+
+        # send a few initial transactions
+        for _ in range(5):
+            eth_tester.send_transaction(_transaction())
+
+        # setup a filter
+        filter_id = eth_tester.create_pending_transaction_filter()
+
+        # send 2 transactions
+        common_transactions = set([
+            eth_tester.send_transaction(_transaction(value=1)),
+            eth_tester.send_transaction(_transaction(value=2)),
+        ])
+
+        # take a snapshot
+        snapshot_id = eth_tester.take_snapshot()
+
+        # send 3 transactions
+        before_transactions = [
+            eth_tester.send_transaction(_transaction(value=3)),
+            eth_tester.send_transaction(_transaction(value=4)),
+            eth_tester.send_transaction(_transaction(value=5)),
+        ]
+
+        # pull and sanity check the filter changes
+        before_filter_changes = eth_tester.get_only_filter_changes(filter_id)
+        before_filter_logs = eth_tester.get_all_filter_logs(filter_id)
+
+        assert set(before_filter_changes) == common_transactions.union(before_transactions)
+        assert set(before_filter_logs) == common_transactions.union(before_transactions)
+
+        # revert the chain
+        eth_tester.revert_to_snapshot(snapshot_id)
+
+        # send 3 transactions on the new fork
+        after_transactions = [
+            eth_tester.send_transaction(_transaction(value=6)),
+            eth_tester.send_transaction(_transaction(value=7)),
+            eth_tester.send_transaction(_transaction(value=8)),
+        ]
+
+        # pull and sanity check the filter changes
+        after_filter_changes = eth_tester.get_only_filter_changes(filter_id)
+        after_filter_logs = eth_tester.get_all_filter_logs(filter_id)
+
+        assert set(after_filter_changes) == set(after_transactions)
+        assert set(after_filter_logs) == common_transactions.union(after_transactions)
+
+    def test_revert_cleans_up_invalidated_log_entries(self, eth_tester):
+        # setup the emitter
+        emitter_address = _deploy_emitter(eth_tester)
+
+        def _emit(v):
+            return _call_emitter(
+                eth_tester,
+                emitter_address,
+                'logSingle',
+                [EMITTER_ENUM['LogSingleWithIndex'], v],
+            )
+
+        # emit 2 logs pre-filtering
+        _emit(1)
+        _emit(2)
+
+        # setup a filter
+        filter_id = eth_tester.create_log_filter()
+
+        # emit 2 logs pre-snapshot
+        _emit(1)
+        _emit(2)
+
+        # take a snapshot
+        snapshot_id = eth_tester.take_snapshot()
+
+        # emit 3 logs after-snapshot
+        _emit(3)
+        _emit(4)
+        _emit(5)
+
+        before_changes = eth_tester.get_only_filter_changes(filter_id)
+        before_all = eth_tester.get_all_filter_logs(filter_id)
+
+        assert len(before_changes) == 5
+        assert len(before_all) == 5
+
+        # revert the chain
+        eth_tester.revert_to_snapshot(snapshot_id)
+
+        # emit 4 logs after-reverting
+        _emit(6)
+        _emit(7)
+        _emit(8)
+        _emit(9)
+
+        after_changes = eth_tester.get_only_filter_changes(filter_id)
+        after_all = eth_tester.get_all_filter_logs(filter_id)
+
+        assert len(after_changes) == 4
+        assert len(after_all) == 6
+
     def test_reset_to_genesis(self, eth_tester):
         eth_tester.mine_blocks(5)
 

@@ -1,6 +1,12 @@
 import itertools
+import operator
 
+from toolz.itertoolz import (
+    remove,
+)
 from toolz.functoolz import (
+    compose,
+    excepts,
     partial,
 )
 
@@ -9,6 +15,7 @@ from eth_utils import (
 )
 
 from eth_tester.exceptions import (
+    BlockNotFound,
     FilterNotFound,
     SnapshotNotFound,
     TransactionNotFound,
@@ -173,6 +180,44 @@ class EthereumTester(object):
             raise SnapshotNotFound("No snapshot found for id: {0}".format(snapshot_id))
         else:
             self.backend.revert_to_snapshot(snapshot)
+
+        for block_filter in self._block_filters.values():
+            self._revert_block_filter(block_filter)
+        for pending_transaction_filter in self._pending_transaction_filters.values():
+            self._revert_pending_transaction_filter(pending_transaction_filter)
+        for log_filter in self._log_filters.values():
+            self._revert_log_filter(log_filter)
+
+    def _revert_block_filter(self, filter):
+        is_valid_block_hash = excepts(
+            (BlockNotFound,),
+            compose(bool, self.get_block_by_hash),
+            lambda v: False,
+        )
+        values_to_remove = remove(is_valid_block_hash, filter.get_all())
+        filter.remove(*values_to_remove)
+
+    def _revert_pending_transaction_filter(self, filter):
+        is_valid_transaction_hash = excepts(
+            (TransactionNotFound,),
+            compose(bool, self.get_transaction_by_hash),
+            lambda v: False,
+        )
+        values_to_remove = remove(is_valid_transaction_hash, filter.get_all())
+        filter.remove(*values_to_remove)
+
+    def _revert_log_filter(self, filter):
+        is_valid_transaction_hash = excepts(
+            (TransactionNotFound,),
+            compose(
+                bool,
+                self.get_transaction_by_hash,
+                operator.itemgetter('transaction_hash'),
+            ),
+            lambda v: False,
+        )
+        values_to_remove = remove(is_valid_transaction_hash, filter.get_all())
+        filter.remove(*values_to_remove)
 
     def reset_to_genesis(self):
         self.backend.reset_to_genesis()
