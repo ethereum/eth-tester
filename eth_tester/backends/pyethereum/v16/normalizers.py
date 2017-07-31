@@ -1,7 +1,7 @@
-from toolz.itertoolz import (
+from cytoolz.itertoolz import (
     concatv,
 )
-from toolz.functoolz import (
+from cytoolz.functoolz import (
     identity,
 )
 

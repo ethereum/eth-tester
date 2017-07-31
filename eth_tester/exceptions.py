@@ -16,3 +16,7 @@ class FilterNotFound(Exception):
 
 class SnapshotNotFound(Exception):
     pass
+
+
+class UnknownFork(Exception):
+    pass

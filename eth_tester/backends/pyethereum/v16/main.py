@@ -15,9 +15,16 @@ from eth_utils import (
     encode_hex,
 )
 
+from eth_tester.constants import (
+    FORK_HOMESTEAD,
+    FORK_DAO,
+    FORK_ANTI_DOS,
+    FORK_STATE_CLEANUP,
+)
 from eth_tester.exceptions import (
-    TransactionNotFound,
     BlockNotFound,
+    TransactionNotFound,
+    UnknownFork,
 )
 from eth_tester.backends.base import BaseChainBackend
 from eth_tester.backends.pyethereum.utils import (
@@ -29,10 +36,10 @@ from .normalizers import (
     normalize_transaction,
 )
 from .serializers import (
-    serialize_transaction_receipt,
+    serialize_block,
     serialize_transaction,
     serialize_transaction_hash,
-    serialize_block,
+    serialize_transaction_receipt,
 )
 from .validation import (
     validate_transaction,
@@ -140,6 +147,30 @@ class PyEthereum16Backend(BaseChainBackend):
                     "`ethereum` package.  Found {0}".format(version)
                 )
         self.reset_to_genesis()
+
+    def set_fork_block(self, fork_name, fork_block):
+        if fork_name == FORK_HOMESTEAD:
+            self.evm.env.config['HOMESTEAD_FORK_BLKNUM'] = fork_block
+        elif fork_name == FORK_DAO:
+            self.evm.env.config['DAO_FORK_BLKNUM'] = fork_block
+        elif fork_name == FORK_ANTI_DOS:
+            self.evm.env.config['ANTI_DOS_FORK_BLKNUM'] = fork_block
+        elif fork_name == FORK_STATE_CLEANUP:
+            self.evm.env.config['CLEARING_FORK_BLKNUM'] = fork_block
+        else:
+            raise UnknownFork("Unknown fork name: {0}".format(fork_name))
+
+    def get_fork_block(self, fork_name):
+        if fork_name == FORK_HOMESTEAD:
+            return self.evm.env.config['HOMESTEAD_FORK_BLKNUM']
+        elif fork_name == FORK_DAO:
+            return self.evm.env.config['DAO_FORK_BLKNUM']
+        elif fork_name == FORK_ANTI_DOS:
+            return self.evm.env.config['ANTI_DOS_FORK_BLKNUM']
+        elif fork_name == FORK_STATE_CLEANUP:
+            return self.evm.env.config['CLEARING_FORK_BLKNUM']
+        else:
+            raise UnknownFork("Unknown fork name: {0}".format(fork_name))
 
     def take_snapshot(self):
         return (self.evm.block.number, self.evm.snapshot())
