@@ -22,8 +22,11 @@ from eth_tester.exceptions import (
     ValidationError,
 )
 
-from eth_tester.backends import (
-    get_tester_backend,
+from eth_tester.chain_backends import (
+    get_chain_backend,
+)
+from eth_tester.validation import (
+    get_validation_backend,
 )
 
 from eth_tester.utils.filters import (
@@ -31,16 +34,10 @@ from eth_tester.utils.filters import (
     check_if_log_matches,
 )
 
-from .validation import (
-    validate_timestamp,
-    validate_block_number,
-    validate_block_hash,
-)
-
 
 def backend_proxy_method(backend_method_name):
     def proxy_method(self, *args, **kwargs):
-        backend_method = getattr(self.backend, backend_method_name)
+        backend_method = getattr(self.chain_backend, backend_method_name)
         return backend_method(*args, **kwargs)
     return proxy_method
 
@@ -61,17 +58,25 @@ class EthereumTester(object):
     fork_blocks = None
 
     def __init__(self,
-                 backend=None,
+                 chain_backend=None,
+                 validation_backend=None,
+                 normalization_backend=None,
                  auto_mine_transactions=True,
                  auto_mine_interval=None,
                  fork_blocks=None):
-        if backend is None:
-            backend = get_tester_backend()
+        if chain_backend is None:
+            chain_backend = get_chain_backend()
+
+        if validation_backend is None:
+            validation_backend = get_validation_backend()
 
         if fork_blocks is None:
             fork_blocks = get_default_fork_blocks()
 
-        self.backend = backend
+        self.chain_backend = chain_backend
+        self.validation_backend = validation_backend
+        self.normalization_backend = normalization_backend
+
         self.auto_mine_transactions = auto_mine_transactions
         self.auto_mine_interval = auto_mine_interval
         self.fork_blocks = fork_blocks
@@ -106,7 +111,7 @@ class EthereumTester(object):
     # Time Traveling
     #
     def time_travel(self, to_timestamp):
-        validate_timestamp(to_timestamp)
+        self.validation_backend.validate_timestamp(to_timestamp)
         # make sure we are not traveling back in time as this is not possible.
         current_timestamp = self.get_block_by_number('pending')['timestamp']
         if to_timestamp <= current_timestamp:
@@ -114,7 +119,7 @@ class EthereumTester(object):
                 "Space time continuum distortion detected.  Traveling backwards "
                 "in time violates interdimensional ordinance 31415-926."
             )
-        self.backend.time_travel(to_timestamp)
+        self.chain_backend.time_travel(to_timestamp)
 
     #
     # Accounts
@@ -129,16 +134,17 @@ class EthereumTester(object):
     get_transaction_by_hash = backend_proxy_method('get_transaction_by_hash')
 
     def get_block_by_number(self, block_number="latest"):
-        validate_block_number(block_number)
-        return self.backend.get_block_by_number(block_number)
+        self.validation_backend.validate_block_number(block_number)
+        return self.chain_backend.get_block_by_number(block_number)
 
     def get_block_by_hash(self, block_hash):
-        validate_block_hash(block_hash)
-        return self.backend.get_block_by_hash(block_hash)
+        self.validation_backend.validate_block_hash(block_hash)
+        return self.chain_backend.get_block_by_hash(block_hash)
 
     def get_transaction_receipt(self, transaction_hash):
+        self.validation_backend.validate_transaction_hash(transaction_hash)
         try:
-            return self.backend.get_transaction_receipt(transaction_hash)
+            return self.chain_backend.get_transaction_receipt(transaction_hash)
         except TransactionNotFound:
             return None
 
@@ -152,7 +158,7 @@ class EthereumTester(object):
         self.auto_mine_transactions = False
 
     def mine_blocks(self, num_blocks=1, coinbase=None):
-        block_hashes = self.backend.mine_blocks(num_blocks, coinbase)
+        block_hashes = self.chain_backend.mine_blocks(num_blocks, coinbase)
         assert len(block_hashes) == num_blocks
 
         # feed the block hashes to any block filters
@@ -173,14 +179,14 @@ class EthereumTester(object):
     # Transaction Sending
     #
     def send_transaction(self, transaction):
-        transaction_hash = self.backend.send_transaction(transaction)
+        transaction_hash = self.chain_backend.send_transaction(transaction)
 
         # feed the transaction hash to any pending transaction filters.
         for _, filter in self._pending_transaction_filters.items():
             filter.add(transaction_hash)
 
         if self._log_filters:
-            receipt = self.backend.get_transaction_receipt(transaction_hash)
+            receipt = self.chain_backend.get_transaction_receipt(transaction_hash)
             for log_entry in receipt['logs']:
                 for _, filter in self._log_filters.items():
                     filter.add(log_entry)
@@ -198,7 +204,7 @@ class EthereumTester(object):
     # Snapshot and Revert
     #
     def take_snapshot(self):
-        snapshot = self.backend.take_snapshot()
+        snapshot = self.chain_backend.take_snapshot()
         snapshot_id = next(self._snapshot_counter)
         self._snapshots[snapshot_id] = snapshot
         return snapshot_id
@@ -209,7 +215,7 @@ class EthereumTester(object):
         except KeyError:
             raise SnapshotNotFound("No snapshot found for id: {0}".format(snapshot_id))
         else:
-            self.backend.revert_to_snapshot(snapshot)
+            self.chain_backend.revert_to_snapshot(snapshot)
 
         for block_filter in self._block_filters.values():
             self._revert_block_filter(block_filter)
@@ -250,7 +256,7 @@ class EthereumTester(object):
         filter.remove(*values_to_remove)
 
     def reset_to_genesis(self):
-        self.backend.reset_to_genesis()
+        self.chain_backend.reset_to_genesis()
         self._reset_local_state()
 
     #

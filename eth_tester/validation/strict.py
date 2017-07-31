@@ -16,6 +16,8 @@ from eth_tester.exceptions import (
     ValidationError,
 )
 
+from .base import BaseValidationBackend
+
 
 MAX_TIMESTAMP = 33040162800  # January 1st 3017 is appropriately far in the future.
 
@@ -52,7 +54,7 @@ def validate_block_number(value):
         raise ValidationError(error_message)
 
 
-def validate_block_hash(value):
+def validate_32_byte_hex_value(value):
     error_message = (
         "Block hash must be a hexidecimal encoded 32 byte string.  Got: "
         "{0}".format(value)
@@ -63,3 +65,14 @@ def validate_block_hash(value):
         raise ValidationError(error_message)
     elif len(remove_0x_prefix(value)) != 64:
         raise ValidationError(error_message)
+
+
+validate_block_hash = validate_32_byte_hex_value
+validate_transaction_hash = validate_32_byte_hex_value
+
+
+class StrictValidationBackend(BaseValidationBackend):
+    validate_timestamp = staticmethod(validate_timestamp)
+    validate_block_number = staticmethod(validate_block_number)
+    validate_block_hash = staticmethod(validate_32_byte_hex_value)
+    validate_transaction_hash = staticmethod(validate_32_byte_hex_value)

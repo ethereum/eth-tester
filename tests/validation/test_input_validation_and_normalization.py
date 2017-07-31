@@ -12,7 +12,7 @@ from eth_tester.exceptions import (
 @pytest.fixture
 def eth_tester():
     from eth_tester import EthereumTester
-    _eth_tester = EthereumTester(backend=mock.MagicMock())
+    _eth_tester = EthereumTester(chain_backend=mock.MagicMock())
     return _eth_tester
 
 
@@ -28,7 +28,7 @@ def eth_tester():
 )
 def test_cannot_time_travel_backwards_in_time(eth_tester, delta, is_valid):
     now_timestamp = int(time.time())
-    eth_tester.backend.get_block_by_number = mock.MagicMock(
+    eth_tester.chain_backend.get_block_by_number = mock.MagicMock(
         return_value={'timestamp': now_timestamp},
     )
 
@@ -51,7 +51,7 @@ def test_cannot_time_travel_backwards_in_time(eth_tester, delta, is_valid):
     ),
 )
 def test_time_travel_timestamp_must_be_integer(eth_tester, timestamp, is_valid):
-    eth_tester.backend.get_block_by_number = mock.MagicMock(
+    eth_tester.chain_backend.get_block_by_number = mock.MagicMock(
         return_value={'timestamp': 4000000},
     )
 
@@ -80,7 +80,7 @@ def test_time_travel_timestamp_must_be_integer(eth_tester, timestamp, is_valid):
     ),
 )
 def test_get_block_by_number_validation(eth_tester, block_number, is_valid):
-    eth_tester.backend.get_block_by_number = mock.MagicMock(
+    eth_tester.chain_backend.get_block_by_number = mock.MagicMock(
         return_value="TODO",
     )
 
@@ -111,7 +111,7 @@ def test_get_block_by_number_validation(eth_tester, block_number, is_valid):
     ),
 )
 def test_get_block_by_hash_validation(eth_tester, block_hash, is_valid):
-    eth_tester.backend.get_block_by_hash = mock.MagicMock(
+    eth_tester.chain_backend.get_block_by_hash = mock.MagicMock(
         return_value="TODO",
     )
 
