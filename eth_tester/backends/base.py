@@ -1,5 +1,17 @@
 class BaseChainBackend(object):
     #
+    # Snapshot API
+    #
+    def take_snapshot(self):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    def revert_to_snapshot(self, snapshot):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    def reset_to_genesis(self):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    #
     # Fork block numbers
     #
     def set_fork_block(self, fork_name, fork_block):

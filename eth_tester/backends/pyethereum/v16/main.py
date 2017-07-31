@@ -148,6 +148,9 @@ class PyEthereum16Backend(BaseChainBackend):
                 )
         self.reset_to_genesis()
 
+    #
+    # Fork Rules
+    #
     def set_fork_block(self, fork_name, fork_block):
         if fork_name == FORK_HOMESTEAD:
             self.evm.env.config['HOMESTEAD_FORK_BLKNUM'] = fork_block
@@ -172,6 +175,9 @@ class PyEthereum16Backend(BaseChainBackend):
         else:
             raise UnknownFork("Unknown fork name: {0}".format(fork_name))
 
+    #
+    # Snapshots
+    #
     def take_snapshot(self):
         return (self.evm.block.number, self.evm.snapshot())
 

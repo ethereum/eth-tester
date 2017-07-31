@@ -19,6 +19,7 @@ from eth_tester.exceptions import (
     FilterNotFound,
     SnapshotNotFound,
     TransactionNotFound,
+    ValidationError,
 )
 
 from eth_tester.backends import (
@@ -28,6 +29,10 @@ from eth_tester.backends import (
 from eth_tester.utils.filters import (
     Filter,
     check_if_log_matches,
+)
+
+from .validation import (
+    validate_timestamp,
 )
 
 
@@ -99,9 +104,11 @@ class EthereumTester(object):
     # Time Traveling
     #
     def time_travel(self, to_timestamp):
+        validate_timestamp(to_timestamp)
+        # make sure we are not traveling back in time as this is not possible.
         current_timestamp = self.get_block_by_number('pending')['timestamp']
         if to_timestamp <= current_timestamp:
-            raise ValueError(
+            raise ValidationError(
                 "Space time continuum distortion detected.  Traveling backwards "
                 "in time violates interdimensional ordinance 31415-926."
             )
