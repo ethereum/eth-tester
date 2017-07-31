@@ -1,5 +1,14 @@
 class BaseChainBackend(object):
     #
+    # Fork block numbers
+    #
+    def set_fork_block(self, fork_name, fork_block):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    def get_fork_block(self, fork_name):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    #
     # Meta
     #
     def time_travel(self, timestamp):

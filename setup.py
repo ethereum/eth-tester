@@ -24,6 +24,7 @@ setup(
     url='https://github.com/pipermerriam/ethereum-tester',
     include_package_data=True,
     install_requires=[
+        "cytoolz==0.8.2",
         "ethereum-utils>=0.3.1",
         "rlp==0.5.1",
         "semantic_version>=2.6.0",

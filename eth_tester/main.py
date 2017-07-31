@@ -1,10 +1,10 @@
 import itertools
 import operator
 
-from toolz.itertoolz import (
+from cytoolz.itertoolz import (
     remove,
 )
-from toolz.functoolz import (
+from cytoolz.functoolz import (
     compose,
     excepts,
     partial,
@@ -38,29 +38,36 @@ def backend_proxy_method(backend_method_name):
     return proxy_method
 
 
-def get_default_config():
+def get_default_fork_blocks():
     return {
-        'auto_mine_transactions': True,
-        'auto_mine_interval': None,  # TODO
-        'fork_homestead_block': 0,  # TODO
-        'fork_dao_block': 0,  # TODO
-        'fork_anti_dos_block': 0,  # TODO
-        'fork_state_cleanup_block': 0,  # TODO
+        'FORK_HOMESTEAD': 0,
+        'FORK_DAO': 0,
+        'FORK_ANTI_DOS': 0,
+        'FORK_STATE_CLEANUP': 0,
     }
 
 
 class EthereumTester(object):
     backend = None
+    auto_mine_transactions = None
+    auto_mine_interval = None
+    fork_blocks = None
 
-    def __init__(self, backend=None, config=None):
+    def __init__(self,
+                 backend=None,
+                 auto_mine_transactions=True,
+                 auto_mine_interval=None,
+                 fork_blocks=None):
         if backend is None:
             backend = get_tester_backend()
 
-        if config is None:
-            config = get_default_config()
+        if fork_blocks is None:
+            fork_blocks = get_default_fork_blocks()
 
         self.backend = backend
-        self.config = config
+        self.auto_mine_transactions = auto_mine_transactions
+        self.auto_mine_interval = auto_mine_interval
+        self.fork_blocks = fork_blocks
 
         self._reset_local_state()
 
@@ -68,6 +75,10 @@ class EthereumTester(object):
     # Private API
     #
     def _reset_local_state(self):
+        # fork blocks
+        for fork_name, fork_block in self.fork_blocks.items():
+            self.set_fork_block(fork_name, fork_block)
+
         # filter tracking
         self._filter_counter = itertools.count()
         self._log_filters = {}
@@ -79,17 +90,10 @@ class EthereumTester(object):
         self._snapshots = {}
 
     #
-    # Configuration
+    # Fork Rules
     #
-    def configure(self, **kwargs):
-        for key, value in kwargs.items():
-            if key in self.config:
-                self.config[key] = value
-            else:
-                raise KeyError(
-                    "Cannot set config values that are not already present in "
-                    "config"
-                )
+    set_fork_block = backend_proxy_method('set_fork_block')
+    get_fork_block = backend_proxy_method('get_fork_block')
 
     #
     # Time Traveling
@@ -119,6 +123,12 @@ class EthereumTester(object):
     #
     # Mining
     #
+    def enable_auto_mine_transactions(self):
+        self.auto_mine_transactions = True
+
+    def disable_auto_mine_transactions(self):
+        self.auto_mine_transactions = False
+
     def mine_blocks(self, num_blocks=1, coinbase=None):
         block_hashes = self.backend.mine_blocks(num_blocks, coinbase)
         assert len(block_hashes) == num_blocks
@@ -154,7 +164,7 @@ class EthereumTester(object):
                     filter.add(log_entry)
 
         # mine the transaction if auto-transaction-mining is enabled.
-        if self.config['auto_mine_transactions']:
+        if self.auto_mine_transactions:
             self.mine_block()
 
         return transaction_hash
@@ -172,8 +182,6 @@ class EthereumTester(object):
         return snapshot_id
 
     def revert_to_snapshot(self, snapshot_id):
-        # TODO: this should also purge any log entries that "no longer exist"
-        # due to state reversion....
         try:
             snapshot = self._snapshots[snapshot_id]
         except KeyError:

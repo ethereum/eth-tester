@@ -1,6 +1,6 @@
 import pytest
 
-from toolz.dicttoolz import (
+from cytoolz.dicttoolz import (
     merge,
     assoc,
 )
@@ -26,6 +26,10 @@ from eth_tester.constants import (
     UINT256_MIN,
     UINT256_MAX,
     BURN_ADDRESS,
+    FORK_HOMESTEAD,
+    FORK_DAO,
+    FORK_ANTI_DOS,
+    FORK_STATE_CLEANUP,
 )
 from eth_tester.exceptions import (
     FilterNotFound,
@@ -116,7 +120,7 @@ class BaseTestBackendDirect(object):
 
     def test_auto_mine_transactions_enabled(self, eth_tester):
         eth_tester.mine_blocks()
-        eth_tester.configure(auto_mine_transactions=True)
+        eth_tester.enable_auto_mine_transactions()
         before_block_number = eth_tester.get_block_by_number('latest')['number']
         eth_tester.send_transaction({
             "from": eth_tester.get_accounts()[0],
@@ -128,7 +132,7 @@ class BaseTestBackendDirect(object):
 
     def test_auto_mine_transactions_disabled(self, eth_tester):
         eth_tester.mine_blocks()
-        eth_tester.configure(auto_mine_transactions=False)
+        eth_tester.disable_auto_mine_transactions()
         before_block_number = eth_tester.get_block_by_number('latest')['number']
         eth_tester.send_transaction({
             "from": eth_tester.get_accounts()[0],
@@ -208,7 +212,7 @@ class BaseTestBackendDirect(object):
         assert receipt['transaction_hash'] == transaction_hash
 
     def test_get_transaction_receipt_for_unmined_transaction(self, eth_tester):
-        eth_tester.configure(auto_mine_transactions=False)
+        eth_tester.disable_auto_mine_transactions()
         transaction_hash = eth_tester.send_transaction({
             "from": eth_tester.get_accounts()[0],
             "to": BURN_ADDRESS,
@@ -700,6 +704,32 @@ class BaseTestBackendDirect(object):
         # now travel forward 2 minutes
         with pytest.raises(ValueError):
             eth_tester.time_travel(before_timestamp - 10)
+
+    #
+    # Fork Configuration
+    #
+    @pytest.mark.parametrize(
+        'fork_name,expected_init_block,set_to_block',
+        (
+            (FORK_HOMESTEAD, 0, 12345),
+            (FORK_DAO, 0, 12345),
+            (FORK_ANTI_DOS, 0, 12345),
+            (FORK_STATE_CLEANUP, 0, 12345),
+        )
+    )
+    def test_getting_and_setting_fork_blocks(self,
+                                             eth_tester,
+                                             fork_name,
+                                             expected_init_block,
+                                             set_to_block):
+        # TODO: this should realy test something about the EVM actually using
+        # the *right* rules but for now this should suffice.
+        init_fork_block = eth_tester.get_fork_block(fork_name)
+        assert init_fork_block == expected_init_block
+
+        eth_tester.set_fork_block(fork_name, set_to_block)
+        after_set_fork_block = eth_tester.get_fork_block(fork_name)
+        assert after_set_fork_block == set_to_block
 
 
 address = st.binary(
