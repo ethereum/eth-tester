@@ -26,6 +26,6 @@ def import_string(dotted_path):
 
 def get_import_path(obj):
     return '.'.join((
-        obj.__name__,
         obj.__module__,
+        obj.__name__,
     ))
