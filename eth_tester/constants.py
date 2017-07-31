@@ -16,3 +16,13 @@ KNOWN_FORKS = {
     FORK_ANTI_DOS,
     FORK_STATE_CLEANUP,
 }
+
+
+LATEST = "latest"
+EARLIEST = "earliest"
+PENDING = "pending"
+BLOCK_NUMBER_META_VALUES = {
+    LATEST,
+    EARLIEST,
+    PENDING,
+}

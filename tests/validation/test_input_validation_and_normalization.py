@@ -60,3 +60,63 @@ def test_time_travel_timestamp_must_be_integer(eth_tester, timestamp, is_valid):
     else:
         with pytest.raises(ValidationError):
             eth_tester.time_travel(timestamp)
+
+
+@pytest.mark.parametrize(
+    "block_number,is_valid",
+    (
+        (0, True),
+        (1, True),
+        (-1, False),
+        (False, False),
+        (True, False),
+        ("latest", True),
+        ("pending", True),
+        ("earliest", True),
+        (2**256, True),
+        (b"latest", False),
+        (b"pending", False),
+        (b"earliest", False),
+    ),
+)
+def test_get_block_by_number_validation(eth_tester, block_number, is_valid):
+    eth_tester.backend.get_block_by_number = mock.MagicMock(
+        return_value="TODO",
+    )
+
+    if is_valid:
+        eth_tester.get_block_by_number(block_number)
+    else:
+        with pytest.raises(ValidationError):
+            eth_tester.get_block_by_number(block_number)
+
+
+@pytest.mark.parametrize(
+    "block_hash,is_valid",
+    (
+        (0, False),
+        (1, False),
+        (-1, False),
+        (False, False),
+        (True, False),
+        (b'', False),
+        ('', False),
+        ('0' * 32, False),
+        ('0x' + '0' * 32, False),
+        ('\x00' * 32, False),
+        (b'\x00' * 32, False),
+        ('0' * 64, True),
+        ('0x' + '0' * 64, True),
+        (b'0x' + b'0' * 64, False),
+    ),
+)
+def test_get_block_by_hash_validation(eth_tester, block_hash, is_valid):
+    eth_tester.backend.get_block_by_hash = mock.MagicMock(
+        return_value="TODO",
+    )
+
+    if is_valid:
+        eth_tester.get_block_by_hash(block_hash)
+    else:
+        with pytest.raises(ValidationError):
+            eth_tester.get_block_by_hash(block_hash)

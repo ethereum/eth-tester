@@ -33,6 +33,8 @@ from eth_tester.utils.filters import (
 
 from .validation import (
     validate_timestamp,
+    validate_block_number,
+    validate_block_hash,
 )
 
 
@@ -125,8 +127,14 @@ class EthereumTester(object):
     # Blocks, Transactions, Receipts
     #
     get_transaction_by_hash = backend_proxy_method('get_transaction_by_hash')
-    get_block_by_number = backend_proxy_method('get_block_by_number')
-    get_block_by_hash = backend_proxy_method('get_block_by_hash')
+
+    def get_block_by_number(self, block_number="latest"):
+        validate_block_number(block_number)
+        return self.backend.get_block_by_number(block_number)
+
+    def get_block_by_hash(self, block_hash):
+        validate_block_hash(block_hash)
+        return self.backend.get_block_by_hash(block_hash)
 
     def get_transaction_receipt(self, transaction_hash):
         try:

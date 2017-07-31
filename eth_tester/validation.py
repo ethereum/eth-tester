@@ -1,9 +1,17 @@
+from __future__ import unicode_literals
+
 from eth_utils import (
     is_boolean,
     is_integer,
+    is_string,
     is_hex,
+    is_text,
+    remove_0x_prefix,
 )
 
+from eth_tester.constants import (
+    BLOCK_NUMBER_META_VALUES,
+)
 from eth_tester.exceptions import (
     ValidationError,
 )
@@ -31,4 +39,27 @@ def validate_timestamp(value):
 
 
 def validate_block_number(value):
-    raise NotImplementedError("not implemented")
+    error_message = (
+        "Block number must be a positive integer or one of the strings "
+        "'latest', 'earliest', or 'pending'.  Got: {0}".format(value)
+    )
+    if is_string(value):
+        if value not in BLOCK_NUMBER_META_VALUES:
+            raise ValidationError(error_message)
+    elif not is_integer(value) or is_boolean(value):
+        raise ValidationError(error_message)
+    elif value < 0:
+        raise ValidationError(error_message)
+
+
+def validate_block_hash(value):
+    error_message = (
+        "Block hash must be a hexidecimal encoded 32 byte string.  Got: "
+        "{0}".format(value)
+    )
+    if not is_text(value):
+        raise ValidationError(error_message)
+    elif not is_hex(value):
+        raise ValidationError(error_message)
+    elif len(remove_0x_prefix(value)) != 64:
+        raise ValidationError(error_message)
