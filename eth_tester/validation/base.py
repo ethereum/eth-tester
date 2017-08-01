@@ -30,3 +30,6 @@ class BaseOutputValidationBackend(object):
 
     def validate_log_entry(self, log_entry):
         raise NotImplementedError("must be implemented by subclasses")
+
+    def validate_transaction(self, transaction):
+        raise NotImplementedError("must be implemented by subclasses")

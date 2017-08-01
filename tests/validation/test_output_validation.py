@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import time
 
 import pytest
@@ -86,6 +88,12 @@ def _make_block(number=0,
     }
 
 
+ADDRESS_A = b'\x00' * 19 + b'\x01'
+TOPIC_A = b'\x00' * 31 + b'\x01'
+TOPIC_B = b'\x00' * 31 + b'\x02'
+HASH32_AS_TEXT = '\x00' * 32
+
+
 #@pytest.mark.parametrize(
 #    "block,is_valid",
 #    (
@@ -98,6 +106,72 @@ def _make_block(number=0,
 #    else:
 #        with pytest.raises(ValidationError):
 #            output_validator.validate_block(block)
+
+
+def _make_transaction(hash=ZERO_32BYTES,
+                      nonce=0,
+                      block_hash=ZERO_32BYTES,
+                      block_number=0,
+                      transaction_index=0,
+                      _from=ZERO_ADDRESS,
+                      to=ZERO_ADDRESS,
+                      value=0,
+                      gas=21000,
+                      gas_price=1,
+                      data=b'',
+                      v=0,
+                      r=0,
+                      s=0):
+    return {
+        "hash": hash,
+        "nonce": nonce,
+        "block_hash": block_hash,
+        "block_number": block_number,
+        "transaction_index": transaction_index,
+        "from": _from,
+        "to": to,
+        "value": value,
+        "gas": gas,
+        "gas_price": gas_price,
+        "data": data,
+        "v": v,
+        "r": r,
+        "s": s,
+    }
+
+
+@pytest.mark.parametrize(
+    "transaction,is_valid",
+    (
+        (_make_transaction(),  True),
+        (_make_transaction(hash=HASH32_AS_TEXT),  False),
+        (_make_transaction(nonce=-1),  False),
+        (_make_transaction(nonce=1.0),  False),
+        (_make_transaction(nonce=True),  False),
+        (_make_transaction(value=-1),  False),
+        (_make_transaction(value=1.0),  False),
+        (_make_transaction(value=True),  False),
+        (_make_transaction(block_number=-1),  False),
+        (_make_transaction(block_number=1.0),  False),
+        (_make_transaction(block_number=True),  False),
+        (_make_transaction(gas=-1),  False),
+        (_make_transaction(gas=1.0),  False),
+        (_make_transaction(gas=True),  False),
+        (_make_transaction(gas_price=-1),  False),
+        (_make_transaction(gas_price=1.0),  False),
+        (_make_transaction(gas_price=True),  False),
+        (_make_transaction(data=''),  False),
+        (_make_transaction(data='0x'),  False),
+        (_make_transaction(block_hash=HASH32_AS_TEXT),  False),
+        (_make_transaction(transaction_index=None, block_hash=None, block_number=None),  True),
+    )
+)
+def test_transaction_output_validation(output_validator, transaction, is_valid):
+    if is_valid:
+        output_validator.validate_transaction(transaction)
+    else:
+        with pytest.raises(ValidationError):
+            output_validator.validate_transaction(transaction)
 
 
 def _make_log(_type="mined",
@@ -129,6 +203,17 @@ def _make_log(_type="mined",
         (_make_log(_type="pending", transaction_index=None, block_hash=None, block_number=None), True),
         (_make_log(_type="invalid-type"), False),
         (_make_log(transaction_index=-1), False),
+        (_make_log(block_number=-1), False),
+        (_make_log(transaction_hash=b'\x00' * 31), False),
+        (_make_log(transaction_hash='\x00' * 32), False),
+        (_make_log(block_hash=b'\x00' * 31), False),
+        (_make_log(block_hash='\x00' * 32), False),
+        (_make_log(address=encode_hex(ADDRESS_A)), False),
+        (_make_log(data=''), False),
+        (_make_log(data=None), False),
+        (_make_log(topics=['\x00'* 32]), False),
+        (_make_log(topics=[TOPIC_A, TOPIC_B]), True),
+        (_make_log(address=ADDRESS_A), True),
     ),
 )
 def test_log_entry_output_validation(output_validator, log_entry, is_valid):

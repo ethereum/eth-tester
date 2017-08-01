@@ -7,6 +7,7 @@ from eth_utils import (
     is_bytes,
     is_dict,
     is_integer,
+    to_dict,
 )
 
 from eth_tester.constants import (
@@ -38,7 +39,7 @@ def validate_bytes(value):
         raise ValidationError("Value must be a byte string.  Got type: {0}".format(type(value)))
 
 
-def validate_dict(value):
+def validate_is_dict(value):
     if not is_dict(value):
         raise ValidationError("Value must be a dictionary.  Got: {0}".format(type(value)))
 
@@ -63,6 +64,37 @@ def validate_has_required_keys(value, required_keys):
                 "/".join(missing_keys),
             )
         )
+
+
+@to_dict
+def _accumulate_errors(value, validators):
+    for key, validator_fn in validators.items():
+        item = value[key]
+        try:
+            validator_fn(item)
+        except ValidationError as err:
+            yield key, err
+
+
+def validate_dict(value, key_validators):
+    validate_is_dict(value)
+    validate_no_extra_keys(value, key_validators.keys())
+    validate_has_required_keys(value, key_validators.keys())
+
+    key_errors = _accumulate_errors(value, key_validators)
+    if key_errors:
+        key_messages = tuple(
+            "{0}: {1}".format(key, str(err))
+            for key, err
+            in sorted(key_errors.items())
+        )
+        error_message = (
+            "The following keys failed to validate\n"
+            "- {0}".format(
+                "\n - ".join(key_messages)
+            )
+        )
+        raise ValidationError(error_message)
 
 
 def if_not_null(validator_fn):

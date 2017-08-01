@@ -1,5 +1,9 @@
 from __future__ import unicode_literals
 
+from cytoolz import (
+    partial,
+)
+
 from eth_utils import (
     is_canonical_address,
     is_list_like,
@@ -18,8 +22,7 @@ from .common import (
     validate_bytes,
     validate_positive_integer,
     validate_dict,
-    validate_no_extra_keys,
-    validate_has_required_keys,
+    validate_uint256,
 )
 
 
@@ -76,15 +79,7 @@ BLOCK_VALIDATORS = {
 }
 
 
-def validate_block(value):
-    validate_dict(value)
-
-    validate_no_extra_keys(value, set(BLOCK_VALIDATORS.keys()))
-    validate_has_required_keys(value, set(BLOCK_VALIDATORS.keys()))
-
-    for key, validator_fn in BLOCK_VALIDATORS.items():
-        item = value[key]
-        validator_fn(item)
+validate_block = partial(validate_dict, key_validators=BLOCK_VALIDATORS)
 
 
 def validate_log_entry_type(value):
@@ -112,17 +107,39 @@ LOG_ENTRY_VALIDATORS = {
 }
 
 
-def validate_log_entry(value):
-    validate_dict(value)
-    validate_no_extra_keys(value, LOG_ENTRY_VALIDATORS.keys())
-    validate_has_required_keys(value, LOG_ENTRY_VALIDATORS.keys())
+validate_log_entry = partial(validate_dict, key_validators=LOG_ENTRY_VALIDATORS)
 
-    for key, validator_fn in LOG_ENTRY_VALIDATORS.items():
-        item = value[key]
-        validator_fn(item)
+
+def validate_signature_v(value):
+    validate_positive_integer(value)
+    if value not in {0, 1, 27, 28}:
+        # TODO: what is the correct validation for this?
+        raise ValidationError("The `v` portion of the signature must be 0, 1, 27, or 28")
+
+
+TRANSACTION_VALIDATORS = {
+    "hash": validate_32_byte_string,
+    "nonce": validate_uint256,
+    "block_hash": if_not_null(validate_32_byte_string),
+    "block_number": if_not_null(validate_positive_integer),
+    "transaction_index": if_not_null(validate_positive_integer),
+    "from": validate_canonical_address,
+    "to": validate_canonical_address,
+    "value": validate_uint256,
+    "gas": validate_uint256,
+    "gas_price": validate_uint256,
+    "data": validate_bytes,
+    "v": validate_uint256,
+    "r": validate_uint256,
+    "s": validate_signature_v,
+}
+
+
+validate_transaction = partial(validate_dict, key_validators=TRANSACTION_VALIDATORS)
 
 
 class OutputValidationBackend(BaseOutputValidationBackend):
     validate_block_hash = staticmethod(validate_block_hash)
     validate_block = staticmethod(validate_block)
     validate_log_entry = staticmethod(validate_log_entry)
+    validate_transaction = staticmethod(validate_transaction)

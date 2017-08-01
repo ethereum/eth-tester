@@ -42,6 +42,9 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
         "gas": transaction.startgas,
         "gas_price": transaction.gasprice,
         "data": transaction.data,
+        "v": transaction.v,
+        "r": transaction.r,
+        "s": transaction.s,
     }
 
 
