@@ -22,6 +22,9 @@ from eth_tester.exceptions import (
     ValidationError,
 )
 
+from eth_tester.normalization import (
+    get_normalizer_backend,
+)
 from eth_tester.backends import (
     get_chain_backend,
 )
@@ -62,6 +65,7 @@ class EthereumTester(object):
                  backend=None,
                  input_validator=None,
                  output_validator=None,
+                 normalizer=None,
                  auto_mine_transactions=True,
                  auto_mine_interval=None,
                  fork_blocks=None):
@@ -74,12 +78,16 @@ class EthereumTester(object):
         if output_validator is None:
             output_validator = get_output_validator()
 
+        if normalizer is None:
+            normalizer = get_normalizer_backend()
+
         if fork_blocks is None:
             fork_blocks = get_default_fork_blocks()
 
         self.backend = backend
         self.input_validator = input_validator
         self.output_validator = output_validator
+        self.normalizer = normalizer
 
         self.auto_mine_transactions = auto_mine_transactions
         self.auto_mine_interval = auto_mine_interval
@@ -129,54 +137,61 @@ class EthereumTester(object):
     # Accounts
     #
     def get_accounts(self):
-        accounts = self.backend.get_accounts()
-        self.output_validator.validate_accounts(accounts)
+        raw_accounts = self.backend.get_accounts()
+        self.output_validator.validate_accounts(raw_accounts)
+        accounts = self.normalizer.normalize_accounts(raw_accounts)
         return accounts
 
     def get_balance(self, account):
         self.input_validator.validate_account(account)
-        balance = self.backend.get_balance()
-        self.output_validator.validate_balance(balance)
+        raw_balance = self.backend.get_balance(account)
+        self.output_validator.validate_balance(raw_balance)
+        balance = self.normalizer.normalize_balance(raw_balance)
         return balance
 
     def get_code(self, account):
         self.input_validator.validate_account(account)
-        code = self.backend.get_code()
-        self.output_validator.validate_code(code)
+        raw_code = self.backend.get_code(account)
+        self.output_validator.validate_code(raw_code)
+        code = self.normalizer.normalize_code(raw_code)
         return code
 
     def get_nonce(self, account):
         self.input_validator.validate_account(account)
-        nonce = self.backend.get_nonce()
-        self.output_validator.validate_nonce(nonce)
+        raw_nonce = self.backend.get_nonce(account)
+        self.output_validator.validate_nonce(raw_nonce)
+        nonce = self.normalizer.normalize_nonce(raw_nonce)
         return nonce
 
     #
     # Blocks, Transactions, Receipts
     #
-    # TODO: validate
     def get_transaction_by_hash(self, transaction_hash):
         self.input_validator.validate_transaction_hash(transaction_hash)
-        transaction = self.backend.get_transaction_by_hash(transaction_hash)
-        self.output_validator.validate_transaction(transaction)
+        raw_transaction = self.backend.get_transaction_by_hash(transaction_hash)
+        self.output_validator.validate_transaction(raw_transaction)
+        transaction = self.normalizer.normalize_transaction(raw_transaction)
         return transaction
 
     def get_block_by_number(self, block_number="latest"):
         self.input_validator.validate_block_number(block_number)
-        block = self.backend.get_block_by_number(block_number)
-        self.output_validator.validate_block(block)
+        raw_block = self.backend.get_block_by_number(block_number)
+        self.output_validator.validate_block(raw_block)
+        block = self.normalizer.normalize_block(raw_block)
         return block
 
     def get_block_by_hash(self, block_hash):
         self.input_validator.validate_block_hash(block_hash)
-        block = self.backend.get_block_by_hash(block_hash)
-        self.output_validator.validate_block(block)
+        raw_block = self.backend.get_block_by_hash(block_hash)
+        self.output_validator.validate_block(raw_block)
+        block = self.normalizer.normalize_block(raw_block)
         return block
 
     def get_transaction_receipt(self, transaction_hash):
         self.input_validator.validate_transaction_hash(transaction_hash)
-        receipt = self.backend.get_transaction_receipt(transaction_hash)
-        self.output_validator.validate_receipt(receipt)
+        raw_receipt = self.backend.get_transaction_receipt(transaction_hash)
+        self.output_validator.validate_receipt(raw_receipt)
+        receipt = self.normalizer.normalize_receipt(raw_receipt)
         return receipt
 
     #
@@ -189,8 +204,23 @@ class EthereumTester(object):
         self.auto_mine_transactions = False
 
     def mine_blocks(self, num_blocks=1, coinbase=None):
-        block_hashes = self.backend.mine_blocks(num_blocks, coinbase)
-        assert len(block_hashes) == num_blocks
+        raw_block_hashes = self.backend.mine_blocks(num_blocks, coinbase)
+
+        if len(raw_block_hashes) != num_blocks:
+            raise ValidationError(
+                "Invariant: tried to mine {0} blocks.  Got {1} mined block hashes.".format(
+                    num_blocks,
+                    len(raw_block_hashes),
+                )
+            )
+
+        for raw_block_hash in raw_block_hashes:
+            self.output_validator.validate_block_hash(raw_block_hash)
+        block_hashes = [
+            self.normalizer.normalize_block_hash(raw_block_hash)
+            for raw_block_hash
+            in raw_block_hashes
+        ]
 
         # feed the block hashes to any block filters
         for block_hash in block_hashes:
@@ -201,13 +231,10 @@ class EthereumTester(object):
 
             self._process_block_logs(block)
 
-        for block_hash in block_hashes:
-            self.output_validator.validate_block_hash(block_hash)
         return block_hashes
 
     def mine_block(self, coinbase=None):
         block_hash = self.mine_blocks(1, coinbase=coinbase)[0]
-        self.output_validator.validate_block_hash(block_hash)
         return block_hash
 
     #
@@ -225,8 +252,9 @@ class EthereumTester(object):
     #
     def send_transaction(self, transaction):
         self.input_validator.validate_transaction(transaction)
-        transaction_hash = self.backend.send_transaction(transaction)
-        self.output_validator.validate_transaction_hash(transaction_hash)
+        raw_transaction_hash = self.backend.send_transaction(transaction)
+        self.output_validator.validate_transaction_hash(raw_transaction_hash)
+        transaction_hash = self.normalizer.normalize_transaction(raw_transaction_hash)
 
         # feed the transaction hash to any pending transaction filters.
         for _, filter in self._pending_transaction_filters.items():
@@ -248,14 +276,16 @@ class EthereumTester(object):
     def call(self, transaction, block_number="latest"):
         self.input_validator.validate_transaction(transaction)
         self.input_validator.validate_block_number(block_number)
-        result = self.backend.call(transaction, block_number)
-        self.output_validator.validate_return_data(result)
+        raw_result = self.backend.call(transaction, block_number)
+        self.output_validator.validate_return_data(raw_result)
+        result = self.normalizer.normalize_return_data(raw_result)
         return result
 
     def estimate_gas(self, transaction):
         self.input_validator.validate_transaction(transaction)
-        gas_estimate = self.backend.estimate_gas(transaction)
-        self.output_validator.validate_gas_estimate(gas_estimate)
+        raw_gas_estimate = self.backend.estimate_gas(transaction)
+        self.output_validator.validate_gas_estimate(raw_gas_estimate)
+        gas_estimate = self.normalizer.normalize_gas_estimate(raw_gas_estimate)
         return gas_estimate
 
     #

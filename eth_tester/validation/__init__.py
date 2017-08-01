@@ -5,10 +5,10 @@ from eth_tester.utils.module_loading import (
     import_string,
 )
 
-from .input import (  # noqa: F401
+from .input import (
     InputValidationBackend,
 )
-from .output import (  # noqa: F401
+from .output import (
     OutputValidationBackend,
 )
 
