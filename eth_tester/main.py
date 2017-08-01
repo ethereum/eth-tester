@@ -297,6 +297,8 @@ class EthereumTester(object):
         return filter_id
 
     def delete_filter(self, filter_id):
+        self.validation_backend.validate_filter_id(filter_id)
+
         if filter_id in self._block_filters:
             del self._block_filters[filter_id]
         elif filter_id in self._pending_transaction_filters:
@@ -307,6 +309,8 @@ class EthereumTester(object):
             raise FilterNotFound("Unknown filter id")
 
     def get_only_filter_changes(self, filter_id):
+        self.validation_backend.validate_filter_id(filter_id)
+
         if filter_id in self._block_filters:
             filter = self._block_filters[filter_id]
         elif filter_id in self._pending_transaction_filters:
@@ -318,6 +322,8 @@ class EthereumTester(object):
         return filter.get_changes()
 
     def get_all_filter_logs(self, filter_id):
+        self.validation_backend.validate_filter_id(filter_id)
+
         if filter_id in self._block_filters:
             filter = self._block_filters[filter_id]
         elif filter_id in self._pending_transaction_filters:
