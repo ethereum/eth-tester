@@ -4,6 +4,11 @@ import pytest
 
 from unittest import mock
 
+from eth_utils import (
+    encode_hex,
+    decode_hex,
+)
+
 from eth_tester.exceptions import (
     ValidationError,
 )
@@ -131,10 +136,38 @@ def _make_filter_params(from_block=None, to_block=None, address=None, topics=Non
     }
 
 
+ADDRESS_A = encode_hex(b'\x00' * 19 + b'\x01')
+ADDRESS_B = encode_hex(b'\x00' * 19 + b'\x02')
+TOPIC_A = encode_hex(b'\x00' * 31 + b'\x01')
+TOPIC_B = encode_hex(b'\x00' * 31 + b'\x02')
+
+
 @pytest.mark.parametrize(
     "filter_params,is_valid",
     (
         (_make_filter_params(), True),
+        (_make_filter_params(from_block=0), True),
+        (_make_filter_params(to_block=0), True),
+        (_make_filter_params(from_block=-1), False),
+        (_make_filter_params(to_block=-1), False),
+        (_make_filter_params(from_block=True), False),
+        (_make_filter_params(to_block=False), False),
+        (_make_filter_params(from_block='0x0'), False),
+        (_make_filter_params(to_block='0x0'), False),
+        (_make_filter_params(from_block='0x1'), False),
+        (_make_filter_params(to_block='0x1'), False),
+        (_make_filter_params(address=ADDRESS_A), True),
+        (_make_filter_params(address=decode_hex(ADDRESS_A)), False),
+        (_make_filter_params(address=[ADDRESS_A, ADDRESS_B]), True),
+        (_make_filter_params(address=TOPIC_A), False),
+        (_make_filter_params(address=decode_hex(TOPIC_A)), False),
+        (_make_filter_params(address=[TOPIC_A, ADDRESS_B]), False),
+        (_make_filter_params(topics=[TOPIC_A]), True),
+        (_make_filter_params(topics=[TOPIC_A, TOPIC_B]), True),
+        (_make_filter_params(topics=[[TOPIC_A], [TOPIC_B]]), True),
+        (_make_filter_params(topics=[ADDRESS_A]), False),
+        (_make_filter_params(topics=[ADDRESS_A, TOPIC_B]), False),
+        (_make_filter_params(topics=[[ADDRESS_A], [TOPIC_B]]), False),
     ),
 )
 def test_filter_params_validation(eth_tester, filter_params, is_valid):
