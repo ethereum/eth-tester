@@ -176,6 +176,16 @@ class EthereumTester(object):
         return self.mine_blocks(1, coinbase=coinbase)[0]
 
     #
+    # Private mining API
+    #
+    def _process_block_logs(self, block):
+        for _, filter in self._log_filters.items():
+            for transaction_hash in block['transactions']:
+                receipt = self.get_transaction_receipt(transaction_hash)
+                for log_entry in receipt['logs']:
+                    filter.add(log_entry)
+
+    #
     # Transaction Sending
     #
     def send_transaction(self, transaction):
@@ -224,6 +234,13 @@ class EthereumTester(object):
         for log_filter in self._log_filters.values():
             self._revert_log_filter(log_filter)
 
+    def reset_to_genesis(self):
+        self.chain_backend.reset_to_genesis()
+        self._reset_local_state()
+
+    #
+    # Private filter API
+    #
     def _revert_block_filter(self, filter):
         is_valid_block_hash = excepts(
             (BlockNotFound,),
@@ -255,10 +272,6 @@ class EthereumTester(object):
         values_to_remove = remove(is_valid_transaction_hash, filter.get_all())
         filter.remove(*values_to_remove)
 
-    def reset_to_genesis(self):
-        self.chain_backend.reset_to_genesis()
-        self._reset_local_state()
-
     #
     # Filters
     #
@@ -267,12 +280,19 @@ class EthereumTester(object):
         self._block_filters[filter_id] = Filter(filter_params=None)
         return filter_id
 
-    def create_pending_transaction_filter(self, *args, **kwargs):
+    def create_pending_transaction_filter(self):
         filter_id = next(self._filter_counter)
         self._pending_transaction_filters[filter_id] = Filter(filter_params=None)
         return filter_id
 
     def create_log_filter(self, from_block=None, to_block=None, address=None, topics=None):
+        self.validation_backend.validate_filter_params(
+            from_block=from_block,
+            to_block=to_block,
+            address=address,
+            topics=topics,
+        )
+
         filter_id = next(self._filter_counter)
         filter_params = {
             'from_block': from_block,
@@ -333,13 +353,3 @@ class EthereumTester(object):
         else:
             raise FilterNotFound("Unknown filter id")
         return filter.get_all()
-
-    #
-    # Private API
-    #
-    def _process_block_logs(self, block):
-        for _, filter in self._log_filters.items():
-            for transaction_hash in block['transactions']:
-                receipt = self.get_transaction_receipt(transaction_hash)
-                for log_entry in receipt['logs']:
-                    filter.add(log_entry)

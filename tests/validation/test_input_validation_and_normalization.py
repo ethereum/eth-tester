@@ -120,3 +120,30 @@ def test_get_block_by_hash_validation(eth_tester, block_hash, is_valid):
     else:
         with pytest.raises(ValidationError):
             eth_tester.get_block_by_hash(block_hash)
+
+
+def _make_filter_params(from_block=None, to_block=None, address=None, topics=None):
+    return {
+        'from_block': from_block,
+        'to_block': to_block,
+        'address': address,
+        'topics': topics,
+    }
+
+
+@pytest.mark.parametrize(
+    "filter_params,is_valid",
+    (
+        (_make_filter_params(), True),
+    ),
+)
+def test_filter_params_validation(eth_tester, filter_params, is_valid):
+    eth_tester.chain_backend.create_log_filter = mock.MagicMock(
+        return_value="TODO",
+    )
+
+    if is_valid:
+        eth_tester.create_log_filter(**filter_params)
+    else:
+        with pytest.raises(ValidationError):
+            eth_tester.create_log_filter(**filter_params)

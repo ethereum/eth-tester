@@ -38,16 +38,16 @@ def validate_positive_integer(value, name):
         raise ValidationError(error_message)
 
 
+def is_32byte_hex_string(value):
+    return is_text(value) and is_hex(value) and len(remove_0x_prefix(value)) == 64
+
+
 def validate_32_byte_hex_value(value, name):
     error_message = (
         "{0} must be a hexidecimal encoded 32 byte string.  Got: "
         "{1}".format(name, value)
     )
-    if not is_text(value):
-        raise ValidationError(error_message)
-    elif not is_hex(value):
-        raise ValidationError(error_message)
-    elif len(remove_0x_prefix(value)) != 64:
+    if not is_32byte_hex_string(value):
         raise ValidationError(error_message)
 
 
@@ -94,13 +94,23 @@ def validate_address(value):
         raise ValidationError("Address does not validate EIP55 checksum")
 
 
+def _is_flat_topic_array(value):
+    if not is_list_like(value):
+        return False
+    return all(is_32byte_hex_string(item) for item in value)
+
+
 def validate_filter_params(from_block, to_block, address, topics):
+    # blocks
     if from_block is not None:
         validate_block_number(from_block)
     if to_block is not None:
         validate_block_number(to_block)
 
-    if is_list_like(address):
+    # address
+    if address is None:
+        pass
+    elif is_list_like(address):
         if not address:
             raise ValidationError(
                 "Address must be either a single hexidecimal encoded address or "
@@ -111,8 +121,21 @@ def validate_filter_params(from_block, to_block, address, topics):
     elif not is_hex_address(address):
         validate_address(address)
 
-    assert False, "TODO: topic array"
-
+    invalid_topics_message = (
+        "Topics must be one of `None`, an array of 32 byte hexidecimal encoded "
+        "strings, or an array of arrays of 32 byte hexidecimal strings"
+    )
+    # topics
+    if topics is None:
+        pass
+    elif not is_list_like(topics):
+        raise ValidationError(invalid_topics_message)
+    elif _is_flat_topic_array(topics):
+        return True
+    elif all(_is_flat_topic_array(item) for item in topics):
+        return True
+    else:
+        raise ValidationError(invalid_topics_message)
 
 
 class StrictValidationBackend(BaseValidationBackend):
@@ -121,3 +144,4 @@ class StrictValidationBackend(BaseValidationBackend):
     validate_block_hash = staticmethod(validate_block_hash)
     validate_transaction_hash = staticmethod(validate_transaction_hash)
     validate_filter_id = staticmethod(validate_filter_id)
+    validate_filter_params = staticmethod(validate_filter_params)
