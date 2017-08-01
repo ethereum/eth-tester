@@ -38,7 +38,7 @@ from eth_tester.utils.filters import (
 
 def backend_proxy_method(backend_method_name):
     def proxy_method(self, *args, **kwargs):
-        backend_method = getattr(self.chain_backend, backend_method_name)
+        backend_method = getattr(self.backend, backend_method_name)
         return backend_method(*args, **kwargs)
     return proxy_method
 
@@ -128,37 +128,56 @@ class EthereumTester(object):
     #
     # Accounts
     #
-    # TODO: validate
-    get_accounts = backend_proxy_method('get_accounts')
-    # TODO: validate
-    get_balance = backend_proxy_method('get_balance')
-    # TODO: validate
-    get_nonce = backend_proxy_method('get_nonce')
+    def get_accounts(self):
+        accounts = self.backend.get_accounts()
+        self.output_validator.validate_accounts(accounts)
+        return accounts
+
+    def get_balance(self, account):
+        self.input_validator.validate_account(account)
+        balance = self.backend.get_balance()
+        self.output_validator.validate_balance(balance)
+        return balance
+
+    def get_code(self, account):
+        self.input_validator.validate_account(account)
+        code = self.backend.get_code()
+        self.output_validator.validate_code(code)
+        return code
+
+    def get_nonce(self, account):
+        self.input_validator.validate_account(account)
+        nonce = self.backend.get_nonce()
+        self.output_validator.validate_nonce(nonce)
+        return nonce
 
     #
     # Blocks, Transactions, Receipts
     #
     # TODO: validate
-    get_transaction_by_hash = backend_proxy_method('get_transaction_by_hash')
+    def get_transaction_by_hash(self, transaction_hash):
+        self.input_validator.validate_transaction_hash(transaction_hash)
+        transaction = self.backend.get_transaction_by_hash(transaction_hash)
+        self.output_validator.validate_transaction(transaction)
+        return transaction
 
     def get_block_by_number(self, block_number="latest"):
         self.input_validator.validate_block_number(block_number)
-        # TODO: validate
-        return self.backend.get_block_by_number(block_number)
+        block = self.backend.get_block_by_number(block_number)
+        self.output_validator.validate_block(block)
+        return block
 
     def get_block_by_hash(self, block_hash):
         self.input_validator.validate_block_hash(block_hash)
-        # TODO: validate
-        return self.backend.get_block_by_hash(block_hash)
+        block = self.backend.get_block_by_hash(block_hash)
+        self.output_validator.validate_block(block)
+        return block
 
     def get_transaction_receipt(self, transaction_hash):
         self.input_validator.validate_transaction_hash(transaction_hash)
-        try:
-            # TODO: validate
-            return self.backend.get_transaction_receipt(transaction_hash)
-        except TransactionNotFound:
-            # TODO: don't return None
-            return None
+        receipt = self.backend.get_transaction_receipt(transaction_hash)
+        self.output_validator.validate_receipt(receipt)
+        return receipt
 
     #
     # Mining
@@ -205,7 +224,9 @@ class EthereumTester(object):
     # Transaction Sending
     #
     def send_transaction(self, transaction):
+        self.input_validator.validate_transaction(transaction)
         transaction_hash = self.backend.send_transaction(transaction)
+        self.output_validator.validate_transaction_hash(transaction_hash)
 
         # feed the transaction hash to any pending transaction filters.
         for _, filter in self._pending_transaction_filters.items():
@@ -221,13 +242,21 @@ class EthereumTester(object):
         if self.auto_mine_transactions:
             self.mine_block()
 
-        # TODO: validate
         return transaction_hash
 
     # TODO: validate input & output
-    call = backend_proxy_method('call')
-    # TODO: validate input & output
-    estimate_gas = backend_proxy_method('estimate_gas')
+    def call(self, transaction, block_number="latest"):
+        self.input_validator.validate_transaction(transaction)
+        self.input_validator.validate_block_number(block_number)
+        result = self.backend.call(transaction, block_number)
+        self.output_validator.validate_return_data(result)
+        return result
+
+    def estimate_gas(self, transaction):
+        self.input_validator.validate_transaction(transaction)
+        gas_estimate = self.backend.estimate_gas(transaction)
+        self.output_validator.validate_gas_estimate(gas_estimate)
+        return gas_estimate
 
     #
     # Snapshot and Revert

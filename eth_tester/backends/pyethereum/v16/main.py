@@ -10,7 +10,6 @@ import rlp
 
 from eth_utils import (
     remove_0x_prefix,
-    to_checksum_address,
     to_tuple,
     encode_hex,
 )
@@ -254,7 +253,7 @@ class PyEthereum16Backend(BaseChainBackend):
         from ethereum import tester
 
         for account in tester.accounts:
-            yield to_checksum_address(account)
+            yield account
 
     #
     # Chain data

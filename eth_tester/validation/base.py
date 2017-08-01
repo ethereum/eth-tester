@@ -20,6 +20,9 @@ class BaseInputValidationBackend(object):
     def validate_transaction(self, transaction):
         raise NotImplementedError("must be implemented by subclasses")
 
+    def validate_account(self, transaction):
+        raise NotImplementedError("must be implemented by subclasses")
+
 
 class BaseOutputValidationBackend(object):
     def validate_block_hash(self, block_hash):
@@ -32,4 +35,25 @@ class BaseOutputValidationBackend(object):
         raise NotImplementedError("must be implemented by subclasses")
 
     def validate_transaction(self, transaction):
+        raise NotImplementedError("must be implemented by subclasses")
+
+    def validate_receipt(self, receipt):
+        raise NotImplementedError("must be implemented by subclasses")
+
+    def validate_accounts(self, accounts):
+        raise NotImplementedError("must be implemented by subclasses")
+
+    def validate_balance(self, account):
+        raise NotImplementedError("must be implemented by subclasses")
+
+    def validate_code(self, account):
+        raise NotImplementedError("must be implemented by subclasses")
+
+    def validate_nonce(self, account):
+        raise NotImplementedError("must be implemented by subclasses")
+
+    def validate_return_data(self, data):
+        raise NotImplementedError("must be implemented by subclasses")
+
+    def validate_gas_estimate(self, gas_estimate):
         raise NotImplementedError("must be implemented by subclasses")

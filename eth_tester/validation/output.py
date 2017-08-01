@@ -6,7 +6,6 @@ from cytoolz import (
 
 from eth_utils import (
     is_canonical_address,
-    is_list_like,
 )
 
 from eth_tester.constants import (
@@ -19,6 +18,8 @@ from eth_tester.exceptions import (
 from .base import BaseOutputValidationBackend
 from .common import (
     if_not_null,
+    validate_any,
+    validate_array,
     validate_bytes,
     validate_positive_integer,
     validate_dict,
@@ -57,41 +58,9 @@ def validate_canonical_address(value):
         raise ValidationError("Value must be a 20 byte string")
 
 
-BLOCK_VALIDATORS = {
-    "number": validate_positive_integer,
-    "hash": validate_block_hash,
-    "parent_hash": validate_block_hash,
-    "nonce": validate_nonce,
-    "sha3_uncles": validate_32_byte_string,
-    "logs_bloom": validate_logs_bloom,
-    "transactions_root": validate_32_byte_string,
-    "state_root": validate_32_byte_string,
-    "miner": validate_canonical_address,
-    "difficulty": validate_positive_integer,
-    "total_difficulty": validate_positive_integer,
-    "size": validate_positive_integer,
-    "extra_data": validate_32_byte_string,
-    "gas_limit": validate_positive_integer,
-    "gas_used": validate_positive_integer,
-    "timestamp": validate_positive_integer,
-    "transactions": "TODO",
-    "uncles": "TODO",
-}
-
-
-validate_block = partial(validate_dict, key_validators=BLOCK_VALIDATORS)
-
-
 def validate_log_entry_type(value):
     if value not in {"pending", "mined"}:
         raise ValidationError("Log entry type must be one of 'pending' or 'mined'")
-
-
-def validate_log_entry_topics(value):
-    if not is_list_like(value):
-        raise ValidationError("Log entry topics must be a sequence")
-    for item in value:
-        validate_32_byte_string(item)
 
 
 LOG_ENTRY_VALIDATORS = {
@@ -103,7 +72,7 @@ LOG_ENTRY_VALIDATORS = {
     "block_number": if_not_null(validate_positive_integer),
     "address": validate_canonical_address,
     "data": validate_bytes,
-    "topics": validate_log_entry_topics,
+    "topics": partial(validate_array, validator=validate_32_byte_string),
 }
 
 
@@ -138,8 +107,64 @@ TRANSACTION_VALIDATORS = {
 validate_transaction = partial(validate_dict, key_validators=TRANSACTION_VALIDATORS)
 
 
+RECEIPT_VALIDATORS = {
+    "transaction_hash": validate_32_byte_string,
+    "transaction_index": if_not_null(validate_positive_integer),
+    "block_number": if_not_null(validate_positive_integer),
+    "block_hash": if_not_null(validate_32_byte_string),
+    "cumulative_gas_used": validate_positive_integer,
+    "gas_used": validate_positive_integer,
+    "contract_address": if_not_null(validate_canonical_address),
+    "logs": partial(validate_array, validator=validate_log_entry),
+}
+
+
+validate_receipt = partial(validate_dict, key_validators=RECEIPT_VALIDATORS)
+
+
+BLOCK_VALIDATORS = {
+    "number": validate_positive_integer,
+    "hash": validate_block_hash,
+    "parent_hash": validate_block_hash,
+    "nonce": validate_nonce,
+    "sha3_uncles": validate_32_byte_string,
+    "logs_bloom": validate_logs_bloom,
+    "transactions_root": validate_32_byte_string,
+    "state_root": validate_32_byte_string,
+    "miner": validate_canonical_address,
+    "difficulty": validate_positive_integer,
+    "total_difficulty": validate_positive_integer,
+    "size": validate_positive_integer,
+    "extra_data": validate_32_byte_string,
+    "gas_limit": validate_positive_integer,
+    "gas_used": validate_positive_integer,
+    "timestamp": validate_positive_integer,
+    "transactions": partial(
+        validate_any,
+        validators=(
+            partial(validate_array, validator=validate_32_byte_string),
+            partial(validate_array, validator=validate_transaction),
+        ),
+    ),
+    "uncles": partial(validate_array, validator=validate_32_byte_string),
+}
+
+
+validate_block = partial(validate_dict, key_validators=BLOCK_VALIDATORS)
+
+
+validate_accounts = partial(validate_array, validator=validate_canonical_address)
+
+
 class OutputValidationBackend(BaseOutputValidationBackend):
     validate_block_hash = staticmethod(validate_block_hash)
     validate_block = staticmethod(validate_block)
     validate_log_entry = staticmethod(validate_log_entry)
     validate_transaction = staticmethod(validate_transaction)
+    validate_receipt = staticmethod(validate_receipt)
+    validate_accounts = staticmethod(validate_accounts)
+    validate_balance = staticmethod(validate_uint256)
+    validate_code = staticmethod(validate_bytes)
+    validate_nonce = staticmethod(validate_uint256)
+    validate_return_data = staticmethod(validate_bytes)
+    validate_gas_estimate = staticmethod(validate_uint256)

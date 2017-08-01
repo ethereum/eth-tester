@@ -200,3 +200,4 @@ class InputValidationBackend(BaseInputValidationBackend):
     validate_filter_id = staticmethod(validate_filter_id)
     validate_filter_params = staticmethod(validate_filter_params)
     validate_transaction = staticmethod(validate_transaction)
+    validate_account = staticmethod(validate_address)
