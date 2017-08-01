@@ -26,8 +26,8 @@ from eth_tester.exceptions import (
     TransactionNotFound,
     UnknownFork,
 )
-from eth_tester.chain_backends.base import BaseChainBackend
-from eth_tester.chain_backends.pyethereum.utils import (
+from eth_tester.backends.base import BaseChainBackend
+from eth_tester.backends.pyethereum.utils import (
     get_pyethereum_version,
     is_pyethereum16_available,
 )

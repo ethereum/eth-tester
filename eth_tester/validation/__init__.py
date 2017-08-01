@@ -5,24 +5,37 @@ from eth_tester.utils.module_loading import (
     import_string,
 )
 
-from .strict import (  # noqa: F401
-    StrictValidationBackend,
+from .input import (  # noqa: F401
+    InputValidationBackend,
+)
+from .output import (  # noqa: F401
+    OutputValidationBackend,
 )
 
 
-DEFAULT_VALIDATION_BACKEND_CLASS = get_import_path(StrictValidationBackend)
+DEFAULT_INPUT_VALIDATION_BACKEND_CLASS = get_import_path(InputValidationBackend)
+DEFAULT_OUTPUT_VALIDATION_BACKEND_CLASS = get_import_path(OutputValidationBackend)
 
 
-def get_validation_backend_class(backend_import_path=None):
-    if backend_import_path is None:
-        backend_import_path = os.environ.get(
-            'ETHEREUM_TESTER_VALIDATION_BACKEND',
-            DEFAULT_VALIDATION_BACKEND_CLASS,
-        )
+def get_validation_backend_class(backend_import_path):
     return import_string(backend_import_path)
 
 
-def get_validation_backend(backend_class=None):
+def get_input_validator(backend_class=None):
     if backend_class is None:
-        backend_class = get_validation_backend_class()
+        backend_import_path = os.environ.get(
+            'ETHEREUM_TESTER_INPUT_VALIDATOR_BACKEND',
+            DEFAULT_INPUT_VALIDATION_BACKEND_CLASS,
+        )
+        backend_class = get_validation_backend_class(backend_import_path)
+    return backend_class()
+
+
+def get_output_validator(backend_class=None):
+    if backend_class is None:
+        backend_import_path = os.environ.get(
+            'ETHEREUM_TESTER_OUTPUT_VALIDATOR_BACKEND',
+            DEFAULT_OUTPUT_VALIDATION_BACKEND_CLASS,
+        )
+        backend_class = get_validation_backend_class(backend_import_path)
     return backend_class()

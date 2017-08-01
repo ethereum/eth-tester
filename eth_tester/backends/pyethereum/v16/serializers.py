@@ -74,7 +74,7 @@ def serialize_block(block, transaction_serialize_fn=serialize_transaction_hash):
         "sha3_uncles": block.uncles_hash,
         "logs_bloom": block.bloom,
         "transactions_root": block.tx_list_root,
-        "stateRoot": block.state_root,
+        "state_root": block.state_root,
         "miner": block.coinbase,
         "difficulty": block.difficulty,
         "total_difficulty": block.chain_difficulty(),
@@ -84,5 +84,5 @@ def serialize_block(block, transaction_serialize_fn=serialize_transaction_hash):
         "gas_used": block.gas_used,
         "timestamp": block.timestamp,
         "transactions": transactions,
-        "uncles": block.uncles
+        "uncles": block.uncles,
     }

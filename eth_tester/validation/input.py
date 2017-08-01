@@ -5,6 +5,7 @@ from cytoolz import (
 )
 
 from eth_utils import (
+    is_dict,
     is_boolean,
     is_integer,
     is_string,
@@ -24,18 +25,11 @@ from eth_tester.exceptions import (
     ValidationError,
 )
 
-from .base import BaseValidationBackend
-
-
-def validate_positive_integer(value, name):
-    error_message = "{0} values must be positive integers.  Got: {1}".format(
-        name,
-        value,
-    )
-    if not is_integer(value) or is_boolean(value):
-        raise ValidationError(error_message)
-    elif value < 0:
-        raise ValidationError(error_message)
+from .base import BaseInputValidationBackend
+from .common import (
+    validate_positive_integer,
+    validate_uint256,
+)
 
 
 def is_32byte_hex_string(value):
@@ -55,7 +49,7 @@ MAX_TIMESTAMP = 33040162800  # January 1st 3017 is appropriately far in the futu
 
 
 def validate_timestamp(value):
-    validate_positive_integer(value, name="Timestamp")
+    validate_positive_integer(value)
 
     if value >= MAX_TIMESTAMP:
         raise ValidationError(
@@ -82,7 +76,7 @@ def validate_block_number(value):
 
 validate_block_hash = partial(validate_32_byte_hex_value, name="Block hash")
 validate_transaction_hash = partial(validate_32_byte_hex_value, name="Transaction hash")
-validate_filter_id = partial(validate_positive_integer, name="Filter ID")
+validate_filter_id = partial(validate_positive_integer)
 
 
 def validate_address(value):
@@ -138,10 +132,71 @@ def validate_filter_params(from_block, to_block, address, topics):
         raise ValidationError(invalid_topics_message)
 
 
-class StrictValidationBackend(BaseValidationBackend):
+TRANSACTION_KEYS = {
+    'from',
+    'to',
+    'gas',
+    'gas_price',
+    'value',
+    'data',
+}
+
+REQUIRED_TRANSACTION_KEYS = {
+    'from',
+    'to',
+    'gas',
+}
+
+
+def validate_transaction(value):
+    if not is_dict(value):
+        raise ValidationError("Transaction must be a dictionary.  Got: {0}".format(type(value)))
+
+    unknown_keys = tuple(sorted(set(value.keys()).difference(TRANSACTION_KEYS)))
+    if unknown_keys:
+        raise ValidationError(
+            "Only the keys '{0}' are allowed.  Got extra keys: '{1}'".format(
+                "/".join(tuple(sorted(TRANSACTION_KEYS))),
+                "/".join(unknown_keys),
+            )
+        )
+
+    missing_required_keys = tuple(sorted(REQUIRED_TRANSACTION_KEYS.difference(value.keys())))
+    if missing_required_keys:
+        raise ValidationError(
+            "Transaction is missing the required keys: '{0}'".format(
+                "/".join(missing_required_keys),
+            )
+        )
+
+    if 'from' in value:
+        validate_address(value['from'])
+    if 'to' in value and value['to'] != '':
+        validate_address(value['to'])
+    if 'gas' in value:
+        validate_uint256(value['gas'])
+    if 'gas_price' in value:
+        validate_uint256(value['gas_price'])
+    if 'value' in value:
+        validate_uint256(value['value'])
+    if 'data' in value:
+        bad_data_message = (
+            "Transaction data must be a hexidecimal encoded string.  Got: "
+            "{0}".format(value['data'])
+        )
+        if not is_text(value['data']):
+            raise ValidationError(bad_data_message)
+        elif not remove_0x_prefix(value['data']):
+            pass
+        elif not is_hex(value['data']):
+            raise ValidationError(bad_data_message)
+
+
+class InputValidationBackend(BaseInputValidationBackend):
     validate_timestamp = staticmethod(validate_timestamp)
     validate_block_number = staticmethod(validate_block_number)
     validate_block_hash = staticmethod(validate_block_hash)
     validate_transaction_hash = staticmethod(validate_transaction_hash)
     validate_filter_id = staticmethod(validate_filter_id)
     validate_filter_params = staticmethod(validate_filter_params)
+    validate_transaction = staticmethod(validate_transaction)

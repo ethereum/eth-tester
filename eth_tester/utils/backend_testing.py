@@ -33,6 +33,7 @@ from eth_tester.constants import (
 )
 from eth_tester.exceptions import (
     FilterNotFound,
+    ValidationError,
 )
 
 from .emitter_contract import (
@@ -702,7 +703,7 @@ class BaseTestBackendDirect(object):
         before_timestamp = eth_tester.get_block_by_number('pending')['timestamp']
 
         # now travel forward 2 minutes
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             eth_tester.time_travel(before_timestamp - 10)
 
     #
