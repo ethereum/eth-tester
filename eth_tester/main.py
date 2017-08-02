@@ -60,7 +60,6 @@ def get_default_fork_blocks():
 class EthereumTester(object):
     backend = None
     auto_mine_transactions = None
-    auto_mine_interval = None
     fork_blocks = None
 
     def __init__(self,
@@ -68,7 +67,6 @@ class EthereumTester(object):
                  validator=None,
                  normalizer=None,
                  auto_mine_transactions=True,
-                 auto_mine_interval=None,
                  fork_blocks=None):
         if backend is None:
             backend = get_chain_backend()
@@ -87,7 +85,6 @@ class EthereumTester(object):
         self.normalizer = normalizer
 
         self.auto_mine_transactions = auto_mine_transactions
-        self.auto_mine_interval = auto_mine_interval
         self.fork_blocks = fork_blocks
 
         self._reset_local_state()
