@@ -275,7 +275,9 @@ class EthereumTester(object):
 
         # feed the transaction hash to any pending transaction filters.
         for _, filter in self._pending_transaction_filters.items():
-            raw_transaction_hash = self.normalizer.normalize_inbound_transaction_hash(transaction_hash)
+            raw_transaction_hash = self.normalizer.normalize_inbound_transaction_hash(
+                transaction_hash,
+            )
             filter.add(raw_transaction_hash)
 
         if self._log_filters:
