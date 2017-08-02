@@ -1,8 +1,11 @@
+from __future__ import unicode_literals
+
 import rlp
 
-from eth_utils import (
-    pad_left,
-    int_to_big_endian,
+from eth_tester.utils.encoding import (
+    zpad,
+    zpad32,
+    int_to_32byte_big_endian,
 )
 
 
@@ -63,7 +66,7 @@ def serialize_log(block, transaction, transaction_index, log, log_index, is_pend
         "block_number": None if is_pending else block.number,
         "address": log.address,
         "data": log.data,
-        "topics": [pad_left(int_to_big_endian(topic), 32, b'\x00') for topic in log.topics],
+        "topics": [int_to_32byte_big_endian(topic) for topic in log.topics],
     }
 
 
@@ -78,7 +81,7 @@ def serialize_block(block, transaction_serialize_fn=serialize_transaction_hash):
         "number": block.number,
         "hash": block.hash,
         "parent_hash": block.prevhash,
-        "nonce": pad_left(block.nonce, 8, b'\x00'),
+        "nonce": zpad(block.nonce, 8),
         "sha3_uncles": block.uncles_hash,
         "logs_bloom": block.bloom,
         "transactions_root": block.tx_list_root,
@@ -87,7 +90,7 @@ def serialize_block(block, transaction_serialize_fn=serialize_transaction_hash):
         "difficulty": block.difficulty,
         "total_difficulty": block.chain_difficulty(),
         "size": len(rlp.encode(block)),
-        "extra_data": pad_left(block.extra_data, 32, b'\x00'),
+        "extra_data": zpad32(block.extra_data),
         "gas_limit": block.gas_limit,
         "gas_used": block.gas_used,
         "timestamp": block.timestamp,

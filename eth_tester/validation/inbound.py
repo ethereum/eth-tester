@@ -28,6 +28,7 @@ from eth_tester.exceptions import (
 from .common import (
     validate_positive_integer,
     validate_uint256,
+    validate_text,
 )
 
 
@@ -65,6 +66,7 @@ def validate_block_number(value):
         "'latest', 'earliest', or 'pending'.  Got: {0}".format(value)
     )
     if is_string(value):
+        validate_text(value)
         if value not in BLOCK_NUMBER_META_VALUES:
             raise ValidationError(error_message)
     elif not is_integer(value) or is_boolean(value):

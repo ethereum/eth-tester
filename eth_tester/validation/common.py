@@ -5,6 +5,7 @@ import functools
 from eth_utils import (
     is_boolean,
     is_bytes,
+    is_text,
     is_dict,
     is_integer,
     is_list_like,
@@ -39,6 +40,11 @@ def validate_uint256(value):
 def validate_bytes(value):
     if not is_bytes(value):
         raise ValidationError("Value must be a byte string.  Got type: {0}".format(type(value)))
+
+
+def validate_text(value):
+    if not is_text(value):
+        raise ValidationError("Value must be a text string.  Got type: {0}".format(type(value)))
 
 
 def validate_is_dict(value):

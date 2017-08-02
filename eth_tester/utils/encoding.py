@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from cytoolz.functoolz import (
     compose,
     partial,
@@ -14,6 +16,6 @@ zpad32 = partial(pad_left, to_size=32, pad_with=b'\x00')
 
 
 int_to_32byte_big_endian = compose(
-    int_to_big_endian,
     zpad32,
+    int_to_big_endian,
 )
