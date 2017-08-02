@@ -13,13 +13,13 @@ from eth_utils import (
 from eth_tester.exceptions import (
     ValidationError,
 )
-from eth_tester.validation import InputValidationBackend
+from eth_tester.validation import DefaultValidator
 
 
 @pytest.fixture
-def input_validator():
-    _input_validator = InputValidationBackend()
-    return _input_validator
+def validator():
+    _validator = DefaultValidator()
+    return _validator
 
 
 @pytest.mark.parametrize(
@@ -35,12 +35,12 @@ def input_validator():
         (False, False),
     ),
 )
-def test_time_travel_input_timestamp_validation(input_validator, timestamp, is_valid):
+def test_time_travel_input_timestamp_validation(validator, timestamp, is_valid):
     if is_valid:
-        input_validator.validate_timestamp(timestamp)
+        validator.validate_inbound_timestamp(timestamp)
     else:
         with pytest.raises(ValidationError):
-            input_validator.validate_timestamp(timestamp)
+            validator.validate_inbound_timestamp(timestamp)
 
 
 @pytest.mark.parametrize(
@@ -60,12 +60,12 @@ def test_time_travel_input_timestamp_validation(input_validator, timestamp, is_v
         (b"earliest", False),
     ),
 )
-def test_block_number_intput_validation(input_validator, block_number, is_valid):
+def test_block_number_intput_validation(validator, block_number, is_valid):
     if is_valid:
-        input_validator.validate_block_number(block_number)
+        validator.validate_inbound_block_number(block_number)
     else:
         with pytest.raises(ValidationError):
-            input_validator.validate_block_number(block_number)
+            validator.validate_inbound_block_number(block_number)
 
 
 @pytest.mark.parametrize(
@@ -87,12 +87,12 @@ def test_block_number_intput_validation(input_validator, block_number, is_valid)
         (b'0x' + b'0' * 64, False),
     ),
 )
-def test_block_hash_input_validation(input_validator, block_hash, is_valid):
+def test_block_hash_input_validation(validator, block_hash, is_valid):
     if is_valid:
-        input_validator.validate_block_hash(block_hash)
+        validator.validate_inbound_block_hash(block_hash)
     else:
         with pytest.raises(ValidationError):
-            input_validator.validate_block_hash(block_hash)
+            validator.validate_inbound_block_hash(block_hash)
 
 
 def _make_filter_params(from_block=None, to_block=None, address=None, topics=None):
@@ -118,12 +118,12 @@ def _make_filter_params(from_block=None, to_block=None, address=None, topics=Non
         ('1', False),
     ),
 )
-def test_filter_id_input_validation(input_validator, filter_id, is_valid):
+def test_filter_id_input_validation(validator, filter_id, is_valid):
     if is_valid:
-        input_validator.validate_filter_id(filter_id)
+        validator.validate_inbound_filter_id(filter_id)
     else:
         with pytest.raises(ValidationError):
-            input_validator.validate_filter_id(filter_id)
+            validator.validate_inbound_filter_id(filter_id)
 
 
 ADDRESS_A = encode_hex(b'\x00' * 19 + b'\x01')
@@ -160,12 +160,12 @@ TOPIC_B = encode_hex(b'\x00' * 31 + b'\x02')
         (_make_filter_params(topics=[[ADDRESS_A], [TOPIC_B]]), False),
     ),
 )
-def test_filter_params_input_validation(input_validator, filter_params, is_valid):
+def test_filter_params_input_validation(validator, filter_params, is_valid):
     if is_valid:
-        input_validator.validate_filter_params(**filter_params)
+        validator.validate_inbound_filter_params(**filter_params)
     else:
         with pytest.raises(ValidationError):
-            input_validator.validate_filter_params(**filter_params)
+            validator.validate_inbound_filter_params(**filter_params)
 
 
 @to_dict
@@ -203,9 +203,9 @@ def _make_transaction(_from=None, to=None, gas=None, gas_price=None, value=None,
         (_make_transaction(_from=ADDRESS_A, to='', gas=21000, data='0x0'), False),
     ),
 )
-def test_transaction_input_validation(input_validator, transaction, is_valid):
+def test_transaction_input_validation(validator, transaction, is_valid):
     if is_valid:
-        input_validator.validate_transaction(transaction)
+        validator.validate_inbound_transaction(transaction)
     else:
         with pytest.raises(ValidationError):
-            input_validator.validate_transaction(transaction)
+            validator.validate_inbound_transaction(transaction)

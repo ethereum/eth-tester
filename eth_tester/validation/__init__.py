@@ -5,37 +5,23 @@ from eth_tester.utils.module_loading import (
     import_string,
 )
 
-from .input import (
-    InputValidationBackend,
-)
-from .output import (
-    OutputValidationBackend,
+from .default import (
+    DefaultValidator,
 )
 
 
-DEFAULT_INPUT_VALIDATION_BACKEND_CLASS = get_import_path(InputValidationBackend)
-DEFAULT_OUTPUT_VALIDATION_BACKEND_CLASS = get_import_path(OutputValidationBackend)
+DEFAULT_VALIDATOR_CLASS = get_import_path(DefaultValidator)
 
 
 def get_validation_backend_class(backend_import_path):
     return import_string(backend_import_path)
 
 
-def get_input_validator(backend_class=None):
+def get_validator(backend_class=None):
     if backend_class is None:
         backend_import_path = os.environ.get(
-            'ETHEREUM_TESTER_INPUT_VALIDATOR_BACKEND',
-            DEFAULT_INPUT_VALIDATION_BACKEND_CLASS,
-        )
-        backend_class = get_validation_backend_class(backend_import_path)
-    return backend_class()
-
-
-def get_output_validator(backend_class=None):
-    if backend_class is None:
-        backend_import_path = os.environ.get(
-            'ETHEREUM_TESTER_OUTPUT_VALIDATOR_BACKEND',
-            DEFAULT_OUTPUT_VALIDATION_BACKEND_CLASS,
+            'ETHEREUM_TESTER_VALIDATOR',
+            DEFAULT_VALIDATOR_CLASS,
         )
         backend_class = get_validation_backend_class(backend_import_path)
     return backend_class()

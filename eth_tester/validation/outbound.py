@@ -15,7 +15,6 @@ from eth_tester.exceptions import (
     ValidationError,
 )
 
-from .base import BaseOutputValidationBackend
 from .common import (
     if_not_null,
     validate_any,
@@ -98,9 +97,9 @@ TRANSACTION_VALIDATORS = {
     "gas": validate_uint256,
     "gas_price": validate_uint256,
     "data": validate_bytes,
-    "v": validate_uint256,
+    "v": validate_signature_v,
     "r": validate_uint256,
-    "s": validate_signature_v,
+    "s": validate_uint256,
 }
 
 
@@ -154,17 +153,3 @@ validate_block = partial(validate_dict, key_validators=BLOCK_VALIDATORS)
 
 
 validate_accounts = partial(validate_array, validator=validate_canonical_address)
-
-
-class OutputValidationBackend(BaseOutputValidationBackend):
-    validate_block_hash = staticmethod(validate_block_hash)
-    validate_block = staticmethod(validate_block)
-    validate_log_entry = staticmethod(validate_log_entry)
-    validate_transaction = staticmethod(validate_transaction)
-    validate_receipt = staticmethod(validate_receipt)
-    validate_accounts = staticmethod(validate_accounts)
-    validate_balance = staticmethod(validate_uint256)
-    validate_code = staticmethod(validate_bytes)
-    validate_nonce = staticmethod(validate_uint256)
-    validate_return_data = staticmethod(validate_bytes)
-    validate_gas_estimate = staticmethod(validate_uint256)

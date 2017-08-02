@@ -1,59 +1,61 @@
-class BaseInputValidationBackend(object):
-    def validate_timestamp(self, value):
+class BaseValidator(object):
+    #
+    # Inbound
+    #
+    def validate_inbound_account(self, account):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_block_number(self, value):
+    def validate_inbound_block_hash(self, block_hash):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_block_hash(self, value):
+    def validate_inbound_block_number(self, block_number):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_transaction_hash(self, value):
+    def validate_inbound_filter_id(self, filter_id):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_filter_id(self, value):
+    def validate_inbound_filter_params(self, from_block, to_block, address, topics):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_filter_params(self, from_block, to_block, address, topics):
+    def validate_inbound_timestamp(self, timestamp):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_transaction(self, transaction):
+    def validate_inbound_transaction(self, transaction):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_account(self, transaction):
+    def validate_inbound_transaction_hash(self, transaction_hash):
         raise NotImplementedError("must be implemented by subclasses")
 
-
-class BaseOutputValidationBackend(object):
-    def validate_block_hash(self, block_hash):
+    # Outbound
+    def validate_outbound_accounts(self, accounts):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_block(self, block):
+    def validate_outbound_balance(self, account):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_log_entry(self, log_entry):
+    def validate_outbound_block_hash(self, block_hash):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_transaction(self, transaction):
+    def validate_outbound_block(self, block):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_receipt(self, receipt):
+    def validate_outbound_code(self, account):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_accounts(self, accounts):
+    def validate_outbound_gas_estimate(self, gas_estimate):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_balance(self, account):
+    def validate_outbound_nonce(self, account):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_code(self, account):
+    def validate_outbound_receipt(self, receipt):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_nonce(self, account):
+    def validate_outbound_return_data(self, data):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_return_data(self, data):
+    def validate_outbound_transaction(self, transaction):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_gas_estimate(self, gas_estimate):
+    def validate_outbound_transaction_hash(self, transaction_hash):
         raise NotImplementedError("must be implemented by subclasses")

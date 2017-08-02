@@ -29,8 +29,7 @@ from eth_tester.backends import (
     get_chain_backend,
 )
 from eth_tester.validation import (
-    get_input_validator,
-    get_output_validator,
+    get_validator,
 )
 
 from eth_tester.utils.filters import (
@@ -63,8 +62,7 @@ class EthereumTester(object):
 
     def __init__(self,
                  backend=None,
-                 input_validator=None,
-                 output_validator=None,
+                 validator=None,
                  normalizer=None,
                  auto_mine_transactions=True,
                  auto_mine_interval=None,
@@ -72,11 +70,8 @@ class EthereumTester(object):
         if backend is None:
             backend = get_chain_backend()
 
-        if input_validator is None:
-            input_validator = get_input_validator()
-
-        if output_validator is None:
-            output_validator = get_output_validator()
+        if validator is None:
+            validator = get_validator()
 
         if normalizer is None:
             normalizer = get_normalizer_backend()
@@ -85,8 +80,7 @@ class EthereumTester(object):
             fork_blocks = get_default_fork_blocks()
 
         self.backend = backend
-        self.input_validator = input_validator
-        self.output_validator = output_validator
+        self.validator = validator
         self.normalizer = normalizer
 
         self.auto_mine_transactions = auto_mine_transactions
@@ -123,7 +117,7 @@ class EthereumTester(object):
     # Time Traveling
     #
     def time_travel(self, to_timestamp):
-        self.input_validator.validate_timestamp(to_timestamp)
+        self.validator.validate_inbound_timestamp(to_timestamp)
         # make sure we are not traveling back in time as this is not possible.
         current_timestamp = self.get_block_by_number('pending')['timestamp']
         if to_timestamp <= current_timestamp:
@@ -138,60 +132,71 @@ class EthereumTester(object):
     #
     def get_accounts(self):
         raw_accounts = self.backend.get_accounts()
-        self.output_validator.validate_accounts(raw_accounts)
-        accounts = self.normalizer.normalize_accounts(raw_accounts)
+        self.validator.validate_outbound_accounts(raw_accounts)
+        accounts = self.normalizer.normalize_outbound_accounts(raw_accounts)
         return accounts
 
     def get_balance(self, account):
-        self.input_validator.validate_account(account)
-        raw_balance = self.backend.get_balance(account)
-        self.output_validator.validate_balance(raw_balance)
-        balance = self.normalizer.normalize_balance(raw_balance)
+        self.validator.validate_inbound_account(account)
+        raw_account = self.normalizer.normalize_inbound_account(account)
+        raw_balance = self.backend.get_balance(raw_account)
+        self.validator.validate_outbound_balance(raw_balance)
+        balance = self.normalizer.normalize_outbound_balance(raw_balance)
         return balance
 
     def get_code(self, account):
-        self.input_validator.validate_account(account)
-        raw_code = self.backend.get_code(account)
-        self.output_validator.validate_code(raw_code)
-        code = self.normalizer.normalize_code(raw_code)
+        self.validator.validate_inbound_account(account)
+        raw_account = self.normalizer.normalize_inbound_account(account)
+        raw_code = self.backend.get_code(raw_account)
+        self.validator.validate_outbound_code(raw_code)
+        code = self.normalizer.normalize_outbound_code(raw_code)
         return code
 
     def get_nonce(self, account):
-        self.input_validator.validate_account(account)
-        raw_nonce = self.backend.get_nonce(account)
-        self.output_validator.validate_nonce(raw_nonce)
-        nonce = self.normalizer.normalize_nonce(raw_nonce)
+        self.validator.validate_inbound_account(account)
+        raw_account = self.normalizer.normalize_inbound_account(account)
+        raw_nonce = self.backend.get_nonce(raw_account)
+        self.validator.validate_outbound_nonce(raw_nonce)
+        nonce = self.normalizer.normalize_outbound_nonce(raw_nonce)
         return nonce
 
     #
     # Blocks, Transactions, Receipts
     #
     def get_transaction_by_hash(self, transaction_hash):
-        self.input_validator.validate_transaction_hash(transaction_hash)
-        raw_transaction = self.backend.get_transaction_by_hash(transaction_hash)
-        self.output_validator.validate_transaction(raw_transaction)
-        transaction = self.normalizer.normalize_transaction(raw_transaction)
+        self.validator.validate_inbound_transaction_hash(transaction_hash)
+        raw_transaction_hash = self.normalizer.normalize_inbound_transaction_hash(
+            transaction_hash,
+        )
+        raw_transaction = self.backend.get_transaction_by_hash(raw_transaction_hash)
+        self.validator.validate_outbound_transaction(raw_transaction)
+        transaction = self.normalizer.normalize_outbound_transaction(raw_transaction)
         return transaction
 
     def get_block_by_number(self, block_number="latest"):
-        self.input_validator.validate_block_number(block_number)
-        raw_block = self.backend.get_block_by_number(block_number)
-        self.output_validator.validate_block(raw_block)
-        block = self.normalizer.normalize_block(raw_block)
+        self.validator.validate_inbound_block_number(block_number)
+        raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
+        raw_block = self.backend.get_block_by_number(raw_block_number)
+        self.validator.validate_outbound_block(raw_block)
+        block = self.normalizer.normalize_outbound_block(raw_block)
         return block
 
     def get_block_by_hash(self, block_hash):
-        self.input_validator.validate_block_hash(block_hash)
-        raw_block = self.backend.get_block_by_hash(block_hash)
-        self.output_validator.validate_block(raw_block)
-        block = self.normalizer.normalize_block(raw_block)
+        self.validator.validate_inbound_block_hash(block_hash)
+        raw_block_hash = self.normalizer.normalize_inbound_block_hash(block_hash)
+        raw_block = self.backend.get_block_by_hash(raw_block_hash)
+        self.validator.validate_outbound_block(raw_block)
+        block = self.normalizer.normalize_outbound_block(raw_block)
         return block
 
     def get_transaction_receipt(self, transaction_hash):
-        self.input_validator.validate_transaction_hash(transaction_hash)
-        raw_receipt = self.backend.get_transaction_receipt(transaction_hash)
-        self.output_validator.validate_receipt(raw_receipt)
-        receipt = self.normalizer.normalize_receipt(raw_receipt)
+        self.validator.validate_inbound_transaction_hash(transaction_hash)
+        raw_transaction_hash = self.normalizer.normalize_inbound_transaction_hash(
+            transaction_hash,
+        )
+        raw_receipt = self.backend.get_transaction_receipt(raw_transaction_hash)
+        self.validator.validate_outbound_receipt(raw_receipt)
+        receipt = self.normalizer.normalize_outbound_receipt(raw_receipt)
         return receipt
 
     #
@@ -204,7 +209,13 @@ class EthereumTester(object):
         self.auto_mine_transactions = False
 
     def mine_blocks(self, num_blocks=1, coinbase=None):
-        raw_block_hashes = self.backend.mine_blocks(num_blocks, coinbase)
+        if coinbase is None:
+            raw_coinbase = None
+        else:
+            self.validator.validate_inbound_account(coinbase)
+            raw_coinbase = self.normalizer.normalize_inbound_account(coinbase)
+
+        raw_block_hashes = self.backend.mine_blocks(num_blocks, raw_coinbase)
 
         if len(raw_block_hashes) != num_blocks:
             raise ValidationError(
@@ -215,9 +226,9 @@ class EthereumTester(object):
             )
 
         for raw_block_hash in raw_block_hashes:
-            self.output_validator.validate_block_hash(raw_block_hash)
+            self.validator.validate_outbound_block_hash(raw_block_hash)
         block_hashes = [
-            self.normalizer.normalize_block_hash(raw_block_hash)
+            self.normalizer.normalize_outbound_block_hash(raw_block_hash)
             for raw_block_hash
             in raw_block_hashes
         ]
@@ -251,10 +262,13 @@ class EthereumTester(object):
     # Transaction Sending
     #
     def send_transaction(self, transaction):
-        self.input_validator.validate_transaction(transaction)
-        raw_transaction_hash = self.backend.send_transaction(transaction)
-        self.output_validator.validate_transaction_hash(raw_transaction_hash)
-        transaction_hash = self.normalizer.normalize_transaction(raw_transaction_hash)
+        self.validator.validate_inbound_transaction(transaction)
+        raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
+        raw_transaction_hash = self.backend.send_transaction(raw_transaction)
+        self.validator.validate_outbound_transaction_hash(raw_transaction_hash)
+        transaction_hash = self.normalizer.normalize_outbound_transaction_hash(
+            raw_transaction_hash,
+        )
 
         # feed the transaction hash to any pending transaction filters.
         for _, filter in self._pending_transaction_filters.items():
@@ -274,18 +288,21 @@ class EthereumTester(object):
 
     # TODO: validate input & output
     def call(self, transaction, block_number="latest"):
-        self.input_validator.validate_transaction(transaction)
-        self.input_validator.validate_block_number(block_number)
-        raw_result = self.backend.call(transaction, block_number)
-        self.output_validator.validate_return_data(raw_result)
-        result = self.normalizer.normalize_return_data(raw_result)
+        self.validator.validate_inbound_transaction(transaction)
+        raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
+        self.validator.validate_inbound_block_number(block_number)
+        raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
+        raw_result = self.backend.call(raw_transaction, raw_block_number)
+        self.validator.validate_outbound_return_data(raw_result)
+        result = self.normalizer.normalize_outbound_return_data(raw_result)
         return result
 
     def estimate_gas(self, transaction):
-        self.input_validator.validate_transaction(transaction)
-        raw_gas_estimate = self.backend.estimate_gas(transaction)
-        self.output_validator.validate_gas_estimate(raw_gas_estimate)
-        gas_estimate = self.normalizer.normalize_gas_estimate(raw_gas_estimate)
+        self.validator.validate_inbound_transaction(transaction)
+        raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
+        raw_gas_estimate = self.backend.estimate_gas(raw_transaction)
+        self.validator.validate_outbound_gas_estimate(raw_gas_estimate)
+        gas_estimate = self.normalizer.normalize_outbound_gas_estimate(raw_gas_estimate)
         return gas_estimate
 
     #
@@ -354,80 +371,101 @@ class EthereumTester(object):
     # Filters
     #
     def create_block_filter(self):
-        filter_id = next(self._filter_counter)
-        self._block_filters[filter_id] = Filter(filter_params=None)
+        raw_filter_id = next(self._filter_counter)
+        self._block_filters[raw_filter_id] = Filter(filter_params=None)
+        filter_id = self.normalizer.normalize_outbound_filter_id(raw_filter_id)
         return filter_id
 
     def create_pending_transaction_filter(self):
-        filter_id = next(self._filter_counter)
-        self._pending_transaction_filters[filter_id] = Filter(filter_params=None)
+        raw_filter_id = next(self._filter_counter)
+        self._pending_transaction_filters[raw_filter_id] = Filter(filter_params=None)
+        filter_id = self.normalizer.normalize_outbound_filter_id(raw_filter_id)
         return filter_id
 
     def create_log_filter(self, from_block=None, to_block=None, address=None, topics=None):
-        self.input_validator.validate_filter_params(
+        self.validator.validate_inbound_filter_params(
+            from_block=from_block,
+            to_block=to_block,
+            address=address,
+            topics=topics,
+        )
+        (
+            raw_from_block,
+            raw_to_block,
+            raw_address,
+            raw_topics,
+        ) = self.normalizer.normalize_inbound_filter_params(
             from_block=from_block,
             to_block=to_block,
             address=address,
             topics=topics,
         )
 
-        filter_id = next(self._filter_counter)
-        filter_params = {
-            'from_block': from_block,
-            'to_block': to_block,
-            'addresses': address,
-            'topics': topics,
+        raw_filter_id = next(self._filter_counter)
+        raw_filter_params = {
+            'from_block': raw_from_block,
+            'to_block': raw_to_block,
+            'addresses': raw_address,
+            'topics': raw_topics,
         }
         filter_fn = partial(
             check_if_log_matches,
-            **filter_params
+            **raw_filter_params
         )
-        self._log_filters[filter_id] = Filter(filter_params=filter_params, filter_fn=filter_fn)
-        if is_integer(from_block):
-            if is_integer(to_block):
-                upper_bound = to_block
+        self._log_filters[raw_filter_id] = Filter(
+            filter_params=raw_filter_params,
+            filter_fn=filter_fn,
+        )
+
+        if is_integer(raw_from_block):
+            if is_integer(raw_to_block):
+                upper_bound = raw_to_block
             else:
                 upper_bound = self.get_block_by_number('pending')['number']
-            for block_number in range(from_block, upper_bound):
+            for block_number in range(raw_from_block, upper_bound):
                 block = self.get_block_by_number(block_number)
                 self._process_block_logs(block)
 
+        filter_id = self.normalizer.normalize_outbound_filter_id(raw_filter_id)
         return filter_id
 
     def delete_filter(self, filter_id):
-        self.input_validator.validate_filter_id(filter_id)
+        self.validator.validate_inbound_filter_id(filter_id)
+        raw_filter_id = self.normalizer.normalize_inbound_filter_id(filter_id)
 
-        if filter_id in self._block_filters:
-            del self._block_filters[filter_id]
-        elif filter_id in self._pending_transaction_filters:
-            del self._pending_transaction_filters[filter_id]
-        elif filter_id in self._log_filters:
-            del self._log_filters[filter_id]
+        if raw_filter_id in self._block_filters:
+            del self._block_filters[raw_filter_id]
+        elif raw_filter_id in self._pending_transaction_filters:
+            del self._pending_transaction_filters[raw_filter_id]
+        elif raw_filter_id in self._log_filters:
+            del self._log_filters[raw_filter_id]
         else:
             raise FilterNotFound("Unknown filter id")
 
     def get_only_filter_changes(self, filter_id):
-        self.input_validator.validate_filter_id(filter_id)
+        self.validator.validate_inbound_filter_id(filter_id)
+        raw_filter_id = self.normalizer.normalize_inbound_filter_id(filter_id)
 
-        if filter_id in self._block_filters:
-            filter = self._block_filters[filter_id]
-        elif filter_id in self._pending_transaction_filters:
-            filter = self._pending_transaction_filters[filter_id]
-        elif filter_id in self._log_filters:
-            filter = self._log_filters[filter_id]
+        if raw_filter_id in self._block_filters:
+            filter = self._block_filters[raw_filter_id]
+        elif raw_filter_id in self._pending_transaction_filters:
+            filter = self._pending_transaction_filters[raw_filter_id]
+        elif raw_filter_id in self._log_filters:
+            filter = self._log_filters[raw_filter_id]
         else:
             raise FilterNotFound("Unknown filter id")
         return filter.get_changes()
 
     def get_all_filter_logs(self, filter_id):
-        self.input_validator.validate_filter_id(filter_id)
+        self.validator.validate_inbound_filter_id(filter_id)
+        raw_filter_id = self.normalizer.normalize_inbound_filter_id(filter_id)
 
-        if filter_id in self._block_filters:
-            filter = self._block_filters[filter_id]
-        elif filter_id in self._pending_transaction_filters:
-            filter = self._pending_transaction_filters[filter_id]
-        elif filter_id in self._log_filters:
-            filter = self._log_filters[filter_id]
+        if raw_filter_id in self._block_filters:
+            filter = self._block_filters[raw_filter_id]
+        elif raw_filter_id in self._pending_transaction_filters:
+            filter = self._pending_transaction_filters[raw_filter_id]
+        elif raw_filter_id in self._log_filters:
+            filter = self._log_filters[raw_filter_id]
         else:
             raise FilterNotFound("Unknown filter id")
         return filter.get_all()

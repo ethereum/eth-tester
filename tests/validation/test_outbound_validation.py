@@ -15,13 +15,13 @@ from eth_utils import (
 from eth_tester.exceptions import (
     ValidationError,
 )
-from eth_tester.validation import OutputValidationBackend
+from eth_tester.validation import DefaultValidator
 
 
 @pytest.fixture
-def output_validator():
-    _output_validator = OutputValidationBackend()
-    return _output_validator
+def validator():
+    _validator = DefaultValidator()
+    return _validator
 
 
 @pytest.mark.parametrize(
@@ -35,12 +35,12 @@ def output_validator():
         (encode_hex('\x00' * 32), False),
     ),
 )
-def test_block_hash_output_validation(output_validator, block_hash, is_valid):
+def test_block_hash_output_validation(validator, block_hash, is_valid):
     if is_valid:
-        output_validator.validate_block_hash(block_hash)
+        validator.validate_outbound_block_hash(block_hash)
     else:
         with pytest.raises(ValidationError):
-            output_validator.validate_block_hash(block_hash)
+            validator.validate_outbound_block_hash(block_hash)
 
 
 ZERO_32BYTES = b'\x00' * 32
@@ -115,12 +115,12 @@ def _make_transaction(hash=ZERO_32BYTES,
         (_make_transaction(transaction_index=None, block_hash=None, block_number=None),  True),
     )
 )
-def test_transaction_output_validation(output_validator, transaction, is_valid):
+def test_transaction_output_validation(validator, transaction, is_valid):
     if is_valid:
-        output_validator.validate_transaction(transaction)
+        validator.validate_outbound_transaction(transaction)
     else:
         with pytest.raises(ValidationError):
-            output_validator.validate_transaction(transaction)
+            validator.validate_outbound_transaction(transaction)
 
 
 def _make_log(_type="mined",
@@ -166,12 +166,12 @@ def _make_log(_type="mined",
         (_make_log(address=ADDRESS_A), True),
     ),
 )
-def test_log_entry_output_validation(output_validator, log_entry, is_valid):
+def test_log_entry_output_validation(validator, log_entry, is_valid):
     if is_valid:
-        output_validator.validate_log_entry(log_entry)
+        validator.validate_outbound_log_entry(log_entry)
     else:
         with pytest.raises(ValidationError):
-            output_validator.validate_log_entry(log_entry)
+            validator.validate_outbound_log_entry(log_entry)
 
 
 def _make_receipt(transaction_hash=ZERO_32BYTES,
@@ -220,12 +220,12 @@ def _make_receipt(transaction_hash=ZERO_32BYTES,
         (_make_receipt(logs=[_make_log(_type="invalid")]), False),
     ),
 )
-def test_receipt_output_validation(output_validator, receipt, is_valid):
+def test_receipt_output_validation(validator, receipt, is_valid):
     if is_valid:
-        output_validator.validate_receipt(receipt)
+        validator.validate_outbound_receipt(receipt)
     else:
         with pytest.raises(ValidationError):
-            output_validator.validate_receipt(receipt)
+            validator.validate_outbound_receipt(receipt)
 
 
 def _make_block(number=0,
@@ -319,12 +319,12 @@ def _make_block(number=0,
         (_make_block(transactions=[ZERO_32BYTES, HASH32_AS_TEXT]),  False),
     )
 )
-def test_block_output_validation(output_validator, block, is_valid):
+def test_block_output_validation(validator, block, is_valid):
     if is_valid:
-        output_validator.validate_block(block)
+        validator.validate_outbound_block(block)
     else:
         with pytest.raises(ValidationError):
-            output_validator.validate_block(block)
+            validator.validate_outbound_block(block)
 
 
 @pytest.mark.parametrize(
@@ -334,9 +334,9 @@ def test_block_output_validation(output_validator, block, is_valid):
         ([ADDRESS_A, encode_hex(ADDRESS_A)], False),
     ),
 )
-def test_accounts_output_validation(output_validator, accounts, is_valid):
+def test_accounts_output_validation(validator, accounts, is_valid):
     if is_valid:
-        output_validator.validate_accounts(accounts)
+        validator.validate_outbound_accounts(accounts)
     else:
         with pytest.raises(ValidationError):
-            output_validator.validate_accounts(accounts)
+            validator.validate_outbound_outbound_accounts(accounts)

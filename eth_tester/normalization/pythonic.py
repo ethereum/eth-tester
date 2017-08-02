@@ -3,38 +3,49 @@ from cytoolz import (
 )
 
 from eth_utils import (
-    to_tuple,
+    decode_hex,
     encode_hex,
-    to_checksum_address,
+    to_canonical_address,
 )
 
 from .base import (
     BaseNormalizer,
 )
+from .inbound import (
+    normalize_filter_params as normalize_inbound_filter_params,
+    normalize_transaction as normalize_inbound_transaction,
+)
+from .outbound import (
+    normalize_accounts as normalize_outbound_accounts,
+    normalize_block as normalize_outbound_block,
+    normalize_receipt as normalize_outbound_receipt,
+    normalize_transaction as normalize_outbound_transaction,
+)
 
 
 class PythonicNormalizer(BaseNormalizer):
-    normalize_block_hash = staticmethod(encode_hex)
+    #
+    # Inbound
+    #
+    normalize_inbound_account = staticmethod(to_canonical_address)
+    normalize_inbound_block_hash = staticmethod(decode_hex)
+    normalize_inbound_block_number = staticmethod(identity)
+    normalize_inbound_filter_id = staticmethod(identity)
+    normalize_inbound_filter_params = staticmethod(normalize_inbound_filter_params)
+    normalize_inbound_timestamp = staticmethod(identity)
+    normalize_inbound_transaction = staticmethod(normalize_inbound_transaction)
+    normalize_inbound_transaction_hash = staticmethod(decode_hex)
 
-    def normalize_block(self, block):
-        raise NotImplementedError("must be implemented by subclasses")
-
-    def normalize_log_entry(self, log_entry):
-        raise NotImplementedError("must be implemented by subclasses")
-
-    def normalize_transaction(self, transaction):
-        raise NotImplementedError("must be implemented by subclasses")
-
-    def normalize_receipt(self, receipt):
-        raise NotImplementedError("must be implemented by subclasses")
-
-    @to_tuple
-    def normalize_accounts(self, accounts):
-        for account in accounts:
-            yield to_checksum_address(account)
-
-    normalize_balance = staticmethod(identity)
-    normalize_code = staticmethod(identity)
-    normalize_nonce = staticmethod(identity)
-    normalize_return_data = staticmethod(encode_hex)
-    normalize_gas_estimate = staticmethod(identity)
+    # Outbound
+    normalize_outbound_accounts = staticmethod(normalize_outbound_accounts)
+    normalize_outbound_balance = staticmethod(identity)
+    normalize_outbound_block_hash = staticmethod(encode_hex)
+    normalize_outbound_block = staticmethod(normalize_outbound_block)
+    normalize_outbound_code = staticmethod(encode_hex)
+    normalize_outbound_filter_id = staticmethod(identity)
+    normalize_outbound_gas_estimate = staticmethod(identity)
+    normalize_outbound_nonce = staticmethod(identity)
+    normalize_outbound_receipt = staticmethod(normalize_outbound_receipt)
+    normalize_outbound_return_data = staticmethod(encode_hex)
+    normalize_outbound_transaction = staticmethod(normalize_outbound_transaction)
+    normalize_outbound_transaction_hash = staticmethod(encode_hex)

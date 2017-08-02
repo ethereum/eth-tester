@@ -25,7 +25,6 @@ from eth_tester.exceptions import (
     ValidationError,
 )
 
-from .base import BaseInputValidationBackend
 from .common import (
     validate_positive_integer,
     validate_uint256,
@@ -79,7 +78,7 @@ validate_transaction_hash = partial(validate_32_byte_hex_value, name="Transactio
 validate_filter_id = partial(validate_positive_integer)
 
 
-def validate_address(value):
+def validate_account(value):
     if not is_text(value):
         raise ValidationError("Address must be 20 bytes encoded as hexidecimal")
     elif not is_hex_address(value):
@@ -111,9 +110,9 @@ def validate_filter_params(from_block, to_block, address, topics):
                 "a non-empty list of hexidecimal encoded addresses"
             )
         for sub_address in address:
-            validate_address(sub_address)
+            validate_account(sub_address)
     elif not is_hex_address(address):
-        validate_address(address)
+        validate_account(address)
 
     invalid_topics_message = (
         "Topics must be one of `None`, an array of 32 byte hexidecimal encoded "
@@ -143,7 +142,6 @@ TRANSACTION_KEYS = {
 
 REQUIRED_TRANSACTION_KEYS = {
     'from',
-    'to',
     'gas',
 }
 
@@ -170,9 +168,9 @@ def validate_transaction(value):
         )
 
     if 'from' in value:
-        validate_address(value['from'])
+        validate_account(value['from'])
     if 'to' in value and value['to'] != '':
-        validate_address(value['to'])
+        validate_account(value['to'])
     if 'gas' in value:
         validate_uint256(value['gas'])
     if 'gas_price' in value:
@@ -190,14 +188,3 @@ def validate_transaction(value):
             pass
         elif not is_hex(value['data']):
             raise ValidationError(bad_data_message)
-
-
-class InputValidationBackend(BaseInputValidationBackend):
-    validate_timestamp = staticmethod(validate_timestamp)
-    validate_block_number = staticmethod(validate_block_number)
-    validate_block_hash = staticmethod(validate_block_hash)
-    validate_transaction_hash = staticmethod(validate_transaction_hash)
-    validate_filter_id = staticmethod(validate_filter_id)
-    validate_filter_params = staticmethod(validate_filter_params)
-    validate_transaction = staticmethod(validate_transaction)
-    validate_account = staticmethod(validate_address)

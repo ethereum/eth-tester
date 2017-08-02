@@ -1,5 +1,10 @@
 import rlp
 
+from eth_utils import (
+    pad_left,
+    int_to_big_endian,
+)
+
 
 def serialize_transaction_receipt(block, transaction, transaction_index, is_pending):
     transaction_receipt = block.get_receipt(transaction_index)
@@ -58,7 +63,7 @@ def serialize_log(block, transaction, transaction_index, log, log_index, is_pend
         "block_number": None if is_pending else block.number,
         "address": log.address,
         "data": log.data,
-        "topics": log.topics,
+        "topics": [pad_left(int_to_big_endian(topic), 32, b'\x00') for topic in log.topics],
     }
 
 
@@ -73,7 +78,7 @@ def serialize_block(block, transaction_serialize_fn=serialize_transaction_hash):
         "number": block.number,
         "hash": block.hash,
         "parent_hash": block.prevhash,
-        "nonce": block.nonce,
+        "nonce": pad_left(block.nonce, 8, b'\x00'),
         "sha3_uncles": block.uncles_hash,
         "logs_bloom": block.bloom,
         "transactions_root": block.tx_list_root,
@@ -82,7 +87,7 @@ def serialize_block(block, transaction_serialize_fn=serialize_transaction_hash):
         "difficulty": block.difficulty,
         "total_difficulty": block.chain_difficulty(),
         "size": len(rlp.encode(block)),
-        "extra_data": block.extra_data,
+        "extra_data": pad_left(block.extra_data, 32, b'\x00'),
         "gas_limit": block.gas_limit,
         "gas_used": block.gas_used,
         "timestamp": block.timestamp,

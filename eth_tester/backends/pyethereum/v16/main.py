@@ -31,9 +31,6 @@ from eth_tester.backends.pyethereum.utils import (
     is_pyethereum16_available,
 )
 
-from .normalizers import (
-    normalize_transaction,
-)
 from .serializers import (
     serialize_block,
     serialize_transaction,
@@ -110,7 +107,7 @@ def _send_evm_transaction(tester_module, evm, transaction):
         pre_transaction_gas_price = tester.gas_price
         pre_transaction_gas_limit = tester.gas_limit
         # set the evm gas price to the one specified by the transaction.
-        tester.gas_price = transaction['gas_price']
+        tester.gas_price = transaction.get('gas_price', tester.gas_price)
         tester.gas_limit = transaction['gas']
 
         # get the private key of the sender.
@@ -119,8 +116,8 @@ def _send_evm_transaction(tester_module, evm, transaction):
         output = evm.send(
             sender=sender,
             to=transaction.get('to', b''),
-            value=transaction['value'],
-            evmdata=transaction['data'],
+            value=transaction.get('value', 0),
+            evmdata=transaction.get('data', b''),
         )
     finally:
         # revert the tester gas price back to the original value.
@@ -330,12 +327,7 @@ class PyEthereum16Backend(BaseChainBackend):
         _send_evm_transaction(
             tester_module=tester,
             evm=self.evm,
-            transaction=normalize_transaction(
-                transaction,
-                data=b'',
-                value=0,
-                gas_price=tester.gas_price,
-            ),
+            transaction=transaction,
         )
         return self.evm.last_tx.hash
 
@@ -350,12 +342,7 @@ class PyEthereum16Backend(BaseChainBackend):
         output = _send_evm_transaction(
             tester_module=tester,
             evm=self.evm,
-            transaction=normalize_transaction(
-                transaction,
-                data=b'',
-                value=0,
-                gas_price=tester.gas_price,
-            ),
+            transaction=transaction,
         )
         self.revert_to_snapshot(snapshot)
         return output
@@ -368,12 +355,7 @@ class PyEthereum16Backend(BaseChainBackend):
         _send_evm_transaction(
             tester_module=tester,
             evm=self.evm,
-            transaction=normalize_transaction(
-                transaction,
-                data=b'',
-                value=0,
-                gas_price=tester.gas_price,
-            ),
+            transaction=transaction,
         )
         txn_hash = self.evm.last_tx.hash
         receipt = self.get_transaction_receipt(txn_hash)
