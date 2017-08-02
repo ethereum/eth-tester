@@ -10,7 +10,6 @@ import rlp
 
 from eth_utils import (
     remove_0x_prefix,
-    to_checksum_address,
     to_tuple,
     encode_hex,
 )
@@ -32,9 +31,6 @@ from eth_tester.backends.pyethereum.utils import (
     is_pyethereum16_available,
 )
 
-from .normalizers import (
-    normalize_transaction,
-)
 from .serializers import (
     serialize_block,
     serialize_transaction,
@@ -111,7 +107,7 @@ def _send_evm_transaction(tester_module, evm, transaction):
         pre_transaction_gas_price = tester.gas_price
         pre_transaction_gas_limit = tester.gas_limit
         # set the evm gas price to the one specified by the transaction.
-        tester.gas_price = transaction['gas_price']
+        tester.gas_price = transaction.get('gas_price', tester.gas_price)
         tester.gas_limit = transaction['gas']
 
         # get the private key of the sender.
@@ -120,8 +116,8 @@ def _send_evm_transaction(tester_module, evm, transaction):
         output = evm.send(
             sender=sender,
             to=transaction.get('to', b''),
-            value=transaction['value'],
-            evmdata=transaction['data'],
+            value=transaction.get('value', 0),
+            evmdata=transaction.get('data', b''),
         )
     finally:
         # revert the tester gas price back to the original value.
@@ -148,6 +144,9 @@ class PyEthereum16Backend(BaseChainBackend):
                 )
         self.reset_to_genesis()
 
+    #
+    # Fork Rules
+    #
     def set_fork_block(self, fork_name, fork_block):
         if fork_name == FORK_HOMESTEAD:
             self.evm.env.config['HOMESTEAD_FORK_BLKNUM'] = fork_block
@@ -172,6 +171,9 @@ class PyEthereum16Backend(BaseChainBackend):
         else:
             raise UnknownFork("Unknown fork name: {0}".format(fork_name))
 
+    #
+    # Snapshots
+    #
     def take_snapshot(self):
         return (self.evm.block.number, self.evm.snapshot())
 
@@ -206,11 +208,6 @@ class PyEthereum16Backend(BaseChainBackend):
     def time_travel(self, to_timestamp):
         from ethereum import tester
 
-        if to_timestamp <= self.evm.block.timestamp:
-            raise ValueError(
-                "Space time continuum distortion detected.  Traveling backwards "
-                "in time violates interdimensional ordinance 31415-926."
-            )
         self.evm.block.finalize()
         self.evm.block.commit_state()
         self.evm.db.put(
@@ -253,7 +250,7 @@ class PyEthereum16Backend(BaseChainBackend):
         from ethereum import tester
 
         for account in tester.accounts:
-            yield to_checksum_address(account)
+            yield account
 
     #
     # Chain data
@@ -330,12 +327,7 @@ class PyEthereum16Backend(BaseChainBackend):
         _send_evm_transaction(
             tester_module=tester,
             evm=self.evm,
-            transaction=normalize_transaction(
-                transaction,
-                data=b'',
-                value=0,
-                gas_price=tester.gas_price,
-            ),
+            transaction=transaction,
         )
         return self.evm.last_tx.hash
 
@@ -350,12 +342,7 @@ class PyEthereum16Backend(BaseChainBackend):
         output = _send_evm_transaction(
             tester_module=tester,
             evm=self.evm,
-            transaction=normalize_transaction(
-                transaction,
-                data=b'',
-                value=0,
-                gas_price=tester.gas_price,
-            ),
+            transaction=transaction,
         )
         self.revert_to_snapshot(snapshot)
         return output
@@ -368,12 +355,7 @@ class PyEthereum16Backend(BaseChainBackend):
         _send_evm_transaction(
             tester_module=tester,
             evm=self.evm,
-            transaction=normalize_transaction(
-                transaction,
-                data=b'',
-                value=0,
-                gas_price=tester.gas_price,
-            ),
+            transaction=transaction,
         )
         txn_hash = self.evm.last_tx.hash
         receipt = self.get_transaction_receipt(txn_hash)

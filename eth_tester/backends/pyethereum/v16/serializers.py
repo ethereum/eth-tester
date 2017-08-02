@@ -1,4 +1,12 @@
+from __future__ import unicode_literals
+
 import rlp
+
+from eth_tester.utils.encoding import (
+    zpad,
+    zpad32,
+    int_to_32byte_big_endian,
+)
 
 
 def serialize_transaction_receipt(block, transaction, transaction_index, is_pending):
@@ -42,6 +50,9 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
         "gas": transaction.startgas,
         "gas_price": transaction.gasprice,
         "data": transaction.data,
+        "v": transaction.v,
+        "r": transaction.r,
+        "s": transaction.s,
     }
 
 
@@ -55,7 +66,7 @@ def serialize_log(block, transaction, transaction_index, log, log_index, is_pend
         "block_number": None if is_pending else block.number,
         "address": log.address,
         "data": log.data,
-        "topics": log.topics,
+        "topics": [int_to_32byte_big_endian(topic) for topic in log.topics],
     }
 
 
@@ -70,19 +81,19 @@ def serialize_block(block, transaction_serialize_fn=serialize_transaction_hash):
         "number": block.number,
         "hash": block.hash,
         "parent_hash": block.prevhash,
-        "nonce": block.nonce,
-        "sha3Uncles": block.uncles_hash,
+        "nonce": zpad(block.nonce, 8),
+        "sha3_uncles": block.uncles_hash,
         "logs_bloom": block.bloom,
-        "transactionsRoot": block.tx_list_root,
-        "stateRoot": block.state_root,
+        "transactions_root": block.tx_list_root,
+        "state_root": block.state_root,
         "miner": block.coinbase,
         "difficulty": block.difficulty,
-        "totalDifficulty": block.chain_difficulty(),
+        "total_difficulty": block.chain_difficulty(),
         "size": len(rlp.encode(block)),
-        "extraData": block.extra_data,
-        "gasLimit": block.gas_limit,
-        "gasUsed": block.gas_used,
+        "extra_data": zpad32(block.extra_data),
+        "gas_limit": block.gas_limit,
+        "gas_used": block.gas_used,
         "timestamp": block.timestamp,
         "transactions": transactions,
-        "uncles": block.uncles
+        "uncles": block.uncles,
     }

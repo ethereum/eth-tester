@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import pytest
 
 from eth_utils import is_address

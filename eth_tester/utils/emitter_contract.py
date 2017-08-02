@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from eth_utils import (
     encode_hex,
     function_abi_to_4byte_selector,

@@ -1,5 +1,9 @@
+from __future__ import unicode_literals
+
+
 UINT256_MIN = 0
 UINT256_MAX = 2**256 - 1
+UINT2048_MAX = 2**2048 - 1
 
 
 BURN_ADDRESS = '0xdead000000000000000000000000000000000000'
@@ -15,4 +19,14 @@ KNOWN_FORKS = {
     FORK_DAO,
     FORK_ANTI_DOS,
     FORK_STATE_CLEANUP,
+}
+
+
+LATEST = "latest"
+EARLIEST = "earliest"
+PENDING = "pending"
+BLOCK_NUMBER_META_VALUES = {
+    LATEST,
+    EARLIEST,
+    PENDING,
 }
