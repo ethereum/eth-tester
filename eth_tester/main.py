@@ -173,18 +173,18 @@ class EthereumTester(object):
         transaction = self.normalizer.normalize_outbound_transaction(raw_transaction)
         return transaction
 
-    def get_block_by_number(self, block_number="latest"):
+    def get_block_by_number(self, block_number="latest", full_transactions=False):
         self.validator.validate_inbound_block_number(block_number)
         raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
-        raw_block = self.backend.get_block_by_number(raw_block_number)
+        raw_block = self.backend.get_block_by_number(raw_block_number, full_transactions)
         self.validator.validate_outbound_block(raw_block)
         block = self.normalizer.normalize_outbound_block(raw_block)
         return block
 
-    def get_block_by_hash(self, block_hash):
+    def get_block_by_hash(self, block_hash, full_transactions=False):
         self.validator.validate_inbound_block_hash(block_hash)
         raw_block_hash = self.normalizer.normalize_inbound_block_hash(block_hash)
-        raw_block = self.backend.get_block_by_hash(raw_block_hash)
+        raw_block = self.backend.get_block_by_hash(raw_block_hash, full_transactions)
         self.validator.validate_outbound_block(raw_block)
         block = self.normalizer.normalize_outbound_block(raw_block)
         return block

@@ -82,13 +82,25 @@ Similarly, ethereum tester ensures that return values conform to similar rules.
 * Numeric values will be returned as integers.
 
 
+## Block Numbers
+<a id="block-numbers"></a>
+
+Any `block_number` parameter will accept the following string values.
+
+* `'latest'`: for the latest mined block.
+* `'pending'`: for the current un-mined block.
+* `'earliest'`: for the genesis block.
+
+> Note: These **must** be text strings (not byte stringS)
+
+
 ## `eth_tester.EthereumTester`
 
 ### API
 
 ### Instantiation
 
-* `EthereumTester(backend=None, validator=None, normalizer=None, auto_mine_transactions=True, fork_blocks=None)`
+* `eth_tester.EthereumTester(backend=None, validator=None, normalizer=None, auto_mine_transactions=True, fork_blocks=None)`
 
 The `EthereumTester` object is the sole API entrypoint.  Instantiation of this
 object accepts the following parameters.
@@ -98,6 +110,14 @@ object accepts the following parameters.
 - `normalizer`: The normalizer to used.  See the [normalizers](#normalizers)
 - `auto_mine_transactions`: If *truthy* transactions will be automatically mined at the time they are submitted.
 - `fork_blocks`: configures which block numbers the various network hard fork rules will be activated.  See [fork-rules](#fork-rules)
+
+
+```python
+>>> from eth_tester import EthereumTester
+>>> t = EthereumTester
+>>> t
+<eth_tester.main.EthereumTester at 0x102255710>
+```
 
 
 ### Fork Rules
@@ -169,13 +189,22 @@ The following API can be used to interact with account data.  The `account`
 parameter in these methods **must** be a hexidecimal encode address.
 
 <a id="api-get_accounts"></a>
-* `get_accounts()`
+* `EthereumTester.get_accounts()`
 
-Returns an iterable of the accounts that the tester knows about.
+Returns an iterable of the accounts that the tester knows about.  All accounts
+in this list will be EIP55 checksummed.
+
+```python
+>>> t.get_accounts()
+('0x82A978B3f5962A5b0957d9ee9eEf472EE55B42F1',
+ '0x7d577a597B2742b498Cb5Cf0C26cDCD726d39E6e',
+ ...
+ '0x90F0B1EBbbA1C1936aFF7AAf20a7878FF9e04B6c')
+```
 
 
 <a id="api-get_balance"></a>
-* `get_balance(account)`
+* `EthereumTester.get_balance(account) -> integer`
 
 Returns the balance, in wei, for the provided account.
 
@@ -186,7 +215,7 @@ Returns the balance, in wei, for the provided account.
 
 
 <a id="api-get_nonce"></a>
-* `get_nonce(account)`
+* `EthereumTester.get_nonce(account) -> integer`
 
 Returns the nonce for the provided account.
 
@@ -196,7 +225,7 @@ Returns the nonce for the provided account.
 ```
 
 <a id="api-get_code"></a>
-* `get_code(account)`
+* `EthereumTester.get_code(account) -> hex string`
 
 Returns the code for the given account.
 
@@ -209,25 +238,90 @@ Returns the code for the given account.
 ### Blocks, Transactions, and Receipts
 
 <a id="api-get_transaction_by_hash"></a>
-* `get_transaction_by_hash(TODO)`
+* `EthereumTester.get_transaction_by_hash(transaction_hash) -> transaction-object`
+
+Returns the transaction for the given hash, raising a
+[`TransactionNotFound`](#errors-TransactionNotFound) exception if the
+transaction cannot be found.
+
+```python
+>>> t.get_transaction_by_hash('0x140c1da1370a908e4c0f7c6e33bb97182011707c6a9aff954bef1084c8a48b25')
+{'block_hash': '0x89c03ecb6bbf3ff533b04a663fa98d59c9d985de806d1a9dcafaad7c993ee6e8',
+ 'block_number': 0,
+ 'hash': '0x140c1da1370a908e4c0f7c6e33bb97182011707c6a9aff954bef1084c8a48b25',
+ 'transaction_index': 0,
+ 'from': '0x82A978B3f5962A5b0957d9ee9eEf472EE55B42F1',
+ 'to': '0x7d577a597B2742b498Cb5Cf0C26cDCD726d39E6e',
+ 'value': 1,
+ 'gas': 21000,
+ 'gas_price': 1,
+ 'nonce': 0,
+ 'data': '0x',
+ 'v': 27,
+ 'r': 114833774457827084417823702749930473879683934597320921824765632039428214735160,
+ 's': 52192522150044217242428968890330558187037131043598164958282684822175843828481}
+```
+
+> Note: For unmined transaction, `transaction_index`, `block_number` and `block_hash` will all be `None`.
+
 
 <a id="api-get_block_by_numbera>
-* `get_block_by_number(TODO)`
+* `EthereumTester.get_block_by_number(block_number, full_transactions=False) -> block-object`
+
+Returns the block for the given `block_number`.  See [block
+numbers](#block-numbers) for named block numbers you can use.  If
+`full_transactions` is truthy, then the transactions array will be populated
+with full transaction objects as opposed to their hashes.
+
+```python
+>>> t.get_block_by_numbers(1)
+{'difficulty': 131072,
+ 'extra_data': '0x0000000000000000000000000000000000000000000000000000000000000000',
+ 'gas_limit': 999023468,
+ 'gas_used': 0,
+ 'hash': '0x0f50c8ea0f67ce0b7bff51ae866159edc443bde87de2ab26010a15b777244ddd',
+ 'logs_bloom': 0,
+ 'miner': '0x82A978B3f5962A5b0957d9ee9eEf472EE55B42F1',
+ 'nonce': '0x0000000000000000',
+ 'number': 1,
+ 'parent_hash': '0x89c03ecb6bbf3ff533b04a663fa98d59c9d985de806d1a9dcafaad7c993ee6e8',
+ 'sha3_uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347',
+ 'size': 472,
+ 'state_root': '0xbd92123803c9e71018617ce3dc6cbbdf130973bdbd0e14ff340c57c8a835b74b',
+ 'timestamp': 1410973360,
+ 'total_difficulty': 262144,
+ 'transactions': (),
+ 'transactions_root': '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
+ 'uncles': ()}
+```
+
 
 <a id="api-get_block_by_hash"></a>
-* `get_block_by_hash(TODO)`
+* `EthereumTester.get_block_by_hash(TODO) -> block-object`
 
 <a id="api-get_transaction_receipt"></a>
-* `get_transaction_receipt(TODO)`
+* `EthereumTester.get_transaction_receipt(TODO)`
+
+
+```python
+{'block_hash': '0x89c03ecb6bbf3ff533b04a663fa98d59c9d985de806d1a9dcafaad7c993ee6e8',
+ 'block_number': 0,
+ 'contract_address': None,
+ 'cumulative_gas_used': 21000,
+ 'gas_used': 21000,
+ 'logs': (),
+ 'transaction_hash': '0x140c1da1370a908e4c0f7c6e33bb97182011707c6a9aff954bef1084c8a48b25',
+ 'transaction_index': 0}
+```
 
 ### Logs and Filters
 
-* `create_block_filter(TODO)`
-* `create_pending_transaction_filter(TODO)`
-* `create_log_filter(TODO)`
-* `delete_filter(TODO)`
-* `get_only_filter_changes(TODO)`
-* `get_all_filter_logs(TODO)`
+* `EthereumTester.create_block_filter(TODO)`
+* `EthereumTester.create_pending_transaction_filter(TODO)`
+* `EthereumTester.create_log_filter(TODO)`
+* `EthereumTester.delete_filter(TODO)`
+* `EthereumTester.get_only_filter_changes(TODO)`
+* `EthereumTester.get_all_filter_logs(TODO)`
 
 
 ### Configuration
@@ -246,7 +340,10 @@ TODO
 
 ### Errors and Exceptions
 
-TODO
+<a id="errors-TransactionNotFound"></a>
+* `eth_tester.exceptions.TransactionNotFound`
+
+Raised in cases where a transaction cannot be found for the provided transaction hash.
 
 
 ## Backends
