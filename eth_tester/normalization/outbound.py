@@ -27,7 +27,7 @@ normalize_accounts = partial(normalize_array, normalizer=to_checksum_address)
 TRANSACTION_NORMALIZERS = {
     "hash": encode_hex,
     "nonce": identity,
-    "block_hash": partial(normalize_if, conditional_fn=is_dict, normalizer=encode_hex),
+    "block_hash": partial(normalize_if, conditional_fn=is_bytes, normalizer=encode_hex),
     "block_number": identity,
     "transaction_index": identity,
     "from": to_checksum_address,

@@ -45,6 +45,9 @@ class BaseValidator(object):
     def validate_outbound_gas_estimate(self, gas_estimate):
         raise NotImplementedError("must be implemented by subclasses")
 
+    def validate_outbound_log_entry(self, log_entry):
+        raise NotImplementedError("must be implemented by subclasses")
+
     def validate_outbound_nonce(self, account):
         raise NotImplementedError("must be implemented by subclasses")
 

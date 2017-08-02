@@ -189,7 +189,7 @@ def _make_transaction(_from=None, to=None, gas=None, gas_price=None, value=None,
     (
         ({}, False),
         (_make_transaction(to=ADDRESS_B, gas=21000), False),
-        (_make_transaction(_from=ADDRESS_A, gas=21000), False),
+        (_make_transaction(_from=ADDRESS_A, gas=21000), True),
         (_make_transaction(_from=ADDRESS_A, to=ADDRESS_B), False),
         (_make_transaction(_from=ADDRESS_A, to=ADDRESS_B, gas=21000), True),
         (_make_transaction(_from='', to=ADDRESS_B, gas=21000), False),

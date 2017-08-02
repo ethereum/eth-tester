@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import os
 
 from eth_tester.utils.module_loading import (
@@ -5,12 +7,12 @@ from eth_tester.utils.module_loading import (
     import_string,
 )
 
-from .pythonic import (
-    PythonicNormalizer,
+from .default import (
+    DefaultNormalizer,
 )
 
 
-DEFAULT_NORMALIZER_CLASS = get_import_path(PythonicNormalizer)
+DEFAULT_NORMALIZER_CLASS = get_import_path(DefaultNormalizer)
 
 
 def get_normalizer_backend_class(backend_import_path=None):

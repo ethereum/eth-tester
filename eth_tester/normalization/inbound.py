@@ -6,18 +6,21 @@ from cytoolz.functoolz import (
 )
 
 from eth_utils import (
-    is_address,
-    is_list_like,
-    is_text,
-    is_hex,
-    to_tuple,
     decode_hex,
-    to_canonical_address,
+    is_address,
+    is_hex,
+    is_list_like,
+    is_string,
+    is_text,
     remove_0x_prefix,
+    to_canonical_address,
+    to_tuple,
 )
 
 from .common import (
+    normalize_array,
     normalize_dict,
+    normalize_if,
 )
 
 
@@ -78,3 +81,19 @@ TRANSACTION_NORMALIZERS = {
 
 
 normalize_transaction = partial(normalize_dict, normalizers=TRANSACTION_NORMALIZERS)
+
+
+LOG_ENTRY_NORMALIZERS = {
+    'type': identity,
+    'log_index': identity,
+    'transaction_index': identity,
+    'transaction_hash': decode_hex,
+    'block_hash': partial(normalize_if, conditional_fn=is_string, normalizer=decode_hex),
+    'block_number': identity,
+    'address': to_canonical_address,
+    'data': decode_hex,
+    'topics': partial(normalize_array, normalizer=decode_hex),
+}
+
+
+normalize_log_entry = partial(normalize_dict, normalizers=LOG_ENTRY_NORMALIZERS)

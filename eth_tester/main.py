@@ -12,6 +12,7 @@ from cytoolz.functoolz import (
 
 from eth_utils import (
     is_integer,
+    to_tuple,
 )
 
 from eth_tester.exceptions import (
@@ -238,7 +239,8 @@ class EthereumTester(object):
             block = self.get_block_by_hash(block_hash)
 
             for _, block_filter in self._block_filters.items():
-                block_filter.add(block_hash)
+                raw_block_hash = self.normalizer.normalize_inbound_block_hash(block_hash)
+                block_filter.add(raw_block_hash)
 
             self._process_block_logs(block)
 
@@ -256,7 +258,8 @@ class EthereumTester(object):
             for transaction_hash in block['transactions']:
                 receipt = self.get_transaction_receipt(transaction_hash)
                 for log_entry in receipt['logs']:
-                    filter.add(log_entry)
+                    raw_log_entry = self.normalizer.normalize_inbound_log_entry(log_entry)
+                    filter.add(raw_log_entry)
 
     #
     # Transaction Sending
@@ -272,13 +275,15 @@ class EthereumTester(object):
 
         # feed the transaction hash to any pending transaction filters.
         for _, filter in self._pending_transaction_filters.items():
-            filter.add(transaction_hash)
+            raw_transaction_hash = self.normalizer.normalize_inbound_transaction_hash(transaction_hash)
+            filter.add(raw_transaction_hash)
 
         if self._log_filters:
-            receipt = self.backend.get_transaction_receipt(transaction_hash)
+            receipt = self.get_transaction_receipt(transaction_hash)
             for log_entry in receipt['logs']:
                 for _, filter in self._log_filters.items():
-                    filter.add(log_entry)
+                    raw_log_entry = self.normalizer.normalize_inbound_log_entry(log_entry)
+                    filter.add(raw_log_entry)
 
         # mine the transaction if auto-transaction-mining is enabled.
         if self.auto_mine_transactions:
@@ -286,7 +291,6 @@ class EthereumTester(object):
 
         return transaction_hash
 
-    # TODO: validate input & output
     def call(self, transaction, block_number="latest"):
         self.validator.validate_inbound_transaction(transaction)
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
@@ -339,7 +343,11 @@ class EthereumTester(object):
     def _revert_block_filter(self, filter):
         is_valid_block_hash = excepts(
             (BlockNotFound,),
-            compose(bool, self.get_block_by_hash),
+            compose(
+                bool,
+                self.get_block_by_hash,
+                self.normalizer.normalize_outbound_block_hash,
+            ),
             lambda v: False,
         )
         values_to_remove = remove(is_valid_block_hash, filter.get_all())
@@ -348,7 +356,11 @@ class EthereumTester(object):
     def _revert_pending_transaction_filter(self, filter):
         is_valid_transaction_hash = excepts(
             (TransactionNotFound,),
-            compose(bool, self.get_transaction_by_hash),
+            compose(
+                bool,
+                self.get_transaction_by_hash,
+                self.normalizer.normalize_outbound_transaction_hash,
+            ),
             lambda v: False,
         )
         values_to_remove = remove(is_valid_transaction_hash, filter.get_all())
@@ -360,6 +372,7 @@ class EthereumTester(object):
             compose(
                 bool,
                 self.get_transaction_by_hash,
+                self.normalizer.normalize_outbound_transaction_hash,
                 operator.itemgetter('transaction_hash'),
             ),
             lambda v: False,
@@ -442,30 +455,42 @@ class EthereumTester(object):
         else:
             raise FilterNotFound("Unknown filter id")
 
+    @to_tuple
     def get_only_filter_changes(self, filter_id):
         self.validator.validate_inbound_filter_id(filter_id)
         raw_filter_id = self.normalizer.normalize_inbound_filter_id(filter_id)
 
         if raw_filter_id in self._block_filters:
             filter = self._block_filters[raw_filter_id]
+            normalize_fn = self.normalizer.normalize_outbound_block_hash
         elif raw_filter_id in self._pending_transaction_filters:
             filter = self._pending_transaction_filters[raw_filter_id]
+            normalize_fn = self.normalizer.normalize_outbound_transaction_hash
         elif raw_filter_id in self._log_filters:
             filter = self._log_filters[raw_filter_id]
+            normalize_fn = self.normalizer.normalize_outbound_log_entry
         else:
             raise FilterNotFound("Unknown filter id")
-        return filter.get_changes()
 
+        for item in filter.get_changes():
+            yield normalize_fn(item)
+
+    @to_tuple
     def get_all_filter_logs(self, filter_id):
         self.validator.validate_inbound_filter_id(filter_id)
         raw_filter_id = self.normalizer.normalize_inbound_filter_id(filter_id)
 
         if raw_filter_id in self._block_filters:
             filter = self._block_filters[raw_filter_id]
+            normalize_fn = self.normalizer.normalize_outbound_block_hash
         elif raw_filter_id in self._pending_transaction_filters:
             filter = self._pending_transaction_filters[raw_filter_id]
+            normalize_fn = self.normalizer.normalize_outbound_transaction_hash
         elif raw_filter_id in self._log_filters:
             filter = self._log_filters[raw_filter_id]
+            normalize_fn = self.normalizer.normalize_outbound_log_entry
         else:
             raise FilterNotFound("Unknown filter id")
-        return filter.get_all()
+
+        for item in filter.get_all():
+            yield normalize_fn(item)

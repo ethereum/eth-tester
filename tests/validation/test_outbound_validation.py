@@ -339,4 +339,4 @@ def test_accounts_output_validation(validator, accounts, is_valid):
         validator.validate_outbound_accounts(accounts)
     else:
         with pytest.raises(ValidationError):
-            validator.validate_outbound_outbound_accounts(accounts)
+            validator.validate_outbound_accounts(accounts)
