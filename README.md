@@ -411,7 +411,7 @@ denoted by the `block_number` parameter, returning the resulting bytes return
 value from the evm.
 
 <a id="api-estimate_gas"></a>
-* `EthereumTester.estimate_gas(TODO)`
+* `EthereumTester.estimate_gas(transaction)`
 
 Executes the provided `transaction` object, measuring and returning the gas
 consumption.
@@ -576,9 +576,43 @@ Raised in cases where a snapshot cannot be found for the provided snapshot id.
 
 Ethereum tester is written using a pluggable backend system.
 
+### Backend Dependencies
+
+Ethereum tester does not install any of the dependencies needed to use the
+various backends by default.  You can however install ethereum tester with the
+necessary dependencies using the following method.
+
+```bash
+$ pip install ethereum-tester[pyethereum16]
+```
+
+### Selecting a Backend
+
+You can select which backend in a few different ways.
+
+The most direct way is to manually pass in the backend instance you wish to
+use.
+
+```python
+>>> from eth_tester import EthereumTester
+>>> from eth_tester.backends.pyethereum import PyEthereum16Backend
+>>> t = EthereumTester(backend=PyEthereum16Backend())
+```
+
+Ethereum tester also supports configuration using the environment variable
+`ETHEREUM_TESTER_CHAIN_BACKEND`.  This should be set to the import path for the
+backend class you wish to use.
+
 ### Available Backends
 
-TODO
+Ethereum tester can be used with the following backends.
+
+* PyEthereum 1.6.x (default)
+
+The following backends on the roadmap to be developed.
+
+* PyEthereum 2.0.x (under development)
+* PyEVM (experimental)
 
 #### PyEthereum 1.6.x
 
