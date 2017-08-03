@@ -106,8 +106,8 @@ The `EthereumTester` object is the sole API entrypoint.  Instantiation of this
 object accepts the following parameters.
 
 - `backend`: The chain backend being used.  See the [chain backends](#chain-backends)
-- `validator`: The validator to used.  See the [validators](#validators)
-- `normalizer`: The normalizer to used.  See the [normalizers](#normalizers)
+- `validator`: The validator to used.  See the [validators](#validation)
+- `normalizer`: The normalizer to used.  See the [normalizers](#normalization)
 - `auto_mine_transactions`: If *truthy* transactions will be automatically mined at the time they are submitted.  See [`enable_auto_mine_transactions`](#api-enable_auto_mine_transactions) and [`disable_auto_mine_transactions`](#api-disable_auto_mine_transactions).
 - `fork_blocks`: configures which block numbers the various network hard fork rules will be activated.  See [fork-rules](#fork-rules)
 
@@ -383,14 +383,38 @@ found for the given hash.
 
 ### Transaction Sending
 
+A transaction is a formatted as a dictionary with the following keys and
+values.
+
+* `from`: The address of the account sending the transaction (hexidecimal string).
+* `to`: The address of the account the transaction is being sent to.  Empty string should be used to trigger contract creation (hexidecimal string).
+* `gas`: Sets the gas limit for transaction execution (integer).
+* `gas_price`: Sets the price per unit of gas in wei that will be paid for transaction execution (integer).
+* `value`: The amount of ether in wei that should be sent with the transaction (integer).
+* `data`: The data for the transaction (hexidecimal string).
+
+
+#### Methods
+
 <a id="api-send_transaction"></a>
-* `EthereumTester.send_transaction(TODO)`
+* `EthereumTester.send_transaction(transaction) -> transaction_hash`
+
+Sends the provided `transaction` object, returning the `transaction_hash` for
+the sent transaction.
+
 
 <a id="api-call"></a>
-* `EthereumTester.call(TODO)`
+* `EthereumTester.call(transaction, block_number='latest')`
+
+Executes the provided `transaction` object at the evm state from the block
+denoted by the `block_number` parameter, returning the resulting bytes return
+value from the evm.
 
 <a id="api-estimate_gas"></a>
-* `EthereumTester.estimate_gas(TODO)`
+* `EthereumTester.estimate_gas(transaction)`
+
+Executes the provided `transaction` object, measuring and returning the gas
+consumption.
 
 
 ### Logs and Filters
@@ -552,23 +576,130 @@ Raised in cases where a snapshot cannot be found for the provided snapshot id.
 
 Ethereum tester is written using a pluggable backend system.
 
-### PyEthereum 1.6.x
+### Backend Dependencies
+
+Ethereum tester does not install any of the dependencies needed to use the
+various backends by default.  You can however install ethereum tester with the
+necessary dependencies using the following method.
+
+```bash
+$ pip install ethereum-tester[pyethereum16]
+```
+
+### Selecting a Backend
+
+You can select which backend in a few different ways.
+
+The most direct way is to manually pass in the backend instance you wish to
+use.
+
+```python
+>>> from eth_tester import EthereumTester
+>>> from eth_tester.backends.pyethereum import PyEthereum16Backend
+>>> t = EthereumTester(backend=PyEthereum16Backend())
+```
+
+Ethereum tester also supports configuration using the environment variable
+`ETHEREUM_TESTER_CHAIN_BACKEND`.  This should be set to the import path for the
+backend class you wish to use.
+
+### Available Backends
+
+Ethereum tester can be used with the following backends.
+
+* PyEthereum 1.6.x (default)
+
+The following backends on the roadmap to be developed.
+
+* PyEthereum 2.0.x (under development)
+* PyEVM (experimental)
+
+#### PyEthereum 1.6.x
 
 TODO
 
-### PyEthereum 2.0.x (under development)
+#### PyEthereum 2.0.x (under development)
 
 > Under development
 
-### PyEVM (experimental)
+#### PyEVM (experimental)
 
 > Under development
 
-### Implementing Alternative Backends
+### Implementing Custom Backends
+
+The base class `eth_tester.backends.base.BaseChainBackend` is the recommended
+base class to begin with if you wish to write your own backend.  In order for
+ethereum tester to operate correctly, your backend **must** be able to do all
+of the following.
 
 TODO
+
+
+## Data Formats
+
+### Canonical Formats
+
+The canonical format is intended for low level handling by backends.
+
+* 32 byte hashes: `bytes` of length 32
+* Arbitrary length strings: `bytes`
+* Addresses: `bytes` of length 20
+* Integers: `int` (or `long` in python 2.7)
+* Array Types: `tuple`
+
+### Normal Formats
+
+The normal format is intended for use by end users.
+
+* 32 byte hashes: `0x` prefixed hexidecimal encoded text strings (not byte strings)
+* Arbitrary length strings: `0x` prefixed hexidecimal encoded text strings (not byte strings)
+* Addresses: `0x` prefixed and EIP55 checksummed hexidecimal encoded text strings (not byte strings)
+* Integers: `int` (or `long` in python 2.7)
+* Array Types: `tuple`
 
 
 ## Normalization and Validation
+
+> Beware! Here there be dragons...  This section of the documentation is only
+> relevant if you intend to build tooling on top of this library.
+
+The ethereum tester provides strong guarantees that backends can be swapped out
+seamlessly without effecting the data formats of both the input arguments and
+return values.  This is accomplished using a two step process of strict
+*normalization* and *validation*.
+
+All inputs to the methods of the `EthereumTester` are first validated then
+normalized to a *canonical* format.  Return values are put through this process
+as well, first validating the data returned by the backend, and then
+normalizing it from the *canonical* format to the *normal* form before being
+returned.
+
+
+<a id="normalization"></a>
+### Normalization
+
+The `EthereumTester` delegates normalization to whatever `normalizer` was
+passed in during instantiation.  If no value was provided, the default
+normalizer will be used from
+`eth_tester.normalization.default.DefaultNormalizer`.
+
+The specifics of this object are beyong the scope of this document.
+
+<a id="validation"></a>
+### Validation
+
+The `EthereumTester` delegates validation to whatever `validator` was
+passed in during instantiation.  If no value was provided, the default
+validator will be used from
+`eth_tester.validation.default.DefaultValidator`.
+
+The specifics of this object are beyong the scope of this document.
+
+
+# Guides and Examples
+
+<a id="guide-filtering"></a>
+## Filtering
 
 TODO
