@@ -114,7 +114,7 @@ object accepts the following parameters.
 
 ```python
 >>> from eth_tester import EthereumTester
->>> t = EthereumTester
+>>> t = EthereumTester()
 >>> t
 <eth_tester.main.EthereumTester at 0x102255710>
 ```
