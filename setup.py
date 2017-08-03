@@ -16,7 +16,7 @@ readme = open(os.path.join(DIR, 'README.md')).read()
 
 setup(
     name='ethereum-tester',
-    version='0.1.0-alpha.2',
+    version='0.1.0-alpha.3',
     description="""Tools for testing Ethereum applications.""",
     long_description=readme,
     author='Piper Merriam',
@@ -29,6 +29,11 @@ setup(
         "rlp==0.5.1",
         "semantic_version>=2.6.0",
     ],
+    extras_require={
+        'pyethereum16': [
+            "ethereum>=1.6.0,<2.0.0",
+        ],
+    },
     py_modules=['eth_tester'],
     license="MIT",
     zip_safe=False,
