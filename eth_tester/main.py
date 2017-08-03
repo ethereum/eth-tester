@@ -60,7 +60,6 @@ def get_default_fork_blocks():
 class EthereumTester(object):
     backend = None
     auto_mine_transactions = None
-    auto_mine_interval = None
     fork_blocks = None
 
     def __init__(self,
@@ -68,7 +67,6 @@ class EthereumTester(object):
                  validator=None,
                  normalizer=None,
                  auto_mine_transactions=True,
-                 auto_mine_interval=None,
                  fork_blocks=None):
         if backend is None:
             backend = get_chain_backend()
@@ -87,7 +85,6 @@ class EthereumTester(object):
         self.normalizer = normalizer
 
         self.auto_mine_transactions = auto_mine_transactions
-        self.auto_mine_interval = auto_mine_interval
         self.fork_blocks = fork_blocks
 
         self._reset_local_state()
@@ -176,18 +173,18 @@ class EthereumTester(object):
         transaction = self.normalizer.normalize_outbound_transaction(raw_transaction)
         return transaction
 
-    def get_block_by_number(self, block_number="latest"):
+    def get_block_by_number(self, block_number="latest", full_transactions=False):
         self.validator.validate_inbound_block_number(block_number)
         raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
-        raw_block = self.backend.get_block_by_number(raw_block_number)
+        raw_block = self.backend.get_block_by_number(raw_block_number, full_transactions)
         self.validator.validate_outbound_block(raw_block)
         block = self.normalizer.normalize_outbound_block(raw_block)
         return block
 
-    def get_block_by_hash(self, block_hash):
+    def get_block_by_hash(self, block_hash, full_transactions=False):
         self.validator.validate_inbound_block_hash(block_hash)
         raw_block_hash = self.normalizer.normalize_inbound_block_hash(block_hash)
-        raw_block = self.backend.get_block_by_hash(raw_block_hash)
+        raw_block = self.backend.get_block_by_hash(raw_block_hash, full_transactions)
         self.validator.validate_outbound_block(raw_block)
         block = self.normalizer.normalize_outbound_block(raw_block)
         return block
