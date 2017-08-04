@@ -28,6 +28,7 @@ from .factory import (
     fake_rlp_hash,
     make_genesis_block,
     make_block_from_parent,
+    create_transaction,
 )
 
 
@@ -188,7 +189,14 @@ class MockBackend(BaseChainBackend):
     # Transactions
     #
     def send_transaction(self, transaction):
-        raise NotImplementedError("Must be implemented by subclasses")
+        full_transaction = create_transaction(
+            transaction,
+            self.block,
+            len(self.block['transactions']) + 1,
+            is_pending=True,
+        )
+        self.block['transactions'].append(full_transaction)
+        return full_transaction['hash']
 
     def estimate_gas(self, transaction):
         raise NotImplementedError("Must be implemented by subclasses")

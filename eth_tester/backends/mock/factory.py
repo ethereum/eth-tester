@@ -122,7 +122,7 @@ def create_transaction(transaction, block, transaction_index, is_pending, overri
     if 'data' in overrides:
         yield 'data', overrides['data']
     else:
-        yield 'data', transaction['data']
+        yield 'data', transaction.get('data', b'')
 
     if 'value' in overrides:
         yield 'value', overrides['value']
@@ -132,17 +132,17 @@ def create_transaction(transaction, block, transaction_index, is_pending, overri
     if 'v' in overrides:
         yield 'v', overrides['v']
     else:
-        yield 'v', transaction['v']
+        yield 'v', transaction.get('v', 27)
 
     if 'r' in overrides:
         yield 'r', overrides['r']
     else:
-        yield 'r', transaction['r']
+        yield 'r', transaction.get('r', 12345)
 
     if 's' in overrides:
         yield 's', overrides['s']
     else:
-        yield 's', transaction['s']
+        yield 's', transaction.get('s', 67890)
 
 
 @to_dict
