@@ -3,7 +3,7 @@ import time
 
 import rlp
 
-from cytoolz.dicttools import (
+from cytoolz.dicttoolz import (
     assoc,
 )
 
@@ -26,7 +26,7 @@ ZERO_8BYTES = b'\x00' * 8
 ZERO_ADDRESS = b'\x00' * 20
 
 
-@apply_to_return_value('|'.join)
+@apply_to_return_value(b'|'.join)
 @to_tuple
 def stringify(value):
     if is_bytes(value):
@@ -43,7 +43,7 @@ def stringify(value):
         yield b''.join((
             b'{',
             b','.join((
-                ":".join((stringify(key), stringify(item)))
+                b":".join((stringify(key), stringify(item)))
                 for key, item
                 in value.items()
             )),
@@ -53,6 +53,10 @@ def stringify(value):
         yield force_bytes(str(value))
     else:
         raise TypeError("Unsupported type for stringification: {0}".format(type(value)))
+
+
+def fake_rlp_hash(value):
+    return keccak(stringify(value))
 
 
 def add_hash(fn):
@@ -68,7 +72,10 @@ def add_hash(fn):
 
 @add_hash
 @to_dict
-def create_transaction(transaction, block, transaction_index, is_pending, overrides):
+def create_transaction(transaction, block, transaction_index, is_pending, overrides=None):
+    if overrides is None:
+        overrides = {}
+
     if 'transaction_index' in overrides:
         yield 'transaction_index', overrides['transaction_index']
     else:
@@ -139,7 +146,10 @@ def create_transaction(transaction, block, transaction_index, is_pending, overri
 
 
 @to_dict
-def make_log(transaction, block, transaction_index, log_index, overrides):
+def make_log(transaction, block, transaction_index, log_index, overrides=None):
+    if overrides is None:
+        overrides = {}
+
     is_pending = transaction['block_number'] is None
 
     if 'type' in overrides:
@@ -187,7 +197,9 @@ def generate_contract_address(address, nonce):
     return keccak(rlp.encode([address, nonce]))[-20:]
 
 
-def make_receipt(transaction, block, transaction_index, overrides):
+def make_receipt(transaction, block, transaction_index, overrides=None):
+    if overrides is None:
+        overrides = {}
     is_pending = transaction['block_number'] is None
 
     if 'transaction_index' in overrides:
@@ -263,7 +275,10 @@ def make_genesis_block():
 
 @add_hash
 @to_dict
-def make_block_from_parent(parent_block, overrides):
+def make_block_from_parent(parent_block, overrides=None):
+    if overrides is None:
+        overrides = {}
+
     if 'number' in overrides:
         yield 'number', overrides['number']
     else:
@@ -294,10 +309,10 @@ def make_block_from_parent(parent_block, overrides):
     else:
         yield 'logs_bloom', 0
 
-    if 'transaction_root' in overrides:
-        yield 'transaction_root', overrides['transaction_root']
+    if 'transactions_root' in overrides:
+        yield 'transactions_root', overrides['transactions_root']
     else:
-        yield 'transaction_root', BLANK_ROOT_HASH
+        yield 'transactions_root', BLANK_ROOT_HASH
 
     if 'state_root' in overrides:
         yield 'state_root', overrides['state_root']

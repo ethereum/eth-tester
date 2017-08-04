@@ -1,14 +1,74 @@
-from .base import (
+from cytoolz.dicttoolz import (
+    dissoc,
+    assoc,
+)
+
+from eth_utils import (
+    decode_hex,
+    int_to_big_endian,
+    denoms,
+    to_canonical_address,
+    to_tuple,
+    is_integer,
+)
+
+from eth_tester.backends.base import (
     BaseChainBackend,
+)
+from eth_tester.exceptions import (
+    BlockNotFound,
+    UnknownFork,
+)
+
+from eth_tester.utils.encoding import (
+    zpad,
+)
+
+from .factory import (
+    fake_rlp_hash,
+    make_genesis_block,
+    make_block_from_parent,
 )
 
 
+def _generate_dummy_address(idx):
+    return to_canonical_address(
+        decode_hex('0xabbacadaba') + zpad(int_to_big_endian(idx), 15)
+    )
+
+
+def _get_default_account_data(idx):
+    return {
+        'balance': 1000000 * denoms.ether,
+        'code': b'',
+        'nonce': 0,
+        'storage': {},
+    }
+
+
+def get_default_alloc(num_accounts=10):
+    return {
+        _generate_dummy_address(idx): _get_default_account_data(idx)
+        for idx
+        in range(num_accounts)
+    }
+
+
 class MockBackend(BaseChainBackend):
+    alloc = None
+    blocks = None
     block = None
     fork_blocks = None
 
-    def __init__(self):
+    def __init__(self, alloc=None, genesis_block=None):
+        if alloc is None:
+            alloc = get_default_alloc()
+        if genesis_block is None:
+            genesis_block = make_genesis_block()
+
+        self.alloc = alloc
         self.blocks = []
+        self.block = genesis_block
         self.fork_blocks = {}
 
     #
@@ -27,10 +87,13 @@ class MockBackend(BaseChainBackend):
     # Fork block numbers
     #
     def set_fork_block(self, fork_name, fork_block):
-        raise NotImplementedError("Must be implemented by subclasses")
+        self.fork_blocks[fork_name] = fork_block
 
     def get_fork_block(self, fork_name):
-        raise NotImplementedError("Must be implemented by subclasses")
+        try:
+            return self.fork_block[fork_name]
+        except KeyError:
+            raise UnknownFork("Unknown fork: {0}".format(fork_name))
 
     #
     # Meta
@@ -41,23 +104,58 @@ class MockBackend(BaseChainBackend):
     #
     # Mining
     #
+    @to_tuple
     def mine_blocks(self, num_blocks=1, coinbase=None):
-        raise NotImplementedError("Must be implemented by subclasses")
+        for _ in range(num_blocks):
+            block_to_mine = dissoc(self.block, 'hash')
+            block_hash = fake_rlp_hash(block_to_mine)
+            mined_block = assoc(block_to_mine, 'hash', block_hash)
+            self.blocks.append(mined_block)
+            self.block = make_block_from_parent(mined_block)
+            yield block_hash
 
     #
     # Accounts
     #
     def get_accounts(self):
-        raise NotImplementedError("Must be implemented by subclasses")
+        return tuple(self.alloc.keys())
 
     #
     # Chain data
     #
-    def get_block_by_number(self, block_number):
-        raise NotImplementedError("Must be implemented by subclasses")
+    def get_block_by_number(self, block_number, full_transactions=False):
+        if block_number == self.block['number']:
+            return self.block
+        elif block_number == "latest":
+            try:
+                return self.blocks[-1]
+            except IndexError:
+                raise BlockNotFound("No block found for #{0}".format(block_number))
+        elif block_number == "pending":
+            return self.block
+        elif block_number == "earliest":
+            try:
+                return self.blocks[0]
+            except IndexError:
+                return self.block
+        elif is_integer(block_number):
+            try:
+                return self.blocks[block_number]
+            except IndexError:
+                raise BlockNotFound("No block found for #{0}".format(block_number))
+        else:
+            raise Exception(
+                "Invariant.  Unrecognized block number format: {0}".format(block_number)
+            )
 
-    def get_block_by_hash(self, block_hash):
-        raise NotImplementedError("Must be implemented by subclasses")
+    def get_block_by_hash(self, block_hash, full_transactions=False):
+        if self.block['hash'] == block_hash:
+            return self.block
+        for block in reversed(self.blocks):
+            if block['hash'] == block_hash:
+                return block
+        else:
+            raise BlockNotFound("No block found for hash: {0}".format(block_hash))
 
     def get_transaction_by_hash(self, transaction_hash):
         raise NotImplementedError("Must be implemented by subclasses")
@@ -69,13 +167,22 @@ class MockBackend(BaseChainBackend):
     # Account state
     #
     def get_nonce(self, account, block_number=None):
-        raise NotImplementedError("Must be implemented by subclasses")
+        try:
+            return self.alloc[account]['nonce']
+        except KeyError:
+            return 0
 
     def get_balance(self, account, block_number=None):
-        raise NotImplementedError("Must be implemented by subclasses")
+        try:
+            return self.alloc[account]['balance']
+        except KeyError:
+            return 0
 
     def get_code(self, account, block_number=None):
-        raise NotImplementedError("Must be implemented by subclasses")
+        try:
+            return self.alloc[account]['code']
+        except KeyError:
+            return 0
 
     #
     # Transactions

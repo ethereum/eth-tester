@@ -69,7 +69,7 @@ def _get_transaction_by_hash(evm, transaction_hash, mined=True):
 def _get_block_by_number(evm, block_number="latest"):
     if block_number == "latest":
         if len(evm.blocks) == 0:
-            raise ValueError("Chain has no blocks")
+            raise BlockNotFound("Chain has no blocks")
         elif len(evm.blocks) == 1:
             return evm.blocks[0]
         else:

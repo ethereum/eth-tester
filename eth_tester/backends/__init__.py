@@ -5,6 +5,9 @@ from eth_tester.utils.module_loading import (
     import_string,
 )
 
+from .mock import (  # noqa: F401
+    MockBackend,
+)
 from .pyethereum.v16 import (
     PyEthereum16Backend,
 )

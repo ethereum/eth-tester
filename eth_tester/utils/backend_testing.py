@@ -22,6 +22,8 @@ from eth_utils import (
     is_address,
     is_integer,
     is_same_address,
+    is_dict,
+    is_hex,
 )
 
 from eth_tester.constants import (
@@ -164,12 +166,68 @@ class BaseTestBackendDirect(object):
             assert block['number'] == block_number
             assert block['hash'] == block_hash
 
+    def test_get_block_by_number_full_transactions(self, eth_tester):
+        eth_tester.mine_blocks(2)
+        transaction_hash = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+        })
+        transaction = eth_tester.get_transaction_by_hash(transaction_hash)
+        block = eth_tester.get_block_by_number(
+            transaction['block_number'],
+            full_transactions=True,
+        )
+        assert is_dict(block['transactions'][0])
+
+    def test_get_block_by_number_only_transaction_hashes(self, eth_tester):
+        eth_tester.mine_blocks(2)
+        transaction_hash = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+        })
+        transaction = eth_tester.get_transaction_by_hash(transaction_hash)
+        block = eth_tester.get_block_by_number(
+            transaction['block_number'],
+            full_transactions=True,
+        )
+        assert is_hex(block['transactions'][0])
+
     def test_get_block_by_hash(self, eth_tester):
         mined_block_hashes = eth_tester.mine_blocks(10)
         for block_number, block_hash in enumerate(mined_block_hashes):
             block = eth_tester.get_block_by_hash(block_hash)
             assert block['number'] == block_number
             assert block['hash'] == block_hash
+
+    def test_get_block_by_hash_full_transactions(self, eth_tester):
+        eth_tester.mine_blocks(2)
+        transaction_hash = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+        })
+        transaction = eth_tester.get_transaction_by_hash(transaction_hash)
+        block = eth_tester.get_block_by_hash(
+            transaction['block_hash'],
+            full_transactions=True,
+        )
+        assert is_dict(block['transactions'][0])
+
+    def test_get_block_by_hash_only_transaction_hashes(self, eth_tester):
+        eth_tester.mine_blocks(2)
+        transaction_hash = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+        })
+        transaction = eth_tester.get_transaction_by_hash(transaction_hash)
+        block = eth_tester.get_block_by_hash(
+            transaction['block_hash'],
+            full_transactions=True,
+        )
+        assert is_hex(block['transactions'][0])
 
     def test_get_block_by_earliest(self, eth_tester):
         eth_tester.mine_blocks(10)
