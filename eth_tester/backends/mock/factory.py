@@ -1,8 +1,6 @@
 import functools
 import time
 
-import rlp
-
 from cytoolz.dicttoolz import (
     assoc,
 )
@@ -15,9 +13,14 @@ from eth_utils import (
     is_list_like,
     is_text,
     is_bytes,
+    is_null,
     force_bytes,
     to_tuple,
     apply_to_return_value,
+)
+
+from eth_tester.utils.accounts import (
+    generate_contract_address,
 )
 
 
@@ -51,6 +54,8 @@ def stringify(value):
         ))
     elif is_integer(value):
         yield force_bytes(str(value))
+    elif is_null(value):
+        return 'None@{0}'.format(id(value))
     else:
         raise TypeError("Unsupported type for stringification: {0}".format(type(value)))
 
@@ -70,26 +75,10 @@ def add_hash(fn):
     return inner
 
 
-@add_hash
 @to_dict
 def create_transaction(transaction, block, transaction_index, is_pending, overrides=None):
     if overrides is None:
         overrides = {}
-
-    if 'transaction_index' in overrides:
-        yield 'transaction_index', overrides['transaction_index']
-    else:
-        yield None if is_pending else transaction_index
-
-    if 'block_number' in overrides:
-        yield 'block_number', overrides['block_number']
-    else:
-        yield None if is_pending else block['number']
-
-    if 'block_hash' in overrides:
-        yield 'block_hash', overrides['block_hash']
-    else:
-        yield None if is_pending else block['hash']
 
     if 'nonce' in overrides:
         yield 'nonce', overrides['nonce']
@@ -98,6 +87,8 @@ def create_transaction(transaction, block, transaction_index, is_pending, overri
 
     if 'hash' in overrides:
         yield 'hash', overrides['hash']
+    else:
+        yield 'hash', fake_rlp_hash(transaction)
 
     if 'from' in overrides:
         yield 'from', overrides['from']
@@ -112,12 +103,12 @@ def create_transaction(transaction, block, transaction_index, is_pending, overri
     if 'gas_price' in overrides:
         yield 'gas_price', overrides['gas_price']
     else:
-        yield 'gas_price', transaction['gas_price']
+        yield 'gas_price', transaction.get('gas_price', 1)  # TODO: make configurable
 
     if 'to' in overrides:
         yield 'to', overrides['to']
     else:
-        yield 'to', transaction['to']
+        yield 'to', transaction.get('to', b'')
 
     if 'data' in overrides:
         yield 'data', overrides['data']
@@ -127,7 +118,7 @@ def create_transaction(transaction, block, transaction_index, is_pending, overri
     if 'value' in overrides:
         yield 'value', overrides['value']
     else:
-        yield 'value', transaction['value']
+        yield 'value', transaction.get('value', 0)
 
     if 'v' in overrides:
         yield 'v', overrides['v']
@@ -180,7 +171,7 @@ def make_log(transaction, block, transaction_index, log_index, overrides=None):
     if 'address' in overrides:
         yield 'address', overrides['address']
     else:
-        yield 'address', transaction['to']
+        yield 'address', transaction.get('to', b'')
 
     if 'data' in overrides:
         yield 'data', overrides['data']
@@ -193,29 +184,10 @@ def make_log(transaction, block, transaction_index, log_index, overrides=None):
         yield 'topics', []
 
 
-def generate_contract_address(address, nonce):
-    return keccak(rlp.encode([address, nonce]))[-20:]
-
-
+@to_dict
 def make_receipt(transaction, block, transaction_index, overrides=None):
     if overrides is None:
         overrides = {}
-    is_pending = transaction['block_number'] is None
-
-    if 'transaction_index' in overrides:
-        yield 'transaction_index', overrides['transaction_index']
-    else:
-        yield 'transaction_index', None if is_pending else transaction_index
-
-    if 'block_number' in overrides:
-        yield 'block_number', overrides['block_number']
-    else:
-        yield 'block_number', None if is_pending else block['number']
-
-    if 'block_hash' in overrides:
-        yield 'block_hash', overrides['block_hash']
-    else:
-        yield 'block_hash', None if is_pending else block['hash']
 
     if 'gas_used' in overrides:
         gas_used = overrides['gas_used']

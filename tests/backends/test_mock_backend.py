@@ -26,7 +26,8 @@ def eth_tester():
 
 
 class TestMockBackendDirect(BaseTestBackendDirect):
-    pass
+    supports_call = False
+    supports_estimate_gas = False
 
 
 #class TestMockBackendFuzz(BaseTestBackendFuzz):

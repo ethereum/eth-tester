@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import functools
+
 import pytest
 
 from cytoolz.dicttoolz import (
@@ -52,7 +54,31 @@ from .math_contract import (
 )
 
 
+def skip_if_no_call(method):
+    @functools.wraps(method)
+    def inner(self, *args, **kwargs):
+        if not self.supports_call:
+            pytest.skip('Call interface not supported')
+        return method(self, *args, **kwargs)
+    return inner
+
+
+def skip_if_no_estimate_gas(method):
+    @functools.wraps(method)
+    def inner(self, *args, **kwargs):
+        if not self.supports_estimate_gas:
+            pytest.skip('Gas estimation interface not supported')
+        return method(self, *args, **kwargs)
+    return inner
+
+
 class BaseTestBackendDirect(object):
+    #
+    # Testing Flags
+    #
+    supports_call = True
+    supports_estimate_gas = True
+
     #
     # Accounts
     #
@@ -190,7 +216,7 @@ class BaseTestBackendDirect(object):
         transaction = eth_tester.get_transaction_by_hash(transaction_hash)
         block = eth_tester.get_block_by_number(
             transaction['block_number'],
-            full_transactions=True,
+            full_transactions=False,
         )
         assert is_hex(block['transactions'][0])
 
@@ -225,7 +251,7 @@ class BaseTestBackendDirect(object):
         transaction = eth_tester.get_transaction_by_hash(transaction_hash)
         block = eth_tester.get_block_by_hash(
             transaction['block_hash'],
-            full_transactions=True,
+            full_transactions=False,
         )
         assert is_hex(block['transactions'][0])
 
@@ -282,6 +308,7 @@ class BaseTestBackendDirect(object):
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
         assert receipt['block_number'] is None
 
+    @skip_if_no_call
     def test_call_return13(self, eth_tester):
         math_address = _deploy_math(eth_tester)
         call_math_transaction = _make_call_math_transaction(
@@ -293,6 +320,7 @@ class BaseTestBackendDirect(object):
         result = _decode_math_result('return13', raw_result)
         assert result == (13,)
 
+    @skip_if_no_call
     def test_call_add(self, eth_tester):
         math_address = _deploy_math(eth_tester)
         call_math_transaction = _make_call_math_transaction(
@@ -305,6 +333,7 @@ class BaseTestBackendDirect(object):
         result = _decode_math_result('add', raw_result)
         assert result == (20,)
 
+    @skip_if_no_estimate_gas
     def test_estimate_gas(self, eth_tester):
         math_address = _deploy_math(eth_tester)
         estimate_call_math_transaction = _make_call_math_transaction(
