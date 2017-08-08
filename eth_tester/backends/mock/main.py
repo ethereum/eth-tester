@@ -1,4 +1,5 @@
 import itertools
+import copy
 
 from cytoolz.dicttoolz import (
     dissoc,
@@ -82,23 +83,35 @@ class MockBackend(BaseChainBackend):
         if genesis_block is None:
             genesis_block = make_genesis_block()
 
-        self.alloc = alloc
-        self.blocks = []
-        self.block = genesis_block
-        self.receipts = {}
         self.fork_blocks = {}
+
+        self.genesis_alloc = copy.deepcopy(alloc)
+        self.genesis_block = copy.deepcopy(genesis_block)
+        self.reset_to_genesis()
 
     #
     # Snapshot API
     #
     def take_snapshot(self):
-        raise NotImplementedError("Must be implemented by subclasses")
+        return copy.deepcopy({
+            'alloc': self.alloc,
+            'blocks': self.blocks,
+            'block': self.block,
+            'receipts': self.receipts,
+        })
 
     def revert_to_snapshot(self, snapshot):
-        raise NotImplementedError("Must be implemented by subclasses")
+        self.alloc = snapshot['alloc']
+        self.blocks = snapshot['blocks']
+        self.block = snapshot['block']
+        self.receipts = snapshot['receipts']
 
     def reset_to_genesis(self):
-        raise NotImplementedError("Must be implemented by subclasses")
+        self.alloc = self.genesis_alloc
+        self.blocks = []
+        self.block = self.genesis_block
+        self.receipts = {}
+        self.fork_blocks = {}
 
     #
     # Fork block numbers
@@ -108,7 +121,7 @@ class MockBackend(BaseChainBackend):
 
     def get_fork_block(self, fork_name):
         try:
-            return self.fork_block[fork_name]
+            return self.fork_blocks[fork_name]
         except KeyError:
             raise UnknownFork("Unknown fork: {0}".format(fork_name))
 
@@ -116,7 +129,7 @@ class MockBackend(BaseChainBackend):
     # Meta
     #
     def time_travel(self, timestamp):
-        raise NotImplementedError("Must be implemented by subclasses")
+        self.block['timestamp'] = timestamp
 
     #
     # Mining

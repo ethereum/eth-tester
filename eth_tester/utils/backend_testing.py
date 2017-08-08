@@ -54,20 +54,11 @@ from .math_contract import (
 )
 
 
-def skip_if_no_call(method):
+def skip_if_no_evm_execution(method):
     @functools.wraps(method)
     def inner(self, *args, **kwargs):
-        if not self.supports_call:
-            pytest.skip('Call interface not supported')
-        return method(self, *args, **kwargs)
-    return inner
-
-
-def skip_if_no_estimate_gas(method):
-    @functools.wraps(method)
-    def inner(self, *args, **kwargs):
-        if not self.supports_estimate_gas:
-            pytest.skip('Gas estimation interface not supported')
+        if not self.supports_evm_execution:
+            pytest.skip('EVM Execution is not supported.')
         return method(self, *args, **kwargs)
     return inner
 
@@ -76,8 +67,7 @@ class BaseTestBackendDirect(object):
     #
     # Testing Flags
     #
-    supports_call = True
-    supports_estimate_gas = True
+    supports_evm_execution = True
 
     #
     # Accounts
@@ -308,7 +298,7 @@ class BaseTestBackendDirect(object):
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
         assert receipt['block_number'] is None
 
-    @skip_if_no_call
+    @skip_if_no_evm_execution
     def test_call_return13(self, eth_tester):
         math_address = _deploy_math(eth_tester)
         call_math_transaction = _make_call_math_transaction(
@@ -320,7 +310,7 @@ class BaseTestBackendDirect(object):
         result = _decode_math_result('return13', raw_result)
         assert result == (13,)
 
-    @skip_if_no_call
+    @skip_if_no_evm_execution
     def test_call_add(self, eth_tester):
         math_address = _deploy_math(eth_tester)
         call_math_transaction = _make_call_math_transaction(
@@ -333,7 +323,7 @@ class BaseTestBackendDirect(object):
         result = _decode_math_result('add', raw_result)
         assert result == (20,)
 
-    @skip_if_no_estimate_gas
+    @skip_if_no_evm_execution
     def test_estimate_gas(self, eth_tester):
         math_address = _deploy_math(eth_tester)
         estimate_call_math_transaction = _make_call_math_transaction(
@@ -512,6 +502,7 @@ class BaseTestBackendDirect(object):
         assert set(after_filter_changes) == set(after_transactions)
         assert set(after_filter_logs) == common_transactions.union(after_transactions)
 
+    @skip_if_no_evm_execution
     def test_revert_cleans_up_invalidated_log_entries(self, eth_tester):
         # setup the emitter
         emitter_address = _deploy_emitter(eth_tester)
@@ -688,6 +679,7 @@ class BaseTestBackendDirect(object):
         ).union(transactions_13_to_20)
         assert set(filter_b_logs_part_2) == set(transactions_8_to_12).union(transactions_13_to_20)
 
+    @skip_if_no_evm_execution
     def test_log_filter_picks_up_new_logs(self, eth_tester):
         """
         Cases to test:
@@ -718,6 +710,7 @@ class BaseTestBackendDirect(object):
         logs_all = eth_tester.get_all_filter_logs(filter_any_id)
         assert len(logs_changes) == len(logs_all) == 1
 
+    @skip_if_no_evm_execution
     def test_log_filter_includes_old_logs(self, eth_tester):
         """
         Cases to test:
@@ -747,6 +740,7 @@ class BaseTestBackendDirect(object):
         logs_all = eth_tester.get_all_filter_logs(filter_any_id)
         assert len(logs_changes) == len(logs_all) == 2
 
+    @skip_if_no_evm_execution
     def test_delete_filter(self, eth_tester):
         filter_id = eth_tester.create_block_filter()
 
