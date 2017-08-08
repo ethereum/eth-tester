@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-import functools
-
 import pytest
 
 from cytoolz.dicttoolz import (
@@ -54,20 +52,15 @@ from .math_contract import (
 )
 
 
-def skip_if_no_evm_execution(method):
-    @functools.wraps(method)
-    def inner(self, *args, **kwargs):
-        if not self.supports_evm_execution:
-            pytest.skip('EVM Execution is not supported.')
-        return method(self, *args, **kwargs)
-    return inner
-
-
 class BaseTestBackendDirect(object):
     #
     # Testing Flags
     #
     supports_evm_execution = True
+
+    def skip_if_no_evm_execution(self):
+        if not self.supports_evm_execution:
+            pytest.skip('EVM Execution is not supported.')
 
     #
     # Accounts
@@ -298,8 +291,9 @@ class BaseTestBackendDirect(object):
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
         assert receipt['block_number'] is None
 
-    @skip_if_no_evm_execution
     def test_call_return13(self, eth_tester):
+        self.skip_if_no_evm_execution()
+
         math_address = _deploy_math(eth_tester)
         call_math_transaction = _make_call_math_transaction(
             eth_tester,
@@ -310,8 +304,9 @@ class BaseTestBackendDirect(object):
         result = _decode_math_result('return13', raw_result)
         assert result == (13,)
 
-    @skip_if_no_evm_execution
     def test_call_add(self, eth_tester):
+        self.skip_if_no_evm_execution()
+
         math_address = _deploy_math(eth_tester)
         call_math_transaction = _make_call_math_transaction(
             eth_tester,
@@ -323,8 +318,9 @@ class BaseTestBackendDirect(object):
         result = _decode_math_result('add', raw_result)
         assert result == (20,)
 
-    @skip_if_no_evm_execution
     def test_estimate_gas(self, eth_tester):
+        self.skip_if_no_evm_execution()
+
         math_address = _deploy_math(eth_tester)
         estimate_call_math_transaction = _make_call_math_transaction(
             eth_tester,
@@ -502,8 +498,9 @@ class BaseTestBackendDirect(object):
         assert set(after_filter_changes) == set(after_transactions)
         assert set(after_filter_logs) == common_transactions.union(after_transactions)
 
-    @skip_if_no_evm_execution
     def test_revert_cleans_up_invalidated_log_entries(self, eth_tester):
+        self.skip_if_no_evm_execution()
+
         # setup the emitter
         emitter_address = _deploy_emitter(eth_tester)
 
@@ -679,16 +676,18 @@ class BaseTestBackendDirect(object):
         ).union(transactions_13_to_20)
         assert set(filter_b_logs_part_2) == set(transactions_8_to_12).union(transactions_13_to_20)
 
-    @skip_if_no_evm_execution
     def test_log_filter_picks_up_new_logs(self, eth_tester):
         """
         Cases to test:
         - filter multiple transactions in one block.
-        - filter pending (make sure that from_block and to_block checks don't skip these).
         - filter mined.
+        self.skip_if_no_evm_execution()
+
         - filter against topics.
         - filter against blocks numbers that are already mined.
         """
+        self.skip_if_no_evm_execution()
+
         emitter_address = _deploy_emitter(eth_tester)
         emit_a_hash = _call_emitter(
             eth_tester,
@@ -710,16 +709,18 @@ class BaseTestBackendDirect(object):
         logs_all = eth_tester.get_all_filter_logs(filter_any_id)
         assert len(logs_changes) == len(logs_all) == 1
 
-    @skip_if_no_evm_execution
     def test_log_filter_includes_old_logs(self, eth_tester):
         """
         Cases to test:
         - filter multiple transactions in one block.
-        - filter pending (make sure that from_block and to_block checks don't skip these).
         - filter mined.
+        self.skip_if_no_evm_execution()
+
         - filter against topics.
         - filter against blocks numbers that are already mined.
         """
+        self.skip_if_no_evm_execution()
+
         emitter_address = _deploy_emitter(eth_tester)
         _call_emitter(
             eth_tester,
@@ -740,8 +741,9 @@ class BaseTestBackendDirect(object):
         logs_all = eth_tester.get_all_filter_logs(filter_any_id)
         assert len(logs_changes) == len(logs_all) == 2
 
-    @skip_if_no_evm_execution
     def test_delete_filter(self, eth_tester):
+        self.skip_if_no_evm_execution()
+
         filter_id = eth_tester.create_block_filter()
 
         eth_tester.get_all_filter_logs(filter_id)
