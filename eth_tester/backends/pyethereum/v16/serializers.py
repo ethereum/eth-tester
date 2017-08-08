@@ -33,7 +33,7 @@ def serialize_transaction_receipt(block, transaction, transaction_index, is_pend
     }
 
 
-def serialize_transaction_hash(block, transaction, transaction_index):
+def serialize_transaction_hash(block, transaction, transaction_index, is_pending):
     return transaction.hash
 
 
@@ -70,9 +70,9 @@ def serialize_log(block, transaction, transaction_index, log, log_index, is_pend
     }
 
 
-def serialize_block(block, transaction_serialize_fn=serialize_transaction_hash):
+def serialize_block(block, transaction_serialize_fn, is_pending):
     transactions = [
-        transaction_serialize_fn(block, transaction, transaction_index)
+        transaction_serialize_fn(block, transaction, transaction_index, is_pending)
         for transaction_index, transaction
         in enumerate(block.transaction_list)
     ]

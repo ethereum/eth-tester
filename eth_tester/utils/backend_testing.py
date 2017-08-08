@@ -22,6 +22,8 @@ from eth_utils import (
     is_address,
     is_integer,
     is_same_address,
+    is_dict,
+    is_hex,
 )
 
 from eth_tester.constants import (
@@ -51,6 +53,15 @@ from .math_contract import (
 
 
 class BaseTestBackendDirect(object):
+    #
+    # Testing Flags
+    #
+    supports_evm_execution = True
+
+    def skip_if_no_evm_execution(self):
+        if not self.supports_evm_execution:
+            pytest.skip('EVM Execution is not supported.')
+
     #
     # Accounts
     #
@@ -164,12 +175,68 @@ class BaseTestBackendDirect(object):
             assert block['number'] == block_number
             assert block['hash'] == block_hash
 
+    def test_get_block_by_number_full_transactions(self, eth_tester):
+        eth_tester.mine_blocks(2)
+        transaction_hash = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+        })
+        transaction = eth_tester.get_transaction_by_hash(transaction_hash)
+        block = eth_tester.get_block_by_number(
+            transaction['block_number'],
+            full_transactions=True,
+        )
+        assert is_dict(block['transactions'][0])
+
+    def test_get_block_by_number_only_transaction_hashes(self, eth_tester):
+        eth_tester.mine_blocks(2)
+        transaction_hash = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+        })
+        transaction = eth_tester.get_transaction_by_hash(transaction_hash)
+        block = eth_tester.get_block_by_number(
+            transaction['block_number'],
+            full_transactions=False,
+        )
+        assert is_hex(block['transactions'][0])
+
     def test_get_block_by_hash(self, eth_tester):
         mined_block_hashes = eth_tester.mine_blocks(10)
         for block_number, block_hash in enumerate(mined_block_hashes):
             block = eth_tester.get_block_by_hash(block_hash)
             assert block['number'] == block_number
             assert block['hash'] == block_hash
+
+    def test_get_block_by_hash_full_transactions(self, eth_tester):
+        eth_tester.mine_blocks(2)
+        transaction_hash = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+        })
+        transaction = eth_tester.get_transaction_by_hash(transaction_hash)
+        block = eth_tester.get_block_by_hash(
+            transaction['block_hash'],
+            full_transactions=True,
+        )
+        assert is_dict(block['transactions'][0])
+
+    def test_get_block_by_hash_only_transaction_hashes(self, eth_tester):
+        eth_tester.mine_blocks(2)
+        transaction_hash = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+        })
+        transaction = eth_tester.get_transaction_by_hash(transaction_hash)
+        block = eth_tester.get_block_by_hash(
+            transaction['block_hash'],
+            full_transactions=False,
+        )
+        assert is_hex(block['transactions'][0])
 
     def test_get_block_by_earliest(self, eth_tester):
         eth_tester.mine_blocks(10)
@@ -225,6 +292,8 @@ class BaseTestBackendDirect(object):
         assert receipt['block_number'] is None
 
     def test_call_return13(self, eth_tester):
+        self.skip_if_no_evm_execution()
+
         math_address = _deploy_math(eth_tester)
         call_math_transaction = _make_call_math_transaction(
             eth_tester,
@@ -236,6 +305,8 @@ class BaseTestBackendDirect(object):
         assert result == (13,)
 
     def test_call_add(self, eth_tester):
+        self.skip_if_no_evm_execution()
+
         math_address = _deploy_math(eth_tester)
         call_math_transaction = _make_call_math_transaction(
             eth_tester,
@@ -248,6 +319,8 @@ class BaseTestBackendDirect(object):
         assert result == (20,)
 
     def test_estimate_gas(self, eth_tester):
+        self.skip_if_no_evm_execution()
+
         math_address = _deploy_math(eth_tester)
         estimate_call_math_transaction = _make_call_math_transaction(
             eth_tester,
@@ -426,6 +499,8 @@ class BaseTestBackendDirect(object):
         assert set(after_filter_logs) == common_transactions.union(after_transactions)
 
     def test_revert_cleans_up_invalidated_log_entries(self, eth_tester):
+        self.skip_if_no_evm_execution()
+
         # setup the emitter
         emitter_address = _deploy_emitter(eth_tester)
 
@@ -605,11 +680,14 @@ class BaseTestBackendDirect(object):
         """
         Cases to test:
         - filter multiple transactions in one block.
-        - filter pending (make sure that from_block and to_block checks don't skip these).
         - filter mined.
+        self.skip_if_no_evm_execution()
+
         - filter against topics.
         - filter against blocks numbers that are already mined.
         """
+        self.skip_if_no_evm_execution()
+
         emitter_address = _deploy_emitter(eth_tester)
         emit_a_hash = _call_emitter(
             eth_tester,
@@ -635,11 +713,14 @@ class BaseTestBackendDirect(object):
         """
         Cases to test:
         - filter multiple transactions in one block.
-        - filter pending (make sure that from_block and to_block checks don't skip these).
         - filter mined.
+        self.skip_if_no_evm_execution()
+
         - filter against topics.
         - filter against blocks numbers that are already mined.
         """
+        self.skip_if_no_evm_execution()
+
         emitter_address = _deploy_emitter(eth_tester)
         _call_emitter(
             eth_tester,
@@ -661,6 +742,8 @@ class BaseTestBackendDirect(object):
         assert len(logs_changes) == len(logs_all) == 2
 
     def test_delete_filter(self, eth_tester):
+        self.skip_if_no_evm_execution()
+
         filter_id = eth_tester.create_block_filter()
 
         eth_tester.get_all_filter_logs(filter_id)
