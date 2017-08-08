@@ -157,17 +157,30 @@ API_ENDPOINTS = {
 
 class EthereumTesterProvider(object):
     ethereum_tester = None
+    api_endpoints = None
 
-    def __init__(self, ethereum_tester):
+    def __init__(self, ethereum_tester, api_endpoints=API_ENDPOINTS):
         self.ethereum_tester = ethereum_tester
+        self.api_endpoints = api_endpoints
 
     def make_request(self, method, params):
         namespace, _, endpoint = method.partition('_')
-        delegator = API_ENDPOINTS[namespace][endpoint]
-        response = delegator(self.ethereum_tester)
-        return {
-            'result': response,
-        }
+        try:
+            delegator = self.api_endpoints[namespace][endpoint]
+        except KeyError:
+            return {
+                "error": "Unknown RPC Endpoint: {0}".format(method),
+            }
+        try:
+            response = delegator(self.ethereum_tester)
+        except NotImplementedError:
+            return {
+                "error": "RPC Endpoint has not been implemented: {0}".format(method),
+            }
+        else:
+            return {
+                'result': response,
+            }
 
     def isConnected(self):
         return True
