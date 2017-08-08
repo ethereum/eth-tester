@@ -55,7 +55,7 @@ def stringify(value):
     elif is_integer(value):
         yield force_bytes(str(value))
     elif is_null(value):
-        return 'None@{0}'.format(id(value))
+        yield 'None@{0}'.format(id(value))
     else:
         raise TypeError("Unsupported type for stringification: {0}".format(type(value)))
 
