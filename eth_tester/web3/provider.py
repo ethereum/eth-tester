@@ -1,5 +1,9 @@
 import operator
 
+from cytoolz.functoolz import (
+    compose,
+)
+
 
 class BaseProvider(object):
     """
@@ -30,12 +34,18 @@ API_ENDPOINTS = {
     'eth': {
         'protocolVersion': not_implemented,
         'syncing': not_implemented,
-        'coinbase': not_implemented,
+        'coinbase': compose(
+            operator.itemgetter(0),
+            operator.methodcaller('get_accounts'),
+        ),
         'mining': not_implemented,
         'hashrate': not_implemented,
         'gasPrice': not_implemented,
         'accounts': operator.methodcaller('get_accounts'),
-        'blockNumber': not_implemented,
+        'blockNumber': compose(
+            operator.itemgetter('number'),
+            operator.methodcaller('get_block_by_number', 'latest'),
+        ),
         'getBalance': not_implemented,
         'getStorageAt': not_implemented,
         'getTransactionCount': not_implemented,
