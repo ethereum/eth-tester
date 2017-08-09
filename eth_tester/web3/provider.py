@@ -2,6 +2,7 @@ import operator
 
 from cytoolz.functoolz import (
     compose,
+    curry,
 )
 
 
@@ -21,6 +22,11 @@ def not_implemented(*args, **kwargs):
     raise NotImplementedError("RPC method not implemented")
 
 
+@curry
+def call_eth_tester(fn_name, eth_tester, fn_args, **fn_kwargs):
+    return getattr(eth_tester, fn_name)(*fn_args, **fn_kwargs)
+
+
 API_ENDPOINTS = {
     'web3': {
         'clientVersion': not_implemented,
@@ -36,31 +42,31 @@ API_ENDPOINTS = {
         'syncing': not_implemented,
         'coinbase': compose(
             operator.itemgetter(0),
-            operator.methodcaller('get_accounts'),
+            call_eth_tester('get_accounts'),
         ),
         'mining': not_implemented,
         'hashrate': not_implemented,
         'gasPrice': not_implemented,
-        'accounts': operator.methodcaller('get_accounts'),
+        'accounts': call_eth_tester('get_accounts'),
         'blockNumber': compose(
             operator.itemgetter('number'),
-            operator.methodcaller('get_block_by_number', 'latest'),
+            call_eth_tester('get_block_by_number', block_number='latest'),
         ),
-        'getBalance': not_implemented,
+        'getBalance': call_eth_tester('get_balance'),
         'getStorageAt': not_implemented,
-        'getTransactionCount': not_implemented,
+        'getTransactionCount': call_eth_tester('get_nonce'),
         'getBlockTransactionCountByHash': not_implemented,
         'getBlockTransactionCountByNumber': not_implemented,
         'getUncleCountByBlockHash': not_implemented,
         'getUncleCountByBlockNumber': not_implemented,
-        'getCode': not_implemented,
+        'getCode': call_eth_tester('get_code'),
         'sign': not_implemented,
         'sendTransaction': not_implemented,
         'sendRawTransaction': not_implemented,
         'call': not_implemented,
         'estimateGas': not_implemented,
         'getBlockByHash': not_implemented,
-        'getBlockByNumber': not_implemented,
+        'getBlockByNumber': call_eth_tester('get_block_by_number'),
         'getTransactionByHash': not_implemented,
         'getTransactionByBlockHashAndIndex': not_implemented,
         'getTransactionByBlockNumberAndIndex': not_implemented,
@@ -182,7 +188,7 @@ class EthereumTesterProvider(object):
                 "error": "Unknown RPC Endpoint: {0}".format(method),
             }
         try:
-            response = delegator(self.ethereum_tester)
+            response = delegator(self.ethereum_tester, params)
         except NotImplementedError:
             return {
                 "error": "RPC Endpoint has not been implemented: {0}".format(method),
