@@ -1,5 +1,6 @@
 from eth_utils import (
     is_address,
+    is_same_address,
 )
 
 
@@ -16,7 +17,7 @@ def test_web3_eth_blockNumber(web3, eth_tester):
 
 def test_web3_eth_coinbase(web3, eth_tester):
     coinbase = web3.eth.coinbase
-    assert coinbase == eth_tester.get_accounts()[0]
+    assert is_same_address(coinbase, eth_tester.get_accounts()[0])
 
 
 def test_web3_eth_getBalance(web3, eth_tester):
@@ -39,3 +40,9 @@ def test_web3_eth_getBlockByNumber_with_number(web3, eth_tester):
 def test_web3_eth_getBlockByNumber_with_latest(web3, eth_tester):
     latest_block = web3.eth.getBlock('latest')
     assert latest_block['number'] == web3.eth.blockNumber
+
+
+def test_web3_eth_getBlockByHash(web3, eth_tester):
+    block_by_number = web3.eth.getBlock('latest')
+    block = web3.eth.getBlock(block_by_number['hash'])
+    assert block == block_by_number

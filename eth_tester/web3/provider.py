@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import operator
 
 from cytoolz.functoolz import (
@@ -5,17 +7,17 @@ from cytoolz.functoolz import (
     curry,
 )
 
+from web3.middleware import (
+    GethFormattingMiddleware,
+    EVMSnapshotFormattingMiddleware as EVMSnapshotFormatterMiddleware,
+)
+from web3.providers import (
+    BaseProvider,
+)
 
-class BaseProvider(object):
-    """
-    Copied from the web3.py codebase for now until the provider logic can be
-    extracted from web3.
-    """
-    def make_request(self, method, params):
-        raise NotImplementedError("Providers must implement this method")
-
-    def isConnected(self):
-        raise NotImplementedError("Providers must implement this method")
+from .middleware import (
+    EthereumTesterFormatterMiddleware,
+)
 
 
 def not_implemented(*args, **kwargs):
@@ -65,7 +67,7 @@ API_ENDPOINTS = {
         'sendRawTransaction': not_implemented,
         'call': not_implemented,
         'estimateGas': not_implemented,
-        'getBlockByHash': not_implemented,
+        'getBlockByHash': call_eth_tester('get_block_by_hash'),
         'getBlockByNumber': call_eth_tester('get_block_by_number'),
         'getTransactionByHash': not_implemented,
         'getTransactionByBlockHashAndIndex': not_implemented,
@@ -171,7 +173,12 @@ API_ENDPOINTS = {
 }
 
 
-class EthereumTesterProvider(object):
+class EthereumTesterProvider(BaseProvider):
+    middleware_classes = (
+        GethFormattingMiddleware,
+        EthereumTesterFormatterMiddleware,
+        EVMSnapshotFormatterMiddleware,
+    )
     ethereum_tester = None
     api_endpoints = None
 
