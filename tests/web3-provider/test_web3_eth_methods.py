@@ -26,6 +26,12 @@ def test_web3_eth_getBalance(web3, eth_tester):
     assert balance == eth_tester.get_balance(coinbase)
 
 
+def test_web3_eth_getCode_empty_account(web3, eth_tester):
+    coinbase = web3.eth.coinbase
+    code = web3.eth.getCode(coinbase)
+    assert code == eth_tester.get_code(coinbase)
+
+
 def test_web3_eth_getTransactionCount(web3, eth_tester):
     coinbase = web3.eth.coinbase
     transaction_count = web3.eth.getTransactionCount(coinbase)
