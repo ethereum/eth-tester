@@ -52,3 +52,37 @@ def test_web3_eth_getBlockByHash(web3, eth_tester):
     block_by_number = web3.eth.getBlock('latest')
     block = web3.eth.getBlock(block_by_number['hash'])
     assert block == block_by_number
+
+
+def test_send_basic_transaction(web3, eth_tester):
+    coinbase = web3.eth.coinbase
+    transaction_hash = web3.eth.sendTransaction({
+        'from': coinbase, 'to': coinbase, 'gas': 21000, 'value': 1,
+    })
+    transaction = eth_tester.get_transaction_by_hash(transaction_hash)
+    assert is_same_address(transaction['from'], coinbase)
+    assert is_same_address(transaction['to'], coinbase)
+    assert transaction['gas'] == 21000
+    assert transaction['value'] == 1
+
+
+def test_get_transaction_by_hash(web3, eth_tester):
+    coinbase = web3.eth.coinbase
+    transaction_hash = web3.eth.sendTransaction({
+        'from': coinbase, 'to': coinbase, 'gas': 21000, 'value': 1,
+    })
+    transaction = web3.eth.getTransaction(transaction_hash)
+    assert is_same_address(transaction['from'], coinbase)
+    assert is_same_address(transaction['to'], coinbase)
+    assert transaction['gas'] == 21000
+    assert transaction['value'] == 1
+
+
+def test_get_transaction_receipt(web3, eth_tester):
+    coinbase = web3.eth.coinbase
+    transaction_hash = eth_tester.send_transaction({
+        'from': coinbase, 'to': coinbase, 'gas': 21000, 'value': 1,
+    })
+    transaction = eth_tester.get_transaction_by_hash(transaction_hash)
+    receipt = web3.eth.getTransactionReceipt(transaction_hash)
+    assert receipt['transactionHash'] == transaction_hash
