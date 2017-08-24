@@ -15,7 +15,6 @@ from web3.utils.formatters import (
     hex_to_integer,
     apply_formatter_at_index,
     apply_formatter_if,
-    apply_formatters_to_dict,
 )
 
 
