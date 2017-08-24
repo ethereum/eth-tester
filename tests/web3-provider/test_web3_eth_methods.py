@@ -1,6 +1,9 @@
 from eth_utils import (
     is_address,
     is_same_address,
+    keccak,
+    encode_hex,
+    decode_hex,
 )
 
 
@@ -86,3 +89,29 @@ def test_get_transaction_receipt(web3, eth_tester):
     transaction = eth_tester.get_transaction_by_hash(transaction_hash)
     receipt = web3.eth.getTransactionReceipt(transaction_hash)
     assert receipt['transactionHash'] == transaction_hash
+
+
+def test_sha3(web3):
+    expected = encode_hex(keccak('test-value'))
+    actual = web3.sha3(encode_hex('test-value'), encoding='hex')
+    assert expected == actual
+
+
+def test_eth_syncing(web3):
+    actual = web3.eth.syncing
+    assert actual is False
+
+
+def test_eth_mining(web3):
+    actual = web3.eth.mining
+    assert actual is False
+
+
+def test_eth_gasPrice(web3):
+    actual = web3.eth.gasPrice
+    assert actual == 1
+
+
+def test_eth_hashrate(web3):
+    actual = web3.eth.hashrate
+    assert actual == 0

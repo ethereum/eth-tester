@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import functools
 import operator
 
 from cytoolz.functoolz import (
@@ -7,16 +8,14 @@ from cytoolz.functoolz import (
     curry,
 )
 
-from web3.middleware import (
-    GethFormattingMiddleware,
-    EVMSnapshotFormattingMiddleware as EVMSnapshotFormatterMiddleware,
-)
-from web3.providers import (
-    BaseProvider,
+from eth_utils import (
+    keccak,
+    decode_hex,
+    encode_hex,
 )
 
-from .middleware import (
-    EthereumTesterFormatterMiddleware,
+from web3.providers import (
+    BaseProvider,
 )
 
 
@@ -29,10 +28,28 @@ def call_eth_tester(fn_name, eth_tester, fn_args, **fn_kwargs):
     return getattr(eth_tester, fn_name)(*fn_args, **fn_kwargs)
 
 
+def without_eth_tester(fn):
+    @functools.wraps(fn)
+    def inner(eth_tester, params):
+        return fn(params)
+    return inner
+
+
+def static_return(value):
+    def inner(*args, **kwargs):
+        return value
+    return inner
+
+
 API_ENDPOINTS = {
     'web3': {
         'clientVersion': not_implemented,
-        'sha3': not_implemented,
+        'sha3': without_eth_tester(compose(
+            encode_hex,
+            keccak,
+            decode_hex,
+            operator.itemgetter(0),
+        )),
     },
     'net': {
         'version': not_implemented,
@@ -41,14 +58,14 @@ API_ENDPOINTS = {
     },
     'eth': {
         'protocolVersion': not_implemented,
-        'syncing': not_implemented,
+        'syncing': static_return(False),
         'coinbase': compose(
             operator.itemgetter(0),
             call_eth_tester('get_accounts'),
         ),
-        'mining': not_implemented,
-        'hashrate': not_implemented,
-        'gasPrice': not_implemented,
+        'mining': static_return(False),
+        'hashrate': static_return(0),
+        'gasPrice': static_return(1),
         'accounts': call_eth_tester('get_accounts'),
         'blockNumber': compose(
             operator.itemgetter('number'),
@@ -174,11 +191,6 @@ API_ENDPOINTS = {
 
 
 class EthereumTesterProvider(BaseProvider):
-    middleware_classes = (
-        GethFormattingMiddleware,
-        EthereumTesterFormatterMiddleware,
-        EVMSnapshotFormatterMiddleware,
-    )
     ethereum_tester = None
     api_endpoints = None
 
@@ -194,6 +206,7 @@ class EthereumTesterProvider(BaseProvider):
             return {
                 "error": "Unknown RPC Endpoint: {0}".format(method),
             }
+
         try:
             response = delegator(self.ethereum_tester, params)
         except NotImplementedError:

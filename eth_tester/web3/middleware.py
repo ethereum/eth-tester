@@ -5,10 +5,11 @@ from cytoolz.functoolz import (
 
 from eth_utils import (
     to_dict,
+    is_string,
 )
 
 from web3.middleware import (
-    BaseFormatterMiddleware,
+    construct_formatting_middleware,
 )
 from web3.utils.formatters import (
     hex_to_integer,
@@ -32,15 +33,10 @@ def is_named_block(value):
     return value in {"latest", "earliest", "pending"}
 
 
+to_integer_if_hex = apply_formatter_if(hex_to_integer, is_string)
+
+
 is_not_named_block = complement(is_named_block)
-
-
-TRANSACTION_PARAMS_FORMATTERS = {
-    'value': hex_to_integer,
-    'gas': hex_to_integer,
-}
-
-transaction_params_formatter = apply_formatters_to_dict(TRANSACTION_PARAMS_FORMATTERS)
 
 
 TRANSACTION_KEY_MAPPINGS = {
@@ -50,19 +46,14 @@ TRANSACTION_KEY_MAPPINGS = {
 transaction_key_remapper = apply_key_map(TRANSACTION_KEY_MAPPINGS)
 
 
-class EthereumTesterFormatterMiddleware(BaseFormatterMiddleware):
-    request_formatters = {
+ethereum_tester_middleware = construct_formatting_middleware(
+    request_formatters={
         'eth_getBlockByNumber': apply_formatter_at_index(
-            apply_formatter_if(hex_to_integer, is_not_named_block),
+            apply_formatter_if(to_integer_if_hex, is_not_named_block),
             0,
         ),
-        'eth_sendTransaction': apply_formatter_at_index(
-            transaction_params_formatter,
-            0,
-        ),
-    }
-    result_formatters = {
-        'eth_blockNumber': hex,
-        'eth_getTransactionCount': hex,
+    },
+    result_formatters={
         'eth_getTransactionReceipt': transaction_key_remapper,
-    }
+    },
+)

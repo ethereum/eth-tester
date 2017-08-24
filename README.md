@@ -697,9 +697,19 @@ validator will be used from
 The specifics of this object are beyong the scope of this document.
 
 
-# Guides and Examples
+# Use with Web3.py
 
-<a id="guide-filtering"></a>
-## Filtering
+While the `ethereum-tester` library can be used on its own it can also be used
+with the [`web3.py`](https://github.com/pipermerriam/web3.py) library.
 
-TODO
+* use the `eth_tester.web3.EthereumTesterProvider` provider class.
+* use the `eth_tester.web3.ethereum_tester_middleware` middleware.
+
+```python
+>>> from eth_tester import EthereumTester
+>>> from eth_tester.web3 import EthereumTesterProvider, ethereum_tester_middleware
+>>> from web3 import Web3
+>>> eth_tester = EthereumTester()
+>>> provider = EthereumTesterProvider(eth_tester)
+>>> web3 = Web3(provider, middlewares=[ethereum_tester_middleware])
+```
