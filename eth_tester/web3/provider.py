@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import functools
 import operator
+import sys
 
 from cytoolz.functoolz import (
     compose,
@@ -24,7 +25,9 @@ def not_implemented(*args, **kwargs):
 
 
 @curry
-def call_eth_tester(fn_name, eth_tester, fn_args, **fn_kwargs):
+def call_eth_tester(fn_name, eth_tester, fn_args, fn_kwargs=None):
+    if fn_kwargs is None:
+        fn_kwargs = {}
     return getattr(eth_tester, fn_name)(*fn_args, **fn_kwargs)
 
 
@@ -35,15 +38,33 @@ def without_eth_tester(fn):
     return inner
 
 
+def without_params(fn):
+    @functools.wraps(fn)
+    def inner(eth_tester, params):
+        return fn(eth_tester)
+    return inner
+
+
 def static_return(value):
     def inner(*args, **kwargs):
         return value
     return inner
 
 
+@without_params
+def client_version(eth_tester):
+    # TODO: account for the backend that is in use.
+    from eth_tester import __version__
+    return "EthereumTester/{version}/{platform}/python{v.major}.{v.minor}.{v.micro}".format(
+        version=__version__,
+        v=sys.version_info,
+        platform=sys.platform,
+    )
+
+
 API_ENDPOINTS = {
     'web3': {
-        'clientVersion': not_implemented,
+        'clientVersion': client_version,
         'sha3': without_eth_tester(compose(
             encode_hex,
             keccak,
@@ -69,13 +90,21 @@ API_ENDPOINTS = {
         'accounts': call_eth_tester('get_accounts'),
         'blockNumber': compose(
             operator.itemgetter('number'),
-            call_eth_tester('get_block_by_number', block_number='latest'),
+            call_eth_tester('get_block_by_number', fn_kwargs={'block_number': 'latest'}),
         ),
         'getBalance': call_eth_tester('get_balance'),
         'getStorageAt': not_implemented,
         'getTransactionCount': call_eth_tester('get_nonce'),
-        'getBlockTransactionCountByHash': not_implemented,
-        'getBlockTransactionCountByNumber': not_implemented,
+        'getBlockTransactionCountByHash': compose(
+            len,
+            operator.itemgetter('transactions'),
+            call_eth_tester('get_block_by_hash'),
+        ),
+        'getBlockTransactionCountByNumber': compose(
+            len,
+            operator.itemgetter('transactions'),
+            call_eth_tester('get_block_by_number'),
+        ),
         'getUncleCountByBlockHash': not_implemented,
         'getUncleCountByBlockNumber': not_implemented,
         'getCode': call_eth_tester('get_code'),
@@ -87,7 +116,11 @@ API_ENDPOINTS = {
         'getBlockByHash': call_eth_tester('get_block_by_hash'),
         'getBlockByNumber': call_eth_tester('get_block_by_number'),
         'getTransactionByHash': call_eth_tester('get_transaction_by_hash'),
-        'getTransactionByBlockHashAndIndex': not_implemented,
+        'getTransactionByBlockHashAndIndex': compose(
+            operator.itemgetter('TODO'),
+            operator.itemgetter('transactions'),
+            call_eth_tester('get_block_by_hash', fn_kwargs={'full_transactions': True}),
+        ),
         'getTransactionByBlockNumberAndIndex': not_implemented,
         'getTransactionReceipt': call_eth_tester('get_transaction_receipt'),
         'getUncleByBlockHashAndIndex': not_implemented,
