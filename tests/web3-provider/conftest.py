@@ -8,7 +8,6 @@ from eth_tester import (
 
 from eth_tester.web3 import (
     EthereumTesterProvider,
-    ethereum_tester_middleware,
 )
 
 from eth_tester.backends.pyethereum.utils import (
@@ -55,6 +54,5 @@ def web3(web3_provider):
     if not is_web3_available():
         pytest.skip('Web3 is not available')
     from web3 import Web3
-    from web3.middleware import attrdict_middleware
-    web3 = Web3(web3_provider, middlewares=[attrdict_middleware, ethereum_tester_middleware])
+    web3 = Web3(web3_provider)
     return web3

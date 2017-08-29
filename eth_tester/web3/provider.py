@@ -31,6 +31,10 @@ from eth_tester.utils.formatting import (
     apply_formatter_if,
 )
 
+from .middleware import (
+    ethereum_tester_middleware,
+)
+
 
 def not_implemented(*args, **kwargs):
     raise NotImplementedError("RPC method not implemented")
@@ -71,6 +75,23 @@ def client_version(eth_tester, params):
     )
 
 
+@curry
+def null_if_excepts(exc_type, fn):
+    return excepts(
+        exc_type,
+        fn,
+        static_return(None),
+    )
+
+
+null_if_block_not_found = null_if_excepts(BlockNotFound)
+null_if_transaction_not_found = null_if_excepts(TransactionNotFound)
+null_if_filter_not_found = null_if_excepts(FilterNotFound)
+null_if_indexerror = null_if_excepts(IndexError)
+
+
+@null_if_indexerror
+@null_if_block_not_found
 def get_transaction_by_block_hash_and_index(eth_tester, params):
     block_hash, transaction_index = params
     block = eth_tester.get_block_by_hash(block_hash, full_transactions=True)
@@ -78,6 +99,8 @@ def get_transaction_by_block_hash_and_index(eth_tester, params):
     return transaction
 
 
+@null_if_indexerror
+@null_if_block_not_found
 def get_transaction_by_block_number_and_index(eth_tester, params):
     block_number, transaction_index = params
     block = eth_tester.get_block_by_number(block_number, full_transactions=True)
@@ -124,52 +147,38 @@ API_ENDPOINTS = {
         'getBalance': call_eth_tester('get_balance'),
         'getStorageAt': not_implemented,
         'getTransactionCount': call_eth_tester('get_nonce'),
-        'getBlockTransactionCountByHash': compose(
+        'getBlockTransactionCountByHash': null_if_block_not_found(compose(
             len,
             operator.itemgetter('transactions'),
             call_eth_tester('get_block_by_hash'),
-        ),
-        'getBlockTransactionCountByNumber': compose(
+        )),
+        'getBlockTransactionCountByNumber': null_if_block_not_found(compose(
             len,
             operator.itemgetter('transactions'),
             call_eth_tester('get_block_by_number'),
-        ),
+        )),
         'getUncleCountByBlockHash': not_implemented,
         'getUncleCountByBlockNumber': not_implemented,
         'getCode': call_eth_tester('get_code'),
         'sign': not_implemented,
         'sendTransaction': call_eth_tester('send_transaction'),
         'sendRawTransaction': not_implemented,
-        'call': not_implemented,
-        'estimateGas': not_implemented,
-        'getBlockByHash': excepts(
-            BlockNotFound,
-            call_eth_tester('get_block_by_hash'),
-            static_return(None),
-        ),
-        'getBlockByNumber': excepts(
-            BlockNotFound,
-            call_eth_tester('get_block_by_number'),
-            static_return(None),
-        ),
-        'getTransactionByHash': excepts(
-            TransactionNotFound,
-            call_eth_tester('get_transaction_by_hash'),
-            static_return(None),
+        'call': call_eth_tester('call'),  # TODO: untested
+        'estimateGas': call_eth_tester('estimate_gas'),  # TODO: untested
+        'getBlockByHash': null_if_block_not_found(call_eth_tester('get_block_by_hash')),
+        'getBlockByNumber': null_if_block_not_found(call_eth_tester('get_block_by_number')),
+        'getTransactionByHash': null_if_transaction_not_found(
+            call_eth_tester('get_transaction_by_hash')
         ),
         'getTransactionByBlockHashAndIndex': get_transaction_by_block_hash_and_index,
         'getTransactionByBlockNumberAndIndex': get_transaction_by_block_number_and_index,
-        'getTransactionReceipt': excepts(
-            TransactionNotFound,
-            compose(
-                apply_formatter_if(
-                    static_return(None),
-                    compose(is_null, operator.itemgetter('block_number')),
-                ),
-                call_eth_tester('get_transaction_receipt'),
+        'getTransactionReceipt': null_if_transaction_not_found(compose(
+            apply_formatter_if(
+                static_return(None),
+                compose(is_null, operator.itemgetter('block_number')),
             ),
-            static_return(None),
-        ),
+            call_eth_tester('get_transaction_receipt'),
+        )),
         'getUncleByBlockHashAndIndex': not_implemented,
         'getUncleByBlockNumberAndIndex': not_implemented,
         'getCompilers': not_implemented,
@@ -187,8 +196,8 @@ API_ENDPOINTS = {
             ),
             static_return(False),
         ),
-        'getFilterChanges': not_implemented,
-        'getFilterLogs': not_implemented,
+        'getFilterChanges': null_if_filter_not_found(call_eth_tester('get_only_filter_changes')),
+        'getFilterLogs': null_if_filter_not_found(call_eth_tester('get_all_filter_logs')),
         'getLogs': not_implemented,
         'getWork': not_implemented,
         'submitWork': not_implemented,
@@ -278,6 +287,7 @@ API_ENDPOINTS = {
 
 
 class EthereumTesterProvider(BaseProvider):
+    middlewares = [ethereum_tester_middleware]
     ethereum_tester = None
     api_endpoints = None
 
