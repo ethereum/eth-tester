@@ -700,16 +700,15 @@ The specifics of this object are beyong the scope of this document.
 # Use with Web3.py
 
 While the `ethereum-tester` library can be used on its own it can also be used
-with the [`web3.py`](https://github.com/pipermerriam/web3.py) library.
-
-* use the `eth_tester.web3.EthereumTesterProvider` provider class.
-* use the `eth_tester.web3.ethereum_tester_middleware` middleware.
+with the [`web3.py`](https://github.com/pipermerriam/web3.py) library.  The
+`ethereum-tester` library comes with the provider class
+`eth_tester.web3.EthereumTesterProvider`.  You can use it like this:
 
 ```python
 >>> from eth_tester import EthereumTester
->>> from eth_tester.web3 import EthereumTesterProvider, ethereum_tester_middleware
+>>> from eth_tester.web3 import EthereumTesterProvider
 >>> from web3 import Web3
 >>> eth_tester = EthereumTester()
 >>> provider = EthereumTesterProvider(eth_tester)
->>> web3 = Web3(provider, middlewares=[ethereum_tester_middleware])
+>>> web3 = Web3(provider)
 ```
