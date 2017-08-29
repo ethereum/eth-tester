@@ -5,11 +5,13 @@ import operator
 import sys
 
 from cytoolz.functoolz import (
+    excepts,
     compose,
     curry,
 )
 
 from eth_utils import (
+    is_null,
     keccak,
     decode_hex,
     encode_hex,
@@ -17,6 +19,16 @@ from eth_utils import (
 
 from web3.providers import (
     BaseProvider,
+)
+
+from eth_tester.exceptions import (
+    BlockNotFound,
+    FilterNotFound,
+    TransactionNotFound,
+)
+
+from eth_tester.utils.formatting import (
+    apply_formatter_if,
 )
 
 
@@ -38,11 +50,9 @@ def without_eth_tester(fn):
     return inner
 
 
-def without_params(fn):
-    @functools.wraps(fn)
-    def inner(eth_tester, params):
-        return fn(eth_tester)
-    return inner
+@curry
+def preprocess_params(eth_tester, params, preprocessor_fn):
+    return eth_tester, preprocessor_fn(params)
 
 
 def static_return(value):
@@ -51,8 +61,7 @@ def static_return(value):
     return inner
 
 
-@without_params
-def client_version(eth_tester):
+def client_version(eth_tester, params):
     # TODO: account for the backend that is in use.
     from eth_tester import __version__
     return "EthereumTester/{version}/{platform}/python{v.major}.{v.minor}.{v.micro}".format(
@@ -60,6 +69,26 @@ def client_version(eth_tester):
         v=sys.version_info,
         platform=sys.platform,
     )
+
+
+def get_transaction_by_block_hash_and_index(eth_tester, params):
+    block_hash, transaction_index = params
+    block = eth_tester.get_block_by_hash(block_hash, full_transactions=True)
+    transaction = block['transactions'][transaction_index]
+    return transaction
+
+
+def get_transaction_by_block_number_and_index(eth_tester, params):
+    block_number, transaction_index = params
+    block = eth_tester.get_block_by_number(block_number, full_transactions=True)
+    transaction = block['transactions'][transaction_index]
+    return transaction
+
+
+def create_log_filter(eth_tester, params):
+    filter_params = params[0]
+    filter_id = eth_tester.create_log_filter(**filter_params)
+    return filter_id
 
 
 API_ENDPOINTS = {
@@ -113,26 +142,51 @@ API_ENDPOINTS = {
         'sendRawTransaction': not_implemented,
         'call': not_implemented,
         'estimateGas': not_implemented,
-        'getBlockByHash': call_eth_tester('get_block_by_hash'),
-        'getBlockByNumber': call_eth_tester('get_block_by_number'),
-        'getTransactionByHash': call_eth_tester('get_transaction_by_hash'),
-        'getTransactionByBlockHashAndIndex': compose(
-            operator.itemgetter('TODO'),
-            operator.itemgetter('transactions'),
-            call_eth_tester('get_block_by_hash', fn_kwargs={'full_transactions': True}),
+        'getBlockByHash': excepts(
+            BlockNotFound,
+            call_eth_tester('get_block_by_hash'),
+            static_return(None),
         ),
-        'getTransactionByBlockNumberAndIndex': not_implemented,
-        'getTransactionReceipt': call_eth_tester('get_transaction_receipt'),
+        'getBlockByNumber': excepts(
+            BlockNotFound,
+            call_eth_tester('get_block_by_number'),
+            static_return(None),
+        ),
+        'getTransactionByHash': excepts(
+            TransactionNotFound,
+            call_eth_tester('get_transaction_by_hash'),
+            static_return(None),
+        ),
+        'getTransactionByBlockHashAndIndex': get_transaction_by_block_hash_and_index,
+        'getTransactionByBlockNumberAndIndex': get_transaction_by_block_number_and_index,
+        'getTransactionReceipt': excepts(
+            TransactionNotFound,
+            compose(
+                apply_formatter_if(
+                    static_return(None),
+                    compose(is_null, operator.itemgetter('block_number')),
+                ),
+                call_eth_tester('get_transaction_receipt'),
+            ),
+            static_return(None),
+        ),
         'getUncleByBlockHashAndIndex': not_implemented,
         'getUncleByBlockNumberAndIndex': not_implemented,
         'getCompilers': not_implemented,
         'compileLLL': not_implemented,
         'compileSolidity': not_implemented,
         'compileSerpent': not_implemented,
-        'newFilter': not_implemented,
-        'newBlockFilter': not_implemented,
-        'newPendingTransactionFilter': not_implemented,
-        'uninstallFilter': not_implemented,
+        'newFilter': create_log_filter,
+        'newBlockFilter': call_eth_tester('create_block_filter'),
+        'newPendingTransactionFilter': call_eth_tester('create_pending_transaction_filter'),
+        'uninstallFilter': excepts(
+            FilterNotFound,
+            compose(
+                is_null,
+                call_eth_tester('delete_filter'),
+            ),
+            static_return(False),
+        ),
         'getFilterChanges': not_implemented,
         'getFilterLogs': not_implemented,
         'getLogs': not_implemented,

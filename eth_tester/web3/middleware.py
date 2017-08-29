@@ -1,31 +1,24 @@
+from __future__ import absolute_import
+
 from cytoolz.functoolz import (
     complement,
-    curry,
 )
 
 from eth_utils import (
-    to_dict,
+    is_dict,
     is_string,
 )
 
 from web3.middleware import (
     construct_formatting_middleware,
 )
-from web3.utils.formatters import (
+
+from eth_tester.utils.formatting import (
     hex_to_integer,
     apply_formatter_at_index,
     apply_formatter_if,
+    apply_key_map,
 )
-
-
-@curry
-@to_dict
-def apply_key_map(key_mappings, value):
-    for key, item in value.items():
-        if key in key_mappings:
-            yield key_mappings[key], item
-        else:
-            yield key, item
 
 
 def is_named_block(value):
@@ -53,6 +46,6 @@ ethereum_tester_middleware = construct_formatting_middleware(
         ),
     },
     result_formatters={
-        'eth_getTransactionReceipt': transaction_key_remapper,
+        'eth_getTransactionReceipt': apply_formatter_if(transaction_key_remapper, is_dict),
     },
 )
