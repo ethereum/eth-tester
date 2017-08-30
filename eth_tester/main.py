@@ -136,26 +136,32 @@ class EthereumTester(object):
         accounts = self.normalizer.normalize_outbound_accounts(raw_accounts)
         return accounts
 
-    def get_balance(self, account):
+    def get_balance(self, account, block_number="latest"):
         self.validator.validate_inbound_account(account)
+        self.validator.validate_inbound_block_number(block_number)
         raw_account = self.normalizer.normalize_inbound_account(account)
-        raw_balance = self.backend.get_balance(raw_account)
+        raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
+        raw_balance = self.backend.get_balance(raw_account, raw_block_number)
         self.validator.validate_outbound_balance(raw_balance)
         balance = self.normalizer.normalize_outbound_balance(raw_balance)
         return balance
 
-    def get_code(self, account):
+    def get_code(self, account, block_number="latest"):
         self.validator.validate_inbound_account(account)
+        self.validator.validate_inbound_block_number(block_number)
         raw_account = self.normalizer.normalize_inbound_account(account)
-        raw_code = self.backend.get_code(raw_account)
+        raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
+        raw_code = self.backend.get_code(raw_account, raw_block_number)
         self.validator.validate_outbound_code(raw_code)
         code = self.normalizer.normalize_outbound_code(raw_code)
         return code
 
-    def get_nonce(self, account):
+    def get_nonce(self, account, block_number="latest"):
         self.validator.validate_inbound_account(account)
+        self.validator.validate_inbound_block_number(block_number)
         raw_account = self.normalizer.normalize_inbound_account(account)
-        raw_nonce = self.backend.get_nonce(raw_account)
+        raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
+        raw_nonce = self.backend.get_nonce(raw_account, raw_block_number)
         self.validator.validate_outbound_nonce(raw_nonce)
         nonce = self.normalizer.normalize_outbound_nonce(raw_nonce)
         return nonce
