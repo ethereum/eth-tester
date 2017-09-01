@@ -3,15 +3,8 @@
 # THIS IS A SNIPPET FROM THE LOCAL VERSION OF PYEVM/TOOLS/TESTER.PY
 #
 #
-
-import shutil
 import tempfile
-import time
-import types
-import warnings
 
-import rlp
-from rlp.utils import ascii_chr
 from evm.db import get_db_backend
 from evm.chain import Chain
 from evm.constants import (
@@ -26,12 +19,11 @@ from evm.constants import (
     GENESIS_MIX_HASH,
     GENESIS_NONCE
 )
-from evm.logic.sha3 import sha3
 from evm.utils.address import private_key_to_address
 from evm.utils.keccak import keccak
 from evm.utils.numeric import int_to_big_endian
-from evm.vm.base import VM
-from evm.vm.flavors.frontier.blocks import FrontierBlock
+from evm.vm.flavors.frontier import FrontierVM
+from rlp.utils import decode_hex, encode_hex as _encode_hex, ascii_chr, str_to_bytes
 
 accounts = []
 keys = []
@@ -44,11 +36,18 @@ for account_number in range(10):
 k0, k1, k2, k3, k4, k5, k6, k7, k8, k9 = keys[:10]
 a0, a1, a2, a3, a4, a5, a6, a7, a8, a9 = accounts[:10]
 
+def int_to_addr(x):
+        o = [b''] * 20
+        for i in range(20):
+            o[19 - i] = ascii_chr(x & 0xff)
+            x >>= 8
+        return b''.join(o)
+
 class state(object):
     def __init__(self, num_accounts=len(keys)):
         self.temp_data_dir = tempfile.mkdtemp()
         self.db = get_db_backend()
-        # self.env = 
+        self.config = {}
         self.last_tx = None
 
         initial_balances = {}
@@ -57,11 +56,10 @@ class state(object):
             account = accounts[i]
             initial_balances[account] = {'wei': 10 ** 24}
 
-        # for i in range(1, 5):
-        #     address = int_to_addr(i)
-        #     initial_balances[address] = {'wei': 1}
-        VM._block_class = FrontierBlock
-        Chain.vms_by_range = {0 : VM}
+        for i in range(1, 5):
+            address = int_to_addr(i)
+            initial_balances[address] = {'wei': 1}
+        Chain.vms_by_range = {0 : FrontierVM}
 
         self.block = Chain.from_genesis(
             self.db,
