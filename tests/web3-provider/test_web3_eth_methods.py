@@ -92,6 +92,10 @@ def test_eth_getTransaction(web3, eth_tester):
     assert is_same_address(transaction['to'], coinbase)
     assert transaction['gas'] == 21000
     assert transaction['value'] == 1
+    assert 'blockNumber' in transaction
+    assert 'blockHash' in transaction
+    assert 'gasPrice' in transaction
+    assert 'transactionIndex' in transaction
 
 
 def test_eth_getTransaction_not_found(web3):
