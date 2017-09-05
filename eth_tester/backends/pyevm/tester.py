@@ -24,6 +24,7 @@ from evm.utils.keccak import keccak
 from evm.utils.numeric import int_to_big_endian
 from evm.vm.flavors.frontier import FrontierVM
 from rlp.utils import decode_hex, encode_hex as _encode_hex, ascii_chr, str_to_bytes
+import rlp
 
 accounts = []
 keys = []
@@ -35,6 +36,8 @@ for account_number in range(10):
 
 k0, k1, k2, k3, k4, k5, k6, k7, k8, k9 = keys[:10]
 a0, a1, a2, a3, a4, a5, a6, a7, a8, a9 = accounts[:10]
+
+DEFAULT_ACCOUNT = a0
 
 def int_to_addr(x):
         o = [b''] * 20
@@ -81,3 +84,29 @@ class state(object):
                 'nonce': GENESIS_NONCE,
             }
         )
+
+        self.blocks = [self.block]
+
+    def mine(self, number_of_blocks=1, coinbase=DEFAULT_ACCOUNT, **kwargs):
+        if 'n' in kwargs: # compatibility
+            number_of_blocks = kwargs['n']
+            wargnings.warn(
+                "The argument 'n' is deprecated and its support will be removed "
+                "in the future versions. Please use the name 'number_of_blocks'."
+            )
+
+        for _ in range(number_of_blocks):
+            # self.block.finalize()
+            # self.block.commit_state()
+            # self.db.set(self.block.hash, rlp.encode(self.block))
+            self.db.set(self.block.__hash__, b'')
+            # timestamp = self.block.timestamp + 6 + rand() % 12
+
+            block = blocks.Block.init_from_parent(
+                self.block,
+                coinbase,
+                timestamp=timestamp,
+            )
+
+            self.block = block
+            self.blocks.append(self.block)

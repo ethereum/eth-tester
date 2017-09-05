@@ -15,7 +15,32 @@ from eth_tester.constants import (
 )
 from eth_tester.exceptions import (
     UnknownFork,
+    BlockNotFound,
 )
+from eth_utils import to_tuple
+
+
+#
+# Internal getters for EVM objects
+#
+def _get_block_by_number(evm, block_number="latest"):
+    if block_number == "latest":
+        if len(evm.blocks) == 0:
+            raise BlockNotFound("Chain has no blocks")
+        elif len(evm.blocks) == 1:
+            return evm.blocks[0]
+        else:
+            return evm.blocks[-2]
+    elif block_number == "earliest":
+        return evm.blocks[0]
+    elif block_number == "pending":
+        return evm.block
+    elif block_number == evm.block.number:
+        return evm.block
+    else:
+        if block_number >= len(evm.blocks):
+            raise BlockNotFound("Block number is longer than current chain.")
+        return evm.blocks[block_number]
 
 
 class PyEvmBackend(BaseChainBackend):
@@ -55,3 +80,31 @@ class PyEvmBackend(BaseChainBackend):
     def get_accounts(self):
         from evm.tools import tester
         return tester.accounts
+
+    def get_balance(self, account, block_number="latest"):
+        block = _get_block_by_number(self.evm, block_number)
+        return block.get_state_db().get_balance(account)
+
+    def get_nonce(self, account, block_number="latest"):
+        block = _get_block_by_number(self.evm, block_number)
+        return block.get_state_db().get_nonce(account)
+
+    #
+    # Mining
+    #
+    @to_tuple
+    def mine_blocks(self, num_blocks=1, coinbase=None):
+        from evm.tools import tester
+
+        if coinbase is None:
+            coinbase = tester.DEFAULT_ACCOUNT
+        
+        self.evm.mine(
+            number_of_blocks=num_blocks,
+            coinbase=coinbase,
+        )
+        for block in self.evm.blocks[-1 * num_blocks -1:-1]:
+            yield block.hash
+
+
+
