@@ -34,7 +34,7 @@ TRANSACTION_NORMALIZERS = {
     "transaction_index": identity,
     "from": to_checksum_address,
     "to": normalize_if(
-        conditional_fn=partial(operator.eq, b''),
+        conditional_fn=compose(operator.not_, partial(operator.eq, b'')),
         normalizer=to_checksum_address,
     ),
     "value": identity,
