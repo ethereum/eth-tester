@@ -20,3 +20,7 @@ class SnapshotNotFound(Exception):
 
 class UnknownFork(Exception):
     pass
+
+
+class AccountLocked(Exception):
+    pass

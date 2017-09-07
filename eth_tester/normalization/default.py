@@ -14,10 +14,12 @@ from .base import (
 from .inbound import (
     normalize_filter_params as normalize_inbound_filter_params,
     normalize_log_entry as normalize_inbound_log_entry,
+    normalize_private_key as normalize_inbound_private_key,
     normalize_transaction as normalize_inbound_transaction,
 )
 from .outbound import (
-    normalize_accounts as normalize_outbound_accounts,
+    normalize_account as normalize_outbound_account,
+    normalize_account_list as normalize_outbound_account_list,
     normalize_block as normalize_outbound_block,
     normalize_log_entry as normalize_outbound_log_entry,
     normalize_receipt as normalize_outbound_receipt,
@@ -35,12 +37,14 @@ class DefaultNormalizer(BaseNormalizer):
     normalize_inbound_filter_id = staticmethod(identity)
     normalize_inbound_filter_params = staticmethod(normalize_inbound_filter_params)
     normalize_inbound_log_entry = staticmethod(normalize_inbound_log_entry)
+    normalize_inbound_private_key = staticmethod(normalize_inbound_private_key)
     normalize_inbound_timestamp = staticmethod(identity)
     normalize_inbound_transaction = staticmethod(normalize_inbound_transaction)
     normalize_inbound_transaction_hash = staticmethod(decode_hex)
 
     # Outbound
-    normalize_outbound_accounts = staticmethod(normalize_outbound_accounts)
+    normalize_outbound_account = staticmethod(normalize_outbound_account)
+    normalize_outbound_account_list = staticmethod(normalize_outbound_account_list)
     normalize_outbound_balance = staticmethod(identity)
     normalize_outbound_block_hash = staticmethod(encode_hex)
     normalize_outbound_block = staticmethod(normalize_outbound_block)

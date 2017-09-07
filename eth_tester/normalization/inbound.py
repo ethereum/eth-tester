@@ -70,6 +70,10 @@ def normalize_filter_params(from_block, to_block, address, topics):
         raise TypeError("Topics are not in a recognized format: {0}".format(address))
 
 
+def normalize_private_key(value):
+    return decode_hex(value)
+
+
 TRANSACTION_NORMALIZERS = {
     'from': to_canonical_address,
     'to': to_canonical_address,

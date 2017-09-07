@@ -5,17 +5,17 @@ from cytoolz import (
 )
 
 from eth_utils import (
-    is_dict,
     is_boolean,
-    is_integer,
-    is_string,
+    is_checksum_address,
+    is_checksum_formatted_address,
+    is_dict,
     is_hex,
+    is_hex_address,
+    is_integer,
+    is_list_like,
+    is_string,
     is_text,
     remove_0x_prefix,
-    is_hex_address,
-    is_checksum_formatted_address,
-    is_checksum_address,
-    is_list_like,
 )
 
 from eth_tester.constants import (
@@ -131,6 +131,11 @@ def validate_filter_params(from_block, to_block, address, topics):
         return True
     else:
         raise ValidationError(invalid_topics_message)
+
+
+def validate_private_key(value):
+    if not is_text(value) or not is_hex(value) or not len(remove_0x_prefix(value)) == 64:
+        raise ValidationError("Private keys must be 32 bytes encoded as hexidecimal")
 
 
 TRANSACTION_KEYS = {

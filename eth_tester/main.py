@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
 
+import collections
 import itertools
 import operator
+import time
 
 from cytoolz.itertoolz import (
     remove,
@@ -14,10 +16,12 @@ from cytoolz.functoolz import (
 
 from eth_utils import (
     is_integer,
+    is_same_address,
     to_tuple,
 )
 
 from eth_tester.exceptions import (
+    AccountLocked,
     BlockNotFound,
     FilterNotFound,
     SnapshotNotFound,
@@ -35,6 +39,9 @@ from eth_tester.validation import (
     get_validator,
 )
 
+from eth_tester.utils.accounts import (
+    private_key_to_address,
+)
 from eth_tester.utils.filters import (
     Filter,
     check_if_log_matches,
@@ -105,7 +112,8 @@ class EthereumTester(object):
     _snapshot_counter = None
     _snapshots = None
 
-    _raw_accounts = None
+    _account_passwords = None
+    _account_unlock = None
 
     def _reset_local_state(self):
         # fork blocks
@@ -123,7 +131,8 @@ class EthereumTester(object):
         self._snapshots = {}
 
         # raw accounts
-        self._raw_accounts = {}
+        self._account_passwords = {}
+        self._account_unlock = collections.defaultdict(lambda: False)
 
     #
     # Fork Rules
@@ -151,20 +160,50 @@ class EthereumTester(object):
     def get_accounts(self):
         raw_accounts = self.backend.get_accounts()
         self.validator.validate_outbound_accounts(raw_accounts)
-        accounts = self.normalizer.normalize_outbound_accounts(raw_accounts)
+        accounts = self.normalizer.normalize_outbound_account_list(raw_accounts)
         return accounts
 
     def add_account(self, private_key, password=None):
         # TODO: validation
-        account = private_key_to_address(private_key)
-        if account in self.raw_accounts or account in self.backend.get_accounts():
-            raise ValidationError(
-                "There is already an account on record for the provided private key"
-            )
-        self.backend.add_account(private_key)
-        self._raw_accounts[account] = (password, None)
+        self.validator.validate_inbound_private_key(private_key)
+        raw_private_key = self.normalizer.normalize_inbound_private_key(private_key)
+        raw_account = private_key_to_address(raw_private_key)
+        account = self.normalizer.normalize_outbound_account(raw_account)
+        if any((is_same_address(account, value) for value in self.get_accounts())):
+            raise ValidationError("Account already present in account list")
+
+        self.backend.add_account(raw_private_key)
+        self._account_passwords[raw_account] = password
         # TODO: outbound normalization
         return account
+
+    def unlock_account(self, account, password, unlock_seconds=None):
+        self.validator.validate_inbound_account(account)
+        raw_account = self.normalizer.normalize_inbound_account(account)
+        try:
+            account_password = self._account_passwords[raw_account]
+        except KeyError:
+            raise ValidationError("Unknown account")
+
+        if account_password is None:
+            raise ValidationError("Account does not have a password")
+
+        if account_password != password:
+            raise ValidationError("Wrong password")
+
+        if unlock_seconds is None:
+            unlock_until = None
+        else:
+            unlock_until = time.time() + unlock_seconds
+
+        self._account_unlock[raw_account] = unlock_until
+
+    def lock_account(self, account):
+        self.validator.validate_inbound_account(account)
+        raw_account = self.normalizer.normalize_inbound_account(account)
+        if raw_account not in self._account_passwords:
+            raise ValidationError("Unknown account")
+        self._account_unlock[raw_account] = False
 
     def get_balance(self, account, block_number="latest"):
         self.validator.validate_inbound_account(account)
@@ -302,6 +341,16 @@ class EthereumTester(object):
     def send_transaction(self, transaction):
         self.validator.validate_inbound_transaction(transaction, txn_type='send')
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
+
+        if raw_transaction['from'] in self._account_passwords:
+            unlocked_until = self._account_unlock[raw_transaction['from']]
+            account_password = self._account_passwords[raw_transaction['from']]
+            is_locked = account_password is not None and unlocked_until is not None and (
+                unlocked_until is False or time.time() > unlocked_until
+            )
+            if is_locked:
+                raise AccountLocked("The account is currently locked")
+
         raw_transaction_hash = self.backend.send_transaction(raw_transaction)
         self.validator.validate_outbound_transaction_hash(raw_transaction_hash)
         transaction_hash = self.normalizer.normalize_outbound_transaction_hash(
