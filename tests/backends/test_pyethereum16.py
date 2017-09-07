@@ -22,6 +22,9 @@ from eth_tester.utils.backend_testing import (
 )
 
 
+pytestmark = pytest.mark.filterwarnings("ignore:implicit cast from 'char *'")
+
+
 @pytest.fixture
 def eth_tester():
     if not is_pyethereum16_available():
