@@ -270,7 +270,7 @@ class EthereumTester(object):
     # Transaction Sending
     #
     def send_transaction(self, transaction):
-        self.validator.validate_inbound_transaction(transaction)
+        self.validator.validate_inbound_transaction(transaction, txn_type='send')
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
         raw_transaction_hash = self.backend.send_transaction(raw_transaction)
         self.validator.validate_outbound_transaction_hash(raw_transaction_hash)
@@ -299,7 +299,7 @@ class EthereumTester(object):
         return transaction_hash
 
     def call(self, transaction, block_number="latest"):
-        self.validator.validate_inbound_transaction(transaction)
+        self.validator.validate_inbound_transaction(transaction, txn_type='call')
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
         self.validator.validate_inbound_block_number(block_number)
         raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
@@ -309,7 +309,7 @@ class EthereumTester(object):
         return result
 
     def estimate_gas(self, transaction):
-        self.validator.validate_inbound_transaction(transaction)
+        self.validator.validate_inbound_transaction(transaction, txn_type='estimate')
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
         raw_gas_estimate = self.backend.estimate_gas(raw_transaction)
         self.validator.validate_outbound_gas_estimate(raw_gas_estimate)

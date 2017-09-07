@@ -6,6 +6,10 @@ from semantic_version import (
     Spec,
 )
 
+from cytoolz.dicttoolz import (
+    assoc,
+)
+
 import rlp
 
 from eth_utils import (
@@ -127,6 +131,19 @@ def _send_evm_transaction(tester_module, evm, transaction):
     return output
 
 
+def _estimate_evm_transaction(tester_module, evm, transaction):
+    transaction_for_estimate = assoc(transaction, 'gas', 50000000)
+    return _send_evm_transaction(tester_module, evm, transaction_for_estimate)
+
+
+def _call_evm_transaction(tester_module, evm, transaction):
+    if 'gas' not in transaction:
+        transaction_for_call = assoc(transaction, 'gas', 50000000)
+    else:
+        transaction_for_call = transaction
+    return _send_evm_transaction(tester_module, evm, transaction_for_call)
+
+
 class PyEthereum16Backend(BaseChainBackend):
     def __init__(self):
         if not is_pyethereum16_available():
@@ -188,9 +205,11 @@ class PyEthereum16Backend(BaseChainBackend):
         self.evm.revert(snapshot_data)
 
         if self.evm.blocks:
+            parent = self.evm.blocks[-1]
             block = self.evm.block.init_from_parent(
-                self.evm.blocks[-1],
+                parent,
                 tester.DEFAULT_ACCOUNT,
+                timestamp=parent.timestamp + 6,
             )
 
             self.evm.block = block
@@ -341,7 +360,7 @@ class PyEthereum16Backend(BaseChainBackend):
             raise NotImplementedError("Block number must be 'latest'.")
 
         snapshot = self.take_snapshot()
-        output = _send_evm_transaction(
+        output = _call_evm_transaction(
             tester_module=tester,
             evm=self.evm,
             transaction=transaction,
@@ -354,7 +373,7 @@ class PyEthereum16Backend(BaseChainBackend):
         validate_transaction(transaction)
 
         snapshot = self.take_snapshot()
-        _send_evm_transaction(
+        _estimate_evm_transaction(
             tester_module=tester,
             evm=self.evm,
             transaction=transaction,

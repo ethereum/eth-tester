@@ -23,7 +23,7 @@ class BaseValidator(object):
     def validate_inbound_timestamp(self, timestamp):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_inbound_transaction(self, transaction):
+    def validate_inbound_transaction(self, transaction, txn_type):
         raise NotImplementedError("must be implemented by subclasses")
 
     def validate_inbound_transaction_hash(self, transaction_hash):

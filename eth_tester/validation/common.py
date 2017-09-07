@@ -170,3 +170,11 @@ def if_not_null(validator_fn):
         if value is not None:
             validator_fn(value)
     return inner
+
+
+def if_not_create_address(validator_fn):
+    @functools.wraps(validator_fn)
+    def inner(value):
+        if value != b'':
+            validator_fn(value)
+    return inner

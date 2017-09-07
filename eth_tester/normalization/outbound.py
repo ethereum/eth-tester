@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import operator
+
 from cytoolz.functoolz import (
     partial,
     identity,
@@ -31,7 +33,10 @@ TRANSACTION_NORMALIZERS = {
     "block_number": identity,
     "transaction_index": identity,
     "from": to_checksum_address,
-    "to": to_checksum_address,
+    "to": normalize_if(
+        conditional_fn=compose(operator.not_, partial(operator.eq, b'')),
+        normalizer=to_checksum_address,
+    ),
     "value": identity,
     "gas": identity,
     "gas_price": identity,

@@ -142,13 +142,16 @@ TRANSACTION_KEYS = {
     'data',
 }
 
-REQUIRED_TRANSACTION_KEYS = {
-    'from',
-    'gas',
+ALLOWED_TRANSACTION_TYPES = {
+    'send',
+    'call',
+    'estimate',
 }
 
 
-def validate_transaction(value):
+def validate_transaction(value, txn_type):
+    if txn_type not in ALLOWED_TRANSACTION_TYPES:
+        raise TypeError("the `txn_type` parameter must be one of send/call/estimate")
     if not is_dict(value):
         raise ValidationError("Transaction must be a dictionary.  Got: {0}".format(type(value)))
 
@@ -161,7 +164,14 @@ def validate_transaction(value):
             )
         )
 
-    missing_required_keys = tuple(sorted(REQUIRED_TRANSACTION_KEYS.difference(value.keys())))
+    if txn_type == 'send':
+        required_keys = {'from', 'gas'}
+    elif txn_type in {'estimate', 'call'}:
+        required_keys = set(['from'])
+    else:
+        raise Exception("Invariant: code path should be unreachable")
+
+    missing_required_keys = tuple(sorted(required_keys.difference(value.keys())))
     if missing_required_keys:
         raise ValidationError(
             "Transaction is missing the required keys: '{0}'".format(
