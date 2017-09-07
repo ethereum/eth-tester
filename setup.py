@@ -16,7 +16,7 @@ readme = open(os.path.join(DIR, 'README.md')).read()
 
 setup(
     name='ethereum-tester',
-    version='0.1.0-alpha.4',
+    version='0.1.0-alpha.5',
     description="""Tools for testing Ethereum applications.""",
     long_description=readme,
     author='Piper Merriam',
