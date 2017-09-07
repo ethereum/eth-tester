@@ -59,8 +59,13 @@ def get_default_fork_blocks():
 
 class EthereumTester(object):
     backend = None
-    auto_mine_transactions = None
+
+    validator = None
+    normalizer = None
+
     fork_blocks = None
+
+    auto_mine_transactions = None
 
     def __init__(self,
                  backend=None,
@@ -92,6 +97,16 @@ class EthereumTester(object):
     #
     # Private API
     #
+    _filter_counter = None
+    _log_filters = None
+    _block_filters = None
+    _pending_transaction_filters = None
+
+    _snapshot_counter = None
+    _snapshots = None
+
+    _raw_accounts = None
+
     def _reset_local_state(self):
         # fork blocks
         for fork_name, fork_block in self.fork_blocks.items():
@@ -106,6 +121,9 @@ class EthereumTester(object):
         # snapshot tracking
         self._snapshot_counter = itertools.count()
         self._snapshots = {}
+
+        # raw accounts
+        self._raw_accounts = {}
 
     #
     # Fork Rules
@@ -135,6 +153,18 @@ class EthereumTester(object):
         self.validator.validate_outbound_accounts(raw_accounts)
         accounts = self.normalizer.normalize_outbound_accounts(raw_accounts)
         return accounts
+
+    def add_account(self, private_key, password=None):
+        # TODO: validation
+        account = private_key_to_address(private_key)
+        if account in self.raw_accounts or account in self.backend.get_accounts():
+            raise ValidationError(
+                "There is already an account on record for the provided private key"
+            )
+        self.backend.add_account(private_key)
+        self._raw_accounts[account] = (password, None)
+        # TODO: outbound normalization
+        return account
 
     def get_balance(self, account, block_number="latest"):
         self.validator.validate_inbound_account(account)
