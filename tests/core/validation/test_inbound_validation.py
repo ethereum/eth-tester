@@ -210,7 +210,7 @@ def _make_transaction(_from=None, to=None, gas=None, gas_price=None, value=None,
 )
 def test_transaction_input_validation(validator, transaction, is_valid):
     if is_valid:
-        validator.validate_inbound_transaction(transaction)
+        validator.validate_inbound_transaction(transaction, txn_type='send')
     else:
         with pytest.raises(ValidationError):
-            validator.validate_inbound_transaction(transaction)
+            validator.validate_inbound_transaction(transaction, txn_type='send')

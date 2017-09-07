@@ -1,9 +1,14 @@
+from cytoolz.functoolz import (
+    curry,
+)
+
 from eth_utils import (
     to_dict,
     to_tuple,
 )
 
 
+@curry
 @to_dict
 def normalize_dict(value, normalizers):
     for key, item in value.items():
@@ -11,6 +16,7 @@ def normalize_dict(value, normalizers):
         yield key, normalizer(item)
 
 
+@curry
 @to_tuple
 def normalize_array(value, normalizer):
     """
@@ -21,6 +27,7 @@ def normalize_array(value, normalizer):
         yield normalizer(item)
 
 
+@curry
 def normalize_if(value, conditional_fn, normalizer):
     if conditional_fn(value):
         return normalizer(value)

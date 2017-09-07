@@ -17,6 +17,7 @@ from eth_tester.exceptions import (
 
 from .common import (
     if_not_null,
+    if_not_create_address,
     validate_any,
     validate_array,
     validate_bytes,
@@ -92,7 +93,7 @@ TRANSACTION_VALIDATORS = {
     "block_number": if_not_null(validate_positive_integer),
     "transaction_index": if_not_null(validate_positive_integer),
     "from": validate_canonical_address,
-    "to": validate_canonical_address,
+    "to": if_not_create_address(validate_canonical_address),
     "value": validate_uint256,
     "gas": validate_uint256,
     "gas_price": validate_uint256,
