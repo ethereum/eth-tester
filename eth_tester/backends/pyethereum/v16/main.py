@@ -35,6 +35,10 @@ from eth_tester.backends.pyethereum.utils import (
     is_pyethereum16_available,
 )
 
+from eth_tester.utils.accounts import (
+    private_key_to_address,
+)
+
 from .serializers import (
     serialize_block,
     serialize_transaction,
@@ -115,7 +119,10 @@ def _send_evm_transaction(tester_module, evm, transaction):
         tester.gas_limit = transaction['gas']
 
         # get the private key of the sender.
-        sender = tester.keys[tester.accounts.index(transaction['from'])]
+        try:
+            sender = tester.keys[tester.accounts.index(transaction['from'])]
+        except ValueError:
+            sender = evm.extra_accounts[transaction['from']]
 
         output = evm.send(
             sender=sender,
@@ -220,6 +227,7 @@ class PyEthereum16Backend(BaseChainBackend):
     def reset_to_genesis(self):
         from ethereum import tester
         self.evm = tester.state()
+        self.evm.extra_accounts = {}
 
     #
     # Meta
@@ -270,6 +278,13 @@ class PyEthereum16Backend(BaseChainBackend):
 
         for account in tester.accounts:
             yield account
+
+        for account in self.evm.extra_accounts.keys():
+            yield account
+
+    def add_account(self, private_key):
+        account = private_key_to_address(private_key)
+        self.evm.extra_accounts[account] = private_key
 
     #
     # Chain data

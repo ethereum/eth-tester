@@ -201,8 +201,12 @@ class EthereumTester(object):
     def lock_account(self, account):
         self.validator.validate_inbound_account(account)
         raw_account = self.normalizer.normalize_inbound_account(account)
+
         if raw_account not in self._account_passwords:
             raise ValidationError("Unknown account")
+        elif self._account_passwords[raw_account] is None:
+            raise ValidationError("Account does not have a password")
+
         self._account_unlock[raw_account] = False
 
     def get_balance(self, account, block_number="latest"):

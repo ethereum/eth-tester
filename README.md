@@ -265,6 +265,17 @@ seconds.
 ```
 
 
+<a id="api-unlock_account"></a>
+* `EthereumTester.lock_account(account)`
+
+Locks the provide account.  
+
+Raises a `ValidationError` if:
+
+* The account is not known
+* The account does not have a password.
+
+
 <a id="api-get_balance"></a>
 * `EthereumTester.get_balance(account) -> integer`
 

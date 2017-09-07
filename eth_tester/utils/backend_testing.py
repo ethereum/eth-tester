@@ -24,6 +24,7 @@ from eth_utils import (
     is_same_address,
     is_dict,
     is_hex,
+    denoms,
 )
 
 from eth_tester.constants import (
@@ -110,6 +111,15 @@ class BaseTestBackendDirect(object):
             in eth_tester.get_accounts()
         ))
 
+        # Fund it
+        eth_tester.send_transaction({
+            'from': eth_tester.get_accounts()[0],
+            'to': account,
+            'value': 1 * denoms.ether,
+            'gas': 21000,
+            'gas_price': 1,
+        })
+
         self._send_and_check_transaction(eth_tester, account)
 
     def test_add_account_with_password(self, eth_tester):
@@ -120,6 +130,15 @@ class BaseTestBackendDirect(object):
             for value
             in eth_tester.get_accounts()
         ))
+
+        # Fund it
+        eth_tester.send_transaction({
+            'from': eth_tester.get_accounts()[0],
+            'to': account,
+            'value': 1 * denoms.ether,
+            'gas': 21000,
+            'gas_price': 1,
+        })
 
         with pytest.raises(AccountLocked):
             self._send_and_check_transaction(eth_tester, account)
