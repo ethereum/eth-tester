@@ -24,6 +24,7 @@ from eth_utils import (
     is_same_address,
     is_dict,
     is_hex,
+    denoms,
 )
 
 from eth_tester.constants import (
@@ -36,6 +37,7 @@ from eth_tester.constants import (
     FORK_STATE_CLEANUP,
 )
 from eth_tester.exceptions import (
+    AccountLocked,
     FilterNotFound,
     ValidationError,
 )
@@ -52,7 +54,33 @@ from .math_contract import (
 )
 
 
+PK_A = '0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d'
+PK_A_ADDRESS = '0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd'
+
+
+SIMPLE_TRANSACTION = {
+    "to": BURN_ADDRESS,
+    "gas_price": 1,
+    "value": 0,
+    "gas": 21000,
+}
+
+
 class BaseTestBackendDirect(object):
+    #
+    # Utils
+    #
+    def _send_and_check_transaction(self, eth_tester, _from):
+        transaction = assoc(SIMPLE_TRANSACTION, 'from', _from)
+
+        txn_hash = eth_tester.send_transaction(transaction)
+        txn = eth_tester.get_transaction_by_hash(txn_hash)
+
+        assert is_same_address(txn['from'], transaction['from'])
+        assert is_same_address(txn['to'], transaction['to'])
+        assert txn['gas_price'] == transaction['gas_price']
+        assert txn['gas'] == transaction['gas']
+        assert txn['value'] == transaction['value']
     #
     # Testing Flags
     #
@@ -73,6 +101,55 @@ class BaseTestBackendDirect(object):
             for account
             in accounts
         )
+
+    def test_add_account_no_password(self, eth_tester):
+        account = eth_tester.add_account(PK_A)
+        assert is_address(account)
+        assert any((
+            is_same_address(account, value)
+            for value
+            in eth_tester.get_accounts()
+        ))
+
+        # Fund it
+        eth_tester.send_transaction({
+            'from': eth_tester.get_accounts()[0],
+            'to': account,
+            'value': 1 * denoms.ether,
+            'gas': 21000,
+            'gas_price': 1,
+        })
+
+        self._send_and_check_transaction(eth_tester, account)
+
+    def test_add_account_with_password(self, eth_tester):
+        account = eth_tester.add_account(PK_A, 'test-password')
+        assert is_address(account)
+        assert any((
+            is_same_address(account, value)
+            for value
+            in eth_tester.get_accounts()
+        ))
+
+        # Fund it
+        eth_tester.send_transaction({
+            'from': eth_tester.get_accounts()[0],
+            'to': account,
+            'value': 1 * denoms.ether,
+            'gas': 21000,
+            'gas_price': 1,
+        })
+
+        with pytest.raises(AccountLocked):
+            self._send_and_check_transaction(eth_tester, account)
+
+        eth_tester.unlock_account(account, 'test-password')
+        self._send_and_check_transaction(eth_tester, account)
+
+        eth_tester.lock_account(account)
+
+        with pytest.raises(AccountLocked):
+            self._send_and_check_transaction(eth_tester, account)
 
     def test_get_balance_of_listed_accounts(self, eth_tester):
         for account in eth_tester.get_accounts():
@@ -116,21 +193,7 @@ class BaseTestBackendDirect(object):
         accounts = eth_tester.get_accounts()
         assert accounts, "No accounts available for transaction sending"
 
-        transaction = {
-            "from": accounts[0],
-            "to": BURN_ADDRESS,
-            "gas_price": 1,
-            "value": 0,
-            "gas": 21000,
-        }
-        txn_hash = eth_tester.send_transaction(transaction)
-        txn = eth_tester.get_transaction_by_hash(txn_hash)
-
-        assert is_same_address(txn['from'], transaction['from'])
-        assert is_same_address(txn['to'], transaction['to'])
-        assert txn['gas_price'] == transaction['gas_price']
-        assert txn['gas'] == transaction['gas']
-        assert txn['value'] == transaction['value']
+        self._send_and_check_transaction(eth_tester, accounts[0])
 
     def test_auto_mine_transactions_enabled(self, eth_tester):
         eth_tester.mine_blocks()

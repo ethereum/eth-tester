@@ -23,7 +23,8 @@ from .common import (
 )
 
 
-normalize_accounts = partial(normalize_array, normalizer=to_checksum_address)
+normalize_account = to_checksum_address
+normalize_account_list = partial(normalize_array, normalizer=normalize_account)
 
 
 TRANSACTION_NORMALIZERS = {

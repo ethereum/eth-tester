@@ -20,6 +20,9 @@ class BaseNormalizer(object):
     def normalize_inbound_log_entry(self, log_entry):
         raise NotImplementedError("must be implemented by subclasses")
 
+    def normalize_inbound_private_key(self, private_key):
+        raise NotImplementedError("must be implemented by subclasses")
+
     def normalize_inbound_timestamp(self, timestamp):
         raise NotImplementedError("must be implemented by subclasses")
 
@@ -30,7 +33,10 @@ class BaseNormalizer(object):
         raise NotImplementedError("must be implemented by subclasses")
 
     # Outbound
-    def normalize_outbound_accounts(self, accounts):
+    def normalize_outbound_account(self, accounts):
+        raise NotImplementedError("must be implemented by subclasses")
+
+    def normalize_outbound_account_list(self, account_list):
         raise NotImplementedError("must be implemented by subclasses")
 
     def normalize_outbound_balance(self, account):

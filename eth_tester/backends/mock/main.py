@@ -28,6 +28,9 @@ from eth_tester.exceptions import (
     UnknownFork,
 )
 
+from eth_tester.utils.accounts import (
+    private_key_to_address,
+)
 from eth_tester.utils.encoding import (
     zpad,
 )
@@ -53,7 +56,7 @@ def _generate_dummy_address(idx):
     )
 
 
-def _get_default_account_data(idx):
+def _get_default_account_data():
     return {
         'balance': 1000000 * denoms.ether,
         'code': b'',
@@ -64,7 +67,7 @@ def _get_default_account_data(idx):
 
 def get_default_alloc(num_accounts=10):
     return {
-        _generate_dummy_address(idx): _get_default_account_data(idx)
+        _generate_dummy_address(idx): _get_default_account_data()
         for idx
         in range(num_accounts)
     }
@@ -158,6 +161,10 @@ class MockBackend(BaseChainBackend):
     #
     def get_accounts(self):
         return tuple(self.alloc.keys())
+
+    def add_account(self, private_key):
+        account = private_key_to_address(private_key)
+        self.alloc[account] = _get_default_account_data()
 
     #
     # Chain data

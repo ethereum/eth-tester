@@ -219,6 +219,63 @@ in this list will be EIP55 checksummed.
 ```
 
 
+<a id="api-add_account"></a>
+* `EthereumTester.add_account(private_key, password=None)`
+
+Adds a new account for the given private key.  Returns the hex encoded address
+of the added account.
+
+```python
+>>> t.add_account('0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d')
+'0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd'
+```
+
+By default, added accounts are unlocked and do not have a password.  If you
+would like to add an account which has a password, you can supply the password
+as the second parameter.
+
+```python
+>>> t.add_account('0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d', 'my-secret')
+'0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd'
+```
+
+
+<a id="api-unlock_account"></a>
+* `EthereumTester.unlock_account(account, password, unlock_seconds=None)`
+
+Unlocks the given account if the provided password matches.
+
+Raises a `ValidationError` if:
+
+* The account is not known.
+* The password does not match.
+* The account was created without a password.
+
+```python
+>>> t.unlock_account('0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd', 'my-secret')
+```
+
+By default, accounts will be unlocked indefinitely.  You can however unlock an
+account for a specified amount of time by providing the desired duration in
+seconds.
+
+```python
+# unlock for 1 hour.
+>>> t.unlock_account('0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd', 'my-secret', 60 * 60)
+```
+
+
+<a id="api-unlock_account"></a>
+* `EthereumTester.lock_account(account)`
+
+Locks the provide account.  
+
+Raises a `ValidationError` if:
+
+* The account is not known
+* The account does not have a password.
+
+
 <a id="api-get_balance"></a>
 * `EthereumTester.get_balance(account) -> integer`
 
