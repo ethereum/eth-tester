@@ -14,6 +14,9 @@ from .pyethereum.v16 import (
 from .pyethereum.v20 import (  # noqa: F401
     PyEthereum20Backend,
 )
+from .pyevm import (  # noqa: F401
+    PyEVMBackend,
+)
 
 
 DEFAULT_CHAIN_BACKEND_CLASS = get_import_path(PyEthereum16Backend)

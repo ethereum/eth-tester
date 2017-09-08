@@ -1,15 +1,68 @@
 from __future__ import absolute_import
 
 import pkg_resources
+import time
 
+from .serializers import (
+    serialize_block,
+)
 from .utils import is_pyevm_available
 
 
-def setup_tester_evm():
-    pass
+ZERO_ADDRESS = 20 * b'\x00'
+ZERO_HASH32 = 32 * b'\x00'
 
 
-class BaseChainBackend(object):
+EMPTY_RLP_LIST_HASH = b'\x1d\xccM\xe8\xde\xc7]z\xab\x85\xb5g\xb6\xcc\xd4\x1a\xd3\x12E\x1b\x94\x8at\x13\xf0\xa1B\xfd@\xd4\x93G'  # noqa: E501
+BLANK_ROOT_HASH = b'V\xe8\x1f\x17\x1b\xccU\xa6\xff\x83E\xe6\x92\xc0\xf8n\x5bH\xe0\x1b\x99l\xad\xc0\x01b/\xb5\xe3c\xb4!'  # noqa: E501
+
+
+GENESIS_BLOCK_NUMBER = 0
+GENESIS_DIFFICULTY = 131072
+GENESIS_GAS_LIMIT = 3141592
+GENESIS_PARENT_HASH = ZERO_HASH32
+GENESIS_COINBASE = ZERO_ADDRESS
+GENESIS_NONCE = b'\x00\x00\x00\x00\x00\x00\x00*'  # 42 encoded as big-endian-integer
+GENESIS_MIX_HASH = ZERO_HASH32
+GENESIS_EXTRA_DATA = b''
+GENESIS_INITIAL_ALLOC = {}
+
+
+def setup_tester_chain():
+    from evm.db import (
+        get_db_backend,
+    )
+    from evm.vm.flavors import MainnetTesterChain
+
+    genesis_params = {
+        'parent_hash': GENESIS_PARENT_HASH,
+        'uncles_hash': EMPTY_RLP_LIST_HASH,
+        'coinbase': GENESIS_COINBASE,
+        'state_root': BLANK_ROOT_HASH,
+        'transaction_root': BLANK_ROOT_HASH,
+        'receipt_root': BLANK_ROOT_HASH,
+        'bloom': 0,
+        'difficulty': GENESIS_DIFFICULTY,
+        'block_number': GENESIS_BLOCK_NUMBER,
+        'gas_limit': GENESIS_GAS_LIMIT,
+        'gas_used': 0,
+        'timestamp': int(time.time()),
+        'extra_data': GENESIS_EXTRA_DATA,
+        'mix_hash': GENESIS_MIX_HASH,
+        'nonce': GENESIS_NONCE,
+    }
+    genesis_state = {}
+
+    db = get_db_backend()
+    chain = MainnetTesterChain.from_genesis(
+        db,
+        genesis_params=genesis_params,
+        genesis_state=genesis_state,
+    )
+    return chain
+
+
+class PyEVMBackend(object):
     def __init__(self):
         if not is_pyevm_available():
             raise pkg_resources.DistributionNotFound(
@@ -17,6 +70,7 @@ class BaseChainBackend(object):
                 "`PyEVMBackend` requires py-evm to be installed and importable. "
                 "Please install the `py-evm` library."
             )
+
         self.reset_to_genesis()
 
     #
@@ -29,12 +83,14 @@ class BaseChainBackend(object):
         raise NotImplementedError("Must be implemented by subclasses")
 
     def reset_to_genesis(self):
-        self.evm = setup_tester_evm()
+        self.chain = setup_tester_chain()
 
     #
     # Fork block numbers
     #
     def set_fork_block(self, fork_name, fork_block):
+        # TODO: actually do something here
+        return
         raise NotImplementedError("Must be implemented by subclasses")
 
     def get_fork_block(self, fork_name):
@@ -61,10 +117,11 @@ class BaseChainBackend(object):
     #
     # Chain data
     #
-    def get_block_by_number(self, block_number):
-        raise NotImplementedError("Must be implemented by subclasses")
+    def get_block_by_number(self, block_number, full_transaction=True):
+        block = self.chain.get_canonical_block_by_number(block_number)
+        return serialize_block(block)
 
-    def get_block_by_hash(self, block_hash):
+    def get_block_by_hash(self, block_hash, full_transaction=True):
         raise NotImplementedError("Must be implemented by subclasses")
 
     def get_transaction_by_hash(self, transaction_hash):

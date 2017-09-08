@@ -41,10 +41,10 @@ class BaseChainBackend(object):
     #
     # Chain data
     #
-    def get_block_by_number(self, block_number):
+    def get_block_by_number(self, block_number, full_transaction=True):
         raise NotImplementedError("Must be implemented by subclasses")
 
-    def get_block_by_hash(self, block_hash):
+    def get_block_by_hash(self, block_hash, full_transaction=True):
         raise NotImplementedError("Must be implemented by subclasses")
 
     def get_transaction_by_hash(self, transaction_hash):

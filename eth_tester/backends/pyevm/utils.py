@@ -9,7 +9,10 @@ from semantic_version import (
 
 def get_pyevm_version():
     try:
-        return Version(pkg_resources.get_distribution("py-evm").version)
+        base_version = pkg_resources.parse_version(
+            pkg_resources.get_distribution("py-evm").version
+        ).base_version
+        return Version(base_version)
     except pkg_resources.DistributionNotFound:
         return None
 
