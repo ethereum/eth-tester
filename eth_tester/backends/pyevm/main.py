@@ -1,7 +1,12 @@
 from __future__ import absolute_import
 
 import pkg_resources
-import time
+
+from eth_utils import (
+    to_tuple,
+)
+
+from eth_keys import KeyAPI
 
 from .serializers import (
     serialize_block,
@@ -84,8 +89,14 @@ class PyEVMBackend(object):
     #
     # Accounts
     #
+    @to_tuple
     def get_accounts(self):
-        raise NotImplementedError("Must be implemented by subclasses")
+        for private_key in self.chain.accounts:
+            yield private_key.public_key.to_canonical_address()
+
+    def add_account(self, private_key):
+        keys = KeyAPI()
+        self.chain.accounts = self.chain.accounts + (keys.PrivateKey(private_key),)
 
     #
     # Chain data

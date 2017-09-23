@@ -38,6 +38,9 @@ class BaseChainBackend(object):
     def get_accounts(self):
         raise NotImplementedError("Must be implemented by subclasses")
 
+    def add_account(self, private_key):
+        raise NotImplementedError("Must be implemented by subclasses")
+
     #
     # Chain data
     #
