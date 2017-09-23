@@ -1,9 +1,14 @@
 from __future__ import absolute_import
 
 import pkg_resources
+import time
 
 from eth_utils import (
     to_tuple,
+    pad_left,
+    to_dict,
+    int_to_big_endian,
+    to_wei,
 )
 
 from eth_keys import KeyAPI
@@ -33,11 +38,63 @@ GENESIS_EXTRA_DATA = b''
 GENESIS_INITIAL_ALLOC = {}
 
 
+def get_default_account_state():
+    return {
+        'balance': to_wei(1000000, 'ether'),
+        'storage': {},
+        'code': b'',
+        'nonce': 0,
+    }
+
+
+@to_tuple
+def get_default_accounts():
+    keys = KeyAPI()
+
+    for i in range(1, 11):
+        pk_bytes = pad_left(int_to_big_endian(i), 32, b'\x00')
+        private_key = keys.PrivateKey(pk_bytes)
+        yield private_key
+
+
+@to_dict
+def generate_genesis_state(accounts):
+    for private_key in accounts:
+        account_state = get_default_account_state()
+        yield private_key.public_key.to_canonical_address(), account_state
+
+
+def get_default_genesis_params():
+    genesis_params = {
+        "bloom": 0,
+        "coinbase": GENESIS_COINBASE,
+        "difficulty": GENESIS_DIFFICULTY,
+        "extra_data": GENESIS_EXTRA_DATA,
+        "gas_limit": 3141592,
+        "gas_used": 0,
+        "mix_hash": GENESIS_MIX_HASH,
+        "nonce": GENESIS_NONCE,
+        "block_number": GENESIS_BLOCK_NUMBER,
+        "parent_hash": GENESIS_PARENT_HASH,
+        "receipt_root": BLANK_ROOT_HASH,
+        "timestamp": int(time.time()),
+        "transaction_root": BLANK_ROOT_HASH,
+        "uncles_hash": EMPTY_RLP_LIST_HASH
+    }
+    return genesis_params
+
+
 def setup_tester_chain():
     from evm.vm.flavors import MainnetTesterChain
+    from evm.db import get_db_backend
 
-    chain = MainnetTesterChain.initialize()
-    return chain
+    db = get_db_backend()
+    genesis_params = get_default_genesis_params()
+    accounts = get_default_accounts()
+    genesis_state = generate_genesis_state(accounts)
+
+    chain = MainnetTesterChain.from_genesis(db, genesis_params, genesis_state)
+    return accounts, chain
 
 
 class PyEVMBackend(object):
@@ -61,7 +118,7 @@ class PyEVMBackend(object):
         raise NotImplementedError("Must be implemented by subclasses")
 
     def reset_to_genesis(self):
-        self.chain = setup_tester_chain()
+        self.accounts, self.chain = setup_tester_chain()
 
     #
     # Fork block numbers
@@ -91,12 +148,12 @@ class PyEVMBackend(object):
     #
     @to_tuple
     def get_accounts(self):
-        for private_key in self.chain.accounts:
+        for private_key in self.accounts:
             yield private_key.public_key.to_canonical_address()
 
     def add_account(self, private_key):
         keys = KeyAPI()
-        self.chain.accounts = self.chain.accounts + (keys.PrivateKey(private_key),)
+        self.accounts = self.accounts + (keys.PrivateKey(private_key),)
 
     #
     # Chain data
