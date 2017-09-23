@@ -29,36 +29,9 @@ GENESIS_INITIAL_ALLOC = {}
 
 
 def setup_tester_chain():
-    from evm.db import (
-        get_db_backend,
-    )
     from evm.vm.flavors import MainnetTesterChain
 
-    genesis_params = {
-        'parent_hash': GENESIS_PARENT_HASH,
-        'uncles_hash': EMPTY_RLP_LIST_HASH,
-        'coinbase': GENESIS_COINBASE,
-        'state_root': BLANK_ROOT_HASH,
-        'transaction_root': BLANK_ROOT_HASH,
-        'receipt_root': BLANK_ROOT_HASH,
-        'bloom': 0,
-        'difficulty': GENESIS_DIFFICULTY,
-        'block_number': GENESIS_BLOCK_NUMBER,
-        'gas_limit': GENESIS_GAS_LIMIT,
-        'gas_used': 0,
-        'timestamp': int(time.time()),
-        'extra_data': GENESIS_EXTRA_DATA,
-        'mix_hash': GENESIS_MIX_HASH,
-        'nonce': GENESIS_NONCE,
-    }
-    genesis_state = {}
-
-    db = get_db_backend()
-    chain = MainnetTesterChain.from_genesis(
-        db,
-        genesis_params=genesis_params,
-        genesis_state=genesis_state,
-    )
+    chain = MainnetTesterChain.initialize()
     return chain
 
 

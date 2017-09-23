@@ -1,5 +1,16 @@
 import rlp
 
+from cytoolz import (
+    partial,
+)
+
+from eth_utils import (
+    pad_left,
+)
+
+
+pad32 = partial(pad_left, to_size=32, pad_with=b'\x00')
+
 
 def serialize_block(block):
     return {
@@ -15,7 +26,7 @@ def serialize_block(block):
         "difficulty": block.header.difficulty,
         "total_difficulty": block.header.difficulty,  # TODO
         "size": len(rlp.encode(block)),
-        "extra_data": block.header.extra_data,
+        "extra_data": pad32(block.header.extra_data),
         "gas_limit": block.header.gas_limit,
         "gas_used": block.header.gas_used,
         "timestamp": block.header.timestamp,
