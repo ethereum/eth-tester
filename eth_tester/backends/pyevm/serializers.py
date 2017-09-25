@@ -12,7 +12,9 @@ from eth_utils import (
 pad32 = partial(pad_left, to_size=32, pad_with=b'\x00')
 
 
-def serialize_block(block):
+def serialize_block(block, full_transaction=False):
+    if full_transaction:
+        raise NotImplementedError("Not yet implemented")
     return {
         "number": block.header.block_number,
         "hash": block.header.hash,
@@ -32,4 +34,23 @@ def serialize_block(block):
         "timestamp": block.header.timestamp,
         "transactions": [],  # TODO
         "uncles": [],  # TODO
+    }
+
+
+def serialize_transaction(block, transaction, transaction_index, is_pending):
+    return {
+        "hash": transaction.hash,
+        "nonce": transaction.nonce,
+        "block_hash": None if is_pending else block.hash,
+        "block_number": None if is_pending else block.number,
+        "transaction_index": None if is_pending else transaction_index,
+        "from": transaction.sender,
+        "to": transaction.to,
+        "value": transaction.value,
+        "gas": transaction.gas,
+        "gas_price": transaction.gas_price,
+        "data": transaction.data,
+        "v": transaction.v,
+        "r": transaction.r,
+        "s": transaction.s,
     }

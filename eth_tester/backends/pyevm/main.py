@@ -4,17 +4,25 @@ import pkg_resources
 import time
 
 from eth_utils import (
-    to_tuple,
+    encode_hex,
+    int_to_big_endian,
     pad_left,
     to_dict,
-    int_to_big_endian,
+    to_tuple,
     to_wei,
+    is_integer,
 )
 
 from eth_keys import KeyAPI
 
+from eth_tester.exceptions import (
+    BlockNotFound,
+    TransactionNotFound,
+)
+
 from .serializers import (
     serialize_block,
+    serialize_transaction,
 )
 from .utils import is_pyevm_available
 
@@ -48,7 +56,7 @@ def get_default_account_state():
 
 
 @to_tuple
-def get_default_accounts():
+def get_default_account_keys():
     keys = KeyAPI()
 
     for i in range(1, 11):
@@ -58,8 +66,8 @@ def get_default_accounts():
 
 
 @to_dict
-def generate_genesis_state(accounts):
-    for private_key in accounts:
+def generate_genesis_state(account_keys):
+    for private_key in account_keys:
         account_state = get_default_account_state()
         yield private_key.public_key.to_canonical_address(), account_state
 
@@ -90,11 +98,49 @@ def setup_tester_chain():
 
     db = get_db_backend()
     genesis_params = get_default_genesis_params()
-    accounts = get_default_accounts()
-    genesis_state = generate_genesis_state(accounts)
+    account_keys = get_default_account_keys()
+    genesis_state = generate_genesis_state(account_keys)
 
     chain = MainnetTesterChain.from_genesis(db, genesis_params, genesis_state)
-    return accounts, chain
+    return account_keys, chain
+
+
+def _get_block_by_number(chain, block_number):
+    if block_number == "latest":
+        head_block = chain.get_block()
+        return chain.get_canonical_block_by_number(max(0, head_block.number - 1))
+    elif block_number == "earliest":
+        return chain.get_canonical_block_by_number(0)
+    elif block_number == "pending":
+        return chain.get_block()
+    elif is_integer(block_number):
+        head_block = chain.get_block()
+        if block_number == head_block.number:
+            return head_block
+        elif block_number < head_block.number:
+            return chain.get_canonical_block_by_number(block_number)
+
+    # fallback
+    raise BlockNotFound("No block found for block number: {0}".format(block_number))
+
+
+def _get_transaction_by_hash(chain, transaction_hash):
+    head_block = chain.get_block()
+    for index, transaction in enumerate(head_block.transactions):
+        if transaction.hash == transaction_hash:
+            return head_block, transaction, index
+    for block_number in range(head_block.number - 1, -1, -1):
+        # TODO: the chain should be able to look these up directly by hash...
+        block = chain.get_canonical_block_by_number(block_number)
+        for index, transaction in enumerate(block.transactions):
+            if transaction.hash == transaction_hash:
+                return block, transaction, index
+    else:
+        raise TransactionNotFound(
+            "No transaction found for transaction hash: {0}".format(
+                encode_hex(transaction_hash)
+            )
+        )
 
 
 class PyEVMBackend(object):
@@ -109,6 +155,17 @@ class PyEVMBackend(object):
         self.reset_to_genesis()
 
     #
+    # Private Accounts API
+    #
+    @property
+    def _key_lookup(self):
+        return {
+            key.public_key.to_canonical_address(): key
+            for key
+            in self.account_keys
+        }
+
+    #
     # Snapshot API
     #
     def take_snapshot(self):
@@ -118,7 +175,7 @@ class PyEVMBackend(object):
         raise NotImplementedError("Must be implemented by subclasses")
 
     def reset_to_genesis(self):
-        self.accounts, self.chain = setup_tester_chain()
+        self.account_keys, self.chain = setup_tester_chain()
 
     #
     # Fork block numbers
@@ -140,33 +197,46 @@ class PyEVMBackend(object):
     #
     # Mining
     #
+    @to_tuple
     def mine_blocks(self, num_blocks=1, coinbase=None):
-        raise NotImplementedError("Must be implemented by subclasses")
+        if coinbase is not None:
+            mine_kwargs = {'coinbase': coinbase}
+        else:
+            mine_kwargs = {}
+        for _ in range(num_blocks):
+            block = self.chain.mine_block(**mine_kwargs)
+            yield block.hash
 
     #
     # Accounts
     #
     @to_tuple
     def get_accounts(self):
-        for private_key in self.accounts:
+        for private_key in self.account_keys:
             yield private_key.public_key.to_canonical_address()
 
     def add_account(self, private_key):
         keys = KeyAPI()
-        self.accounts = self.accounts + (keys.PrivateKey(private_key),)
+        self.account_keys = self.account_keys + (keys.PrivateKey(private_key),)
 
     #
     # Chain data
     #
     def get_block_by_number(self, block_number, full_transaction=True):
-        block = self.chain.get_canonical_block_by_number(block_number)
-        return serialize_block(block)
+        block = _get_block_by_number(self.chain, block_number)
+        return serialize_block(block, full_transaction=full_transaction)
 
     def get_block_by_hash(self, block_hash, full_transaction=True):
-        raise NotImplementedError("Must be implemented by subclasses")
+        block = self.chain.get_block_by_hash(block_hash)
+        return serialize_block(block, full_transaction=full_transaction)
 
     def get_transaction_by_hash(self, transaction_hash):
-        raise NotImplementedError("Must be implemented by subclasses")
+        block, transaction, transaction_index = _get_transaction_by_hash(
+            self.chain,
+            transaction_hash,
+        )
+        is_pending = block.number == self.chain.get_block()
+        return serialize_transaction(block, transaction, transaction_index, is_pending)
 
     def get_transaction_receipt(self, transaction_hash):
         raise NotImplementedError("Must be implemented by subclasses")
@@ -174,20 +244,47 @@ class PyEVMBackend(object):
     #
     # Account state
     #
-    def get_nonce(self, account, block_number=None):
-        raise NotImplementedError("Must be implemented by subclasses")
+    def get_nonce(self, account, block_number="latest"):
+        block = _get_block_by_number(self.chain, block_number)
+        vm = self.chain.get_vm(header=block.header)
+        with vm.state_db(read_only=True) as state_db:
+            return state_db.get_nonce(account)
 
-    def get_balance(self, account, block_number=None):
-        raise NotImplementedError("Must be implemented by subclasses")
+    def get_balance(self, account, block_number="latest"):
+        block = _get_block_by_number(self.chain, block_number)
+        vm = self.chain.get_vm(header=block.header)
+        with vm.state_db(read_only=True) as state_db:
+            return state_db.get_balance(account)
 
-    def get_code(self, account, block_number=None):
+    def get_code(self, account, block_number="latest"):
         raise NotImplementedError("Must be implemented by subclasses")
 
     #
     # Transactions
     #
+    @to_dict
+    def _normalize_transaction(self, transaction):
+        for key in transaction:
+            if key == 'from':
+                continue
+            yield key, transaction[key]
+        if 'nonce' not in transaction:
+            yield 'nonce', self.get_nonce(transaction['from'])
+        if 'data' not in transaction:
+            yield 'data', b''
+        if 'gas_price' not in transaction:
+            yield 'gas_price', 1
+        if 'value' not in transaction:
+            yield 'value', 0
+
     def send_transaction(self, transaction):
-        raise NotImplementedError("Must be implemented by subclasses")
+        signing_key = self._key_lookup[transaction['from']]
+
+        normalized_transaction = self._normalize_transaction(transaction)
+        evm_transaction = self.chain.create_unsigned_transaction(**normalized_transaction)
+        signed_evm_transaction = evm_transaction.as_signed_transaction(signing_key)
+        self.chain.apply_transaction(signed_evm_transaction)
+        return signed_evm_transaction.hash
 
     def estimate_gas(self, transaction):
         raise NotImplementedError("Must be implemented by subclasses")

@@ -232,8 +232,10 @@ class BaseTestBackendDirect(object):
         assert block['number'] == 0
 
     def test_get_block_by_number(self, eth_tester):
+        origin_block_number = eth_tester.get_block_by_number('pending')['number']
         mined_block_hashes = eth_tester.mine_blocks(10)
-        for block_number, block_hash in enumerate(mined_block_hashes):
+        for offset, block_hash in enumerate(mined_block_hashes):
+            block_number = origin_block_number + offset
             block = eth_tester.get_block_by_number(block_number)
             assert block['number'] == block_number
             assert block['hash'] == block_hash
