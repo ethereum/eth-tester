@@ -269,8 +269,11 @@ class BaseTestBackendDirect(object):
         assert is_hex(block['transactions'][0])
 
     def test_get_block_by_hash(self, eth_tester):
+        origin_block_number = eth_tester.get_block_by_number('pending')['number']
+
         mined_block_hashes = eth_tester.mine_blocks(10)
-        for block_number, block_hash in enumerate(mined_block_hashes):
+        for offset, block_hash in enumerate(mined_block_hashes):
+            block_number = origin_block_number + offset
             block = eth_tester.get_block_by_hash(block_hash)
             assert block['number'] == block_number
             assert block['hash'] == block_hash
@@ -313,19 +316,22 @@ class BaseTestBackendDirect(object):
         assert block['number'] == 0
 
     def test_get_block_by_latest_only_genesis(self, eth_tester):
-        eth_tester.mine_blocks()
         block = eth_tester.get_block_by_number('latest')
         assert block['number'] == 0
 
     def test_get_block_by_latest(self, eth_tester):
+        origin_block_number = eth_tester.get_block_by_number('pending')['number']
+
         eth_tester.mine_blocks(10)
         block = eth_tester.get_block_by_number('latest')
-        assert block['number'] == 9
+        assert block['number'] == 9 + origin_block_number
 
     def test_get_block_by_pending(self, eth_tester):
+        origin_block_number = eth_tester.get_block_by_number('pending')['number']
+
         eth_tester.mine_blocks(10)
         block = eth_tester.get_block_by_number('pending')
-        assert block['number'] == 10
+        assert block['number'] == 10 + origin_block_number
 
     # Transactions
     def test_get_transaction_by_hash(self, eth_tester):

@@ -23,6 +23,7 @@ from eth_tester.exceptions import (
 from .serializers import (
     serialize_block,
     serialize_transaction,
+    serialize_transaction_receipt,
 )
 from .utils import is_pyevm_available
 
@@ -78,7 +79,7 @@ def get_default_genesis_params():
         "coinbase": GENESIS_COINBASE,
         "difficulty": GENESIS_DIFFICULTY,
         "extra_data": GENESIS_EXTRA_DATA,
-        "gas_limit": 3141592,
+        "gas_limit": GENESIS_GAS_LIMIT,
         "gas_used": 0,
         "mix_hash": GENESIS_MIX_HASH,
         "nonce": GENESIS_NONCE,
@@ -224,22 +225,29 @@ class PyEVMBackend(object):
     #
     def get_block_by_number(self, block_number, full_transaction=True):
         block = _get_block_by_number(self.chain, block_number)
-        return serialize_block(block, full_transaction=full_transaction)
+        is_pending = block.number == self.chain.get_block().number
+        return serialize_block(block, full_transaction, is_pending)
 
     def get_block_by_hash(self, block_hash, full_transaction=True):
         block = self.chain.get_block_by_hash(block_hash)
-        return serialize_block(block, full_transaction=full_transaction)
+        is_pending = block.number == self.chain.get_block().number
+        return serialize_block(block, full_transaction, is_pending)
 
     def get_transaction_by_hash(self, transaction_hash):
         block, transaction, transaction_index = _get_transaction_by_hash(
             self.chain,
             transaction_hash,
         )
-        is_pending = block.number == self.chain.get_block()
+        is_pending = block.number == self.chain.get_block().number
         return serialize_transaction(block, transaction, transaction_index, is_pending)
 
     def get_transaction_receipt(self, transaction_hash):
-        raise NotImplementedError("Must be implemented by subclasses")
+        block, transaction, transaction_index = _get_transaction_by_hash(
+            self.chain,
+            transaction_hash,
+        )
+        is_pending = block.number == self.chain.get_block().number
+        return serialize_transaction_receipt(block, transaction, transaction_index, is_pending)
 
     #
     # Account state
@@ -276,6 +284,8 @@ class PyEVMBackend(object):
             yield 'gas_price', 1
         if 'value' not in transaction:
             yield 'value', 0
+        if 'to' not in transaction:
+            yield 'to', b''
 
     def send_transaction(self, transaction):
         signing_key = self._key_lookup[transaction['from']]
@@ -287,7 +297,27 @@ class PyEVMBackend(object):
         return signed_evm_transaction.hash
 
     def estimate_gas(self, transaction):
-        raise NotImplementedError("Must be implemented by subclasses")
+        # TODO: move this to the VM level (and use binary search approach)
+        signing_key = self._key_lookup[transaction['from']]
+        block = self.chain.get_block()
+        block.header.make_mutable()
+        vm = self.chain.get_vm(header=block.header)
 
-    def call(self, transaction):
-        raise NotImplementedError("Must be implemented by subclasses")
+        normalized_transaction = self._normalize_transaction(transaction)
+        evm_transaction = vm.create_unsigned_transaction(**normalized_transaction)
+        signed_evm_transaction = evm_transaction.as_signed_transaction(signing_key)
+        computation = vm.apply_transaction(signed_evm_transaction)
+        return computation.gas_meter.start_gas - computation.gas_meter.gas_remaining
+
+    def call(self, transaction, block_number="latest"):
+        # TODO: move this to the VM level.
+        signing_key = self._key_lookup[transaction['from']]
+        block = _get_block_by_number(self.chain, block_number)
+        block.header.make_mutable()
+        vm = self.chain.get_vm(header=block.header)
+
+        normalized_transaction = self._normalize_transaction(transaction)
+        evm_transaction = vm.create_unsigned_transaction(**normalized_transaction)
+        signed_evm_transaction = evm_transaction.as_signed_transaction(signing_key)
+        computation = vm.apply_transaction(signed_evm_transaction)
+        return computation.output

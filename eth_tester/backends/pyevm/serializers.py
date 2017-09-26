@@ -6,15 +6,32 @@ from cytoolz import (
 
 from eth_utils import (
     pad_left,
+    to_canonical_address,
+)
+
+from eth_tester.utils.address import (
+    generate_contract_address,
 )
 
 
 pad32 = partial(pad_left, to_size=32, pad_with=b'\x00')
 
 
-def serialize_block(block, full_transaction=False):
+def serialize_block(block, full_transaction, is_pending):
     if full_transaction:
-        raise NotImplementedError("Not yet implemented")
+        transaction_serializer = serialize_transaction
+    else:
+        transaction_serializer = serialize_transaction_hash
+
+    transactions = [
+        transaction_serializer(block, transaction, index, is_pending)
+        for index, transaction
+        in enumerate(block.transactions)
+    ]
+
+    if block.uncles:
+        raise NotImplementedError("Uncle serialization has not been implemented")
+
     return {
         "number": block.header.block_number,
         "hash": block.header.hash,
@@ -32,9 +49,13 @@ def serialize_block(block, full_transaction=False):
         "gas_limit": block.header.gas_limit,
         "gas_used": block.header.gas_used,
         "timestamp": block.header.timestamp,
-        "transactions": [],  # TODO
+        "transactions": transactions,
         "uncles": [],  # TODO
     }
+
+
+def serialize_transaction_hash(block, transaction, transaction_index, is_pending):
+    return transaction.hash
 
 
 def serialize_transaction(block, transaction, transaction_index, is_pending):
@@ -53,4 +74,49 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
         "v": transaction.v,
         "r": transaction.r,
         "s": transaction.s,
+    }
+
+
+def serialize_transaction_receipt(block, transaction, transaction_index, is_pending):
+    receipt = block.receipts[transaction_index]
+
+    if transaction.to == b'':
+        contract_addr = to_canonical_address(generate_contract_address(
+            transaction.sender,
+            transaction.nonce,
+        ))
+    else:
+        contract_addr = None
+
+    if transaction_index == 0:
+        origin_gas = 0
+    else:
+        origin_gas = receipt.gas_used - block.receipts[transaction_index - 1].gas_used
+
+    return {
+        "transaction_hash": transaction.hash,
+        "transaction_index": None if is_pending else transaction_index,
+        "block_number": None if is_pending else block.number,
+        "block_hash": None if is_pending else block.hash,
+        "cumulative_gas_used": receipt.gas_used - origin_gas,
+        "gas_used": receipt.gas_used,
+        "contract_address": contract_addr,
+        "logs": [
+            serialize_log(block, transaction, transaction_index, log, log_index, is_pending)
+            for log_index, log in enumerate(receipt.logs)
+        ],
+    }
+
+
+def serialize_log(block, transaction, transaction_index, log, log_index, is_pending):
+    return {
+        "type": "pending" if is_pending else "mined",
+        "log_index": log_index,
+        "transaction_index": None if is_pending else transaction_index,
+        "transaction_hash": transaction.hash,
+        "block_hash": None if is_pending else block.hash,
+        "block_number": None if is_pending else block.number,
+        "address": log.address,
+        "data": log.data,
+        "topics": [int_to_32byte_big_endian(topic) for topic in log.topics],
     }

@@ -77,5 +77,5 @@ class BaseChainBackend(object):
     def estimate_gas(self, transaction):
         raise NotImplementedError("Must be implemented by subclasses")
 
-    def call(self, transaction):
+    def call(self, transaction, block_number="latest"):
         raise NotImplementedError("Must be implemented by subclasses")
