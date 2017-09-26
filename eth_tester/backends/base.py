@@ -23,7 +23,7 @@ class BaseChainBackend(object):
     #
     # Meta
     #
-    def time_travel(self, timestamp):
+    def time_travel(self, to_timestamp):
         raise NotImplementedError("Must be implemented by subclasses")
 
     #

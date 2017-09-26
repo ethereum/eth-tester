@@ -97,7 +97,9 @@ class EthereumTester(object):
         self.normalizer = normalizer
 
         self.auto_mine_transactions = auto_mine_transactions
-        self.fork_blocks = fork_blocks
+
+        for fork_name, fork_block in fork_blocks.items():
+            self.set_fork_block(fork_name, fork_block)
 
         self._reset_local_state()
 
@@ -116,10 +118,6 @@ class EthereumTester(object):
     _account_unlock = None
 
     def _reset_local_state(self):
-        # fork blocks
-        for fork_name, fork_block in self.fork_blocks.items():
-            self.set_fork_block(fork_name, fork_block)
-
         # filter tracking
         self._filter_counter = itertools.count()
         self._log_filters = {}

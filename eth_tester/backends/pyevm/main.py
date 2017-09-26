@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import copy
 import pkg_resources
 import time
 
@@ -16,9 +15,16 @@ from eth_utils import (
 
 from eth_keys import KeyAPI
 
+from eth_tester.constants import (
+    FORK_HOMESTEAD,
+    FORK_DAO,
+    FORK_ANTI_DOS,
+    FORK_STATE_CLEANUP,
+)
 from eth_tester.exceptions import (
     BlockNotFound,
     TransactionNotFound,
+    UnknownFork,
 )
 
 from .serializers import (
@@ -46,6 +52,9 @@ GENESIS_NONCE = b'\x00\x00\x00\x00\x00\x00\x00*'  # 42 encoded as big-endian-int
 GENESIS_MIX_HASH = ZERO_HASH32
 GENESIS_EXTRA_DATA = b''
 GENESIS_INITIAL_ALLOC = {}
+
+
+SUPPORTED_FORKS = {FORK_HOMESTEAD, FORK_DAO, FORK_ANTI_DOS}
 
 
 def get_default_account_state():
@@ -126,6 +135,19 @@ def _get_block_by_number(chain, block_number):
     raise BlockNotFound("No block found for block number: {0}".format(block_number))
 
 
+def _get_block_by_hash(chain, block_hash):
+    block = chain.get_block_by_hash(block_hash)
+
+    if block.number >= chain.get_block().number:
+        raise BlockNotFound("No block fuond for block hash: {0}".format(block_hash))
+
+    block_at_height = chain.get_canonical_block_by_number(block.number)
+    if block != block_at_height:
+        raise BlockNotFound("No block fuond for block hash: {0}".format(block_hash))
+
+    return block
+
+
 def _get_transaction_by_hash(chain, transaction_hash):
     head_block = chain.get_block()
     for index, transaction in enumerate(head_block.transactions):
@@ -145,15 +167,30 @@ def _get_transaction_by_hash(chain, transaction_hash):
         )
 
 
-def _execute_and_revert_transaction(vm, transaction):
+def _execute_and_revert_transaction(chain, transaction, block_number="latest"):
+    vm = _get_vm_for_block_number(chain, block_number, mutable=True)
+
     snapshot = vm.snapshot()
     computation = vm.execute_transaction(transaction)
     vm.revert(snapshot)
     return computation
 
 
+def _get_vm_for_block_number(chain, block_number, mutable=False):
+    block = _get_block_by_number(chain, block_number)
+    if mutable and not block.header.is_mutable():
+        block.header.make_mutable()
+    vm = chain.get_vm(header=block.header)
+    return vm
+
+
 class PyEVMBackend(object):
+    chain = None
+    fork_blocks = None
+
     def __init__(self):
+        self.fork_blocks = {}
+
         if not is_pyevm_available():
             raise pkg_resources.DistributionNotFound(
                 "The `py-evm` package is not available.  The "
@@ -193,18 +230,38 @@ class PyEVMBackend(object):
     # Fork block numbers
     #
     def set_fork_block(self, fork_name, fork_block):
-        # TODO: actually do something here
-        return
-        raise NotImplementedError("Must be implemented by subclasses")
+        if fork_name in SUPPORTED_FORKS:
+            if fork_block:
+                self.fork_blocks[fork_name] = fork_block
+        elif fork_name == FORK_STATE_CLEANUP:
+            # TODO: get EIP160 rules implemented in py-evm
+            self.fork_blocks[fork_name] = fork_block
+        else:
+            raise UnknownFork("Unknown fork name: {0}".format(fork_name))
+        self.chain.configure_forks()
 
     def get_fork_block(self, fork_name):
-        raise NotImplementedError("Must be implemented by subclasses")
+        if fork_name in SUPPORTED_FORKS:
+            return self.fork_blocks.get(fork_name, 0)
+        elif fork_name == FORK_STATE_CLEANUP:
+            # TODO: get EIP160 rules implemented in py-evm
+            return self.fork_blocks.get(fork_name, 0)
+        else:
+            raise UnknownFork("Unknown fork name: {0}".format(fork_name))
+
+    def configure_fork_blocks(self):
+        self.chain.configure_forks(
+            homestead=self.fork_blocks.get(FORK_HOMESTEAD),
+            dao=self.fork_blocks.get(FORK_DAO),
+            anti_dos=self.fork_blocks.get(FORK_ANTI_DOS),
+        )
 
     #
     # Meta
     #
-    def time_travel(self, timestamp):
-        raise NotImplementedError("Must be implemented by subclasses")
+    def time_travel(self, to_timestamp):
+        self.chain.header.timestamp = to_timestamp
+        return to_timestamp
 
     #
     # Mining
@@ -240,7 +297,7 @@ class PyEVMBackend(object):
         return serialize_block(block, full_transaction, is_pending)
 
     def get_block_by_hash(self, block_hash, full_transaction=True):
-        block = self.chain.get_block_by_hash(block_hash)
+        block = _get_block_by_hash(self.chain, block_hash)
         is_pending = block.number == self.chain.get_block().number
         return serialize_block(block, full_transaction, is_pending)
 
@@ -264,14 +321,12 @@ class PyEVMBackend(object):
     # Account state
     #
     def get_nonce(self, account, block_number="latest"):
-        block = _get_block_by_number(self.chain, block_number)
-        vm = self.chain.get_vm(header=block.header)
+        vm = _get_vm_for_block_number(self.chain, block_number)
         with vm.state_db(read_only=True) as state_db:
             return state_db.get_nonce(account)
 
     def get_balance(self, account, block_number="latest"):
-        block = _get_block_by_number(self.chain, block_number)
-        vm = self.chain.get_vm(header=block.header)
+        vm = _get_vm_for_block_number(self.chain, block_number)
         with vm.state_db(read_only=True) as state_db:
             return state_db.get_balance(account)
 
@@ -298,40 +353,35 @@ class PyEVMBackend(object):
         if 'to' not in transaction:
             yield 'to', b''
 
-    def send_transaction(self, transaction):
+    def _get_normalized_and_signed_evm_transaction(self, transaction):
         signing_key = self._key_lookup[transaction['from']]
-
         normalized_transaction = self._normalize_transaction(transaction)
         evm_transaction = self.chain.create_unsigned_transaction(**normalized_transaction)
         signed_evm_transaction = evm_transaction.as_signed_transaction(signing_key)
+        return signed_evm_transaction
+
+    def send_transaction(self, transaction):
+        signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
+            transaction,
+        )
         self.chain.apply_transaction(signed_evm_transaction)
         return signed_evm_transaction.hash
 
     def estimate_gas(self, transaction):
         # TODO: move this to the VM level (and use binary search approach)
-        signing_key = self._key_lookup[transaction['from']]
-        block = self.chain.get_block()
-        #block.header.make_mutable()
-        vm = self.chain.get_vm(header=block.header)
+        signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
+            transaction,
+        )
 
-        normalized_transaction = self._normalize_transaction(transaction)
-        evm_transaction = vm.create_unsigned_transaction(**normalized_transaction)
-        signed_evm_transaction = evm_transaction.as_signed_transaction(signing_key)
-
-        computation = _execute_and_revert_transaction(vm, signed_evm_transaction)
+        computation = _execute_and_revert_transaction(self.chain, signed_evm_transaction)
 
         return computation.gas_meter.start_gas - computation.gas_meter.gas_remaining
 
     def call(self, transaction, block_number="latest"):
         # TODO: move this to the VM level.
-        signing_key = self._key_lookup[transaction['from']]
-        block = _get_block_by_number(self.chain, block_number)
-        block.header.make_mutable()
-        vm = self.chain.get_vm(header=block.header)
+        signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
+            transaction,
+        )
 
-        normalized_transaction = self._normalize_transaction(transaction)
-        evm_transaction = vm.create_unsigned_transaction(**normalized_transaction)
-        signed_evm_transaction = evm_transaction.as_signed_transaction(signing_key)
-
-        computation = _execute_and_revert_transaction(vm, signed_evm_transaction)
+        computation = _execute_and_revert_transaction(self.chain, signed_evm_transaction)
         return computation.output

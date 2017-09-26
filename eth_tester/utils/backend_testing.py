@@ -627,15 +627,17 @@ class BaseTestBackendDirect(object):
         assert len(after_all) == 6
 
     def test_reset_to_genesis(self, eth_tester):
+        origin_latest = eth_tester.get_block_by_number('latest')['number']
+        origin_pending = eth_tester.get_block_by_number('pending')['number']
         eth_tester.mine_blocks(5)
 
-        assert eth_tester.get_block_by_number('latest')['number'] == 4
-        assert eth_tester.get_block_by_number('pending')['number'] == 5
+        assert eth_tester.get_block_by_number('latest')['number'] == origin_latest + 5
+        assert eth_tester.get_block_by_number('pending')['number'] == origin_pending + 5
 
         eth_tester.reset_to_genesis()
 
-        assert eth_tester.get_block_by_number('latest')['number'] == 0
-        assert eth_tester.get_block_by_number('pending')['number'] == 0
+        assert eth_tester.get_block_by_number('latest')['number'] == origin_latest
+        assert eth_tester.get_block_by_number('pending')['number'] == origin_pending
 
     #
     # Filters

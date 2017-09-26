@@ -12,6 +12,9 @@ from eth_utils import (
 from eth_tester.utils.address import (
     generate_contract_address,
 )
+from eth_tester.utils.encoding import (
+    int_to_32byte_big_endian,
+)
 
 
 pad32 = partial(pad_left, to_size=32, pad_with=b'\x00')
