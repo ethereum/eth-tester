@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import copy
 import pkg_resources
 import time
 
@@ -144,6 +145,13 @@ def _get_transaction_by_hash(chain, transaction_hash):
         )
 
 
+def _execute_and_revert_transaction(vm, transaction):
+    snapshot = vm.snapshot()
+    computation = vm.execute_transaction(transaction)
+    vm.revert(snapshot)
+    return computation
+
+
 class PyEVMBackend(object):
     def __init__(self):
         if not is_pyevm_available():
@@ -170,10 +178,13 @@ class PyEVMBackend(object):
     # Snapshot API
     #
     def take_snapshot(self):
-        raise NotImplementedError("Must be implemented by subclasses")
+        block = _get_block_by_number(self.chain, 'latest')
+        return block.hash
 
     def revert_to_snapshot(self, snapshot):
-        raise NotImplementedError("Must be implemented by subclasses")
+        block = self.chain.get_block_by_hash(snapshot)
+        header = self.chain.create_header_from_parent(block.header)
+        self.chain = type(self.chain)(db=self.chain.db, header=header)
 
     def reset_to_genesis(self):
         self.account_keys, self.chain = setup_tester_chain()
@@ -300,13 +311,15 @@ class PyEVMBackend(object):
         # TODO: move this to the VM level (and use binary search approach)
         signing_key = self._key_lookup[transaction['from']]
         block = self.chain.get_block()
-        block.header.make_mutable()
+        #block.header.make_mutable()
         vm = self.chain.get_vm(header=block.header)
 
         normalized_transaction = self._normalize_transaction(transaction)
         evm_transaction = vm.create_unsigned_transaction(**normalized_transaction)
         signed_evm_transaction = evm_transaction.as_signed_transaction(signing_key)
-        computation = vm.apply_transaction(signed_evm_transaction)
+
+        computation = _execute_and_revert_transaction(vm, signed_evm_transaction)
+
         return computation.gas_meter.start_gas - computation.gas_meter.gas_remaining
 
     def call(self, transaction, block_number="latest"):
@@ -319,5 +332,6 @@ class PyEVMBackend(object):
         normalized_transaction = self._normalize_transaction(transaction)
         evm_transaction = vm.create_unsigned_transaction(**normalized_transaction)
         signed_evm_transaction = evm_transaction.as_signed_transaction(signing_key)
-        computation = vm.apply_transaction(signed_evm_transaction)
+
+        computation = _execute_and_revert_transaction(vm, signed_evm_transaction)
         return computation.output

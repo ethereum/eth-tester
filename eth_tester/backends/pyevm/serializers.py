@@ -98,8 +98,8 @@ def serialize_transaction_receipt(block, transaction, transaction_index, is_pend
         "transaction_index": None if is_pending else transaction_index,
         "block_number": None if is_pending else block.number,
         "block_hash": None if is_pending else block.hash,
-        "cumulative_gas_used": receipt.gas_used - origin_gas,
-        "gas_used": receipt.gas_used,
+        "cumulative_gas_used": receipt.gas_used,
+        "gas_used": receipt.gas_used - origin_gas,
         "contract_address": contract_addr,
         "logs": [
             serialize_log(block, transaction, transaction_index, log, log_index, is_pending)
