@@ -66,6 +66,38 @@ SIMPLE_TRANSACTION = {
 }
 
 
+BLOCK_KEYS = {
+    "number",
+    "hash",
+    "parent_hash",
+    "nonce",
+    "sha3_uncles",
+    "logs_bloom",
+    "transactions_root",
+    "receipts_root",
+    "state_root",
+    "miner",
+    "difficulty",
+    "total_difficulty",
+    "size",
+    "extra_data",
+    "gas_limit",
+    "gas_used",
+    "timestamp",
+    "transactions",
+    "uncles",
+}
+
+
+def _validate_serialized_block(block):
+    missing_keys = BLOCK_KEYS.difference(block.keys())
+    if missing_keys:
+        error_message = "Serialized block is missing the following keys: {0}".format(
+            "|".join(sorted(missing_keys)),
+        )
+        raise AssertionError(error_message)
+
+
 class BaseTestBackendDirect(object):
     #
     # Utils
@@ -225,11 +257,13 @@ class BaseTestBackendDirect(object):
     def test_get_genesis_block_by_number(self, eth_tester):
         block = eth_tester.get_block_by_number(0)
         assert block['number'] == 0
+        _validate_serialized_block(block)
 
     def test_get_genesis_block_by_hash(self, eth_tester):
         genesis_hash = eth_tester.get_block_by_number(0)['hash']
         block = eth_tester.get_block_by_hash(genesis_hash)
         assert block['number'] == 0
+        _validate_serialized_block(block)
 
     def test_get_block_by_number(self, eth_tester):
         origin_block_number = eth_tester.get_block_by_number('pending')['number']
@@ -239,6 +273,7 @@ class BaseTestBackendDirect(object):
             block = eth_tester.get_block_by_number(block_number)
             assert block['number'] == block_number
             assert block['hash'] == block_hash
+            _validate_serialized_block(block)
 
     def test_get_block_by_number_full_transactions(self, eth_tester):
         eth_tester.mine_blocks(2)
