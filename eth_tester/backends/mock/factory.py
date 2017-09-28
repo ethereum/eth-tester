@@ -231,6 +231,7 @@ def make_genesis_block():
         "sha3_uncles": EMPTY_UNCLE_HASH,
         "logs_bloom": 0,
         "transactions_root": BLANK_ROOT_HASH,
+        "receipts_root": BLANK_ROOT_HASH,
         "state_root": BLANK_ROOT_HASH,
         "miner": ZERO_ADDRESS,
         "difficulty": 131072,
@@ -285,6 +286,11 @@ def make_block_from_parent(parent_block, overrides=None):
         yield 'transactions_root', overrides['transactions_root']
     else:
         yield 'transactions_root', BLANK_ROOT_HASH
+
+    if 'receipts_root' in overrides:
+        yield 'receipts_root', overrides['receipts_root']
+    else:
+        yield 'receipts_root', BLANK_ROOT_HASH
 
     if 'state_root' in overrides:
         yield 'state_root', overrides['state_root']

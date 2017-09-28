@@ -85,6 +85,7 @@ def serialize_block(block, transaction_serialize_fn, is_pending):
         "sha3_uncles": block.uncles_hash,
         "logs_bloom": block.bloom,
         "transactions_root": block.tx_list_root,
+        "receipts_root": block.receipts_root,
         "state_root": block.state_root,
         "miner": block.coinbase,
         "difficulty": block.difficulty,
