@@ -130,6 +130,7 @@ BLOCK_VALIDATORS = {
     "sha3_uncles": validate_32_byte_string,
     "logs_bloom": validate_logs_bloom,
     "transactions_root": validate_32_byte_string,
+    "receipts_root": validate_32_byte_string,
     "state_root": validate_32_byte_string,
     "miner": validate_canonical_address,
     "difficulty": validate_positive_integer,
