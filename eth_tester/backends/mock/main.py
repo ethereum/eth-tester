@@ -115,6 +115,7 @@ class MockBackend(BaseChainBackend):
         self.block = self.genesis_block
         self.receipts = {}
         self.fork_blocks = {}
+        self.mine_blocks()
 
     #
     # Fork block numbers
