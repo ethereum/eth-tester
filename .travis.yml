@@ -5,8 +5,8 @@ env:
   matrix:
     # core
     - TOX_POSARGS="-e py27-core -e py34-core -e py35-core"
-    # web3
-    - TOX_POSARGS="-e py27-web3v313 -e py34-web3v313 -e py35-web3v313"
+    # pyevm
+    - TOX_POSARGS="-e py27-pyevm -e py34-pyevm -e py35-pyevm"
     # pyethereum 1.6.x
     - TOX_POSARGS="-e py27-pyethereum16 -e py34-pyethereum16 -e py35-pyethereum16"
     # pyethereum 2.0.x
