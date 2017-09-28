@@ -31,11 +31,11 @@ pip install ethereum-tester
  '0x10A1c1CB95c92EC31D3f22C66Eef1d9f3F258c6B',
  '0xe0FC04FA2d34a66B779fd5CEe748268032a146c0',
  '0x90F0B1EBbbA1C1936aFF7AAf20a7878FF9e04B6c')
->>> t.get_balance('0x82A978B3f5962A5b0957d9ee9eEf472EE55B42F1')
+>>> t.get_balance(u'0x82A978B3f5962A5b0957d9ee9eEf472EE55B42F1')
 1000000000000000000000000
->>> t.send_transaction({'from': '0x82A978B3f5962A5b0957d9ee9eEf472EE55B42F1', 'to': '0x7d577a597B2742b498Cb5Cf0C26cDCD726d39E6e', 'gas': 21000, 'value': 1})
+>>> t.send_transaction({'from': u'0x82A978B3f5962A5b0957d9ee9eEf472EE55B42F1', 'to': u'0x7d577a597B2742b498Cb5Cf0C26cDCD726d39E6e', 'gas': 21000, 'value': 1})
 '0x140c1da1370a908e4c0f7c6e33bb97182011707c6a9aff954bef1084c8a48b25'
->>> t.get_transaction_by_hash(0x140c1da1370a908e4c0f7c6e33bb97182011707c6a9aff954bef1084c8a48b25')
+>>> t.get_transaction_by_hash(u'0x140c1da1370a908e4c0f7c6e33bb97182011707c6a9aff954bef1084c8a48b25')
 {'block_hash': '0x89c03ecb6bbf3ff533b04a663fa98d59c9d985de806d1a9dcafaad7c993ee6e8',
  'block_number': 0,
  'data': '0x',
@@ -51,7 +51,7 @@ pip install ethereum-tester
  'v': 27,
  'value': 1}
 
->>> t.get_transaction_receipt('0x140c1da1370a908e4c0f7c6e33bb97182011707c6a9aff954bef1084c8a48b25')
+>>> t.get_transaction_receipt(u'0x140c1da1370a908e4c0f7c6e33bb97182011707c6a9aff954bef1084c8a48b25')
 {'block_hash': '0x89c03ecb6bbf3ff533b04a663fa98d59c9d985de806d1a9dcafaad7c993ee6e8',
  'block_number': 0,
  'contract_address': None,
@@ -226,7 +226,7 @@ Adds a new account for the given private key.  Returns the hex encoded address
 of the added account.
 
 ```python
->>> t.add_account('0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d')
+>>> t.add_account(u'0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d')
 '0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd'
 ```
 
@@ -235,7 +235,7 @@ would like to add an account which has a password, you can supply the password
 as the second parameter.
 
 ```python
->>> t.add_account('0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d', 'my-secret')
+>>> t.add_account(u'0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d', 'my-secret')
 '0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd'
 ```
 
@@ -252,7 +252,7 @@ Raises a `ValidationError` if:
 * The account was created without a password.
 
 ```python
->>> t.unlock_account('0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd', 'my-secret')
+>>> t.unlock_account(u'0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd', 'my-secret')
 ```
 
 By default, accounts will be unlocked indefinitely.  You can however unlock an
@@ -261,7 +261,7 @@ seconds.
 
 ```python
 # unlock for 1 hour.
->>> t.unlock_account('0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd', 'my-secret', 60 * 60)
+>>> t.unlock_account(u'0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd', 'my-secret', 60 * 60)
 ```
 
 
@@ -282,7 +282,7 @@ Raises a `ValidationError` if:
 Returns the balance, in wei, for the provided account.
 
 ```python
->>> t.get_balance('0x82A978B3f5962A5b0957d9ee9eEf472EE55B42F1')
+>>> t.get_balance(u'0x82A978B3f5962A5b0957d9ee9eEf472EE55B42F1')
 1000004999999999999999999
 ```
 
@@ -293,7 +293,7 @@ Returns the balance, in wei, for the provided account.
 Returns the nonce for the provided account.
 
 ```python
->>> t.get_nonce('0x82A978B3f5962A5b0957d9ee9eEf472EE55B42F1')
+>>> t.get_nonce(u'0x82A978B3f5962A5b0957d9ee9eEf472EE55B42F1')
 1
 ```
 
@@ -303,7 +303,7 @@ Returns the nonce for the provided account.
 Returns the code for the given account.
 
 ```python
->>> t.get_code('0x82A978B3f5962A5b0957d9ee9eEf472EE55B42F1')
+>>> t.get_code(u'0x82A978B3f5962A5b0957d9ee9eEf472EE55B42F1')
 "0x"
 ```
 
@@ -350,7 +350,7 @@ Raises [`BlockNotFound`](#errors-BlockNotFound) if a block for the given number
 cannot be found.
 
 ```python
->>> t.get_block_by_numbers(1)
+>>> t.get_block_by_number(1)
 {'difficulty': 131072,
  'extra_data': '0x0000000000000000000000000000000000000000000000000000000000000000',
  'gas_limit': 999023468,
@@ -383,7 +383,7 @@ Raises [`BlockNotFound`](#errors-BlockNotFound) if a block for the given hash
 cannot be found.
 
 ```python
->>> t.get_block_by_hash('0x0f50c8ea0f67ce0b7bff51ae866159edc443bde87de2ab26010a15b777244ddd')
+>>> t.get_block_by_hash(u'0x0f50c8ea0f67ce0b7bff51ae866159edc443bde87de2ab26010a15b777244ddd')
 {'difficulty': 131072,
  'extra_data': '0x0000000000000000000000000000000000000000000000000000000000000000',
  'gas_limit': 999023468,
@@ -413,7 +413,7 @@ found for the given hash.
 
 
 ```python
->>> t.get_transaction_receipt('0x9a7cc8b7accf54ecb1901bf4d0178f28ca457bb9f9c245692c0ca8fabef08d3b')
+>>> t.get_transaction_receipt(u'0x9a7cc8b7accf54ecb1901bf4d0178f28ca457bb9f9c245692c0ca8fabef08d3b')
  {'block_hash': '0x878f779d8bb25b25fb78fc16b8d64d70a5961310ef1689571aec632e9424290c',
  'block_number': 2,
  'contract_address': None,
