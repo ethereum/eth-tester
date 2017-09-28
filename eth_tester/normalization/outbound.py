@@ -67,6 +67,7 @@ BLOCK_NORMALIZERS = {
     "sha3_uncles": encode_hex,
     "logs_bloom": identity,
     "transactions_root": encode_hex,
+    "receipts_root": encode_hex,
     "state_root": encode_hex,
     "miner": to_checksum_address,
     "difficulty": identity,
