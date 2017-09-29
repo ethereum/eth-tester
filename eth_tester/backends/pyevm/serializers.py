@@ -43,7 +43,7 @@ def serialize_block(block, full_transaction, is_pending):
         "sha3_uncles": block.header.uncles_hash,
         "logs_bloom": block.header.bloom,
         "transactions_root": block.header.transaction_root,
-        "receipt_root": block.header.receipt_root,
+        "receipts_root": block.header.receipt_root,
         "state_root": block.header.state_root,
         "miner": block.header.coinbase,
         "difficulty": block.header.difficulty,
