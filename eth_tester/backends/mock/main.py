@@ -170,7 +170,9 @@ class MockBackend(BaseChainBackend):
 
     def add_account(self, private_key):
         account = private_key_to_address(private_key)
-        self.alloc[account] = _get_default_account_data()
+        self.alloc = self.alloc + (
+            (account, _get_default_account_data()),
+        )
 
     #
     # Chain data
