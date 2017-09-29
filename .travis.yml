@@ -21,8 +21,6 @@ matrix:
     - python: "3.5"
       env: TOX_POSARGS="-e py35-pyethereum16"
     # pyevm
-    - python: "2.7"
-      env: TOX_POSARGS="-e py27-pyevm"
     - python: "3.4"
       env: TOX_POSARGS="-e py34-pyevm"
     - python: "3.5"
