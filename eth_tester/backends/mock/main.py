@@ -65,12 +65,13 @@ def _get_default_account_data():
     }
 
 
+@to_tuple
 def get_default_alloc(num_accounts=10):
-    return {
-        _generate_dummy_address(idx): _get_default_account_data()
-        for idx
-        in range(num_accounts)
-    }
+    for idx in range(num_accounts):
+        yield (
+            _generate_dummy_address(idx),
+            _get_default_account_data(),
+        )
 
 
 class MockBackend(BaseChainBackend):
@@ -115,6 +116,11 @@ class MockBackend(BaseChainBackend):
         self.block = self.genesis_block
         self.receipts = {}
         self.fork_blocks = {}
+        self.mine_blocks()
+
+    @property
+    def account_state_lookup(self):
+        return dict(self.alloc)
 
     #
     # Fork block numbers
@@ -160,11 +166,13 @@ class MockBackend(BaseChainBackend):
     # Accounts
     #
     def get_accounts(self):
-        return tuple(self.alloc.keys())
+        return tuple(account for account, _ in self.alloc)
 
     def add_account(self, private_key):
         account = private_key_to_address(private_key)
-        self.alloc[account] = _get_default_account_data()
+        self.alloc = self.alloc + (
+            (account, _get_default_account_data()),
+        )
 
     #
     # Chain data
@@ -263,19 +271,19 @@ class MockBackend(BaseChainBackend):
     #
     def get_nonce(self, account, block_number=None):
         try:
-            return self.alloc[account]['nonce']
+            return self.account_state_lookup[account]['nonce']
         except KeyError:
             return 0
 
     def get_balance(self, account, block_number=None):
         try:
-            return self.alloc[account]['balance']
+            return self.account_state_lookup[account]['balance']
         except KeyError:
             return 0
 
     def get_code(self, account, block_number=None):
         try:
-            return self.alloc[account]['code']
+            return self.account_state_lookup[account]['code']
         except KeyError:
             return 0
 

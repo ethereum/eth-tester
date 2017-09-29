@@ -66,6 +66,38 @@ SIMPLE_TRANSACTION = {
 }
 
 
+BLOCK_KEYS = {
+    "number",
+    "hash",
+    "parent_hash",
+    "nonce",
+    "sha3_uncles",
+    "logs_bloom",
+    "transactions_root",
+    "receipts_root",
+    "state_root",
+    "miner",
+    "difficulty",
+    "total_difficulty",
+    "size",
+    "extra_data",
+    "gas_limit",
+    "gas_used",
+    "timestamp",
+    "transactions",
+    "uncles",
+}
+
+
+def _validate_serialized_block(block):
+    missing_keys = BLOCK_KEYS.difference(block.keys())
+    if missing_keys:
+        error_message = "Serialized block is missing the following keys: {0}".format(
+            "|".join(sorted(missing_keys)),
+        )
+        raise AssertionError(error_message)
+
+
 class BaseTestBackendDirect(object):
     #
     # Utils
@@ -225,18 +257,23 @@ class BaseTestBackendDirect(object):
     def test_get_genesis_block_by_number(self, eth_tester):
         block = eth_tester.get_block_by_number(0)
         assert block['number'] == 0
+        _validate_serialized_block(block)
 
     def test_get_genesis_block_by_hash(self, eth_tester):
         genesis_hash = eth_tester.get_block_by_number(0)['hash']
         block = eth_tester.get_block_by_hash(genesis_hash)
         assert block['number'] == 0
+        _validate_serialized_block(block)
 
     def test_get_block_by_number(self, eth_tester):
+        origin_block_number = eth_tester.get_block_by_number('pending')['number']
         mined_block_hashes = eth_tester.mine_blocks(10)
-        for block_number, block_hash in enumerate(mined_block_hashes):
+        for offset, block_hash in enumerate(mined_block_hashes):
+            block_number = origin_block_number + offset
             block = eth_tester.get_block_by_number(block_number)
             assert block['number'] == block_number
             assert block['hash'] == block_hash
+            _validate_serialized_block(block)
 
     def test_get_block_by_number_full_transactions(self, eth_tester):
         eth_tester.mine_blocks(2)
@@ -267,8 +304,11 @@ class BaseTestBackendDirect(object):
         assert is_hex(block['transactions'][0])
 
     def test_get_block_by_hash(self, eth_tester):
+        origin_block_number = eth_tester.get_block_by_number('pending')['number']
+
         mined_block_hashes = eth_tester.mine_blocks(10)
-        for block_number, block_hash in enumerate(mined_block_hashes):
+        for offset, block_hash in enumerate(mined_block_hashes):
+            block_number = origin_block_number + offset
             block = eth_tester.get_block_by_hash(block_hash)
             assert block['number'] == block_number
             assert block['hash'] == block_hash
@@ -311,19 +351,22 @@ class BaseTestBackendDirect(object):
         assert block['number'] == 0
 
     def test_get_block_by_latest_only_genesis(self, eth_tester):
-        eth_tester.mine_blocks()
         block = eth_tester.get_block_by_number('latest')
         assert block['number'] == 0
 
     def test_get_block_by_latest(self, eth_tester):
+        origin_block_number = eth_tester.get_block_by_number('pending')['number']
+
         eth_tester.mine_blocks(10)
         block = eth_tester.get_block_by_number('latest')
-        assert block['number'] == 9
+        assert block['number'] == 9 + origin_block_number
 
     def test_get_block_by_pending(self, eth_tester):
+        origin_block_number = eth_tester.get_block_by_number('pending')['number']
+
         eth_tester.mine_blocks(10)
         block = eth_tester.get_block_by_number('pending')
-        assert block['number'] == 10
+        assert block['number'] == 10 + origin_block_number
 
     # Transactions
     def test_get_transaction_by_hash(self, eth_tester):
@@ -400,34 +443,37 @@ class BaseTestBackendDirect(object):
     # Snapshot and Revert
     #
     def test_genesis_snapshot_and_revert(self, eth_tester):
-        assert eth_tester.get_block_by_number('latest')['number'] == 0
-        assert eth_tester.get_block_by_number('pending')['number'] == 0
+        origin_latest = eth_tester.get_block_by_number('latest')['number']
+        origin_pending = eth_tester.get_block_by_number('pending')['number']
+
         snapshot_id = eth_tester.take_snapshot()
 
         # now mine 10 blocks in
         eth_tester.mine_blocks(10)
-        assert eth_tester.get_block_by_number('latest')['number'] == 9
-        assert eth_tester.get_block_by_number('pending')['number'] == 10
+        assert eth_tester.get_block_by_number('latest')['number'] == origin_latest + 10
+        assert eth_tester.get_block_by_number('pending')['number'] == origin_pending + 10
 
         eth_tester.revert_to_snapshot(snapshot_id)
-        assert eth_tester.get_block_by_number('latest')['number'] == 0
-        assert eth_tester.get_block_by_number('pending')['number'] == 0
+        assert eth_tester.get_block_by_number('latest')['number'] == origin_latest
+        assert eth_tester.get_block_by_number('pending')['number'] == origin_pending
 
     def test_snapshot_and_revert_post_genesis(self, eth_tester):
         eth_tester.mine_blocks(5)
 
-        assert eth_tester.get_block_by_number('latest')['number'] == 4
-        assert eth_tester.get_block_by_number('pending')['number'] == 5
+        origin_latest = eth_tester.get_block_by_number('latest')['number']
+        origin_pending = eth_tester.get_block_by_number('pending')['number']
+
         snapshot_id = eth_tester.take_snapshot()
 
         # now mine 10 blocks in
         eth_tester.mine_blocks(10)
-        assert eth_tester.get_block_by_number('latest')['number'] == 14
-        assert eth_tester.get_block_by_number('pending')['number'] == 15
+        assert eth_tester.get_block_by_number('latest')['number'] == origin_latest + 10
+        assert eth_tester.get_block_by_number('pending')['number'] == origin_pending + 10
 
         eth_tester.revert_to_snapshot(snapshot_id)
-        assert eth_tester.get_block_by_number('latest')['number'] == 4
-        assert eth_tester.get_block_by_number('pending')['number'] == 5
+
+        assert eth_tester.get_block_by_number('latest')['number'] == origin_latest
+        assert eth_tester.get_block_by_number('pending')['number'] == origin_pending
 
     def test_revert_cleans_up_invalidated_pending_block_filters(self, eth_tester):
         # first mine 10 blocks in
@@ -616,15 +662,17 @@ class BaseTestBackendDirect(object):
         assert len(after_all) == 6
 
     def test_reset_to_genesis(self, eth_tester):
+        origin_latest = eth_tester.get_block_by_number('latest')['number']
+        origin_pending = eth_tester.get_block_by_number('pending')['number']
         eth_tester.mine_blocks(5)
 
-        assert eth_tester.get_block_by_number('latest')['number'] == 4
-        assert eth_tester.get_block_by_number('pending')['number'] == 5
+        assert eth_tester.get_block_by_number('latest')['number'] == origin_latest + 5
+        assert eth_tester.get_block_by_number('pending')['number'] == origin_pending + 5
 
         eth_tester.reset_to_genesis()
 
-        assert eth_tester.get_block_by_number('latest')['number'] == 0
-        assert eth_tester.get_block_by_number('pending')['number'] == 0
+        assert eth_tester.get_block_by_number('latest')['number'] == origin_latest
+        assert eth_tester.get_block_by_number('pending')['number'] == origin_pending
 
     #
     # Filters

@@ -228,6 +228,7 @@ class PyEthereum16Backend(BaseChainBackend):
         from ethereum import tester
         self.evm = tester.state()
         self.evm.extra_accounts = {}
+        self.mine_blocks()
 
     #
     # Meta

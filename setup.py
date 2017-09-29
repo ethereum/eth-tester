@@ -28,10 +28,14 @@ setup(
         "ethereum-utils>=0.3.1",
         "rlp==0.5.1",
         "semantic_version>=2.6.0",
+        "ethereum-keys>=0.1.0-alpha.7",
     ],
     extras_require={
         'pyethereum16': [
             "ethereum>=1.6.0,<2.0.0",
+        ],
+        'py-evm': [
+            "py-evm==0.2.0a5",
         ],
     },
     py_modules=['eth_tester'],

@@ -23,7 +23,7 @@ class BaseChainBackend(object):
     #
     # Meta
     #
-    def time_travel(self, timestamp):
+    def time_travel(self, to_timestamp):
         raise NotImplementedError("Must be implemented by subclasses")
 
     #
@@ -38,13 +38,16 @@ class BaseChainBackend(object):
     def get_accounts(self):
         raise NotImplementedError("Must be implemented by subclasses")
 
+    def add_account(self, private_key):
+        raise NotImplementedError("Must be implemented by subclasses")
+
     #
     # Chain data
     #
-    def get_block_by_number(self, block_number):
+    def get_block_by_number(self, block_number, full_transaction=True):
         raise NotImplementedError("Must be implemented by subclasses")
 
-    def get_block_by_hash(self, block_hash):
+    def get_block_by_hash(self, block_hash, full_transaction=True):
         raise NotImplementedError("Must be implemented by subclasses")
 
     def get_transaction_by_hash(self, transaction_hash):
@@ -74,5 +77,5 @@ class BaseChainBackend(object):
     def estimate_gas(self, transaction):
         raise NotImplementedError("Must be implemented by subclasses")
 
-    def call(self, transaction):
+    def call(self, transaction, block_number="latest"):
         raise NotImplementedError("Must be implemented by subclasses")
