@@ -34,6 +34,9 @@ setup(
         'pyethereum16': [
             "ethereum>=1.6.0,<2.0.0",
         ],
+        'py-evm': [
+            "py-evm==0.2.0a5",
+        ],
     },
     py_modules=['eth_tester'],
     license="MIT",

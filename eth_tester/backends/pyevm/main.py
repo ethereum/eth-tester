@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import pkg_resources
 import time
+import warnings
 
 from eth_utils import (
     encode_hex,
@@ -234,6 +235,9 @@ class PyEVMBackend(object):
             if fork_block:
                 self.fork_blocks[fork_name] = fork_block
         elif fork_name == FORK_STATE_CLEANUP:
+            warnings.warn(UserWarning(
+                "Py-EVM does not currently support the SpuriousDragon hard fork."
+            ))
             # TODO: get EIP160 rules implemented in py-evm
             self.fork_blocks[fork_name] = fork_block
         else:

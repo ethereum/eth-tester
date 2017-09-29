@@ -640,8 +640,14 @@ various backends by default.  You can however install ethereum tester with the
 necessary dependencies using the following method.
 
 ```bash
-$ pip install ethereum-tester[pyethereum16]
+$ pip install ethereum-tester[<backend-name>]
 ```
+
+You should replace `<backend-name>` with the name of the desired testing
+backend.  Available backends are:
+
+* `pyethereum16`: [PyEthereum v1.6.x](https://pypi.python.org/pypi/ethereum/1.6.1)
+* `py-evm`: [PyEVM (alpha)](https://pypi.python.org/pypi/py-evm) **(experimental)**
 
 ### Selecting a Backend
 
@@ -665,35 +671,63 @@ backend class you wish to use.
 Ethereum tester can be used with the following backends.
 
 * PyEthereum 1.6.x (default)
+* PyEVM (experimental)
+* MockBackend
 
 The following backends on the roadmap to be developed.
 
 * PyEthereum 2.0.x (under development)
-* PyEVM (experimental)
+
+#### MockBackend
+
+This backend has limited functionality.  It cannot perform any VM computations.
+It mocks out all of the objects and interactions.
+
+```python
+>>> from eth_tester import MockBackend
+>>> t = EthereumTester(MockBackend())
+```
 
 #### PyEthereum 1.6.x
 
-TODO
+Uses the PyEthereum library at version `v1.6.x`
 
-#### PyEthereum 2.0.x (under development)
-
-> Under development
+```python
+>>> from eth_tester import PyEthereum16Backend
+>>> t = EthereumTester(PyEthereum16Backend())
+```
 
 #### PyEVM (experimental)
+
+> **WARNING** Py-EVM is experimental and should not be relied on for mission critical testing at this stage.
+
+Uses the experimental Py-EVM library.
+
+```python
+>>> from eth_tester import PyEVMBackend
+>>> t = EthereumTester(PyEVMBackend())
+```
+
+#### PyEthereum 2.0.x (under development)
 
 > Under development
 
 ### Implementing Custom Backends
 
 The base class `eth_tester.backends.base.BaseChainBackend` is the recommended
-base class to begin with if you wish to write your own backend.  In order for
-ethereum tester to operate correctly, your backend **must** be able to do all
-of the following.
+base class to begin with if you wish to write your own backend.  
 
-TODO
+Details on implementation are beyond the scope of this document.
 
 
 ## Data Formats
+
+Ethereum tester uses two formats for data.  
+
+* The *normal* format is the data format the is expected as input arguments to all `EthereumTester` methods as well as the return types from all method calls.
+* The *canonical* format is the data format that is used internally by the backend class.
+
+Ethereum tester enforces strict validation rules on these formats.
 
 ### Canonical Formats
 
@@ -756,16 +790,6 @@ The specifics of this object are beyong the scope of this document.
 
 # Use with Web3.py
 
-While the `ethereum-tester` library can be used on its own it can also be used
-with the [`web3.py`](https://github.com/pipermerriam/web3.py) library.  The
-`ethereum-tester` library comes with the provider class
-`eth_tester.web3.EthereumTesterProvider`.  You can use it like this:
-
-```python
->>> from eth_tester import EthereumTester
->>> from eth_tester.web3 import EthereumTesterProvider
->>> from web3 import Web3
->>> eth_tester = EthereumTester()
->>> provider = EthereumTesterProvider(eth_tester)
->>> web3 = Web3(provider)
-```
+See the [web3.py documentation](http://web3py.readthedocs.io/en/latest/) for
+information on the `EthereumTester` provider which integrates with this
+library.

@@ -6,7 +6,6 @@ from .main import (  # noqa: F401
 from .backends import (  # noqa: F401
     MockBackend,
     PyEthereum16Backend,
-    PyEthereum20Backend,
     PyEVMBackend,
 )
 
