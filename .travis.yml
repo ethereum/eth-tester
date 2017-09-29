@@ -5,7 +5,7 @@ matrix:
   include:
     # lint
     - python: "3.5"
-      env: TOX_ENV=flake8
+      env: TOX_POSARGS="-e flake8"
     # core
     - python: "2.7"
       env: TOX_POSARGS="-e py27-core"
