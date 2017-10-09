@@ -26,7 +26,7 @@ setup(
     install_requires=[
         "cytoolz==0.8.2",
         "ethereum-utils>=0.3.1",
-        "rlp==0.5.1",
+        "rlp>=0.5.1",
         "semantic_version>=2.6.0",
         "ethereum-keys>=0.1.0-alpha.7",
     ],
