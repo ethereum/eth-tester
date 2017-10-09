@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import binascii
+
 from cytoolz import (
     partial,
 )
@@ -16,6 +18,7 @@ from eth_utils import (
     is_string,
     is_text,
     remove_0x_prefix,
+    decode_hex,
 )
 
 from eth_tester.constants import (
@@ -204,4 +207,8 @@ def validate_transaction(value, txn_type):
         elif not remove_0x_prefix(value['data']):
             pass
         elif not is_hex(value['data']):
+            raise ValidationError(bad_data_message)
+        try:
+            decode_hex(value['data'])
+        except binascii.Error:
             raise ValidationError(bad_data_message)
