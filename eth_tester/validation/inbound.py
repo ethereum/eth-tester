@@ -210,5 +210,7 @@ def validate_transaction(value, txn_type):
             raise ValidationError(bad_data_message)
         try:
             decode_hex(value['data'])
-        except binascii.Error:
+        except (binascii.Error, TypeError):
+            # TypeError is for python2
+            # binascii.Error is for python3
             raise ValidationError(bad_data_message)
