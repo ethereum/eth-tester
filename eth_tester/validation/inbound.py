@@ -42,6 +42,7 @@ def is_32byte_hex_string(value):
 def is_topic(value):
     return value is None or is_32byte_hex_string(value)
 
+
 def validate_32_byte_hex_value(value, name):
     error_message = (
         "{0} must be a hexidecimal encoded 32 byte string.  Got: "
