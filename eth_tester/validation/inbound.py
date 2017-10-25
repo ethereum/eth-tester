@@ -39,6 +39,9 @@ def is_32byte_hex_string(value):
     return is_text(value) and is_hex(value) and len(remove_0x_prefix(value)) == 64
 
 
+def is_topic(value):
+    return value is None or is_32byte_hex_string(value)
+
 def validate_32_byte_hex_value(value, name):
     error_message = (
         "{0} must be a hexidecimal encoded 32 byte string.  Got: "
@@ -92,10 +95,10 @@ def validate_account(value):
         raise ValidationError("Address does not validate EIP55 checksum")
 
 
-def _is_flat_topic_array(value):
+def is_flat_topic_array(value):
     if not is_list_like(value):
         return False
-    return all(is_32byte_hex_string(item) for item in value)
+    return all(is_topic(item) for item in value)
 
 
 def validate_filter_params(from_block, to_block, address, topics):
@@ -128,9 +131,9 @@ def validate_filter_params(from_block, to_block, address, topics):
         pass
     elif not is_list_like(topics):
         raise ValidationError(invalid_topics_message)
-    elif _is_flat_topic_array(topics):
+    elif is_flat_topic_array(topics):
         return True
-    elif all(_is_flat_topic_array(item) for item in topics):
+    elif all(is_flat_topic_array(item) for item in topics):
         return True
     else:
         raise ValidationError(invalid_topics_message)
