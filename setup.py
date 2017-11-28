@@ -1,34 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os
-
 from setuptools import (
     setup,
     find_packages,
 )
 
 
-DIR = os.path.dirname(os.path.abspath(__file__))
-
-
-readme = open(os.path.join(DIR, 'README.md')).read()
-
-
 setup(
-    name='ethereum-tester',
+    name='eth-tester',
+    # *IMPORTANT*: Don't manually change the version here. Use the 'bumpversion' utility.
     version='0.1.0-beta.2',
     description="""Tools for testing Ethereum applications.""",
-    long_description=readme,
+    long_description_markdown_filename='README.md',
     author='Piper Merriam',
     author_email='pipermerriam@gmail.com',
-    url='https://github.com/pipermerriam/ethereum-tester',
+    url='https://github.com/ethereum/eth-tester',
     include_package_data=True,
     install_requires=[
         "cytoolz==0.8.2",
-        "ethereum-utils>=0.3.1",
+        "eth-utils>=0.3.1",
         "rlp>=0.5.1",
         "semantic_version>=2.6.0",
-        "ethereum-keys>=0.1.0-alpha.7",
+        "eth-keys>=0.1.0-alpha.7",
     ],
     extras_require={
         'pyethereum16': [
@@ -48,10 +41,7 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
     ],
 )

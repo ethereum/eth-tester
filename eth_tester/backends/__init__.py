@@ -39,7 +39,7 @@ def get_chain_backend_class(backend_import_path=None):
                 "Ethereum Tester: No backend was explicitely set, and no *full* "
                 "backends were available.  Falling back to the `MockBackend` "
                 "which does not support all EVM functionality.  Please refer to "
-                "the `ethereum-tester` documentation for information on what "
+                "the `eth-tester` documentation for information on what "
                 "backends are available and how to set them."
             ))
             backend_import_path = get_import_path(MockBackend)
