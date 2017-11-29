@@ -38,6 +38,38 @@ class PyEthereum20Backend(BaseChainBackend):
         from ethereum.tools import tester
         self.tester_module = tester
         self.evm = tester.Chain()
+    #
+    # Snapshot API
+    #
+    def take_snapshot(self):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    def revert_to_snapshot(self, snapshot):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    def reset_to_genesis(self):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    #
+    # Fork block numbers
+    #
+    def set_fork_block(self, fork_name, fork_block):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    def get_fork_block(self, fork_name):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    #
+    # Meta
+    #
+    def time_travel(self, to_timestamp):
+        raise NotImplementedError("Must be implemented by subclasses")
+
+    #
+    # Mining
+    #
+    def mine_blocks(self, num_blocks=1, coinbase=None):
+        raise NotImplementedError("Must be implemented by subclasses")
 
     #
     # Accounts
@@ -47,17 +79,19 @@ class PyEthereum20Backend(BaseChainBackend):
         for account in self.tester_module.accounts:
             yield to_checksum_address(account)
 
+    def add_account(self, private_key):
+        raise NotImplementedError("Must be implemented by subclasses")
+
     #
     # Chain data
     #
-    def get_block_by_number(self, block_number):
+    def get_block_by_number(self, block_number, full_transaction=True):
+        # TODO: Work on implementation of full_transaction
         return self.evm.chain.get_block_by_number(block_number)
 
-    def get_block_by_hash(self, block_hash):
+    def get_block_by_hash(self, block_hash, full_transaction=True):
+        # TODO: Work on implementation of full_transaction
         return self.evm.chain.get_block(block_hash)
-
-    def get_latest_block(self):
-        return self.evm.chain.head
 
     # NOTE: Added as a helper, might be more broadly useful
     def get_state(self, block_hash=None, block_number=None):
@@ -74,8 +108,8 @@ class PyEthereum20Backend(BaseChainBackend):
     def get_transaction_by_hash(self, transaction_hash):
         return self.evm.chain.get_transaction(transaction_hash)
 
-    def get_transaction_receipt(self, txn_hash):
-        transaction = self.get_transaction_by_hash(txn_hash)
+    def get_transaction_receipt(self, transaction_hash):
+        transaction = self.get_transaction_by_hash(transaction_hash)
         state = self.get_state(block_hash=transaction.block_hash)
         return state.receipts
 
@@ -103,26 +137,5 @@ class PyEthereum20Backend(BaseChainBackend):
     def estimate_gas(self, transaction):
         raise NotImplementedError("Must be implemented by subclasses")
 
-    def call(self, transaction):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    #
-    # Filters
-    #
-    def new_block_filter(self, *args, **kwargs):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def new_pending_transaction_filter(self, *args, **kwargs):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def create_filter(self, from_block=None, to_block=None, address=None, topics=None):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def delete_filter(self, filter_id):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def get_filter_changes(self, filter_id):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    def get_filter_logs(self, filter_id):
+    def call(self, transaction, block_number="latest"):
         raise NotImplementedError("Must be implemented by subclasses")
