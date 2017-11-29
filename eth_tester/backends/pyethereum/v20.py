@@ -83,15 +83,15 @@ class PyEthereum20Backend(BaseChainBackend):
     # Account state
     #
     def get_nonce(self, account, block_number=None):
-        state = self.get_state(block_number)
+        state = self.get_state(block_number=block_number)
         return state.get_nonce(account)
 
     def get_balance(self, account, block_number=None):
-        state = self.get_state(block_number)
+        state = self.get_state(block_number=block_number)
         return state.get_balance(account)
 
     def get_code(self, account, block_number=None):
-        state = self.get_state(block_number)
+        state = self.get_state(block_number=block_number)
         return state.get_code(account)
 
     #
