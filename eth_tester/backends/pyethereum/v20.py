@@ -95,7 +95,9 @@ class PyEthereum20Backend(BaseChainBackend):
 
     # NOTE: Added as a helper, might be more broadly useful
     def get_state(self, block_hash=None, block_number=None):
-        if not block_hash and block_number:
+        # Ignore block_hash if block_number is provided
+        # (Avoids handling additional case if both are provided)
+        if block_number:
             block = self.get_block_by_number(block_number)
             block_hash = block.hash
         if block_hash:
