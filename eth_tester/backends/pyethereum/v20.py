@@ -27,12 +27,12 @@ class PyEthereum20Backend(BaseChainBackend):
             if version is None:
                 raise pkg_resources.DistributionNotFound(
                     "The `ethereum` package is not available.  The "
-                    "`PyEthereum20Backend` requires a 2.0.x version of the "
+                    "`PyEthereum20Backend` requires a 2.0.0+ version of the "
                     "ethereum package to be installed."
                 )
-            elif version not in Spec('>=2.0.0,<2.1.0'):
+            elif version not in Spec('>=2.0.0,<2.2.0'):
                 raise pkg_resources.DistributionNotFound(
-                    "The `PyEthereum20Backend` requires a 2.0.x version of the "
+                    "The `PyEthereum20Backend` requires a 2.0.0+ version of the "
                     "`ethereum` package.  Found {0}".format(version)
                 )
         from ethereum.tools import tester
@@ -51,31 +51,45 @@ class PyEthereum20Backend(BaseChainBackend):
     # Chain data
     #
     def get_block_by_number(self, block_number):
-        raise NotImplementedError("Must be implemented by subclasses")
+        return self.evm.chain.get_block_by_number(block_number)
 
     def get_block_by_hash(self, block_hash):
-        raise NotImplementedError("Must be implemented by subclasses")
+        return self.evm.chain.get_block(block_hash)
 
     def get_latest_block(self):
-        raise NotImplementedError("Must be implemented by subclasses")
+        return self.evm.chain.head
+
+    # NOTE: Added as a helper, might be more broadly useful
+    def get_state(self, block_hash=None):
+        if block_hash:
+            # Compute state at specific block
+            return self.evm.mk_poststate_of_blockhash(block_hash)
+        else:
+            # Return the most recent block if not specified
+            return self.evm.head_state
 
     def get_transaction_by_hash(self, transaction_hash):
-        raise NotImplementedError("Must be implemented by subclasses")
+        return self.evm.chain.get_transaction(transaction_hash)
 
     def get_transaction_receipt(self, txn_hash):
-        raise NotImplementedError("Must be implemented by subclasses")
+        transaction = self.get_transaction_by_hash(txn_hash)
+        state = self.get_state(block_number=transaction.block_hash)
+        return state.receipts
 
     #
     # Account state
     #
     def get_nonce(self, account, block_number=None):
-        raise NotImplementedError("Must be implemented by subclasses")
+        state = self.get_state(block_number)
+        return state.get_nonce(account)
 
     def get_balance(self, account, block_number=None):
-        return self.evm.head_state.get_balance(account)
+        state = self.get_state(block_number)
+        return state.get_balance(account)
 
     def get_code(self, account, block_number=None):
-        raise NotImplementedError("Must be implemented by subclasses")
+        state = self.get_state(block_number)
+        return state.get_code(account)
 
     #
     # Transactions
