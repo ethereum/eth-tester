@@ -60,7 +60,10 @@ class PyEthereum20Backend(BaseChainBackend):
         return self.evm.chain.head
 
     # NOTE: Added as a helper, might be more broadly useful
-    def get_state(self, block_hash=None):
+    def get_state(self, block_hash=None, block_number=None):
+        if not block_hash and block_number:
+            block = self.get_block_by_number(block_number)
+            block_hash = block.hash
         if block_hash:
             # Compute state at specific block
             return self.evm.mk_poststate_of_blockhash(block_hash)
@@ -73,7 +76,7 @@ class PyEthereum20Backend(BaseChainBackend):
 
     def get_transaction_receipt(self, txn_hash):
         transaction = self.get_transaction_by_hash(txn_hash)
-        state = self.get_state(block_number=transaction.block_hash)
+        state = self.get_state(block_hash=transaction.block_hash)
         return state.receipts
 
     #
