@@ -13,6 +13,8 @@ matrix:
       env: TOX_POSARGS="-e py34-core"
     - python: "3.5"
       env: TOX_POSARGS="-e py35-core"
+    - python: "3.6"
+      env: TOX_POSARGS="-e py36-core"
     # pyethereum 1.6.x
     - python: "2.7"
       env: TOX_POSARGS="-e py27-pyethereum16"
