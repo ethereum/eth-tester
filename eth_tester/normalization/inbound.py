@@ -23,15 +23,13 @@ from .common import (
     normalize_if,
 )
 
+from eth_tester.validation.inbound import (
+    is_flat_topic_array,
+)
+
 
 def is_32byte_hex_string(value):
     return is_text(value) and is_hex(value) and len(remove_0x_prefix(value)) == 64
-
-
-def _is_flat_topic_array(value):
-    if not is_list_like(value):
-        return False
-    return all(is_32byte_hex_string(item) for item in value)
 
 
 @to_tuple
@@ -54,13 +52,13 @@ def normalize_filter_params(from_block, to_block, address, topics):
 
     if topics is None:
         yield topics
-    elif _is_flat_topic_array(topics):
+    elif is_flat_topic_array(topics):
         yield tuple(
             decode_hex(item)
             for item
             in topics
         )
-    elif all(_is_flat_topic_array(item) for item in topics):
+    elif all(is_flat_topic_array(item) for item in topics):
         yield tuple(
             tuple(decode_hex(sub_item) for sub_item in item)
             for item
