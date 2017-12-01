@@ -105,7 +105,7 @@ def get_default_genesis_params():
 
 
 def setup_tester_chain():
-    from evm.vm.flavors import MainnetTesterChain
+    from evm.chains.tester import MainnetTesterChain
     from evm.db import get_db_backend
 
     db = get_db_backend()
