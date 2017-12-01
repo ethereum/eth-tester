@@ -107,8 +107,9 @@ def get_default_genesis_params():
 def setup_tester_chain():
     from evm.chains.tester import MainnetTesterChain
     from evm.db import get_db_backend
+    from evm.db.chain import BaseChainDB
 
-    db = get_db_backend()
+    db = BaseChainDB(get_db_backend())
     genesis_params = get_default_genesis_params()
     account_keys = get_default_account_keys()
     genesis_state = generate_genesis_state(account_keys)
