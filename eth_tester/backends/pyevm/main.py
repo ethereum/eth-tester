@@ -223,7 +223,7 @@ class PyEVMBackend(object):
     def revert_to_snapshot(self, snapshot):
         block = self.chain.get_block_by_hash(snapshot)
         header = self.chain.create_header_from_parent(block.header)
-        self.chain = type(self.chain)(chaindb=self.chaindb, header=header)
+        self.chain = type(self.chain)(chaindb=self.chain.chaindb, header=header)
 
     def reset_to_genesis(self):
         self.account_keys, self.chain = setup_tester_chain()
