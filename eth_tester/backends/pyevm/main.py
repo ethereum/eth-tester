@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 import pkg_resources
 import time
-import warnings
 
 from eth_utils import (
     encode_hex,
@@ -55,7 +54,7 @@ GENESIS_EXTRA_DATA = b''
 GENESIS_INITIAL_ALLOC = {}
 
 
-SUPPORTED_FORKS = {FORK_HOMESTEAD, FORK_DAO, FORK_ANTI_DOS}
+SUPPORTED_FORKS = {FORK_HOMESTEAD, FORK_DAO, FORK_ANTI_DOS, FORK_STATE_CLEANUP}
 
 
 def get_default_account_state():
@@ -235,12 +234,6 @@ class PyEVMBackend(object):
         if fork_name in SUPPORTED_FORKS:
             if fork_block:
                 self.fork_blocks[fork_name] = fork_block
-        elif fork_name == FORK_STATE_CLEANUP:
-            warnings.warn(UserWarning(
-                "Py-EVM does not currently support the SpuriousDragon hard fork."
-            ))
-            # TODO: get EIP160 rules implemented in py-evm
-            self.fork_blocks[fork_name] = fork_block
         else:
             raise UnknownFork("Unknown fork name: {0}".format(fork_name))
         self.chain.configure_forks()
