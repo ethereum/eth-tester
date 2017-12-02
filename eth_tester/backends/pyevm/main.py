@@ -180,7 +180,10 @@ def _execute_and_revert_transaction(chain, transaction, block_number="latest"):
 def _get_vm_for_block_number(chain, block_number, mutable=False):
     block = _get_block_by_number(chain, block_number)
     if mutable and not block.header.is_mutable():
-        block.header.make_mutable()
+        if hasattr(block.header, 'make_mutable'):
+            block.header.make_mutable()
+        else:
+            block.header._mutable = True
     vm = chain.get_vm(header=block.header)
     return vm
 
