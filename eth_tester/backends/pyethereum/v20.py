@@ -17,6 +17,12 @@ from .utils import (
     is_pyethereum20_available,
 )
 
+from eth_tester.constants import (
+    FORK_HOMESTEAD,
+    FORK_DAO,
+    FORK_ANTI_DOS,
+    FORK_STATE_CLEANUP,
+)
 
 from eth_tester.utils.accounts import (
     private_key_to_address,
@@ -42,14 +48,16 @@ class PyEthereum20Backend(BaseChainBackend):
         from ethereum.tools import tester
         self.tester_module = tester
         self.evm = tester.Chain()
+        # NOTE: This is probably bad, but it solves get/set_fork_block() issues
+        self.evm.env = self.tester_module.get_env(None)
     #
     # Snapshot API
     #
     def take_snapshot(self):
-        return self.evm.chain.snapshot()
+        return self.evm.snapshot()
 
     def revert_to_snapshot(self, snapshot):
-        return self.evm.chain.revert(snapshot)
+        return self.evm.revert(snapshot)
 
     def reset_to_genesis(self):
         # NOTE: Not sure if this is right,
@@ -87,25 +95,34 @@ class PyEthereum20Backend(BaseChainBackend):
     # Meta
     #
     def time_travel(self, to_timestamp):
-        while to_timestamp >= self.evm.block.header.timestamp:
-            self.mine_block()
+        while to_timestamp >= self.get_state().timestamp:
+            self.mine_blocks()
 
     #
     # Mining
     #
     def mine_blocks(self, num_blocks=1, coinbase=None):
-        if coinbase:
-            self.evm.chain.mine(n=num_blocks, coinbase=coinbase)
-        else:
-            self.evm.chain.mine(n=num_blocks)
+        if not coinbase:
+            coinbase=self.get_accounts()[0]
+        block_hashes = []
+        for _ in range(num_blocks):
+            block_hashes.append(
+                    self.evm.mine(number_of_blocks=num_blocks, coinbase=coinbase)
+                )
+        return block_hashes
 
     #
     # Accounts
     #
     @to_tuple
     def get_accounts(self):
-        for account in self.tester_module.accounts:
-            yield to_checksum_address(account)
+        # NOTE: Had issue with this, expected bytestrings
+        return self.tester_module.accounts
+
+    # NOTE: Added this
+    def get_key_for_account(self, account):
+        index = self.tester_module.accounts.index(account)
+        return self.tester_module.keys[index]
 
     def add_account(self, private_key):
         account = private_key_to_address(private_key)
@@ -127,8 +144,9 @@ class PyEthereum20Backend(BaseChainBackend):
     def get_state(self, block_hash=None, block_number=None):
         # Ignore block_hash if block_number is provided
         # (Avoids handling additional case if both are provided)
-        if block_number:
+        if block_number and block_number is not "latest":
             block = self.get_block_by_number(block_number)
+            assert block is not None, "Could not find blocknum {}".format(block_number)
             block_hash = block.hash
         if block_hash:
             # Compute state at specific block
@@ -138,7 +156,7 @@ class PyEthereum20Backend(BaseChainBackend):
             return self.evm.head_state
 
     def get_transaction_by_hash(self, transaction_hash):
-        return self.evm.chain.get_transaction(transaction_hash)
+        return self.evm.get_transaction(transaction_hash)
 
     def get_transaction_receipt(self, transaction_hash):
         transaction = self.get_transaction_by_hash(transaction_hash)
@@ -166,15 +184,22 @@ class PyEthereum20Backend(BaseChainBackend):
     def send_transaction(self, transaction):
         # TODO: Needs to handle given sender
         #try this sender = tester.keys[tester.accounts.index(transaction['from'])]
-        sender = self.tester_module.k0
-        self.evm.tx(sender, transaction.to, transaction.value, data=transaction.data)
+        print(transaction.keys())
+        sender = self.get_key_for_account(transaction['from'])
+        self.evm.tx(sender=sender, data=transaction['data'], \
+                    value=transaction['value'], to=transaction['to'], \
+                    startgas=transaction['gas'])
         return self.evm.last_tx.hash
 
     def estimate_gas(self, transaction):
-        receipt = self.call(transaction)
-        return receipt.gas_used
+        snapshot = self.take_snapshot()
+        self.send_transaction(transaction)
+        gas_used = self.evm.last_gas_used()
+        self.revert_to_snapshot(snapshot)
+        return gas_used
 
     def call(self, transaction, block_number="latest"):
+        # Implement with block_number
         snapshot = self.take_snapshot()
         self.send_transaction(transaction)
         receipt = self.get_transaction_receipt(transaction.hash)
