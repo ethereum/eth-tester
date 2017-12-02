@@ -18,6 +18,10 @@ from .utils import (
 )
 
 
+from eth_tester.utils.accounts import (
+    private_key_to_address,
+)
+
 class PyEthereum20Backend(BaseChainBackend):
     tester_module = None
 
@@ -42,34 +46,58 @@ class PyEthereum20Backend(BaseChainBackend):
     # Snapshot API
     #
     def take_snapshot(self):
-        raise NotImplementedError("Must be implemented by subclasses")
+        return self.evm.chain.snapshot()
 
     def revert_to_snapshot(self, snapshot):
-        raise NotImplementedError("Must be implemented by subclasses")
+        return self.evm.chain.revert(snapshot)
 
     def reset_to_genesis(self):
-        raise NotImplementedError("Must be implemented by subclasses")
+        # NOTE: Not sure if this is right,
+        #       but it does reset to genesis
+        self.evm = tester.Chain()
 
     #
     # Fork block numbers
     #
     def set_fork_block(self, fork_name, fork_block):
-        raise NotImplementedError("Must be implemented by subclasses")
+        if fork_name == FORK_HOMESTEAD:
+            self.evm.env.config['HOMESTEAD_FORK_BLKNUM'] = fork_block
+        elif fork_name == FORK_DAO:
+            self.evm.env.config['DAO_FORK_BLKNUM'] = fork_block
+        elif fork_name == FORK_ANTI_DOS:
+            self.evm.env.config['ANTI_DOS_FORK_BLKNUM'] = fork_block
+        elif fork_name == FORK_STATE_CLEANUP:
+            self.evm.env.config['CLEARING_FORK_BLKNUM'] = fork_block
+        else:
+            raise UnknownFork("Unknown fork name: {0}".format(fork_name))
 
     def get_fork_block(self, fork_name):
-        raise NotImplementedError("Must be implemented by subclasses")
+        if fork_name == FORK_HOMESTEAD:
+            return self.evm.env.config['HOMESTEAD_FORK_BLKNUM']
+        elif fork_name == FORK_DAO:
+            return self.evm.env.config['DAO_FORK_BLKNUM']
+        elif fork_name == FORK_ANTI_DOS:
+            return self.evm.env.config['ANTI_DOS_FORK_BLKNUM']
+        elif fork_name == FORK_STATE_CLEANUP:
+            return self.evm.env.config['CLEARING_FORK_BLKNUM']
+        else:
+            raise UnknownFork("Unknown fork name: {0}".format(fork_name))
 
     #
     # Meta
     #
     def time_travel(self, to_timestamp):
-        raise NotImplementedError("Must be implemented by subclasses")
+        while to_timestamp >= self.evm.block.header.timestamp:
+            self.mine_block()
 
     #
     # Mining
     #
     def mine_blocks(self, num_blocks=1, coinbase=None):
-        raise NotImplementedError("Must be implemented by subclasses")
+        if coinbase:
+            self.evm.chain.mine(n=num_blocks, coinbase=coinbase)
+        else:
+            self.evm.chain.mine(n=num_blocks)
 
     #
     # Accounts
@@ -80,7 +108,9 @@ class PyEthereum20Backend(BaseChainBackend):
             yield to_checksum_address(account)
 
     def add_account(self, private_key):
-        raise NotImplementedError("Must be implemented by subclasses")
+        account = private_key_to_address(private_key)
+        self.tester_module.accounts.append(account)
+        self.tester_module.keys.append(private_key)
 
     #
     # Chain data
@@ -134,10 +164,20 @@ class PyEthereum20Backend(BaseChainBackend):
     # Transactions
     #
     def send_transaction(self, transaction):
-        raise NotImplementedError("Must be implemented by subclasses")
+        # TODO: Needs to handle given sender
+        #try this sender = tester.keys[tester.accounts.index(transaction['from'])]
+        sender = self.tester_module.k0
+        self.evm.tx(sender, transaction.to, transaction.value, data=transaction.data)
+        return self.evm.last_tx.hash
 
     def estimate_gas(self, transaction):
-        raise NotImplementedError("Must be implemented by subclasses")
+        receipt = self.call(transaction)
+        return receipt.gas_used
 
     def call(self, transaction, block_number="latest"):
-        raise NotImplementedError("Must be implemented by subclasses")
+        snapshot = self.take_snapshot()
+        self.send_transaction(transaction)
+        receipt = self.get_transaction_receipt(transaction.hash)
+        self.revert_to_snapshot(snapshot)
+        # NOTE: Not sure if this what we should return
+        return receipt
