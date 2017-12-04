@@ -39,13 +39,13 @@ from eth_tester.utils.accounts import (
     private_key_to_address,
 )
 
-from .serializers import (
+from eth_tester.backends.pyethereum.serializers import (
     serialize_block,
     serialize_transaction,
     serialize_transaction_hash,
     serialize_transaction_receipt,
 )
-from .validation import (
+from eth_tester.backends.pyethereum.validation import (
     validate_transaction,
 )
 
