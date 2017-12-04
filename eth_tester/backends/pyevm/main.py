@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 import pkg_resources
 import time
-import warnings
 
 from eth_utils import (
     encode_hex,
@@ -55,7 +54,7 @@ GENESIS_EXTRA_DATA = b''
 GENESIS_INITIAL_ALLOC = {}
 
 
-SUPPORTED_FORKS = {FORK_HOMESTEAD, FORK_DAO, FORK_ANTI_DOS}
+SUPPORTED_FORKS = {FORK_HOMESTEAD, FORK_DAO, FORK_ANTI_DOS, FORK_STATE_CLEANUP}
 
 
 def get_default_account_state():
@@ -105,10 +104,11 @@ def get_default_genesis_params():
 
 
 def setup_tester_chain():
-    from evm.vm.flavors import MainnetTesterChain
+    from evm.chains.tester import MainnetTesterChain
     from evm.db import get_db_backend
+    from evm.db.chain import BaseChainDB
 
-    db = get_db_backend()
+    db = BaseChainDB(get_db_backend())
     genesis_params = get_default_genesis_params()
     account_keys = get_default_account_keys()
     genesis_state = generate_genesis_state(account_keys)
@@ -180,7 +180,10 @@ def _execute_and_revert_transaction(chain, transaction, block_number="latest"):
 def _get_vm_for_block_number(chain, block_number, mutable=False):
     block = _get_block_by_number(chain, block_number)
     if mutable and not block.header.is_mutable():
-        block.header.make_mutable()
+        if hasattr(block.header, 'make_mutable'):
+            block.header.make_mutable()
+        else:
+            block.header._mutable = True
     vm = chain.get_vm(header=block.header)
     return vm
 
@@ -221,8 +224,13 @@ class PyEVMBackend(object):
 
     def revert_to_snapshot(self, snapshot):
         block = self.chain.get_block_by_hash(snapshot)
-        header = self.chain.create_header_from_parent(block.header)
-        self.chain = type(self.chain)(db=self.chain.db, header=header)
+        if block.number > 0:
+            self.chain.chaindb.set_as_canonical_chain_head(block.header)
+            self.chain = self.chain.get_chain_at_block_parent(block)
+            self.chain.import_block(block)
+        else:
+            self.chain.chaindb.set_as_canonical_chain_head(block.header)
+            self.chain = self.chain.from_genesis_header(self.chain.chaindb, block.header)
 
     def reset_to_genesis(self):
         self.account_keys, self.chain = setup_tester_chain()
@@ -234,12 +242,6 @@ class PyEVMBackend(object):
         if fork_name in SUPPORTED_FORKS:
             if fork_block:
                 self.fork_blocks[fork_name] = fork_block
-        elif fork_name == FORK_STATE_CLEANUP:
-            warnings.warn(UserWarning(
-                "Py-EVM does not currently support the SpuriousDragon hard fork."
-            ))
-            # TODO: get EIP160 rules implemented in py-evm
-            self.fork_blocks[fork_name] = fork_block
         else:
             raise UnknownFork("Unknown fork name: {0}".format(fork_name))
         self.chain.configure_forks()
