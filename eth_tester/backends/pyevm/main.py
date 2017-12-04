@@ -227,7 +227,7 @@ class PyEVMBackend(object):
         if block.number > 0:
             self.chain.chaindb.set_as_canonical_chain_head(block.header)
             self.chain = self.chain.get_chain_at_block_parent(block)
-            self.mine_blocks()
+            self.chain.import_block(block)
         else:
             self.chain.chaindb.set_as_canonical_chain_head(block.header)
             self.chain = self.chain.from_genesis_header(self.chain.chaindb, block.header)
