@@ -118,9 +118,9 @@ class PyEthereum20Backend(BaseChainBackend):
     # Meta
     #
     def time_travel(self, to_timestamp):
-        # NOTE: Redo to mining a block with the new block timestamp
-        while to_timestamp >= self.get_state().timestamp:
-            self.mine_blocks()
+        assert self.evm.block.header.timestamp <= timestamp
+        self.evm.block.header.timestamp = timestamp
+        self.mine_blocks()
 
     #
     # Mining
