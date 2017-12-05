@@ -8,10 +8,20 @@ from eth_tester.utils.encoding import (
     int_to_32byte_big_endian,
 )
 
+from eth_tester.backends.pyethereum.utils import (
+    is_pyethereum16_available as pyeth16,
+    is_pyethereum20_available as pyeth20,
+)
+
 
 def serialize_transaction_receipt(block, transaction, transaction_index, is_pending):
-    transaction_receipt = block.get_receipt(transaction_index)
-    origin_gas = block.transaction_list[0].startgas
+    if pyeth20:
+        # NOTE: Hack so we can get this working
+        block, transaction_receipt = block
+    else:
+        transaction_receipt = block.get_receipt(transaction_index)
+
+    origin_gas = block.transactions[0].startgas
 
     if transaction.creates is not None:
         contract_addr = transaction.creates
@@ -74,14 +84,15 @@ def serialize_block(block, transaction_serialize_fn, is_pending):
     transactions = [
         transaction_serialize_fn(block, transaction, transaction_index, is_pending)
         for transaction_index, transaction
-        in enumerate(block.transaction_list)
+        in enumerate(block.transactions if pyeth20 else block.transaction_list)
     ]
 
     return {
         "number": block.number,
         "hash": block.hash,
         "parent_hash": block.prevhash,
-        "nonce": zpad(block.nonce, 8),
+        "nonce": \
+                bytes(zpad(block.nonce, 8), 'utf-8') if pyeth20 else zpad(block.nonce, 8),
         "sha3_uncles": block.uncles_hash,
         "logs_bloom": block.bloom,
         "transactions_root": block.tx_list_root,
@@ -91,7 +102,8 @@ def serialize_block(block, transaction_serialize_fn, is_pending):
         "difficulty": block.difficulty,
         "total_difficulty": block.chain_difficulty(),
         "size": len(rlp.encode(block)),
-        "extra_data": zpad32(block.extra_data),
+        "extra_data": \
+                bytes(zpad32(block.extra_data), 'utf-8') if pyeth20 else zpad32(block.extra_data),
         "gas_limit": block.gas_limit,
         "gas_used": block.gas_used,
         "timestamp": block.timestamp,
