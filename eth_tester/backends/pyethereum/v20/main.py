@@ -76,7 +76,10 @@ class PyEthereum20Backend(BaseChainBackend):
         if fork_name == FORK_HOMESTEAD:
             self.evm.chain.env.config['HOMESTEAD_FORK_BLKNUM'] = fork_block
         elif fork_name == FORK_DAO:
-            self.evm.chain.env.config['DAO_FORK_BLKNUM'] = fork_block
+            if not fork_block:
+                self.evm.chain.env.config['DAO_FORK_BLKNUM'] = 999999999999999
+            else:
+                self.evm.chain.env.config['DAO_FORK_BLKNUM'] = fork_block
         elif fork_name == FORK_ANTI_DOS:
             self.evm.chain.env.config['ANTI_DOS_FORK_BLKNUM'] = fork_block
         elif fork_name == FORK_STATE_CLEANUP:
@@ -118,8 +121,8 @@ class PyEthereum20Backend(BaseChainBackend):
     # Meta
     #
     def time_travel(self, to_timestamp):
-        assert self.evm.block.header.timestamp <= timestamp
-        self.evm.block.header.timestamp = timestamp
+        assert self.evm.block.header.timestamp <= to_timestamp
+        self.evm.block.header.timestamp = to_timestamp
         self.mine_blocks()
 
     #
@@ -128,12 +131,11 @@ class PyEthereum20Backend(BaseChainBackend):
     @to_tuple
     def mine_blocks(self, num_blocks=1, coinbase=None):
         if not coinbase:
-            coinbase=self.get_accounts()[0]
-        # NOTE: Has a problem when using 'yield'
-        block_hashes = self.evm.mine(number_of_blocks=num_blocks, coinbase=coinbase)
-        if not isinstance(block_hashes, list):
-            return [block_hashes] # So to_tuple works
-        return block_hashes
+            coinbase = self.get_accounts()[0]
+
+        for _ in range(num_blocks):
+            block = self.evm.mine(number_of_blocks=num_blocks, coinbase=coinbase)
+            yield block.hash
 
     #
     # Accounts
@@ -188,7 +190,7 @@ class PyEthereum20Backend(BaseChainBackend):
         # NOTE: As far as I could tell, this didn't really do anything in 1.6
         setattr(block, 'chain_difficulty', lambda: 0)
         return serialize_block(block, transaction_serialize_fn, is_pending)
-    
+
     # NOTE: Added internal helper
     def _get_transaction_by_hash(self, transaction_hash):
         transaction = None
