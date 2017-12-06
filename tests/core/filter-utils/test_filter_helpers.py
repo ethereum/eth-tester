@@ -2,6 +2,10 @@ from __future__ import unicode_literals
 
 import pytest
 
+from eth_utils import (
+    big_endian_to_int,
+    is_list_like,
+)
 from eth_tester.utils.filters import (
     check_single_topic_match,
     check_if_from_block_match,
@@ -19,6 +23,20 @@ from eth_tester.utils.filters import (
 TOPIC_A = b'\x00' * 32
 TOPIC_B = b'\x00' * 31 + b'\x01'
 TOPIC_C = b'\x00' * 31 + b'\x02'
+
+
+def topic_to_name(param):
+    if is_list_like(param):
+        return [topic_to_name(t) for t in param]
+    if isinstance(param, bytes):
+        topic_int = big_endian_to_int(param)
+        return chr(topic_int + 65)
+    else:
+        return param
+
+
+def topic_id(param):
+    return repr(topic_to_name(param))
 
 
 @pytest.mark.parametrize(
@@ -306,11 +324,15 @@ FILTER_MATCH_A_C_B = (TOPIC_A, TOPIC_C, TOPIC_B)
         (TOPICS_ONLY_C, FILTER_MATCH_ONLY_B, False),
         (TOPICS_ONLY_A, FILTER_MATCH_ONLY_C, False),
         (TOPICS_ONLY_B, FILTER_MATCH_ONLY_C, False),
-        (TOPICS_A_A, FILTER_MATCH_ONLY_A, False),
-        (TOPICS_A_B, FILTER_MATCH_ONLY_A, False),
-        (TOPICS_A_C, FILTER_MATCH_ONLY_A, False),
-        (TOPICS_A_B_C, FILTER_MATCH_ONLY_A, False),
-        (TOPICS_A_C_B, FILTER_MATCH_ONLY_A, False),
+        (TOPICS_A_A, FILTER_MATCH_ONLY_A, True),
+        (TOPICS_A_B, FILTER_MATCH_ONLY_A, True),
+        (TOPICS_A_C, FILTER_MATCH_ONLY_A, True),
+        (TOPICS_A_B_C, FILTER_MATCH_ONLY_A, True),
+        (TOPICS_A_C_B, FILTER_MATCH_ONLY_A, True),
+        (TOPICS_B_A, FILTER_MATCH_ONLY_A, False),
+        (TOPICS_B_C, FILTER_MATCH_ONLY_A, False),
+        (TOPICS_B_A_C, FILTER_MATCH_ONLY_A, False),
+        (TOPICS_B_C_A, FILTER_MATCH_ONLY_A, False),
         # length 2 matches
         (TOPICS_EMPTY, FILTER_MATCH_ANY_TWO, False),
         (TOPICS_A_A, FILTER_MATCH_ANY_TWO, True),
@@ -320,22 +342,31 @@ FILTER_MATCH_A_C_B = (TOPIC_A, TOPIC_C, TOPIC_B)
         (TOPICS_ONLY_C, FILTER_MATCH_ANY_TWO, False),
         (TOPICS_A_A, FILTER_MATCH_A_B, False),
         (TOPICS_A_B, FILTER_MATCH_A_B, True),
+        (TOPICS_A_B_C, FILTER_MATCH_A_B, True),
         (TOPICS_A_C, FILTER_MATCH_A_B, False),
         (TOPICS_A_C, FILTER_MATCH_B_C, False),
         (TOPICS_B_C, FILTER_MATCH_B_C, True),
+        (TOPICS_B_C_A, FILTER_MATCH_B_C, True),
         (TOPICS_A_A, FILTER_MATCH_A_ANY, True),
         (TOPICS_A_B, FILTER_MATCH_A_ANY, True),
         (TOPICS_A_C, FILTER_MATCH_A_ANY, True),
+        (TOPICS_A_B_C, FILTER_MATCH_A_ANY, True),
+        (TOPICS_A_C_B, FILTER_MATCH_A_ANY, True),
         (TOPICS_B_C, FILTER_MATCH_A_ANY, False),
         (TOPICS_A_B, FILTER_MATCH_B_ANY, False),
         (TOPICS_A_C, FILTER_MATCH_B_ANY, False),
         (TOPICS_B_C, FILTER_MATCH_B_ANY, True),
+        (TOPICS_B_C_A, FILTER_MATCH_B_ANY, True),
         (TOPICS_B_A, FILTER_MATCH_B_ANY, True),
+        (TOPICS_B_A_C, FILTER_MATCH_B_ANY, True),
         (TOPICS_A_A, FILTER_MATCH_ANY_A, True),
         (TOPICS_A_B, FILTER_MATCH_ANY_A, False),
         (TOPICS_B_A, FILTER_MATCH_ANY_A, True),
+        (TOPICS_B_A_C, FILTER_MATCH_ANY_A, True),
         (TOPICS_A_B, FILTER_MATCH_ANY_B, True),
+        (TOPICS_A_B_C, FILTER_MATCH_ANY_B, True),
         (TOPICS_A_B, FILTER_MATCH_ANY_C, False),
+        (TOPICS_A_B_C, FILTER_MATCH_ANY_C, False),
         # length 3 matches
         (TOPICS_EMPTY, FILTER_MATCH_ANY_THREE, False),
         (TOPICS_A_B_C, FILTER_MATCH_ANY_THREE, True),
@@ -343,17 +374,22 @@ FILTER_MATCH_A_C_B = (TOPIC_A, TOPIC_C, TOPIC_B)
         (TOPICS_B_A_C, FILTER_MATCH_ANY_THREE, True),
         (TOPICS_B_C_A, FILTER_MATCH_ANY_THREE, True),
         (TOPICS_A_A, FILTER_MATCH_ANY_THREE, False),
+        (TOPICS_A_B_C, FILTER_MATCH_A_B_C, True),
+        (TOPICS_A_C_B, FILTER_MATCH_A_B_C, False),
+        (TOPICS_A_C_B, FILTER_MATCH_A_C_B, True),
+        (TOPICS_A_B_C, FILTER_MATCH_A_C_B, False),
         # nested matches
         (TOPICS_EMPTY, (FILTER_MATCH_ONLY_A, FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), False),
         (TOPICS_ONLY_A, (FILTER_MATCH_ONLY_A, FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), True),
         (TOPICS_ONLY_B, (FILTER_MATCH_ONLY_A, FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), True),
         (TOPICS_ONLY_C, (FILTER_MATCH_ONLY_A, FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), True),
-        (TOPICS_A_B, (FILTER_MATCH_ONLY_A, FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), False),
-        (TOPICS_A_B, (FILTER_MATCH_ONLY_A, FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), False),
+        (TOPICS_A_B, (FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), False),
+        (TOPICS_A_B, (FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C, FILTER_MATCH_ONLY_A), True),
         (TOPICS_A_C, (FILTER_MATCH_A_ANY, FILTER_MATCH_ANY_A), True),
         (TOPICS_B_A, (FILTER_MATCH_A_ANY, FILTER_MATCH_ANY_A), True),
         (TOPICS_B_C, (FILTER_MATCH_A_ANY, FILTER_MATCH_ANY_A), False),
-    )
+    ),
+    ids=topic_id,
 )
 def test_check_if_topics_match(log_topics, filter_topics, expected):
     actual = check_if_topics_match(log_topics, filter_topics)
