@@ -120,7 +120,7 @@ def check_if_to_block_match(block_number, _type, to_block):
 def check_if_log_matches_flat_topics(log_topics, filter_topics):
     if not filter_topics:
         return True
-    elif len(log_topics) != len(filter_topics):
+    elif len(log_topics) < len(filter_topics):
         return False
     else:
         return all(
