@@ -76,6 +76,7 @@ class PyEthereum20Backend(BaseChainBackend):
         if fork_name == FORK_HOMESTEAD:
             self.evm.chain.env.config['HOMESTEAD_FORK_BLKNUM'] = fork_block
         elif fork_name == FORK_DAO:
+            # NOTE: REALLY WEIRD HACK to get the dao_fork_blk to accept block 0
             if not fork_block:
                 self.evm.chain.env.config['DAO_FORK_BLKNUM'] = 999999999999999
             else:
@@ -132,6 +133,9 @@ class PyEthereum20Backend(BaseChainBackend):
     def mine_blocks(self, num_blocks=1, coinbase=None):
         if not coinbase:
             coinbase = self.get_accounts()[0]
+        # NOTE: Might solve the hack present in set_fork_block() above
+        #if 0 <= abs(self.get_fork_block(FORK_DAO) - self.evm.block.number) < 10:
+        #    self.evm.block.extra_data = encode_hex(self.evm.chain.env.config['DAO_FORK_BLKEXTRA'])
 
         for _ in range(num_blocks):
             block = self.evm.mine(number_of_blocks=num_blocks, coinbase=coinbase)
