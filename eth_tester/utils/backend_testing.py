@@ -787,7 +787,36 @@ class BaseTestBackendDirect(object):
         ).union(transactions_13_to_20)
         assert set(filter_b_logs_part_2) == set(transactions_8_to_12).union(transactions_13_to_20)
 
-    def test_log_filter_picks_up_new_logs(self, eth_tester):
+    @pytest.mark.parametrize(
+        'filter_topics,expected',
+        (
+            [None, 1],
+            [[], 1],
+            [['0xf70fe689e290d8ce2b2a388ac28db36fbb0e16a6d89c6804c461f65a1b40bb15'], 1],
+            [
+                [
+                    '0xf70fe689e290d8ce2b2a388ac28db36fbb0e16a6d89c6804c461f65a1b40bb15',
+                    '0x' + '00' * 31 + '02',
+                ],
+                1,
+            ],
+            [
+                [
+                    '0xf70fe689e290d8ce2b2a388ac28db36fbb0e16a6d89c6804c461f65a1b40bb15',
+                    '0x' + '00' * 31 + '99',
+                ],
+                0,
+            ],
+        ),
+        ids=[
+            'filter None',
+            'filter []',
+            'filter Event only',
+            'filter Event and argument',
+            'filter Event and wrong argument',
+        ],
+    )
+    def test_log_filter_picks_up_new_logs(self, eth_tester, filter_topics, expected):
         """
         Cases to test:
         - filter multiple transactions in one block.
@@ -808,7 +837,7 @@ class BaseTestBackendDirect(object):
         )
         eth_tester.get_transaction_receipt(emit_a_hash)
 
-        filter_any_id = eth_tester.create_log_filter()
+        filter_event = eth_tester.create_log_filter(topics=filter_topics)
         _call_emitter(
             eth_tester,
             emitter_address,
@@ -816,9 +845,9 @@ class BaseTestBackendDirect(object):
             [EMITTER_ENUM['LogSingleWithIndex'], 2],
         )
 
-        logs_changes = eth_tester.get_only_filter_changes(filter_any_id)
-        logs_all = eth_tester.get_all_filter_logs(filter_any_id)
-        assert len(logs_changes) == len(logs_all) == 1
+        specific_logs_changes = eth_tester.get_only_filter_changes(filter_event)
+        specific_logs_all = eth_tester.get_all_filter_logs(filter_event)
+        assert len(specific_logs_changes) == len(specific_logs_all) == expected
 
     def test_log_filter_includes_old_logs(self, eth_tester):
         """
