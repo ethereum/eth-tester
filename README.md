@@ -1,8 +1,10 @@
 # Ethereum Tester
 
-[![Join the chat at https://gitter.im/pipermerriam/ethereum-tester](https://badges.gitter.im/pipermerriam/ethereum-tester.svg)](https://gitter.im/pipermerriam/ethereum-tester?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/ethereum/eth-tester](https://badges.gitter.im/ethereum/eth-tester.svg)](https://gitter.im/ethereum/eth-tester?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-[![Build Status](https://travis-ci.org/pipermerriam/ethereum-tester.png)](https://travis-ci.org/pipermerriam/ethereum-tester)
+[![Join the chat at https://gitter.im/ethereum/eth-tester](https://badges.gitter.im/ethereum/eth-tester.svg)](https://gitter.im/ethereum/eth-tester)
+
+[![Build Status](https://travis-ci.org/ethereum/eth-tester.png)](https://travis-ci.org/ethereum/eth-tester)
 
 
 Tools for testing ethereum based applications.
@@ -11,7 +13,7 @@ Tools for testing ethereum based applications.
 ## Installation
 
 ```sh
-pip install ethereum-tester
+pip install eth-tester
 ```
 
 
@@ -61,6 +63,64 @@ pip install ethereum-tester
  'transaction_hash': '0x140c1da1370a908e4c0f7c6e33bb97182011707c6a9aff954bef1084c8a48b25',
  'transaction_index': 0}
 ```
+
+
+## Development
+
+```sh
+pip install -e . -r requirements-dev.txt
+```
+
+
+### Running the tests
+
+You can run the tests with:
+
+```sh
+py.test tests
+```
+
+Or you can install `tox` to run the full test suite.
+
+
+### Releasing
+
+Pandoc is required for transforming the markdown README to the proper format to
+render correctly on pypi.
+
+For Debian-like systems:
+
+```
+apt install pandoc
+```
+
+Or on OSX:
+
+```sh
+brew install pandoc
+```
+
+To release a new version:
+
+```sh
+bumpversion $$VERSION_PART_TO_BUMP$$
+git push && git push --tags
+make release
+```
+
+
+#### How to bumpversion
+
+The version format for this repo is `{major}.{minor}.{patch}` for stable, and
+`{major}.{minor}.{patch}-{stage}.{devnum}` for unstable (`stage` can be alpha or beta).
+
+To issue the next version in line, use bumpversion and specify which part to bump,
+like `bumpversion minor` or `bumpversion devnum`.
+
+If you are in a beta version, `bumpversion stage` will switch to a stable.
+
+To issue an unstable version when the current version is stable, specify the
+new version explicitly, like `bumpversion --new-version 4.0.0-alpha.1 devnum`
 
 
 # Documentation
@@ -135,11 +195,11 @@ By default, all forks will be active at the genesis block (block 0).
 Manual configuration and retrieval of fork rules can be done with the following
 API.
 
-* `EthereumTester.set_fork_block(fork_name, fork_block)`
+#### `EthereumTester.set_fork_block(fork_name, fork_block)`
 
 Sets the fork rules for the fork denoted by `fork_name` to activate at `fork_block`.
 
-* `EthereumTester.get_fork_block(fork_name)`
+#### `EthereumTester.get_fork_block(fork_name)`
 
 Returns the block number on which the named fork will activate.
 
@@ -158,7 +218,7 @@ The `fork_name` parameter must be one of the following strings.
 The chain can only time travel forward in time.
 
 <a id="api-time_travel"></a>
-* `EthereumTester.time_travel(timestamp)`
+#### `EthereumTester.time_travel(timestamp)`
 
 The `timestamp` must be an integer, strictly greater than the current timestamp
 of the latest block.  
@@ -172,13 +232,13 @@ Manually mining blocks can be done with the following API.  The `coinbase`
 parameter of these methods **must** be a hexidecimal encoded address.
 
 <a id="api-mine_blocks"></a>
-* `EthereumTester.mine_blocks(num_blocks=1, coinbase=None)`
+#### `EthereumTester.mine_blocks(num_blocks=1, coinbase=None)`
 
 Mines `num_blocks` new blocks, returning an iterable of the newly mined block hashes.
 
 
 <a id="api-mine_block"></a>
-* `EthereumTester.mine_block(coinbase=None)`
+#### `EthereumTester.mine_block(coinbase=None)`
 
 Mines a single new block, returning the mined block's hash.
 
@@ -189,12 +249,12 @@ Mines a single new block, returning the mined block's hash.
 By default all transactions are mined immediately.  This means that each transaction you send will result in a new block being mined, and that all blocks will only ever have at most a single transaction.  This behavior can be controlled with the following methods.
 
 <a id="api-enable_auto_mine_transactions"></a>
-* `EthereumTester.enable_auto_mine_transactions()`
+#### `EthereumTester.enable_auto_mine_transactions()`
 
 Turns on auto-mining of transactions.
 
 <a id="api-disable_auto_mine_transactions"></a>
-* `EthereumTester.disable_auto_mine_transactions()`
+#### `EthereumTester.disable_auto_mine_transactions()`
 
 Turns **off** auto-mining of transactions.
 
@@ -205,7 +265,7 @@ The following API can be used to interact with account data.  The `account`
 parameter in these methods **must** be a hexidecimal encode address.
 
 <a id="api-get_accounts"></a>
-* `EthereumTester.get_accounts()`
+ `EthereumTester.get_accounts()`
 
 Returns an iterable of the accounts that the tester knows about.  All accounts
 in this list will be EIP55 checksummed.
@@ -219,8 +279,65 @@ in this list will be EIP55 checksummed.
 ```
 
 
+<a id="api-add_account"></a>
+#### `EthereumTester.add_account(private_key, password=None)`
+
+Adds a new account for the given private key.  Returns the hex encoded address
+of the added account.
+
+```python
+>>> t.add_account('0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d')
+'0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd'
+```
+
+By default, added accounts are unlocked and do not have a password.  If you
+would like to add an account which has a password, you can supply the password
+as the second parameter.
+
+```python
+>>> t.add_account('0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d', 'my-secret')
+'0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd'
+```
+
+
+<a id="api-unlock_account"></a>
+#### `EthereumTester.unlock_account(account, password, unlock_seconds=None)`
+
+Unlocks the given account if the provided password matches.
+
+Raises a `ValidationError` if:
+
+* The account is not known.
+* The password does not match.
+* The account was created without a password.
+
+```python
+>>> t.unlock_account('0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd', 'my-secret')
+```
+
+By default, accounts will be unlocked indefinitely.  You can however unlock an
+account for a specified amount of time by providing the desired duration in
+seconds.
+
+```python
+# unlock for 1 hour.
+>>> t.unlock_account('0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd', 'my-secret', 60 * 60)
+```
+
+
+<a id="api-unlock_account"></a>
+#### `EthereumTester.lock_account(account)`
+
+Locks the provide account.  
+
+Raises a `ValidationError` if:
+
+* The account is not known
+* The account does not have a password.
+
+
 <a id="api-get_balance"></a>
-* `EthereumTester.get_balance(account) -> integer`
+#### `EthereumTester.get_balance(account) -> integer`
 
 Returns the balance, in wei, for the provided account.
 
@@ -231,7 +348,7 @@ Returns the balance, in wei, for the provided account.
 
 
 <a id="api-get_nonce"></a>
-* `EthereumTester.get_nonce(account) -> integer`
+#### `EthereumTester.get_nonce(account) -> integer`
 
 Returns the nonce for the provided account.
 
@@ -241,7 +358,7 @@ Returns the nonce for the provided account.
 ```
 
 <a id="api-get_code"></a>
-* `EthereumTester.get_code(account) -> hex string`
+#### `EthereumTester.get_code(account) -> hex string`
 
 Returns the code for the given account.
 
@@ -254,7 +371,7 @@ Returns the code for the given account.
 ### Blocks, Transactions, and Receipts
 
 <a id="api-get_transaction_by_hash"></a>
-* `EthereumTester.get_transaction_by_hash(transaction_hash) -> transaction-object`
+#### `EthereumTester.get_transaction_by_hash(transaction_hash) -> transaction-object`
 
 Returns the transaction for the given hash, raising a
 [`TransactionNotFound`](#errors-TransactionNotFound) exception if the
@@ -282,7 +399,7 @@ transaction cannot be found.
 
 
 <a id="api-get_block_by_numbera>
-* `EthereumTester.get_block_by_number(block_number, full_transactions=False) -> block-object`
+#### `EthereumTester.get_block_by_number(block_number, full_transactions=False) -> block-object`
 
 Returns the block for the given `block_number`.  See [block
 numbers](#block-numbers) for named block numbers you can use.  If
@@ -316,7 +433,7 @@ cannot be found.
 
 
 <a id="api-get_block_by_hash"></a>
-* `EthereumTester.get_block_by_hash(block_hash, full_transactions=True) -> block-object`
+#### `EthereumTester.get_block_by_hash(block_hash, full_transactions=True) -> block-object`
 
 Returns the block for the given `block_hash`.  The `full_transactions`
 parameter behaves the same as in
@@ -348,7 +465,7 @@ cannot be found.
 ```
 
 <a id="api-get_transaction_receipt"></a>
-* `EthereumTester.get_transaction_receipt(transaction_hash)`
+#### `EthereumTester.get_transaction_receipt(transaction_hash)`
 
 Returns the receipt for the given `transaction_hash`, raising
 [`TransactionNotFound`](#errors-TransactionNotFound) if no transaction can be
@@ -397,21 +514,21 @@ values.
 #### Methods
 
 <a id="api-send_transaction"></a>
-* `EthereumTester.send_transaction(transaction) -> transaction_hash`
+#### `EthereumTester.send_transaction(transaction) -> transaction_hash`
 
 Sends the provided `transaction` object, returning the `transaction_hash` for
 the sent transaction.
 
 
 <a id="api-call"></a>
-* `EthereumTester.call(transaction, block_number='latest')`
+#### `EthereumTester.call(transaction, block_number='latest')`
 
 Executes the provided `transaction` object at the evm state from the block
 denoted by the `block_number` parameter, returning the resulting bytes return
 value from the evm.
 
 <a id="api-estimate_gas"></a>
-* `EthereumTester.estimate_gas(transaction)`
+#### `EthereumTester.estimate_gas(transaction)`
 
 Executes the provided `transaction` object, measuring and returning the gas
 consumption.
@@ -420,7 +537,7 @@ consumption.
 ### Logs and Filters
 
 <a id="api-create_block_filter"></a>
-* `EthereumTester.create_block_filter() -> integer`
+#### `EthereumTester.create_block_filter() -> integer`
 
 Creates a new filter for newly mined blocks.  Returns the `filter_id` which can
 be used to retrieve the block hashes for the mined blocks.
@@ -446,7 +563,7 @@ be used to retrieve the block hashes for the mined blocks.
 ```
 
 <a id="api-create_pending_transaction_filter"></a>
-* `EthereumTester.create_pending_transaction_filter() -> integer`
+#### `EthereumTester.create_pending_transaction_filter() -> integer`
 
 Creates a new filter for pending transactions.  Returns the `filter_id` which
 can be used to retrieve the transaction hashes for the pending transactions.
@@ -471,7 +588,7 @@ can be used to retrieve the transaction hashes for the pending transactions.
 ```
 
 <a id="api-create_log_filter"></a>
-* `EthereumTester.create_log_filter(from_block=None, to_block=None, address=None, topics=None) -> integer`
+#### `EthereumTester.create_log_filter(from_block=None, to_block=None, address=None, topics=None) -> integer`
 
 Creates a new filter for logs produced by transactions.  The parameters for
 this function can be used to filter the log entries.  
@@ -508,14 +625,14 @@ this function can be used to filter the log entries.
 See [the filtering guide](#guide-filtering) for detailed information on how to use filters.
 
 <a id="api-delete_filter"></a>
-* `EthereumTester.delete_filter(filter_id)`
+#### `EthereumTester.delete_filter(filter_id)`
 
 Removes the filter for the provide `filter_id`.  If no filter is found for the
 given `filter_id`, raises [`FilterNotFound`](#errors-FilterNotFound).
 
 
 <a id="api-get_only_filter_changes"></a>
-* `EthereumTester.get_only_filter_changes(filter_id) -> transaction_hash or block_hash or log_entry`
+#### `EthereumTester.get_only_filter_changes(filter_id) -> transaction_hash or block_hash or log_entry`
 
 Returns all new values for the provided `filter_id` that have not previously
 been returned through this API.  Raises
@@ -523,7 +640,7 @@ been returned through this API.  Raises
 `filter_id`.
 
 <a id="api-get_only_filter_changes"></a>
-* `EthereumTester.get_all_filter_logs(filter_id) -> transaction_hash or block_hash or log_entry`
+#### `EthereumTester.get_all_filter_logs(filter_id) -> transaction_hash or block_hash or log_entry`
 
 Returns all values for the provided `filter_id`. Raises
 [`FilterNotFound`](#errors-FilterNotFound) if no filter is found for the given
@@ -533,13 +650,13 @@ Returns all values for the provided `filter_id`. Raises
 ### Snapshots and Resetting
 
 <a id="api-take_snapshot"></a>
-* `EthereumTester.take_snapshot() -> snapshot_id`
+#### `EthereumTester.take_snapshot() -> snapshot_id`
 
 Takes a snapshot of the current chain state and returns the snapshot id.
 
 
 <a id="api-revert_to_snapshot"></a>
-* `EthereumTester.revert_to_snapshot(snapshot_id)`
+#### `EthereumTester.revert_to_snapshot(snapshot_id)`
 
 Reverts the chain to the chain state associated with the given `snapshot_id`.
 Raises [`SnapshotNotFound`](#errors-SnapshotNotFound) if no snapshot is know
@@ -548,26 +665,26 @@ for the given id.
 ### Errors and Exceptions
 
 <a id="errors-TransactionNotFound"></a>
-* `eth_tester.exceptions.TransactionNotFound`
+#### `eth_tester.exceptions.TransactionNotFound`
 
 Raised in cases where a transaction cannot be found for the provided transaction hash.
 
 
 <a id="errors-BlockNotFound"></a>
-* `eth_tester.exceptions.BlockNotFound`
+#### `eth_tester.exceptions.BlockNotFound`
 
 Raised in cases where a block cannot be found for either a provided number or
 hash.
 
 
 <a id="errors-FilterNotFound"></a>
-* `eth_tester.exceptions.FilterNotFound`
+#### `eth_tester.exceptions.FilterNotFound`
 
 Raised in cases where a filter cannot be found for the provided filter id.
 
 
 <a id="errors-SnapshotNotFound"></a>
-* `eth_tester.exceptions.SnapshotNotFound`
+#### `eth_tester.exceptions.SnapshotNotFound`
 
 Raised in cases where a snapshot cannot be found for the provided snapshot id.
 
@@ -583,8 +700,14 @@ various backends by default.  You can however install ethereum tester with the
 necessary dependencies using the following method.
 
 ```bash
-$ pip install ethereum-tester[pyethereum16]
+$ pip install eth-tester[<backend-name>]
 ```
+
+You should replace `<backend-name>` with the name of the desired testing
+backend.  Available backends are:
+
+* `pyethereum16`: [PyEthereum v1.6.x](https://pypi.python.org/pypi/ethereum/1.6.1)
+* `py-evm`: [PyEVM (alpha)](https://pypi.python.org/pypi/py-evm) **(experimental)**
 
 ### Selecting a Backend
 
@@ -608,35 +731,63 @@ backend class you wish to use.
 Ethereum tester can be used with the following backends.
 
 * PyEthereum 1.6.x (default)
+* PyEVM (experimental)
+* MockBackend
 
 The following backends on the roadmap to be developed.
 
 * PyEthereum 2.0.x (under development)
-* PyEVM (experimental)
+
+#### MockBackend
+
+This backend has limited functionality.  It cannot perform any VM computations.
+It mocks out all of the objects and interactions.
+
+```python
+>>> from eth_tester import MockBackend
+>>> t = EthereumTester(MockBackend())
+```
 
 #### PyEthereum 1.6.x
 
-TODO
+Uses the PyEthereum library at version `v1.6.x`
 
-#### PyEthereum 2.0.x (under development)
-
-> Under development
+```python
+>>> from eth_tester import PyEthereum16Backend
+>>> t = EthereumTester(PyEthereum16Backend())
+```
 
 #### PyEVM (experimental)
+
+> **WARNING** Py-EVM is experimental and should not be relied on for mission critical testing at this stage.
+
+Uses the experimental Py-EVM library.
+
+```python
+>>> from eth_tester import PyEVMBackend
+>>> t = EthereumTester(PyEVMBackend())
+```
+
+#### PyEthereum 2.0.x (under development)
 
 > Under development
 
 ### Implementing Custom Backends
 
 The base class `eth_tester.backends.base.BaseChainBackend` is the recommended
-base class to begin with if you wish to write your own backend.  In order for
-ethereum tester to operate correctly, your backend **must** be able to do all
-of the following.
+base class to begin with if you wish to write your own backend.  
 
-TODO
+Details on implementation are beyond the scope of this document.
 
 
 ## Data Formats
+
+Ethereum tester uses two formats for data.  
+
+* The *normal* format is the data format the is expected as input arguments to all `EthereumTester` methods as well as the return types from all method calls.
+* The *canonical* format is the data format that is used internally by the backend class.
+
+Ethereum tester enforces strict validation rules on these formats.
 
 ### Canonical Formats
 
@@ -699,16 +850,64 @@ The specifics of this object are beyong the scope of this document.
 
 # Use with Web3.py
 
-While the `ethereum-tester` library can be used on its own it can also be used
-with the [`web3.py`](https://github.com/pipermerriam/web3.py) library.  The
-`ethereum-tester` library comes with the provider class
-`eth_tester.web3.EthereumTesterProvider`.  You can use it like this:
+See the [web3.py documentation](http://web3py.readthedocs.io/en/latest/) for
+information on the `EthereumTester` provider which integrates with this
+library.
 
-```python
->>> from eth_tester import EthereumTester
->>> from eth_tester.web3 import EthereumTesterProvider
->>> from web3 import Web3
->>> eth_tester = EthereumTester()
->>> provider = EthereumTesterProvider(eth_tester)
->>> web3 = Web3(provider)
+
+# Development
+
+```sh
+pip install -e . -r requirements-dev.txt
 ```
+
+
+## Running the tests
+
+You can run the tests with:
+
+```sh
+py.test tests
+```
+
+Or you can install `tox` to run the full test suite.
+
+
+## Releasing
+
+Pandoc is required for transforming the markdown README to the proper format to
+render correctly on pypi.
+
+For Debian-like systems:
+
+```
+apt install pandoc
+```
+
+Or on OSX:
+
+```sh
+brew install pandoc
+```
+
+To release a new version:
+
+```sh
+bumpversion $$VERSION_PART_TO_BUMP$$
+git push && git push --tags
+make release
+```
+
+
+### How to bumpversion
+
+The version format for this repo is `{major}.{minor}.{patch}` for stable, and
+`{major}.{minor}.{patch}-{stage}.{devnum}` for unstable (`stage` can be alpha or beta).
+
+To issue the next version in line, use bumpversion and specify which part to bump,
+like `bumpversion minor` or `bumpversion devnum`.
+
+If you are in a beta version, `bumpversion stage` will switch to a stable.
+
+To issue an unstable version when the current version is stable, specify the
+new version explicitly, like `bumpversion --new-version 4.0.0-alpha.1 devnum`
