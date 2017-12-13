@@ -340,6 +340,36 @@ class EthereumTester(object):
     #
     # Transaction Sending
     #
+    def _handle_filtering_for_transaction(self, transaction_hash):
+        # feed the transaction hash to any pending transaction filters.
+        for _, filter in self._pending_transaction_filters.items():
+            raw_transaction_hash = self.normalizer.normalize_inbound_transaction_hash(
+                transaction_hash,
+            )
+            filter.add(raw_transaction_hash)
+
+        if self._log_filters:
+            receipt = self.get_transaction_receipt(transaction_hash)
+            for log_entry in receipt['logs']:
+                for _, filter in self._log_filters.items():
+                    raw_log_entry = self.normalizer.normalize_inbound_log_entry(log_entry)
+                    filter.add(raw_log_entry)
+
+    def send_raw_transaction(self, evm_transaction):
+        raw_transaction_hash = self.backend.send_raw_transaction(evm_transaction)
+        self.validator.validate_outbound_transaction_hash(raw_transaction_hash)
+        transaction_hash = self.normalizer.normalize_outbound_transaction_hash(
+            raw_transaction_hash,
+        )
+
+        self._handle_filtering_for_transaction(transaction_hash)
+
+        # mine the transaction if auto-transaction-mining is enabled.
+        if self.auto_mine_transactions:
+            self.mine_block()
+
+        return transaction_hash
+
     def send_transaction(self, transaction):
         self.validator.validate_inbound_transaction(transaction, txn_type='send')
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
@@ -359,19 +389,7 @@ class EthereumTester(object):
             raw_transaction_hash,
         )
 
-        # feed the transaction hash to any pending transaction filters.
-        for _, filter in self._pending_transaction_filters.items():
-            raw_transaction_hash = self.normalizer.normalize_inbound_transaction_hash(
-                transaction_hash,
-            )
-            filter.add(raw_transaction_hash)
-
-        if self._log_filters:
-            receipt = self.get_transaction_receipt(transaction_hash)
-            for log_entry in receipt['logs']:
-                for _, filter in self._log_filters.items():
-                    raw_log_entry = self.normalizer.normalize_inbound_log_entry(log_entry)
-                    filter.add(raw_log_entry)
+        self._handle_filtering_for_transaction(transaction_hash)
 
         # mine the transaction if auto-transaction-mining is enabled.
         if self.auto_mine_transactions:

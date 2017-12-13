@@ -4,6 +4,7 @@ import pkg_resources
 import time
 
 from eth_utils import (
+    decode_hex,
     encode_hex,
     int_to_big_endian,
     pad_left,
@@ -367,6 +368,14 @@ class PyEVMBackend(object):
         evm_transaction = self.chain.create_unsigned_transaction(**normalized_transaction)
         signed_evm_transaction = evm_transaction.as_signed_transaction(signing_key)
         return signed_evm_transaction
+
+    def send_raw_transaction(self, raw_transaction_hex):
+        import rlp
+        vm = _get_vm_for_block_number(self.chain, "latest")
+        TransactionClass = vm.get_transaction_class()
+        evm_transaction = rlp.decode(decode_hex(raw_transaction_hex), TransactionClass)
+        self.chain.apply_transaction(evm_transaction)
+        return evm_transaction.hash
 
     def send_transaction(self, transaction):
         signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
