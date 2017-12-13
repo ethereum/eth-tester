@@ -337,7 +337,9 @@ class PyEVMBackend(object):
             return state_db.get_balance(account)
 
     def get_code(self, account, block_number="latest"):
-        raise NotImplementedError("Must be implemented by subclasses")
+        vm = _get_vm_for_block_number(self.chain, block_number)
+        with vm.state_db(read_only=True) as state_db:
+            return state_db.get_code(account)
 
     #
     # Transactions
