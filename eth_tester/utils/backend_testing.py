@@ -22,7 +22,6 @@ import rlp
 from eth_utils import (
     encode_hex,
     to_canonical_address,
-    to_checksum_address,
     to_normalized_address,
     is_address,
     is_integer,
