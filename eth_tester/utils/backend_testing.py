@@ -17,7 +17,12 @@ from hypothesis.stateful import (
     rule,
 )
 
+import rlp
+
 from eth_utils import (
+    encode_hex,
+    to_canonical_address,
+    to_checksum_address,
     to_normalized_address,
     is_address,
     is_integer,
@@ -25,6 +30,10 @@ from eth_utils import (
     is_dict,
     is_hex,
     denoms,
+)
+
+from eth_keys import (
+    keys,
 )
 
 from eth_tester.constants import (
@@ -190,6 +199,15 @@ class BaseTestBackendDirect(object):
             assert balance >= UINT256_MIN
             assert balance <= UINT256_MAX
 
+    def test_get_code_account_with_code(self, eth_tester):
+        emitter_address = _deploy_emitter(eth_tester)
+        code = eth_tester.get_code(emitter_address)
+        assert code != '0x'
+
+    def test_get_code_account_without_code(self, eth_tester):
+        code = eth_tester.get_code(BURN_ADDRESS)
+        assert code == '0x'
+
     def test_get_nonce(self, eth_tester):
         for account in eth_tester.get_accounts():
             nonce = eth_tester.get_nonce(account)
@@ -221,6 +239,39 @@ class BaseTestBackendDirect(object):
     #
     # Transaction Sending
     #
+    def test_send_raw_transaction_valid_raw_transaction(self, eth_tester):
+        # send funds to our sender
+        raw_privkey = b'\x11' * 32
+        test_key = keys.PrivateKey(raw_privkey)
+        eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": test_key.public_key.to_checksum_address(),
+            "gas": 21000,
+            "value": 1 * denoms.ether,
+        })
+        # create a raw transaction which spends previously the sent funds
+        unsigned_transaction = eth_tester.backend.chain.create_unsigned_transaction(
+            nonce=eth_tester.get_nonce(test_key.public_key.to_checksum_address()),
+            gas_price=1,
+            gas=21000,
+            to=to_canonical_address(BURN_ADDRESS),
+            value=50000,
+            data=b'',
+        )
+        signed_transaction = unsigned_transaction.as_signed_transaction(test_key)
+        encoded_transaction = rlp.encode(signed_transaction)
+        transaction_hex = encode_hex(encoded_transaction)
+        transaction_hash = eth_tester.send_raw_transaction(transaction_hex)
+        receipt = eth_tester.get_transaction_receipt(transaction_hash)
+        # assert that the raw transaction is confirmed and successful
+        assert receipt['transaction_hash'] == transaction_hash
+        assert eth_tester.get_balance(BURN_ADDRESS) == 50000
+
+    def test_send_raw_transaction_invalid_raw_transaction(self, eth_tester):
+        invalid_transaction_hex = '0x1234'
+        with pytest.raises(rlp.exceptions.DecodingError):
+            eth_tester.send_raw_transaction(invalid_transaction_hex)
+
     def test_send_transaction(self, eth_tester):
         accounts = eth_tester.get_accounts()
         assert accounts, "No accounts available for transaction sending"
