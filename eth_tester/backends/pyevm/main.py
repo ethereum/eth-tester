@@ -3,6 +3,8 @@ from __future__ import absolute_import
 import pkg_resources
 import time
 
+import rlp
+
 from eth_utils import (
     decode_hex,
     encode_hex,
@@ -370,7 +372,6 @@ class PyEVMBackend(object):
         return signed_evm_transaction
 
     def send_raw_transaction(self, raw_transaction_hex):
-        import rlp
         vm = _get_vm_for_block_number(self.chain, "latest")
         TransactionClass = vm.get_transaction_class()
         evm_transaction = rlp.decode(decode_hex(raw_transaction_hex), TransactionClass)
