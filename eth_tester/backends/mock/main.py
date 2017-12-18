@@ -285,7 +285,7 @@ class MockBackend(BaseChainBackend):
         try:
             return self.account_state_lookup[account]['code']
         except KeyError:
-            return 0
+            return b''
 
     #
     # Transactions
