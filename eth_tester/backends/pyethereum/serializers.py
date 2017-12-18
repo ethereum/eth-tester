@@ -8,10 +8,16 @@ from eth_tester.utils.encoding import (
     int_to_32byte_big_endian,
 )
 
+from eth_tester.backends.pyethereum.utils import (
+    is_pyethereum16_available as pyeth16,
+    is_pyethereum20_available as pyeth20,
+)
+
 
 def serialize_transaction_receipt(block, transaction, transaction_index, is_pending):
     transaction_receipt = block.get_receipt(transaction_index)
-    origin_gas = block.transaction_list[0].startgas
+
+    origin_gas = block.transactions[0].startgas
 
     if transaction.creates is not None:
         contract_addr = transaction.creates
@@ -74,8 +80,13 @@ def serialize_block(block, transaction_serialize_fn, is_pending):
     transactions = [
         transaction_serialize_fn(block, transaction, transaction_index, is_pending)
         for transaction_index, transaction
-        in enumerate(block.transaction_list)
+        in enumerate(block.transactions if pyeth20 else block.transaction_list)
     ]
+    
+    # NOTE: Hack to compute total difficulty for pyethereum 2.0
+    #       As far as I could tell, this didn't really do anything in 1.6
+    if pyeth20:
+        setattr(block, 'chain_difficulty', lambda: 0)
 
     return {
         "number": block.number,
