@@ -253,7 +253,6 @@ class BaseTestBackendDirect(object):
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
         # assert that the raw transaction is confirmed and successful
         assert receipt['transaction_hash'] == transaction_hash
-        assert eth_tester.get_balance(BURN_ADDRESS) == 50000
 
     def test_send_raw_transaction_invalid_raw_transaction(self, eth_tester):
         invalid_transaction_hex = '0x1234'
