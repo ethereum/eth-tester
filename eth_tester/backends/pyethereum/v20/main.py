@@ -111,19 +111,24 @@ class PyEthereum20Backend(BaseChainBackend):
         snapshot_block_number, snapshot_data = snapshot
         # We need to remove blocks to revert past the current one
         if self.evm.block.number > snapshot_block_number:
-            self.evm.change_head(self.get_block_by_number(snapshot_block_number))
+            block = self._get_block_by_number(snapshot_block_number)
+            self.evm.change_head(block)
         self.evm.revert(snapshot_data)
 
     def reset_to_genesis(self):
         self.evm = self.tester_module.Chain()
-        self.mine_blocks()
+        # NOTE: don't need to mine the block here after reset
+        #self.mine_blocks()
+        # NOTE: reset keys back to starting 10 elements
+        self.tester_module.accounts = self.tester_module.accounts[:-10]
+        self.tester_module.keys = self.tester_module.keys[:-10]
 
     #
     # Meta
     #
     def time_travel(self, to_timestamp):
-        assert self.evm.block.header.timestamp <= to_timestamp
-        self.evm.block.header.timestamp = to_timestamp
+        assert self.evm.block.header.timestamp < to_timestamp
+        self.evm.block.header.timestamp = to_timestamp-1
         self.mine_blocks()
 
     #
@@ -138,7 +143,7 @@ class PyEthereum20Backend(BaseChainBackend):
         #    self.evm.block.extra_data = encode_hex(self.evm.chain.env.config['DAO_FORK_BLKEXTRA'])
 
         for _ in range(num_blocks):
-            block = self.evm.mine(number_of_blocks=num_blocks, coinbase=coinbase)
+            block = self.evm.mine(coinbase=coinbase)
             yield block.hash
 
     #
@@ -151,7 +156,7 @@ class PyEthereum20Backend(BaseChainBackend):
 
     # NOTE: Added as a helper, might be more broadly useful
     def get_key_for_account(self, account):
-        assert account in self.get_accounts(), "Account {} not in accounts".format(account)
+        assert account in self.get_accounts(), "Account {:#x} not in accounts".format(account)
         index = self.tester_module.accounts.index(account)
         return self.tester_module.keys[index]
 
@@ -164,22 +169,33 @@ class PyEthereum20Backend(BaseChainBackend):
     #
     # Chain data
     #
-    def get_block_by_number(self, block_number, full_transactions=False):
-        if full_transactions:
-            transaction_serialize_fn = serialize_transaction
-        else:
-            transaction_serialize_fn = serialize_transaction_hash
+    def _get_block_by_number(self, block_number):
         if block_number == "pending":
             block = self.evm.block # Get pending block
         elif block_number == "latest":
             block = self.evm.chain.head # Get latest block added to chain
+        elif block_number == "earliest":
+            block = self.evm.chain.genesis
         else:
             block = self.evm.chain.get_block_by_number(block_number)
-        assert block is not None, "Block not found! Given #{}".format(block_number)
+        assert block is not None, "Block not found! Given {}".format(block_number)
+        
+        # NOTE: ethereum.tester doesn't have these as bytes sometimes
+        if isinstance(block.nonce, str):
+            block.nonce = block.nonce.encode('utf-8') # This is the empty string (unmined)
+        if isinstance(block.extra_data, str):
+            block.extra_data = block.extra_data.encode('utf-8') # This is unencoded
+        return block
+        
+    def get_block_by_number(self, block_number, full_transactions=False):
+        block = self._get_block_by_number(block_number)
+
+        if full_transactions:
+            transaction_serialize_fn = serialize_transaction
+        else:
+            transaction_serialize_fn = serialize_transaction_hash
+        
         is_pending = block == self.evm.block
-        # NOTE: Hack to compute total difficulty
-        # NOTE: As far as I could tell, this didn't really do anything in 1.6
-        setattr(block, 'chain_difficulty', lambda: 0)
         return serialize_block(block, transaction_serialize_fn, is_pending)
 
     def get_block_by_hash(self, block_hash, full_transactions=False):
@@ -187,15 +203,14 @@ class PyEthereum20Backend(BaseChainBackend):
             transaction_serialize_fn = serialize_transaction
         else:
             transaction_serialize_fn = serialize_transaction_hash
+        
         block = self.evm.chain.get_block(block_hash)
-        assert block is not None, "Block not found! Given 0x{}".format(block_hash)
+        assert block is not None, "Block not found! Given {:#x}".format(block_hash)
+        
         is_pending = block == self.evm.block
-        # NOTE: Hack to compute total difficulty
-        # NOTE: As far as I could tell, this didn't really do anything in 1.6
-        setattr(block, 'chain_difficulty', lambda: 0)
         return serialize_block(block, transaction_serialize_fn, is_pending)
-
-    # NOTE: Added internal helper
+    
+    # Internal helper for obtaining transaction artifacts for serializer.py
     def _get_transaction_by_hash(self, transaction_hash):
         transaction = None
         # Start with unmined block
@@ -205,20 +220,28 @@ class PyEthereum20Backend(BaseChainBackend):
                 block = self.evm.block
                 tx_index = block.transactions.index(transaction)
                 is_pending = True
-                receipt = self.evm.head_state.receipts[tx_index]
-
+                # NOTE: Hack for serializers.py to work
+                setattr(block, 'receipts', self.evm.head_state.receipts)
+                # Receipt getter
+                setattr(block, 'get_receipt', lambda tx_idx: getattr(block, 'receipts')[tx_idx])
                 break
+
         # Then check rest of chain
         if transaction is None:
             blknum, tx_index = self.evm.chain.get_tx_position(transaction_hash)
-            block = self.get_block_by_number(blknum)
-            transaction = block.transactions[index]
+            block = self._get_block_by_number(blknum)
+            transaction = block.transactions[tx_index]
             is_pending = False
-            receipt = self.get_state(block.hash).receipts[tx_index]
+            state = self.get_state(block.hash)
+            # NOTE: Hack for serializers.py to work
+            #assert tx_index < len(state.receipts)
+            setattr(block, 'receipts', state.receipts)
+            # Receipt getter
+            setattr(block, 'get_receipt', lambda tx_idx: getattr(block, 'receipts')[tx_idx])
 
 
-        # Exact format for serialize functions
-        return (block, receipt), transaction, tx_index, is_pending
+        # Modified format for serialize functions (we combine blocks and receipts)
+        return block, transaction, tx_index, is_pending
 
     def get_transaction_by_hash(self, transaction_hash):
         return serialize_transaction(*self._get_transaction_by_hash(transaction_hash))
@@ -234,13 +257,13 @@ class PyEthereum20Backend(BaseChainBackend):
         # Ignore block_hash if block_number is provided
         # (Avoids handling additional case if both are provided)
         if block_number and block_number is not "latest":
-            block = self.get_block_by_number(block_number)
+            block = self._get_block_by_number(block_number)
             assert block is not None, "Could not find blocknum {}".format(block_number)
             block_hash = block.hash
         # Double check it's not the unmined block
         if block_hash and block_hash is not self.evm.block.hash:
             # Compute state at specific block
-            return self.evm.chain.mk_poststate_of_blockhash(block_hash)
+            return self.evm.chain.mk_poststate_of_blockhash(block_hash).ephemeral_clone()
         else:
             # Return the most recent block if not specified
             return self.evm.head_state
