@@ -15,11 +15,7 @@ from eth_tester.backends.pyethereum.utils import (
 
 
 def serialize_transaction_receipt(block, transaction, transaction_index, is_pending):
-    if pyeth20:
-        # NOTE: Hack so we can get this working
-        block, transaction_receipt = block
-    else:
-        transaction_receipt = block.get_receipt(transaction_index)
+    transaction_receipt = block.get_receipt(transaction_index)
 
     origin_gas = block.transactions[0].startgas
 
@@ -86,13 +82,17 @@ def serialize_block(block, transaction_serialize_fn, is_pending):
         for transaction_index, transaction
         in enumerate(block.transactions if pyeth20 else block.transaction_list)
     ]
+    
+    # NOTE: Hack to compute total difficulty for pyethereum 2.0
+    #       As far as I could tell, this didn't really do anything in 1.6
+    if pyeth20:
+        setattr(block, 'chain_difficulty', lambda: 0)
 
     return {
         "number": block.number,
         "hash": block.hash,
         "parent_hash": block.prevhash,
-        "nonce": \
-                bytes(zpad(block.nonce, 8), 'utf-8') if pyeth20 else zpad(block.nonce, 8),
+        "nonce": zpad(block.nonce, 8),
         "sha3_uncles": block.uncles_hash,
         "logs_bloom": block.bloom,
         "transactions_root": block.tx_list_root,
@@ -102,8 +102,7 @@ def serialize_block(block, transaction_serialize_fn, is_pending):
         "difficulty": block.difficulty,
         "total_difficulty": block.chain_difficulty(),
         "size": len(rlp.encode(block)),
-        "extra_data": \
-                bytes(zpad32(block.extra_data), 'utf-8') if pyeth20 else zpad32(block.extra_data),
+        "extra_data": zpad32(block.extra_data),
         "gas_limit": block.gas_limit,
         "gas_used": block.gas_used,
         "timestamp": block.timestamp,
