@@ -107,6 +107,8 @@ def _deploy_math(eth_tester):
     deploy_receipt = eth_tester.get_transaction_receipt(deploy_hash)
     math_address = deploy_receipt['contract_address']
     assert math_address
+    math_code = eth_tester.get_code(math_address)
+    assert len(math_code) > 2
     return math_address
 
 

@@ -302,7 +302,7 @@ class PyEthereum16Backend(BaseChainBackend):
             block_number,
         )
         is_pending = block == self.evm.block
-        return serialize_block(block, transaction_serialize_fn, is_pending)
+        return serialize_block(self.evm, block, transaction_serialize_fn, is_pending)
 
     def get_block_by_hash(self, block_hash, full_transactions=False):
         if full_transactions:
@@ -315,7 +315,7 @@ class PyEthereum16Backend(BaseChainBackend):
             block_hash,
         )
         is_pending = block == self.evm.block
-        return serialize_block(block, transaction_serialize_fn, is_pending)
+        return serialize_block(self.evm, block, transaction_serialize_fn, is_pending)
 
     def get_latest_block(self, full_transactions=False):
         if full_transactions:
@@ -323,7 +323,7 @@ class PyEthereum16Backend(BaseChainBackend):
         else:
             transaction_serialize_fn = serialize_transaction_hash
 
-        return serialize_block(self.evm.block, transaction_serialize_fn)
+        return serialize_block(self.evm, self.evm.block, transaction_serialize_fn)
 
     def get_transaction_by_hash(self, transaction_hash):
         block, transaction, transaction_index = _get_transaction_by_hash(
@@ -339,7 +339,13 @@ class PyEthereum16Backend(BaseChainBackend):
             transaction_hash,
         )
         is_pending = block.number == self.evm.block.number
-        return serialize_transaction_receipt(block, transaction, transaction_index, is_pending)
+        return serialize_transaction_receipt(
+            block,
+            transaction,
+            block.get_receipt(transaction_index),
+            transaction_index,
+            is_pending,
+        )
 
     #
     # Account state

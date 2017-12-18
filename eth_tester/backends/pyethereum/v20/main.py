@@ -6,16 +6,14 @@ from semantic_version import (
     Spec,
 )
 
-from cytoolz.dicttoolz import (
-    assoc,
-)
-
 import rlp
 
 from eth_utils import (
+    is_integer,
     remove_0x_prefix,
+    to_dict,
     to_tuple,
-    encode_hex,
+    to_wei,
 )
 
 from eth_tester.constants import (
@@ -26,7 +24,6 @@ from eth_tester.constants import (
 )
 from eth_tester.exceptions import (
     BlockNotFound,
-    TransactionNotFound,
     UnknownFork,
 )
 from eth_tester.backends.base import BaseChainBackend
@@ -49,9 +46,115 @@ from eth_tester.backends.pyethereum.validation import (
     validate_transaction,
 )
 
-class PyEthereum20Backend(BaseChainBackend):
-    tester_module = None
 
+def _get_block_by_number(evm, block_number):
+    if is_integer(block_number):
+        block = evm.chain.get_block_by_number(block_number)
+        if block is None:
+            raise BlockNotFound("Block not found for block number: {0}".format(block_number))
+    elif block_number == "pending":
+        block = evm.block  # Get pending block
+    elif block_number == "latest":
+        block = evm.chain.head  # Get latest block added to chain
+    elif block_number == "earliest":
+        block = evm.chain.genesis
+    else:
+        raise BlockNotFound(
+            "Block identifier was not in a recognized format: Got "
+            "{0}".format(block_number)
+        )
+
+    return block
+
+
+EMPTY_RECEIPTS_ROOT = b'V\xe8\x1f\x17\x1b\xccU\xa6\xff\x83E\xe6\x92\xc0\xf8n\x5bH\xe0\x1b\x99l\xad\xc0\x01b/\xb5\xe3c\xb4!'
+
+
+def _get_state_by_block_hash(evm, block_hash):
+    from ethereum.messages import Receipt
+    if block_hash == evm.block.hash:
+        block = evm.block
+        state = evm.head_state
+    else:
+        block = evm.chain.get_block(block_hash)
+        state = evm.chain.mk_poststate_of_blockhash(block_hash).ephemeral_clone()
+
+    if block.header.receipts_root != EMPTY_RECEIPTS_ROOT:
+        receipt_list = rlp.decode(evm.chain.db.get(block.header.receipts_root))
+        state.receipts = [
+            rlp.decode(rlp.encode(receipt_items), Receipt)
+            for receipt_items
+            in receipt_list
+        ]
+    return state
+
+
+def _get_state_by_block_number(evm, block_number):
+    block = _get_block_by_number(evm, block_number)
+    return _get_state_by_block_hash(evm, block.hash)
+
+
+def _get_transaction_by_hash(evm, transaction_hash):
+    for index, candidate in enumerate(evm.block.transactions):
+        if transaction_hash == candidate.hash:
+            return (
+                evm.block,
+                candidate,
+                index,
+                True,
+            )
+
+    block_number, transaction_index = evm.chain.get_tx_position(transaction_hash)
+    block = _get_block_by_number(evm, block_number)
+    transaction = block.transactions[transaction_index]
+    return (
+        block,
+        transaction,
+        transaction_index,
+        False,
+    )
+
+
+def _get_key_for_account(evm, account):
+    from ethereum.tools import tester
+    if account in tester.accounts:
+        index = tester.accounts.index(account)
+        return tester.keys[index]
+    elif account in evm.extra_accounts:
+        return evm.extra_accounts[account]
+    else:
+        raise KeyError("Account {:#x} not found in known accounts")
+
+
+@to_dict
+def _format_transaction(evm, transaction):
+    if 'from' in transaction:
+        yield 'sender', _get_key_for_account(evm, transaction['from'])
+    if 'gas' in transaction:
+        yield 'startgas', transaction['gas']
+    if 'gas_price' in transaction:
+        yield 'gasprice', transaction['gas_price']
+
+    if 'to' in transaction:
+        yield 'to', transaction['to']
+    else:
+        yield 'to', b''
+
+    if 'value' in transaction:
+        yield 'value', transaction['value']
+    if 'data' in transaction:
+        yield 'data', transaction['data']
+
+
+def _send_transaction(evm, raw_transaction):
+    validate_transaction(raw_transaction)
+
+    transaction = _format_transaction(evm, raw_transaction)
+    output = evm.tx(**transaction)
+    return output
+
+
+class PyEthereum20Backend(BaseChainBackend):
     def __init__(self):
         if not is_pyethereum20_available():
             version = get_pyethereum_version()
@@ -66,9 +169,8 @@ class PyEthereum20Backend(BaseChainBackend):
                     "The `PyEthereum20Backend` requires a 2.0.0+ version of the "
                     "`ethereum` package.  Found {0}".format(version)
                 )
-        from ethereum.tools import tester
-        self.tester_module = tester
-        self.evm = tester.Chain()
+        self.reset_to_genesis()
+
     #
     # Fork block numbers
     #
@@ -111,24 +213,38 @@ class PyEthereum20Backend(BaseChainBackend):
         snapshot_block_number, snapshot_data = snapshot
         # We need to remove blocks to revert past the current one
         if self.evm.block.number > snapshot_block_number:
-            block = self._get_block_by_number(snapshot_block_number)
-            self.evm.change_head(block)
-        self.evm.revert(snapshot_data)
+            block = _get_block_by_number(self.evm, snapshot_block_number)
+            self.evm.change_head(block.hash)
+        self.evm.head_state = _get_state_by_block_hash(self.evm, block.hash)
+        chain_state = _get_state_by_block_hash(self.evm, block.hash)
+        self.evm.block = block
+
+        if b'head_hash' in chain_state.env.db:
+            # hack for bad pyethereum tester initialization code using the wrong key.
+            self.evm.chain.db.put(b'head_hash', block.header.prevhash)
+            self.evm.chain.db.put('head_hash', block.header.prevhash)
+
+        self.evm.chain = type(self.evm.chain)(
+            genesis=chain_state,
+            env=self.evm.chain.env,
+        )
 
     def reset_to_genesis(self):
-        self.evm = self.tester_module.Chain()
-        # NOTE: don't need to mine the block here after reset
-        #self.mine_blocks()
-        # NOTE: reset keys back to starting 10 elements
-        self.tester_module.accounts = self.tester_module.accounts[:-10]
-        self.tester_module.keys = self.tester_module.keys[:-10]
+        from ethereum.tools import tester
+        self.evm = tester.Chain()
+        self.evm = tester.Chain(alloc={
+            account: {'balance': to_wei(1000000, 'ether')}
+            for account
+            in tester.accounts
+        })
+        self.evm.extra_accounts = {}
 
     #
     # Meta
     #
     def time_travel(self, to_timestamp):
         assert self.evm.block.header.timestamp < to_timestamp
-        self.evm.block.header.timestamp = to_timestamp-1
+        self.evm.block.header.timestamp = to_timestamp - 1
         self.mine_blocks()
 
     #
@@ -138,183 +254,131 @@ class PyEthereum20Backend(BaseChainBackend):
     def mine_blocks(self, num_blocks=1, coinbase=None):
         if not coinbase:
             coinbase = self.get_accounts()[0]
-        # NOTE: Might solve the hack present in set_fork_block() above
-        #if 0 <= abs(self.get_fork_block(FORK_DAO) - self.evm.block.number) < 10:
-        #    self.evm.block.extra_data = encode_hex(self.evm.chain.env.config['DAO_FORK_BLKEXTRA'])
+
+        from ethereum.common import mk_receipt_sha
 
         for _ in range(num_blocks):
+            receipts = self.evm.head_state.receipts
             block = self.evm.mine(coinbase=coinbase)
+            if block is None:
+                # earlier versions of pyethereum20 didn't return the block.
+                block = self.evm.chain.get_block_by_number(self.evm.block.number - 1)
+
+            receipts_root = mk_receipt_sha(receipts)
+            self.evm.chain.db.put(receipts_root, rlp.encode(receipts))
+
+            state = _get_state_by_block_hash(self.evm, block.hash)
+            assert len(state.receipts) == len(receipts)
+
             yield block.hash
 
     #
     # Accounts
     #
+    def get_key_for_account(self, account):
+        from ethereum.tools import tester
+        if account in tester.accounts:
+            index = tester.accounts.index(account)
+            return tester.keys[index]
+        elif account in self.evm.extra_accounts:
+            return self.evm.extra_accounts[account]
+        else:
+            raise KeyError("Account {:#x} not found in known accounts")
+
     @to_tuple
     def get_accounts(self):
-        # NOTE: Had issue with this, expected bytestrings
-        return self.tester_module.accounts
+        from ethereum.tools import tester
+        for account in tester.accounts:
+            yield account
 
-    # NOTE: Added as a helper, might be more broadly useful
-    def get_key_for_account(self, account):
-        assert account in self.get_accounts(), "Account {:#x} not in accounts".format(account)
-        index = self.tester_module.accounts.index(account)
-        return self.tester_module.keys[index]
+        for account in self.evm.extra_accounts.keys():
+            yield account
 
     def add_account(self, private_key):
         account = private_key_to_address(private_key)
-        if account not in self.get_accounts():
-            self.tester_module.accounts.append(account)
-            self.tester_module.keys.append(private_key)
+        self.evm.extra_accounts[account] = private_key
 
     #
     # Chain data
     #
-    def _get_block_by_number(self, block_number):
-        if block_number == "pending":
-            block = self.evm.block # Get pending block
-        elif block_number == "latest":
-            block = self.evm.chain.head # Get latest block added to chain
-        elif block_number == "earliest":
-            block = self.evm.chain.genesis
-        else:
-            block = self.evm.chain.get_block_by_number(block_number)
-        assert block is not None, "Block not found! Given {}".format(block_number)
-        
-        # NOTE: ethereum.tester doesn't have these as bytes sometimes
-        if isinstance(block.nonce, str):
-            block.nonce = block.nonce.encode('utf-8') # This is the empty string (unmined)
-        if isinstance(block.extra_data, str):
-            block.extra_data = block.extra_data.encode('utf-8') # This is unencoded
-        return block
-        
     def get_block_by_number(self, block_number, full_transactions=False):
-        block = self._get_block_by_number(block_number)
+        block = _get_block_by_number(self.evm, block_number)
 
         if full_transactions:
             transaction_serialize_fn = serialize_transaction
         else:
             transaction_serialize_fn = serialize_transaction_hash
-        
+
         is_pending = block == self.evm.block
-        return serialize_block(block, transaction_serialize_fn, is_pending)
+        return serialize_block(self.evm, block, transaction_serialize_fn, is_pending)
 
     def get_block_by_hash(self, block_hash, full_transactions=False):
         if full_transactions:
             transaction_serialize_fn = serialize_transaction
         else:
             transaction_serialize_fn = serialize_transaction_hash
-        
+
         block = self.evm.chain.get_block(block_hash)
         assert block is not None, "Block not found! Given {:#x}".format(block_hash)
-        
+
         is_pending = block == self.evm.block
-        return serialize_block(block, transaction_serialize_fn, is_pending)
-    
-    # Internal helper for obtaining transaction artifacts for serializer.py
-    def _get_transaction_by_hash(self, transaction_hash):
-        transaction = None
-        # Start with unmined block
-        for tx in self.evm.block.transactions:
-            if transaction_hash == tx.hash:
-                transaction = tx
-                block = self.evm.block
-                tx_index = block.transactions.index(transaction)
-                is_pending = True
-                # NOTE: Hack for serializers.py to work
-                setattr(block, 'receipts', self.evm.head_state.receipts)
-                # Receipt getter
-                setattr(block, 'get_receipt', lambda tx_idx: getattr(block, 'receipts')[tx_idx])
-                break
-
-        # Then check rest of chain
-        if transaction is None:
-            blknum, tx_index = self.evm.chain.get_tx_position(transaction_hash)
-            block = self._get_block_by_number(blknum)
-            transaction = block.transactions[tx_index]
-            is_pending = False
-            state = self.get_state(block.hash)
-            # NOTE: Hack for serializers.py to work
-            #assert tx_index < len(state.receipts)
-            setattr(block, 'receipts', state.receipts)
-            # Receipt getter
-            setattr(block, 'get_receipt', lambda tx_idx: getattr(block, 'receipts')[tx_idx])
-
-
-        # Modified format for serialize functions (we combine blocks and receipts)
-        return block, transaction, tx_index, is_pending
+        return serialize_block(self.evm, block, transaction_serialize_fn, is_pending)
 
     def get_transaction_by_hash(self, transaction_hash):
-        return serialize_transaction(*self._get_transaction_by_hash(transaction_hash))
+        block, transaction, transaction_index, is_pending = _get_transaction_by_hash(
+            self.evm,
+            transaction_hash,
+        )
+        return serialize_transaction(block, transaction, transaction_index, is_pending)
 
     def get_transaction_receipt(self, transaction_hash):
-        return serialize_transaction_receipt(*self._get_transaction_by_hash(transaction_hash))
+        block, transaction, transaction_index, is_pending = _get_transaction_by_hash(
+            self.evm,
+            transaction_hash,
+        )
+        state = _get_state_by_block_hash(self.evm, block.hash)
+        return serialize_transaction_receipt(
+            block,
+            transaction,
+            state.receipts[transaction_index],
+            transaction_index,
+            is_pending,
+        )
 
     #
     # Account state
     #
     # NOTE: Added as a helper, might be more broadly useful
-    def get_state(self, block_hash=None, block_number=None):
-        # Ignore block_hash if block_number is provided
-        # (Avoids handling additional case if both are provided)
-        if block_number and block_number is not "latest":
-            block = self._get_block_by_number(block_number)
-            assert block is not None, "Could not find blocknum {}".format(block_number)
-            block_hash = block.hash
-        # Double check it's not the unmined block
-        if block_hash and block_hash is not self.evm.block.hash:
-            # Compute state at specific block
-            return self.evm.chain.mk_poststate_of_blockhash(block_hash).ephemeral_clone()
-        else:
-            # Return the most recent block if not specified
-            return self.evm.head_state
-
     def get_nonce(self, account, block_number="latest"):
-        state = self.get_state(block_number=block_number)
+        state = _get_state_by_block_number(self.evm, block_number)
         return state.get_nonce(remove_0x_prefix(account))
 
     def get_balance(self, account, block_number="latest"):
-        state = self.get_state(block_number=block_number)
+        state = _get_state_by_block_number(self.evm, block_number)
         return state.get_balance(remove_0x_prefix(account))
 
     def get_code(self, account, block_number="latest"):
-        state = self.get_state(block_number=block_number)
+        state = _get_state_by_block_number(self.evm, block_number)
         return state.get_code(remove_0x_prefix(account))
 
     #
     # Transactions
     #
     def send_transaction(self, transaction):
-        validate_transaction(transaction)
-        # Need to readjust some transaction keynames for ethereum.tester
-        if 'from' in transaction.keys():
-            transaction['sender'] = self.get_key_for_account(transaction['from'])
-            del transaction['from']
-        if 'gas' in transaction.keys():
-            transaction['startgas'] = transaction['gas']
-            del transaction['gas']
-        if 'gas_price' in transaction.keys():
-            transaction['gasprice'] = transaction['gas_price']
-            del transaction['gas_price']
-        # Apply transaction
-        self.evm.tx(**transaction)
+        _send_transaction(self.evm, transaction)
         return self.evm.last_tx.hash
 
     def estimate_gas(self, transaction):
-        validate_transaction(transaction)
         snapshot = self.take_snapshot()
-        self.send_transaction(transaction)
-        gas_used = self.evm.last_gas_used()
+        _send_transaction(self.evm, transaction)
+        gas_used = self.evm.head_state.receipts[-1].gas_used
         self.revert_to_snapshot(snapshot)
         return gas_used
 
     def call(self, transaction, block_number="latest"):
-        # Why? Just why
         if block_number != "latest":
             raise NotImplementedError("Block number must be 'latest'.")
-        validate_transaction(transaction)
         snapshot = self.take_snapshot()
-        tx_hash = self.send_transaction(transaction)
-        receipt = self.get_transaction_receipt(tx_hash)
+        output = _send_transaction(self.evm, transaction)
         self.revert_to_snapshot(snapshot)
-        # NOTE: Not sure if this what we should return
-        return receipt
+        return output
