@@ -13,9 +13,10 @@ from cytoolz.dicttoolz import (
 import rlp
 
 from eth_utils import (
+    decode_hex,
+    encode_hex,
     remove_0x_prefix,
     to_tuple,
-    encode_hex,
 )
 
 from eth_tester.constants import (
@@ -358,6 +359,20 @@ class PyEthereum16Backend(BaseChainBackend):
     #
     # Transactions
     #
+    def send_raw_transaction(self, raw_transaction_hex):
+        from ethereum import (
+            processblock,
+            tester,
+        )
+        from ethereum.transactions import Transaction
+        rlp_transaction = rlp.decode(decode_hex(raw_transaction_hex), Transaction)
+        # Manipulate `tester.state` directly
+        success, _ = processblock.apply_transaction(self.evm.block, rlp_transaction)
+        if not success:
+            raise tester.TransactionFailed
+        self.evm.last_tx = rlp_transaction
+        return rlp_transaction.hash
+
     def send_transaction(self, transaction):
         from ethereum import tester
         validate_transaction(transaction)
