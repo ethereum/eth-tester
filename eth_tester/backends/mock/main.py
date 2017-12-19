@@ -291,8 +291,8 @@ class MockBackend(BaseChainBackend):
     #
     # Transactions
     #
-    def send_raw_transaction(self, raw_transaction_hex):
-        transaction_hash = keccak(decode_hex(raw_transaction_hex))
+    def send_raw_transaction(self, raw_transaction):
+        transaction_hash = keccak(raw_transaction)
         transaction = {
             'from': _generate_dummy_address(0),
             'hash': transaction_hash,
