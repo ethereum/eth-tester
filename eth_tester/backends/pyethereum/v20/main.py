@@ -86,7 +86,7 @@ def _get_block_by_hash(evm, block_hash):
     return block_by_hash
 
 
-EMPTY_RECEIPTS_ROOT = b'V\xe8\x1f\x17\x1b\xccU\xa6\xff\x83E\xe6\x92\xc0\xf8n\x5bH\xe0\x1b\x99l\xad\xc0\x01b/\xb5\xe3c\xb4!'
+EMPTY_RECEIPTS_ROOT = b'V\xe8\x1f\x17\x1b\xccU\xa6\xff\x83E\xe6\x92\xc0\xf8n\x5bH\xe0\x1b\x99l\xad\xc0\x01b/\xb5\xe3c\xb4!'  # noqa: E501
 
 
 def _get_state_by_block_hash(evm, block_hash, ephemeral=False):
@@ -232,35 +232,19 @@ class PyEthereum20Backend(BaseChainBackend):
     # Snapshot API
     #
     def take_snapshot(self):
+        self.evm.head_state.commit()
         block = _get_block_by_number(self.evm, 'latest')
         return block.hash
 
     def revert_to_snapshot(self, snapshot):
-        #head_state_snapshot, _, _ = snapshot_data
-        #self.evm.head_state.revert(head_state_snapshot)
-
-        ## We need to remove blocks to revert past the current one
-        #if self.evm.block.number > snapshot_block_number:
-        #    block = _get_block_by_number(self.evm, snapshot_block_number)
-        #    self.evm.change_head(block.hash)
-        #self.evm.head_state = _get_state_by_block_hash(self.evm, block.hash)
-        #chain_state = _get_state_by_block_hash(self.evm, block.header.prevhash)
-        #self.evm.block = block
-
-        #if b'head_hash' in chain_state.env.db:
-        #    # hack for bad pyethereum tester initialization code using the wrong key.
-        #    self.evm.chain.db.put(b'head_hash', block.header.prevhash)
-        #    self.evm.chain.db.put('head_hash', block.header.prevhash)
-
         self.evm.change_head(snapshot)
 
         latest_state = _get_state_by_block_hash(self.evm, snapshot)
         if latest_state.block_number > 0:
             latest_state.block_number += 1
 
-        self.evm.chain = type(self.evm.chain)(
-            genesis=latest_state,
-        )
+        self.evm.chain.state = latest_state
+        self.evm.chain.head_hash = snapshot
 
     def reset_to_genesis(self):
         from ethereum.tools import tester
