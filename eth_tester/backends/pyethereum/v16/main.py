@@ -13,7 +13,6 @@ from cytoolz.dicttoolz import (
 import rlp
 
 from eth_utils import (
-    decode_hex,
     encode_hex,
     remove_0x_prefix,
     to_tuple,
@@ -365,13 +364,13 @@ class PyEthereum16Backend(BaseChainBackend):
     #
     # Transactions
     #
-    def send_raw_transaction(self, raw_transaction_hex):
+    def send_raw_transaction(self, raw_transaction):
         from ethereum import (
             processblock,
             tester,
         )
         from ethereum.transactions import Transaction
-        rlp_transaction = rlp.decode(decode_hex(raw_transaction_hex), Transaction)
+        rlp_transaction = rlp.decode(raw_transaction, Transaction)
         # Manipulate `tester.state` directly
         success, _ = processblock.apply_transaction(self.evm.block, rlp_transaction)
         if not success:

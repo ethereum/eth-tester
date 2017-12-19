@@ -355,8 +355,10 @@ class EthereumTester(object):
                     raw_log_entry = self.normalizer.normalize_inbound_log_entry(log_entry)
                     filter.add(raw_log_entry)
 
-    def send_raw_transaction(self, evm_transaction):
-        raw_transaction_hash = self.backend.send_raw_transaction(evm_transaction)
+    def send_raw_transaction(self, raw_transaction_hex):
+        self.validator.validate_inbound_raw_transaction(raw_transaction_hex)
+        raw_transaction = self.normalizer.normalize_inbound_raw_transaction(raw_transaction_hex)
+        raw_transaction_hash = self.backend.send_raw_transaction(raw_transaction)
         self.validator.validate_outbound_transaction_hash(raw_transaction_hash)
         transaction_hash = self.normalizer.normalize_outbound_transaction_hash(
             raw_transaction_hash,

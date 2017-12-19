@@ -378,6 +378,12 @@ class PyEthereum20Backend(BaseChainBackend):
     #
     # Transactions
     #
+    def send_raw_transaction(self, raw_transaction):
+        from ethereum.transactions import Transaction
+        rlp_transaction = rlp.decode(raw_transaction, Transaction)
+        self.evm.direct_tx(rlp_transaction)
+        return self.evm.last_tx.hash
+
     def send_transaction(self, transaction):
         _send_transaction(self.evm, transaction)
         return self.evm.last_tx.hash
