@@ -3,7 +3,10 @@ from __future__ import absolute_import
 import pkg_resources
 import time
 
+import rlp
+
 from eth_utils import (
+    decode_hex,
     encode_hex,
     int_to_big_endian,
     pad_left,
@@ -337,7 +340,9 @@ class PyEVMBackend(object):
             return state_db.get_balance(account)
 
     def get_code(self, account, block_number="latest"):
-        raise NotImplementedError("Must be implemented by subclasses")
+        vm = _get_vm_for_block_number(self.chain, block_number)
+        with vm.state_db(read_only=True) as state_db:
+            return state_db.get_code(account)
 
     #
     # Transactions
@@ -365,6 +370,13 @@ class PyEVMBackend(object):
         evm_transaction = self.chain.create_unsigned_transaction(**normalized_transaction)
         signed_evm_transaction = evm_transaction.as_signed_transaction(signing_key)
         return signed_evm_transaction
+
+    def send_raw_transaction(self, raw_transaction_hex):
+        vm = _get_vm_for_block_number(self.chain, "latest")
+        TransactionClass = vm.get_transaction_class()
+        evm_transaction = rlp.decode(decode_hex(raw_transaction_hex), TransactionClass)
+        self.chain.apply_transaction(evm_transaction)
+        return evm_transaction.hash
 
     def send_transaction(self, transaction):
         signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(

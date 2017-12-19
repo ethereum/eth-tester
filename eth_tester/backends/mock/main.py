@@ -14,6 +14,7 @@ from eth_utils import (
     decode_hex,
     int_to_big_endian,
     denoms,
+    keccak,
     to_canonical_address,
     to_tuple,
     is_integer,
@@ -285,11 +286,20 @@ class MockBackend(BaseChainBackend):
         try:
             return self.account_state_lookup[account]['code']
         except KeyError:
-            return 0
+            return b''
 
     #
     # Transactions
     #
+    def send_raw_transaction(self, raw_transaction_hex):
+        transaction_hash = keccak(decode_hex(raw_transaction_hex))
+        transaction = {
+            'from': _generate_dummy_address(0),
+            'hash': transaction_hash,
+            'gas': 21000,
+        }
+        return self.send_transaction(transaction)
+
     def send_transaction(self, transaction):
         full_transaction = create_transaction(
             transaction,
