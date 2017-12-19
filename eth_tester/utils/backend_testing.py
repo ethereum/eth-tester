@@ -612,6 +612,15 @@ class BaseTestBackendDirect(object):
             eth_tester.send_transaction(_transaction(value=1)),
             eth_tester.send_transaction(_transaction(value=2)),
         ])
+        common_by_hash = {
+            txn_hash: eth_tester.get_transaction_by_hash(txn_hash)['block_hash']
+            for txn_hash
+            in common_transactions
+        }
+        for txn_hash, block_hash in common_by_hash.items():
+            block = eth_tester.get_block_by_hash(block_hash)
+            assert block['transactions']
+            assert txn_hash in block['transactions']
 
         # take a snapshot
         snapshot_id = eth_tester.take_snapshot()

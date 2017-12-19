@@ -456,7 +456,7 @@ class EthereumTester(object):
             ),
             lambda v: False,
         )
-        values_to_remove = remove(is_valid_block_hash, filter.get_all())
+        values_to_remove = tuple(remove(is_valid_block_hash, filter.get_all()))
         filter.remove(*values_to_remove)
 
     def _revert_pending_transaction_filter(self, filter):

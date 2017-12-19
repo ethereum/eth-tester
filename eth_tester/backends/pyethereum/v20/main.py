@@ -24,6 +24,7 @@ from eth_tester.constants import (
 )
 from eth_tester.exceptions import (
     BlockNotFound,
+    TransactionNotFound,
     UnknownFork,
 )
 from eth_tester.backends.base import BaseChainBackend
@@ -49,6 +50,9 @@ from eth_tester.backends.pyethereum.validation import (
 
 def _get_block_by_number(evm, block_number):
     if is_integer(block_number):
+        if block_number > evm.block.number:
+            raise BlockNotFound("Block number is longer than current chain.")
+
         block = evm.chain.get_block_by_number(block_number)
         if block is None:
             raise BlockNotFound("Block not found for block number: {0}".format(block_number))
@@ -67,17 +71,37 @@ def _get_block_by_number(evm, block_number):
     return block
 
 
+def _get_block_by_hash(evm, block_hash):
+    block_by_hash = evm.chain.get_block(block_hash)
+    if block_by_hash.number == evm.block.number:
+        raise BlockNotFound(
+            "Block with hash {0} not found on chain".format(block_hash)
+        )
+
+    block_by_number = _get_block_by_number(evm, block_by_hash.number)
+    if block_by_hash.hash != block_by_number.hash:
+        raise BlockNotFound(
+            "Block with hash {0} not found on chain".format(block_hash)
+        )
+    return block_by_hash
+
+
 EMPTY_RECEIPTS_ROOT = b'V\xe8\x1f\x17\x1b\xccU\xa6\xff\x83E\xe6\x92\xc0\xf8n\x5bH\xe0\x1b\x99l\xad\xc0\x01b/\xb5\xe3c\xb4!'
 
 
-def _get_state_by_block_hash(evm, block_hash):
+def _get_state_by_block_hash(evm, block_hash, ephemeral=False):
     from ethereum.messages import Receipt
     if block_hash == evm.block.hash:
         block = evm.block
-        state = evm.head_state
+        base_state = evm.head_state
     else:
-        block = evm.chain.get_block(block_hash)
-        state = evm.chain.mk_poststate_of_blockhash(block_hash).ephemeral_clone()
+        block = _get_block_by_hash(evm, block_hash)
+        base_state = evm.chain.mk_poststate_of_blockhash(block_hash)
+
+    if ephemeral:
+        state = base_state.ephemeral_clone()
+    else:
+        state = base_state
 
     if block.header.receipts_root != EMPTY_RECEIPTS_ROOT:
         receipt_list = rlp.decode(evm.chain.db.get(block.header.receipts_root))
@@ -89,9 +113,9 @@ def _get_state_by_block_hash(evm, block_hash):
     return state
 
 
-def _get_state_by_block_number(evm, block_number):
+def _get_state_by_block_number(evm, block_number, ephemeral=False):
     block = _get_block_by_number(evm, block_number)
-    return _get_state_by_block_hash(evm, block.hash)
+    return _get_state_by_block_hash(evm, block.hash, ephemeral)
 
 
 def _get_transaction_by_hash(evm, transaction_hash):
@@ -104,15 +128,17 @@ def _get_transaction_by_hash(evm, transaction_hash):
                 True,
             )
 
-    block_number, transaction_index = evm.chain.get_tx_position(transaction_hash)
-    block = _get_block_by_number(evm, block_number)
-    transaction = block.transactions[transaction_index]
-    return (
-        block,
-        transaction,
-        transaction_index,
-        False,
-    )
+    for block_number in range(evm.chain.head.number, -1, -1):
+        block = _get_block_by_number(evm, block_number)
+        for index, transaction in enumerate(block.transactions):
+            if transaction.hash == transaction_hash:
+                return block, transaction, index, False
+    else:
+        raise TransactionNotFound(
+            "Transaction with hash {0} not found".format(
+                transaction_hash,
+            )
+        )
 
 
 def _get_key_for_account(evm, account):
@@ -206,27 +232,34 @@ class PyEthereum20Backend(BaseChainBackend):
     # Snapshot API
     #
     def take_snapshot(self):
-        block_number = self.evm.block.number
-        return (block_number, self.evm.snapshot())
+        block = _get_block_by_number(self.evm, 'latest')
+        return block.hash
 
     def revert_to_snapshot(self, snapshot):
-        snapshot_block_number, snapshot_data = snapshot
-        # We need to remove blocks to revert past the current one
-        if self.evm.block.number > snapshot_block_number:
-            block = _get_block_by_number(self.evm, snapshot_block_number)
-            self.evm.change_head(block.hash)
-        self.evm.head_state = _get_state_by_block_hash(self.evm, block.hash)
-        chain_state = _get_state_by_block_hash(self.evm, block.hash)
-        self.evm.block = block
+        #head_state_snapshot, _, _ = snapshot_data
+        #self.evm.head_state.revert(head_state_snapshot)
 
-        if b'head_hash' in chain_state.env.db:
-            # hack for bad pyethereum tester initialization code using the wrong key.
-            self.evm.chain.db.put(b'head_hash', block.header.prevhash)
-            self.evm.chain.db.put('head_hash', block.header.prevhash)
+        ## We need to remove blocks to revert past the current one
+        #if self.evm.block.number > snapshot_block_number:
+        #    block = _get_block_by_number(self.evm, snapshot_block_number)
+        #    self.evm.change_head(block.hash)
+        #self.evm.head_state = _get_state_by_block_hash(self.evm, block.hash)
+        #chain_state = _get_state_by_block_hash(self.evm, block.header.prevhash)
+        #self.evm.block = block
+
+        #if b'head_hash' in chain_state.env.db:
+        #    # hack for bad pyethereum tester initialization code using the wrong key.
+        #    self.evm.chain.db.put(b'head_hash', block.header.prevhash)
+        #    self.evm.chain.db.put('head_hash', block.header.prevhash)
+
+        self.evm.change_head(snapshot)
+
+        latest_state = _get_state_by_block_hash(self.evm, snapshot)
+        if latest_state.block_number > 0:
+            latest_state.block_number += 1
 
         self.evm.chain = type(self.evm.chain)(
-            genesis=chain_state,
-            env=self.evm.chain.env,
+            genesis=latest_state,
         )
 
     def reset_to_genesis(self):
@@ -262,13 +295,10 @@ class PyEthereum20Backend(BaseChainBackend):
             block = self.evm.mine(coinbase=coinbase)
             if block is None:
                 # earlier versions of pyethereum20 didn't return the block.
-                block = self.evm.chain.get_block_by_number(self.evm.block.number - 1)
+                block = _get_block_by_number(self.evm, self.evm.block.number - 1)
 
             receipts_root = mk_receipt_sha(receipts)
             self.evm.chain.db.put(receipts_root, rlp.encode(receipts))
-
-            state = _get_state_by_block_hash(self.evm, block.hash)
-            assert len(state.receipts) == len(receipts)
 
             yield block.hash
 
@@ -318,7 +348,7 @@ class PyEthereum20Backend(BaseChainBackend):
         else:
             transaction_serialize_fn = serialize_transaction_hash
 
-        block = self.evm.chain.get_block(block_hash)
+        block = _get_block_by_hash(self.evm, block_hash)
         assert block is not None, "Block not found! Given {:#x}".format(block_hash)
 
         is_pending = block == self.evm.block
