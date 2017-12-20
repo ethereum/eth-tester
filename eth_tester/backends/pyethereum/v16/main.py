@@ -13,7 +13,6 @@ from cytoolz.dicttoolz import (
 import rlp
 
 from eth_utils import (
-    decode_hex,
     encode_hex,
     remove_0x_prefix,
     to_tuple,
@@ -40,13 +39,13 @@ from eth_tester.utils.accounts import (
     private_key_to_address,
 )
 
-from .serializers import (
+from eth_tester.backends.pyethereum.serializers import (
     serialize_block,
     serialize_transaction,
     serialize_transaction_hash,
     serialize_transaction_receipt,
 )
-from .validation import (
+from eth_tester.backends.pyethereum.validation import (
     validate_transaction,
 )
 
@@ -302,7 +301,7 @@ class PyEthereum16Backend(BaseChainBackend):
             block_number,
         )
         is_pending = block == self.evm.block
-        return serialize_block(block, transaction_serialize_fn, is_pending)
+        return serialize_block(self.evm, block, transaction_serialize_fn, is_pending)
 
     def get_block_by_hash(self, block_hash, full_transactions=False):
         if full_transactions:
@@ -315,7 +314,7 @@ class PyEthereum16Backend(BaseChainBackend):
             block_hash,
         )
         is_pending = block == self.evm.block
-        return serialize_block(block, transaction_serialize_fn, is_pending)
+        return serialize_block(self.evm, block, transaction_serialize_fn, is_pending)
 
     def get_latest_block(self, full_transactions=False):
         if full_transactions:
@@ -323,7 +322,7 @@ class PyEthereum16Backend(BaseChainBackend):
         else:
             transaction_serialize_fn = serialize_transaction_hash
 
-        return serialize_block(self.evm.block, transaction_serialize_fn)
+        return serialize_block(self.evm, self.evm.block, transaction_serialize_fn)
 
     def get_transaction_by_hash(self, transaction_hash):
         block, transaction, transaction_index = _get_transaction_by_hash(
@@ -339,7 +338,13 @@ class PyEthereum16Backend(BaseChainBackend):
             transaction_hash,
         )
         is_pending = block.number == self.evm.block.number
-        return serialize_transaction_receipt(block, transaction, transaction_index, is_pending)
+        return serialize_transaction_receipt(
+            block,
+            transaction,
+            block.get_receipt(transaction_index),
+            transaction_index,
+            is_pending,
+        )
 
     #
     # Account state
@@ -359,13 +364,13 @@ class PyEthereum16Backend(BaseChainBackend):
     #
     # Transactions
     #
-    def send_raw_transaction(self, raw_transaction_hex):
+    def send_raw_transaction(self, raw_transaction):
         from ethereum import (
             processblock,
             tester,
         )
         from ethereum.transactions import Transaction
-        rlp_transaction = rlp.decode(decode_hex(raw_transaction_hex), Transaction)
+        rlp_transaction = rlp.decode(raw_transaction, Transaction)
         # Manipulate `tester.state` directly
         success, _ = processblock.apply_transaction(self.evm.block, rlp_transaction)
         if not success:

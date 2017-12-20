@@ -705,6 +705,7 @@ You should replace `<backend-name>` with the name of the desired testing
 backend.  Available backends are:
 
 * `pyethereum16`: [PyEthereum v1.6.x](https://pypi.python.org/pypi/ethereum/1.6.1)
+* `pyethereum20`: [PyEthereum v2.0.0+](https://pypi.python.org/pypi/ethereum) **(experimental)**
 * `py-evm`: [PyEVM (alpha)](https://pypi.python.org/pypi/py-evm) **(experimental)**
 
 ### Selecting a Backend
@@ -729,12 +730,9 @@ backend class you wish to use.
 Ethereum tester can be used with the following backends.
 
 * PyEthereum 1.6.x (default)
+* PyEthereum 2.0.0+ (experimental)
 * PyEVM (experimental)
 * MockBackend
-
-The following backends on the roadmap to be developed.
-
-* PyEthereum 2.0.x (under development)
 
 #### MockBackend
 
@@ -753,6 +751,15 @@ Uses the PyEthereum library at version `v1.6.x`
 ```python
 >>> from eth_tester import PyEthereum16Backend
 >>> t = EthereumTester(PyEthereum16Backend())
+```
+
+#### PyEthereum 2.0.0+
+
+Uses the PyEthereum library at version `v2.0.0+`
+
+```python
+>>> from eth_tester import PyEthereum20Backend
+>>> t = EthereumTester(PyEthereum20Backend())
 ```
 
 #### PyEVM (experimental)

@@ -218,3 +218,11 @@ def validate_transaction(value, txn_type):
             # TypeError is for python2
             # binascii.Error is for python3
             raise ValidationError(bad_data_message)
+
+
+def validate_raw_transaction(raw_transaction):
+    if not is_text(raw_transaction) or not is_hex(raw_transaction):
+        raise ValidationError(
+            "Raw Transaction must be a hexidecimal encoded string.  Got: "
+            "{0}".format(raw_transaction)
+        )

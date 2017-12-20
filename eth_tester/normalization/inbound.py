@@ -99,3 +99,7 @@ LOG_ENTRY_NORMALIZERS = {
 
 
 normalize_log_entry = partial(normalize_dict, normalizers=LOG_ENTRY_NORMALIZERS)
+
+
+def normalize_raw_transaction(raw_transaction_hex):
+    return decode_hex(raw_transaction_hex)

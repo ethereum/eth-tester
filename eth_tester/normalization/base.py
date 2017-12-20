@@ -23,6 +23,9 @@ class BaseNormalizer(object):
     def normalize_inbound_private_key(self, private_key):
         raise NotImplementedError("must be implemented by subclasses")
 
+    def normalize_inbound_raw_transaction(self, raw_transaction_hex):
+        raise NotImplementedError("must be implemented by subclasses")
+
     def normalize_inbound_timestamp(self, timestamp):
         raise NotImplementedError("must be implemented by subclasses")
 

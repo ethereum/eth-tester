@@ -31,7 +31,7 @@ def is_pyethereum20_available():
 
     if pyethereum_version is None:
         return False
-    elif pyethereum_version not in Spec('>=2.0.0,<2.1.0'):
+    elif pyethereum_version not in Spec('>=2.1.0,<=2.2.0'):
         return False
     else:
         return True

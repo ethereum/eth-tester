@@ -991,7 +991,11 @@ class BaseTestBackendDirect(object):
         # TODO: this should realy test something about the EVM actually using
         # the *right* rules but for now this should suffice.
         init_fork_block = eth_tester.get_fork_block(fork_name)
-        assert init_fork_block == expected_init_block
+        if fork_name == FORK_DAO:
+            # support pyethereum2.0
+            assert init_fork_block in {expected_init_block, 999999999999999}
+        else:
+            assert init_fork_block == expected_init_block
 
         eth_tester.set_fork_block(fork_name, set_to_block)
         after_set_fork_block = eth_tester.get_fork_block(fork_name)

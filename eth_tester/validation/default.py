@@ -13,6 +13,7 @@ from .inbound import (
     validate_filter_id as validate_inbound_filter_id,
     validate_filter_params as validate_inbound_filter_params,
     validate_private_key as validate_inbound_private_key,
+    validate_raw_transaction as validate_inbound_raw_transaction,
     validate_timestamp as validate_inbound_timestamp,
     validate_transaction as validate_inbound_transaction,
     validate_transaction_hash as validate_inbound_transaction_hash,
@@ -39,6 +40,7 @@ class DefaultValidator(BaseValidator):
     validate_inbound_filter_id = staticmethod(validate_inbound_filter_id)
     validate_inbound_filter_params = staticmethod(validate_inbound_filter_params)
     validate_inbound_private_key = staticmethod(validate_inbound_private_key)
+    validate_inbound_raw_transaction = staticmethod(validate_inbound_raw_transaction)
     validate_inbound_timestamp = staticmethod(validate_inbound_timestamp)
     validate_inbound_transaction = staticmethod(validate_inbound_transaction)
     validate_inbound_transaction_hash = staticmethod(validate_inbound_transaction_hash)

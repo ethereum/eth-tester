@@ -15,6 +15,7 @@ from .inbound import (
     normalize_filter_params as normalize_inbound_filter_params,
     normalize_log_entry as normalize_inbound_log_entry,
     normalize_private_key as normalize_inbound_private_key,
+    normalize_raw_transaction as normalize_inbound_raw_transaction,
     normalize_transaction as normalize_inbound_transaction,
 )
 from .outbound import (
@@ -38,6 +39,7 @@ class DefaultNormalizer(BaseNormalizer):
     normalize_inbound_filter_params = staticmethod(normalize_inbound_filter_params)
     normalize_inbound_log_entry = staticmethod(normalize_inbound_log_entry)
     normalize_inbound_private_key = staticmethod(normalize_inbound_private_key)
+    normalize_inbound_raw_transaction = staticmethod(normalize_inbound_raw_transaction)
     normalize_inbound_timestamp = staticmethod(identity)
     normalize_inbound_transaction = staticmethod(normalize_inbound_transaction)
     normalize_inbound_transaction_hash = staticmethod(decode_hex)

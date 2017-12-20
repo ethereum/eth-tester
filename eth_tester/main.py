@@ -355,8 +355,10 @@ class EthereumTester(object):
                     raw_log_entry = self.normalizer.normalize_inbound_log_entry(log_entry)
                     filter.add(raw_log_entry)
 
-    def send_raw_transaction(self, evm_transaction):
-        raw_transaction_hash = self.backend.send_raw_transaction(evm_transaction)
+    def send_raw_transaction(self, raw_transaction_hex):
+        self.validator.validate_inbound_raw_transaction(raw_transaction_hex)
+        raw_transaction = self.normalizer.normalize_inbound_raw_transaction(raw_transaction_hex)
+        raw_transaction_hash = self.backend.send_raw_transaction(raw_transaction)
         self.validator.validate_outbound_transaction_hash(raw_transaction_hash)
         transaction_hash = self.normalizer.normalize_outbound_transaction_hash(
             raw_transaction_hash,
@@ -456,7 +458,7 @@ class EthereumTester(object):
             ),
             lambda v: False,
         )
-        values_to_remove = remove(is_valid_block_hash, filter.get_all())
+        values_to_remove = tuple(remove(is_valid_block_hash, filter.get_all()))
         filter.remove(*values_to_remove)
 
     def _revert_pending_transaction_filter(self, filter):
