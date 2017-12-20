@@ -26,7 +26,7 @@ def is_pyethereum16_available():
         return True
 
 
-def is_pyethereum20_available():
+def is_pyethereum21_available():
     pyethereum_version = get_pyethereum_version()
 
     if pyethereum_version is None:
