@@ -705,7 +705,7 @@ You should replace `<backend-name>` with the name of the desired testing
 backend.  Available backends are:
 
 * `pyethereum16`: [PyEthereum v1.6.x](https://pypi.python.org/pypi/ethereum/1.6.1)
-* `pyethereum20`: [PyEthereum v2.0.0+](https://pypi.python.org/pypi/ethereum) **(experimental)**
+* `pyethereum20`: [PyEthereum v2.1.0+](https://pypi.python.org/pypi/ethereum)
 * `py-evm`: [PyEVM (alpha)](https://pypi.python.org/pypi/py-evm) **(experimental)**
 
 ### Selecting a Backend
