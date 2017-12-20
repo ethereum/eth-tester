@@ -120,6 +120,11 @@ def create_transaction(transaction, block, transaction_index, is_pending, overri
     else:
         yield 'value', transaction.get('value', 0)
 
+    if 'nonce' in overrides:
+        yield 'nonce', overrides['nonce']
+    else:
+        yield 'nonce', transaction.get('nonce', 0)
+
     if 'v' in overrides:
         yield 'v', overrides['v']
     else:

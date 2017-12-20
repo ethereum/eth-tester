@@ -198,16 +198,24 @@ def validate_transaction(value, txn_type):
 
     if 'from' in value:
         validate_account(value['from'])
+
     if 'to' in value and value['to'] != '':
         validate_account(value['to'])
+    elif 'to' in value and value['to'] == '':
+        validate_text(value['to'])
+
     if 'gas' in value:
         validate_uint256(value['gas'])
+
     if 'gas_price' in value:
         validate_uint256(value['gas_price'])
+
     if 'value' in value:
         validate_uint256(value['value'])
+
     if 'nonce' in value:
         validate_uint256(value['nonce'])
+
     if 'data' in value:
         bad_data_message = (
             "Transaction data must be a hexidecimal encoded string.  Got: "
