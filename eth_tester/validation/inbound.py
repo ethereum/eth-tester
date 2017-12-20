@@ -152,13 +152,16 @@ TRANSACTION_KEYS = {
     'gas_price',
     'value',
     'data',
+    'nonce',
 }
 
-ALLOWED_TRANSACTION_TYPES = {
-    'send',
-    'call',
-    'estimate',
+TRANSACTION_TYPE_INFO = {
+    'send': TRANSACTION_KEYS,
+    'call': TRANSACTION_KEYS.difference({'nonce'}),
+    'estimate': TRANSACTION_KEYS.difference({'nonce'}),
 }
+
+ALLOWED_TRANSACTION_TYPES = set(TRANSACTION_TYPE_INFO.keys())
 
 
 def validate_transaction(value, txn_type):
@@ -167,11 +170,13 @@ def validate_transaction(value, txn_type):
     if not is_dict(value):
         raise ValidationError("Transaction must be a dictionary.  Got: {0}".format(type(value)))
 
-    unknown_keys = tuple(sorted(set(value.keys()).difference(TRANSACTION_KEYS)))
+    unknown_keys = tuple(sorted(set(value.keys()).difference(
+        TRANSACTION_TYPE_INFO[txn_type],
+    )))
     if unknown_keys:
         raise ValidationError(
             "Only the keys '{0}' are allowed.  Got extra keys: '{1}'".format(
-                "/".join(tuple(sorted(TRANSACTION_KEYS))),
+                "/".join(tuple(sorted(TRANSACTION_TYPE_INFO[txn_type]))),
                 "/".join(unknown_keys),
             )
         )
@@ -201,6 +206,8 @@ def validate_transaction(value, txn_type):
         validate_uint256(value['gas_price'])
     if 'value' in value:
         validate_uint256(value['value'])
+    if 'nonce' in value:
+        validate_uint256(value['nonce'])
     if 'data' in value:
         bad_data_message = (
             "Transaction data must be a hexidecimal encoded string.  Got: "

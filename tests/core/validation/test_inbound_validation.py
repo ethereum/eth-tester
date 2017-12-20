@@ -176,7 +176,13 @@ def test_filter_params_input_validation(validator, filter_params, is_valid):
 
 
 @to_dict
-def _make_transaction(_from=None, to=None, gas=None, gas_price=None, value=None, data=None):
+def _make_transaction(_from=None,
+                      to=None,
+                      gas=None,
+                      gas_price=None,
+                      value=None,
+                      data=None,
+                      nonce=None):
     if _from is not None:
         yield 'from', _from
     if to is not None:
@@ -189,6 +195,8 @@ def _make_transaction(_from=None, to=None, gas=None, gas_price=None, value=None,
         yield 'value', value
     if data is not None:
         yield 'data', data
+    if nonce is not None:
+        yield 'nonce', nonce
 
 
 @pytest.mark.parametrize(
@@ -208,11 +216,66 @@ def _make_transaction(_from=None, to=None, gas=None, gas_price=None, value=None,
         (_make_transaction(_from=ADDRESS_A, to='', gas=21000, data=''), True),
         (_make_transaction(_from=ADDRESS_A, to='', gas=21000, data='0x'), True),
         (_make_transaction(_from=ADDRESS_A, to='', gas=21000, data='0x0'), False),
+        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=0), True),
+        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=1), True),
+        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=-1), False),
+        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce='0x1'), False),
+        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce='arst'), False),
+        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=True), False),
+        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=1.0), False),
+        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=-1), False),
     ),
 )
-def test_transaction_input_validation(validator, transaction, is_valid):
+def test_transaction_send_input_validation(validator, transaction, is_valid):
     if is_valid:
         validator.validate_inbound_transaction(transaction, txn_type='send')
     else:
         with pytest.raises(ValidationError):
             validator.validate_inbound_transaction(transaction, txn_type='send')
+
+
+@pytest.mark.parametrize(
+    "transaction,is_valid",
+    (
+        ({}, False),
+        (_make_transaction(to=ADDRESS_B), False),
+        (_make_transaction(gas=21000), False),
+        (_make_transaction(_from=ADDRESS_A), True),
+        (_make_transaction(_from=ADDRESS_A, nonce=1), False),
+        (_make_transaction(_from=ADDRESS_A, gas=21000), True),
+        (_make_transaction(_from=ADDRESS_A, gas=True), False),
+        (_make_transaction(_from=ADDRESS_A, to=ADDRESS_B), True),
+        (_make_transaction(_from=ADDRESS_A, to=ADDRESS_B, gas=21000), True),
+        (_make_transaction(_from=''), False),
+        (_make_transaction(_from='', to=ADDRESS_B), False),
+        (_make_transaction(_from='', gas=21000), False),
+        (_make_transaction(_from='', to=ADDRESS_B, gas=21000), False),
+        (_make_transaction(_from=ADDRESS_A, to='', gas=21000), True),
+        (_make_transaction(_from=ADDRESS_A, to=''), True),
+        (_make_transaction(_from=ADDRESS_A, to=b''), False),
+        (_make_transaction(_from=decode_hex(ADDRESS_A), to=ADDRESS_B, gas=21000), False),
+        (_make_transaction(_from=decode_hex(ADDRESS_A), to=ADDRESS_B), False),
+        (_make_transaction(_from=ADDRESS_A, to=decode_hex(ADDRESS_B), gas=21000), False),
+        (_make_transaction(_from=ADDRESS_A, to=decode_hex(ADDRESS_B)), False),
+        (_make_transaction(_from=ADDRESS_A, to='', value=0), True),
+        (_make_transaction(_from=ADDRESS_A, to='', value=-1), False),
+        (_make_transaction(_from=ADDRESS_A, to='', data=''), True),
+        (_make_transaction(_from=ADDRESS_A, to='', data=b''), False),
+        (_make_transaction(_from=ADDRESS_A, to='', data='0x'), True),
+        (_make_transaction(_from=ADDRESS_A, to='', data=b'0x'), False),
+        (_make_transaction(_from=ADDRESS_A, to='', data='0x0'), False),
+        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, value=0), True),
+        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, value=-1), False),
+        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, data=''), True),
+        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, data='0x'), True),
+        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, data='0x0'), False),
+    ),
+)
+def test_transaction_call_and_estimate_gas_input_validation(validator, transaction, is_valid):
+    if is_valid:
+        validator.validate_inbound_transaction(transaction, txn_type='call')
+        validator.validate_inbound_transaction(transaction, txn_type='estimate')
+    else:
+        with pytest.raises(ValidationError):
+            validator.validate_inbound_transaction(transaction, txn_type='call')
+            validator.validate_inbound_transaction(transaction, txn_type='estimate')
