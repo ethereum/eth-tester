@@ -30,7 +30,7 @@ from eth_tester.exceptions import (
 from eth_tester.backends.base import BaseChainBackend
 from eth_tester.backends.pyethereum.utils import (
     get_pyethereum_version,
-    is_pyethereum20_available,
+    is_pyethereum21_available,
 )
 
 from eth_tester.utils.accounts import (
@@ -180,19 +180,19 @@ def _send_transaction(evm, raw_transaction):
     return output
 
 
-class PyEthereum20Backend(BaseChainBackend):
+class PyEthereum21Backend(BaseChainBackend):
     def __init__(self):
-        if not is_pyethereum20_available():
+        if not is_pyethereum21_available():
             version = get_pyethereum_version()
             if version is None:
                 raise pkg_resources.DistributionNotFound(
                     "The `ethereum` package is not available.  The "
-                    "`PyEthereum20Backend` requires a 2.0.0+ version of the "
+                    "`PyEthereum21Backend` requires a 2.0.0+ version of the "
                     "ethereum package to be installed."
                 )
             elif version not in Spec('>=2.0.0,<2.2.0'):
                 raise pkg_resources.DistributionNotFound(
-                    "The `PyEthereum20Backend` requires a 2.0.0+ version of the "
+                    "The `PyEthereum21Backend` requires a 2.0.0+ version of the "
                     "`ethereum` package.  Found {0}".format(version)
                 )
         self.reset_to_genesis()
@@ -278,7 +278,7 @@ class PyEthereum20Backend(BaseChainBackend):
             receipts = self.evm.head_state.receipts
             block = self.evm.mine(coinbase=coinbase)
             if block is None:
-                # earlier versions of pyethereum20 didn't return the block.
+                # earlier versions of pyethereum21 didn't return the block.
                 block = _get_block_by_number(self.evm, self.evm.block.number - 1)
 
             receipts_root = mk_receipt_sha(receipts)

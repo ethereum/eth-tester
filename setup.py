@@ -27,8 +27,8 @@ setup(
         'pyethereum16': [
             "ethereum>=1.6.0,<2.0.0",
         ],
-        'pyethereum20': [
-            "ethereum>=2.0.0,<2.2.0",
+        'pyethereum21': [
+            "ethereum>=2.1.0,<2.2.0",
         ],
         'py-evm': [
             "py-evm==0.2.0a7",

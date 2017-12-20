@@ -14,7 +14,7 @@ from eth_tester.utils.encoding import (
 )
 
 from eth_tester.backends.pyethereum.utils import (
-    is_pyethereum20_available,
+    is_pyethereum21_available,
 )
 
 
@@ -28,13 +28,13 @@ def serialize_transaction_receipt(block,
     elif hasattr(block, 'transactions'):
         origin_gas = block.transactions[0].startgas
     else:
-        raise Exception('Invariant: failed to match pyethereum16 or pyethereum20 API')
+        raise Exception('Invariant: failed to match pyethereum16 or pyethereum21 API')
 
     if transaction.creates is not None:
         contract_addr = transaction.creates
     elif transaction.to == b'\x00' * 20:
         from ethereum.utils import mk_contract_address
-        # pyethereum20 doesn't correctly detect this as a create address.
+        # pyethereum21 doesn't correctly detect this as a create address.
         contract_addr = mk_contract_address(transaction.sender, transaction.nonce)
     else:
         contract_addr = None
@@ -105,7 +105,7 @@ def serialize_block(evm, block, transaction_serialize_fn, is_pending):
         transaction_serialize_fn(block, transaction, transaction_index, is_pending)
         for transaction_index, transaction
         in enumerate(
-            block.transactions if is_pyethereum20_available() else block.transaction_list
+            block.transactions if is_pyethereum21_available() else block.transaction_list
         )
     ]
 
@@ -116,7 +116,7 @@ def serialize_block(evm, block, transaction_serialize_fn, is_pending):
     elif hasattr(evm, 'chain') and hasattr(evm.chain, 'get_score'):
         total_difficulty = evm.chain.get_score(block)
     else:
-        raise Exception('Invariant: failed to match pyethereum16 or pyethereum20 API')
+        raise Exception('Invariant: failed to match pyethereum16 or pyethereum21 API')
 
     return {
         "number": block.number,
