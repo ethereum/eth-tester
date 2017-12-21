@@ -17,11 +17,11 @@ setup(
     url='https://github.com/ethereum/eth-tester',
     include_package_data=True,
     install_requires=[
-        "cytoolz==0.8.2",
-        "eth-utils>=0.7.1",
-        "rlp>=0.5.1",
-        "semantic_version>=2.6.0",
-        "eth-keys>=0.1.0-beta.3",
+        "cytoolz>=0.9.0,<1.0.0",
+        "eth-utils>=0.7.1,<1.0.0",
+        "rlp>=0.6.0,<1.0.0",
+        "semantic_version>=2.6.0,<3.0.0",
+        "eth-keys>=0.1.0b3,<0.2.0",
     ],
     extras_require={
         'pyethereum16': [
@@ -31,7 +31,7 @@ setup(
             "ethereum>=2.1.0,<2.2.0",
         ],
         'py-evm': [
-            "py-evm==0.2.0a7",
+            "py-evm>=0.2.0a7,<0.3.0",
         ],
     },
     py_modules=['eth_tester'],
