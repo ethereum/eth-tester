@@ -33,6 +33,15 @@ def is_32byte_hex_string(value):
 
 
 @to_tuple
+def normalize_topic_list(topics):
+    for topic in topics:
+        if topic is None:
+            yield None
+        else:
+            yield decode_hex(topic)
+
+
+@to_tuple
 def normalize_filter_params(from_block, to_block, address, topics):
     yield from_block
     yield to_block
@@ -53,14 +62,10 @@ def normalize_filter_params(from_block, to_block, address, topics):
     if topics is None:
         yield topics
     elif is_flat_topic_array(topics):
-        yield tuple(
-            decode_hex(item)
-            for item
-            in topics
-        )
+        yield normalize_topic_list(topics)
     elif all(is_flat_topic_array(item) for item in topics):
         yield tuple(
-            tuple(decode_hex(sub_item) for sub_item in item)
+            normalize_topic_list(item)
             for item
             in topics
         )
