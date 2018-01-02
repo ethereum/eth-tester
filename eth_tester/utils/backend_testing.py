@@ -833,6 +833,7 @@ class BaseTestBackendDirect(object):
             [None, 1],
             [[], 1],
             [['0xf70fe689e290d8ce2b2a388ac28db36fbb0e16a6d89c6804c461f65a1b40bb15'], 1],
+            [['0xf70fe689e290d8ce2b2a388ac28db36fbb0e16a6d89c6804c461f65a1b40bb15', None], 1],
             [
                 [
                     '0xf70fe689e290d8ce2b2a388ac28db36fbb0e16a6d89c6804c461f65a1b40bb15',
@@ -852,6 +853,7 @@ class BaseTestBackendDirect(object):
             'filter None',
             'filter []',
             'filter Event only',
+            'filter Event and None',
             'filter Event and argument',
             'filter Event and wrong argument',
         ],
