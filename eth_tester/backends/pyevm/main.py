@@ -173,9 +173,9 @@ def _get_transaction_by_hash(chain, transaction_hash):
 def _execute_and_revert_transaction(chain, transaction, block_number="latest"):
     vm = _get_vm_for_block_number(chain, block_number, mutable=True)
 
-    snapshot = vm.snapshot()
+    snapshot = vm.state.snapshot()
     computation = vm.execute_transaction(transaction)
-    vm.revert(snapshot)
+    vm.state.revert(snapshot)
     return computation
 
 
@@ -330,17 +330,17 @@ class PyEVMBackend(object):
     #
     def get_nonce(self, account, block_number="latest"):
         vm = _get_vm_for_block_number(self.chain, block_number)
-        with vm.state_db(read_only=True) as state_db:
+        with vm.state.state_db(read_only=True) as state_db:
             return state_db.get_nonce(account)
 
     def get_balance(self, account, block_number="latest"):
         vm = _get_vm_for_block_number(self.chain, block_number)
-        with vm.state_db(read_only=True) as state_db:
+        with vm.state.state_db(read_only=True) as state_db:
             return state_db.get_balance(account)
 
     def get_code(self, account, block_number="latest"):
         vm = _get_vm_for_block_number(self.chain, block_number)
-        with vm.state_db(read_only=True) as state_db:
+        with vm.state.state_db(read_only=True) as state_db:
             return state_db.get_code(account)
 
     #
