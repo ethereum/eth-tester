@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import functools
 import pkg_resources
 import time
 
@@ -194,6 +195,19 @@ def _get_vm_for_block_number(chain, block_number, mutable=False):
     return vm
 
 
+def standardize_exceptions(to_wrap):
+    @functools.wraps(to_wrap)
+    def wrapper(self, *args, **kwargs):
+        try:
+            return to_wrap(self, *args, **kwargs)
+        except tuple(self._standardized_exceptions.keys()) as e:
+            try:
+                raise self._standardized_exceptions[type(e)] from e
+            except KeyError:
+                raise TypeError("could not look up standardized exception %r" % e) from e
+    return wrapper
+
+
 class PyEVMBackend(object):
     chain = None
     fork_blocks = None
@@ -207,6 +221,13 @@ class PyEVMBackend(object):
                 "`PyEVMBackend` requires py-evm to be installed and importable. "
                 "Please install the `py-evm` library."
             )
+        else:
+            from evm.exceptions import (
+                BlockNotFound as EVMBlockNotFound,
+            )
+            self._standardized_exceptions = {
+                EVMBlockNotFound: BlockNotFound,
+            }
 
         self.reset_to_genesis()
 
@@ -303,11 +324,13 @@ class PyEVMBackend(object):
     #
     # Chain data
     #
+    @standardize_exceptions
     def get_block_by_number(self, block_number, full_transaction=True):
         block = _get_block_by_number(self.chain, block_number)
         is_pending = block.number == self.chain.get_block().number
         return serialize_block(block, full_transaction, is_pending)
 
+    @standardize_exceptions
     def get_block_by_hash(self, block_hash, full_transaction=True):
         block = _get_block_by_hash(self.chain, block_hash)
         is_pending = block.number == self.chain.get_block().number
