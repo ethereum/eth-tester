@@ -58,6 +58,10 @@ GENESIS_INITIAL_ALLOC = {}
 
 SUPPORTED_FORKS = {FORK_HOMESTEAD, FORK_DAO, FORK_ANTI_DOS, FORK_STATE_CLEANUP}
 
+MINIMUM_GAS_ESTIMATE = 30000
+# A buffer of 1.1 would mean allocate 10% more gas than estimated
+GAS_ESTIMATE_BUFFER = 1.5
+
 
 def get_default_account_state():
     return {
@@ -384,15 +388,21 @@ class PyEVMBackend(object):
         self.chain.apply_transaction(signed_evm_transaction)
         return signed_evm_transaction.hash
 
+    def _max_available_gas(self):
+        header = self.chain.get_block().header
+        return header.gas_limit - header.gas_used
+
     def estimate_gas(self, transaction):
         # TODO: move this to the VM level (and use binary search approach)
         signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
-            transaction,
+            dict(transaction, gas=self._max_available_gas()),
         )
 
-        computation = _execute_and_revert_transaction(self.chain, signed_evm_transaction)
+        computation = _execute_and_revert_transaction(self.chain, signed_evm_transaction, 'pending')
 
-        return computation.gas_meter.start_gas - computation.gas_meter.gas_remaining
+        gas_used = computation.gas_meter.start_gas - computation.gas_meter.gas_remaining
+
+        return int(max(gas_used * GAS_ESTIMATE_BUFFER, MINIMUM_GAS_ESTIMATE))
 
     def call(self, transaction, block_number="latest"):
         # TODO: move this to the VM level.
