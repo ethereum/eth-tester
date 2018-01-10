@@ -801,7 +801,7 @@ The canonical format is intended for low level handling by backends.
 * 32 byte hashes: `bytes` of length 32
 * Arbitrary length strings: `bytes`
 * Addresses: `bytes` of length 20
-* Integers: `int` (or `long` in python 2.7)
+* Integers: `int`
 * Array Types: `tuple`
 
 ### Normal Formats
@@ -811,7 +811,7 @@ The normal format is intended for use by end users.
 * 32 byte hashes: `0x` prefixed hexidecimal encoded text strings (not byte strings)
 * Arbitrary length strings: `0x` prefixed hexidecimal encoded text strings (not byte strings)
 * Addresses: `0x` prefixed and EIP55 checksummed hexidecimal encoded text strings (not byte strings)
-* Integers: `int` (or `long` in python 2.7)
+* Integers: `int`
 * Array Types: `tuple`
 
 

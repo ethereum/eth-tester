@@ -7,8 +7,6 @@ matrix:
     - python: "3.5"
       env: TOX_POSARGS="-e flake8"
     # core
-    - python: "2.7"
-      env: TOX_POSARGS="-e py27-core"
     - python: "3.4"
       env: TOX_POSARGS="-e py34-core"
     - python: "3.5"
@@ -16,8 +14,6 @@ matrix:
     - python: "3.6"
       env: TOX_POSARGS="-e py36-core"
     # pyethereum 1.6.x
-    - python: "2.7"
-      env: TOX_POSARGS="-e py27-pyethereum16"
     - python: "3.4"
       env: TOX_POSARGS="-e py34-pyethereum16"
     - python: "3.5"
