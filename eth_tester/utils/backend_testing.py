@@ -45,6 +45,7 @@ from eth_tester.constants import (
 )
 from eth_tester.exceptions import (
     AccountLocked,
+    BlockNotFound,
     FilterNotFound,
     ValidationError,
 )
@@ -408,6 +409,10 @@ class BaseTestBackendDirect(object):
         eth_tester.mine_blocks(10)
         block = eth_tester.get_block_by_number('pending')
         assert block['number'] == 10 + origin_block_number
+
+    def test_get_block_missing(self, eth_tester):
+        with pytest.raises(BlockNotFound):
+            eth_tester.get_block_by_hash('0x' + '00' * 32)
 
     # Transactions
     def test_get_transaction_by_hash(self, eth_tester):
