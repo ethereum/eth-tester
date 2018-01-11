@@ -5,6 +5,7 @@ import pytest
 from cytoolz.dicttoolz import (
     merge,
     assoc,
+    dissoc,
 )
 from hypothesis import (
     strategies as st,
@@ -473,7 +474,7 @@ class BaseTestBackendDirect(object):
             math_address,
             'increment',
         )
-        gas_estimation = eth_tester.estimate_gas(estimate_call_math_transaction)
+        gas_estimation = eth_tester.estimate_gas(dissoc(estimate_call_math_transaction, 'gas'))
         call_math_transaction = assoc(estimate_call_math_transaction, 'gas', gas_estimation)
         transaction_hash = eth_tester.send_transaction(call_math_transaction)
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
