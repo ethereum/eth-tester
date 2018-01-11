@@ -409,12 +409,16 @@ class PyEthereum16Backend(BaseChainBackend):
         validate_transaction(transaction)
 
         snapshot = self.take_snapshot()
-        _estimate_evm_transaction(
-            tester_module=tester,
-            evm=self.evm,
-            transaction=transaction,
-        )
-        txn_hash = self.evm.last_tx.hash
-        receipt = self.get_transaction_receipt(txn_hash)
-        self.revert_to_snapshot(snapshot)
+        try:
+            _estimate_evm_transaction(
+                tester_module=tester,
+                evm=self.evm,
+                transaction=transaction,
+            )
+            txn_hash = self.evm.last_tx.hash
+            receipt = self.get_transaction_receipt(txn_hash)
+        except tester.TransactionFailed as e:
+            raise e
+        finally:
+            self.revert_to_snapshot(snapshot)
         return receipt['gas_used']
