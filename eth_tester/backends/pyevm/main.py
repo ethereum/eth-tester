@@ -29,12 +29,23 @@ from eth_tester.exceptions import (
     UnknownFork,
 )
 
+from eth_tester.utils.formatting import (
+    replace_exceptions,
+)
+
 from .serializers import (
     serialize_block,
     serialize_transaction,
     serialize_transaction_receipt,
 )
 from .utils import is_pyevm_available
+
+if is_pyevm_available():
+    from evm.exceptions import (
+        BlockNotFound as EVMBlockNotFound,
+    )
+else:
+    EVMBlockNotFound = None
 
 
 ZERO_ADDRESS = 20 * b'\x00'
@@ -303,6 +314,7 @@ class PyEVMBackend(object):
     #
     # Chain data
     #
+    @replace_exceptions({EVMBlockNotFound: BlockNotFound})
     def get_block_by_number(self, block_number, full_transaction=True):
         block = _get_block_by_number(self.chain, block_number)
         is_pending = block.number == self.chain.get_block().number
