@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import functools
+
 from cytoolz.functoolz import (
     curry,
 )
@@ -71,3 +73,20 @@ def apply_key_map(key_mappings, value):
             yield key_mappings[key], item
         else:
             yield key, item
+
+
+def replace_exceptions(old_to_new_exceptions):
+    old_exceptions = tuple(old_to_new_exceptions.keys())
+
+    def decorator(to_wrap):
+        @functools.wraps(to_wrap)
+        def wrapper(*args, **kwargs):
+            try:
+                return to_wrap(*args, **kwargs)
+            except old_exceptions as e:
+                try:
+                    raise old_to_new_exceptions[type(e)] from e
+                except KeyError:
+                    raise TypeError("could not look up new exception to use for %r" % e) from e
+        return wrapper
+    return decorator

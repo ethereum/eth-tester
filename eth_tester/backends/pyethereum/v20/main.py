@@ -73,7 +73,7 @@ def _get_block_by_number(evm, block_number):
 
 def _get_block_by_hash(evm, block_hash):
     block_by_hash = evm.chain.get_block(block_hash)
-    if block_by_hash.number == evm.block.number:
+    if block_by_hash is None or block_by_hash.number == evm.block.number:
         raise BlockNotFound(
             "Block with hash {0} not found on chain".format(block_hash)
         )
