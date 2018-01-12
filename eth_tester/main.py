@@ -145,12 +145,16 @@ class EthereumTester(object):
         self.validator.validate_inbound_timestamp(to_timestamp)
         # make sure we are not traveling back in time as this is not possible.
         current_timestamp = self.get_block_by_number('pending')['timestamp']
-        if to_timestamp <= current_timestamp:
+        if to_timestamp == current_timestamp:
+            # no change, return immediately
+            return
+        elif to_timestamp < current_timestamp:
             raise ValidationError(
                 "Space time continuum distortion detected.  Traveling backwards "
                 "in time violates interdimensional ordinance 31415-926."
             )
-        self.backend.time_travel(to_timestamp)
+        else:
+            self.backend.time_travel(to_timestamp)
 
     #
     # Accounts

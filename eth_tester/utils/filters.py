@@ -6,7 +6,7 @@ from eth_utils import (
     is_integer,
 )
 
-from .six import (
+from queue import (
     Queue,
     Empty,
 )
