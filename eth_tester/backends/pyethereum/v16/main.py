@@ -396,12 +396,16 @@ class PyEthereum16Backend(BaseChainBackend):
             raise NotImplementedError("Block number must be 'latest'.")
 
         snapshot = self.take_snapshot()
-        output = _call_evm_transaction(
-            tester_module=tester,
-            evm=self.evm,
-            transaction=transaction,
-        )
-        self.revert_to_snapshot(snapshot)
+        try:
+            output = _call_evm_transaction(
+                tester_module=tester,
+                evm=self.evm,
+                transaction=transaction,
+            )
+        except tester.TransactionFailed as e:
+            raise e
+        finally:
+            self.revert_to_snapshot(snapshot)
         return output
 
     def estimate_gas(self, transaction):
