@@ -5,6 +5,7 @@ import pytest
 from cytoolz.dicttoolz import (
     merge,
     assoc,
+    dissoc,
 )
 from hypothesis import (
     strategies as st,
@@ -57,6 +58,18 @@ from .math_contract import (
     _deploy_math,
     _make_call_math_transaction,
     _decode_math_result,
+)
+from .throws_contract import (
+    _deploy_throws,
+    _make_call_throws_transaction,
+    _decode_throws_result,
+)
+from eth_tester.backends.pyethereum.utils import (
+    is_pyethereum21_available,
+    is_pyethereum16_available,
+)
+from eth_tester.backends.pyevm.utils import (
+    is_pyevm_available,
 )
 
 
@@ -473,11 +486,111 @@ class BaseTestBackendDirect(object):
             math_address,
             'increment',
         )
+        if not is_pyevm_available():  # py-evm requires the gas parameter
+            estimate_call_math_transaction = dissoc(estimate_call_math_transaction, 'gas')
         gas_estimation = eth_tester.estimate_gas(estimate_call_math_transaction)
         call_math_transaction = assoc(estimate_call_math_transaction, 'gas', gas_estimation)
         transaction_hash = eth_tester.send_transaction(call_math_transaction)
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
         assert receipt['gas_used'] == gas_estimation
+
+    def test_can_call_after_exception_raised_calling_pyethereum(self, eth_tester):
+        self.skip_if_no_evm_execution()
+        if is_pyevm_available():
+            pytest.skip('Test only relevant for pyethereum.')
+        elif is_pyethereum16_available():
+            from ethereum.tester import TransactionFailed
+        elif is_pyethereum21_available():
+            from ethereum.tools.tester import TransactionFailed
+
+        throws_address = _deploy_throws(eth_tester)
+        call_will_throw_transaction = _make_call_throws_transaction(
+            eth_tester,
+            throws_address,
+            'willThrow',
+        )
+        with pytest.raises(TransactionFailed):
+            eth_tester.call(call_will_throw_transaction)
+
+        call_value_transaction = _make_call_throws_transaction(
+            eth_tester,
+            throws_address,
+            'value',
+        )
+        raw_result = eth_tester.call(call_value_transaction)
+        result = _decode_throws_result('value', raw_result)
+        assert result == (1,)
+
+    def test_can_call_after_exception_raised_calling_pyevm(self, eth_tester):
+        self.skip_if_no_evm_execution()
+        if not is_pyevm_available():
+            pytest.skip('Test only relevant for py-evm.')
+
+        throws_address = _deploy_throws(eth_tester)
+        call_will_throw_transaction = _make_call_throws_transaction(
+            eth_tester,
+            throws_address,
+            'willThrow',
+        )
+        eth_tester.call(call_will_throw_transaction)
+
+        call_value_transaction = _make_call_throws_transaction(
+            eth_tester,
+            throws_address,
+            'value',
+        )
+        raw_result = eth_tester.call(call_value_transaction)
+        result = _decode_throws_result('value', raw_result)
+        assert result == (1,)
+
+    def test_can_estimate_gas_after_exception_raised_estimating_gas_pyethereum(self, eth_tester):
+        self.skip_if_no_evm_execution()
+        if is_pyevm_available():
+            pytest.skip('Test only relevant for pyethereum.')
+        elif is_pyethereum16_available():
+            from ethereum.tester import TransactionFailed
+        elif is_pyethereum21_available():
+            from ethereum.tools.tester import TransactionFailed
+
+        throws_address = _deploy_throws(eth_tester)
+        call_will_throw_transaction = _make_call_throws_transaction(
+            eth_tester,
+            throws_address,
+            'willThrow',
+        )
+        with pytest.raises(TransactionFailed):
+            eth_tester.estimate_gas(dissoc(call_will_throw_transaction, 'gas'))
+
+        call_set_value_transaction = _make_call_throws_transaction(
+            eth_tester,
+            throws_address,
+            'setValue',
+            fn_args=(2,),
+        )
+        gas_estimation = eth_tester.estimate_gas(dissoc(call_set_value_transaction, 'gas'))
+        assert gas_estimation
+
+    def test_can_estimate_gas_after_exception_raised_estimating_gas_pyevm(self, eth_tester):
+        self.skip_if_no_evm_execution()
+        if not is_pyevm_available():
+            pytest.skip('Test only relevant for py-evm.')
+
+        throws_address = _deploy_throws(eth_tester)
+        call_will_throw_transaction = _make_call_throws_transaction(
+            eth_tester,
+            throws_address,
+            'willThrow',
+        )
+        eth_tester.estimate_gas(call_will_throw_transaction)
+
+        call_set_value_transaction = _make_call_throws_transaction(
+            eth_tester,
+            throws_address,
+            'setValue',
+            fn_args=(2,),
+        )
+        gas_estimation = eth_tester.estimate_gas(call_set_value_transaction)
+        assert gas_estimation
 
     #
     # Snapshot and Revert
