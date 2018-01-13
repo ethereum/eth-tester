@@ -28,6 +28,7 @@ from eth_tester.exceptions import (
     BlockNotFound,
     TransactionNotFound,
     UnknownFork,
+    TransactionFailed,
 )
 from eth_tester.backends.base import BaseChainBackend
 from eth_tester.backends.pyethereum.utils import (
@@ -48,6 +49,17 @@ from eth_tester.backends.pyethereum.serializers import (
 from eth_tester.backends.pyethereum.validation import (
     validate_transaction,
 )
+from eth_tester.utils.formatting import (
+    replace_exceptions,
+)
+
+
+if is_pyethereum16_available():
+    from ethereum.tester import (
+        TransactionFailed as Pyeth16TransactionFailed,
+    )
+else:
+    Pyeth16TransactionFailed = Exception
 
 
 #
@@ -388,6 +400,7 @@ class PyEthereum16Backend(BaseChainBackend):
         )
         return self.evm.last_tx.hash
 
+    @replace_exceptions({Pyeth16TransactionFailed: TransactionFailed})
     def call(self, transaction, block_number="latest"):
         from ethereum import tester
         validate_transaction(transaction)
@@ -402,12 +415,13 @@ class PyEthereum16Backend(BaseChainBackend):
                 evm=self.evm,
                 transaction=transaction,
             )
-        except tester.TransactionFailed as e:
+        except TransactionFailed as e:
             raise e
         finally:
             self.revert_to_snapshot(snapshot)
         return output
 
+    @replace_exceptions({Pyeth16TransactionFailed: TransactionFailed})
     def estimate_gas(self, transaction):
         from ethereum import tester
         validate_transaction(transaction)
@@ -421,7 +435,7 @@ class PyEthereum16Backend(BaseChainBackend):
             )
             txn_hash = self.evm.last_tx.hash
             receipt = self.get_transaction_receipt(txn_hash)
-        except tester.TransactionFailed as e:
+        except TransactionFailed as e:
             raise e
         finally:
             self.revert_to_snapshot(snapshot)
