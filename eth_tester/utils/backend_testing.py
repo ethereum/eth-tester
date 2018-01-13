@@ -48,8 +48,8 @@ from eth_tester.exceptions import (
     BlockNotFound,
     FilterNotFound,
     ValidationError,
+    TransactionFailed,
 )
-
 from .emitter_contract import (
     _deploy_emitter,
     _call_emitter,
@@ -64,10 +64,6 @@ from .throws_contract import (
     _deploy_throws,
     _make_call_throws_transaction,
     _decode_throws_result,
-)
-from eth_tester.backends.pyethereum.utils import (
-    is_pyethereum21_available,
-    is_pyethereum16_available,
 )
 from eth_tester.backends.pyevm.utils import (
     is_pyevm_available,
@@ -497,14 +493,10 @@ class BaseTestBackendDirect(object):
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
         assert receipt['gas_used'] == gas_estimation
 
-    def test_can_call_after_exception_raised_calling_pyethereum(self, eth_tester):
+    def test_can_call_after_exception_raised_calling(self, eth_tester):
         self.skip_if_no_evm_execution()
         if is_pyevm_available():
             pytest.skip('Test only relevant for pyethereum.')
-        elif is_pyethereum16_available():
-            from ethereum.tester import TransactionFailed
-        elif is_pyethereum21_available():
-            from ethereum.tools.tester import TransactionFailed
 
         throws_address = _deploy_throws(eth_tester)
         call_will_throw_transaction = _make_call_throws_transaction(
@@ -525,6 +517,11 @@ class BaseTestBackendDirect(object):
         assert result == (1,)
 
     def test_can_call_after_exception_raised_calling_pyevm(self, eth_tester):
+        """
+        This is testing broken behavior. Py-evm currently does not throw a TransactionFailed
+        exception upon a failed transaction. When py-evm is fixed, then this test should be
+        deleted, and we should remove the pyevm skip in the general version of the test above.
+        """
         self.skip_if_no_evm_execution()
         if not is_pyevm_available():
             pytest.skip('Test only relevant for py-evm.')
@@ -546,14 +543,10 @@ class BaseTestBackendDirect(object):
         result = _decode_throws_result('value', raw_result)
         assert result == (1,)
 
-    def test_can_estimate_gas_after_exception_raised_estimating_gas_pyethereum(self, eth_tester):
+    def test_can_estimate_gas_after_exception_raised_estimating_gas(self, eth_tester):
         self.skip_if_no_evm_execution()
         if is_pyevm_available():
             pytest.skip('Test only relevant for pyethereum.')
-        elif is_pyethereum16_available():
-            from ethereum.tester import TransactionFailed
-        elif is_pyethereum21_available():
-            from ethereum.tools.tester import TransactionFailed
 
         throws_address = _deploy_throws(eth_tester)
         call_will_throw_transaction = _make_call_throws_transaction(
@@ -574,6 +567,11 @@ class BaseTestBackendDirect(object):
         assert gas_estimation
 
     def test_can_estimate_gas_after_exception_raised_estimating_gas_pyevm(self, eth_tester):
+        """
+        This is testing broken behavior. Py-evm currently does not throw a TransactionFailed
+        exception upon a failed transaction. When py-evm is fixed, then this test should be
+        deleted, and we should remove the pyevm skip in the general version of the test above.
+        """
         self.skip_if_no_evm_execution()
         if not is_pyevm_available():
             pytest.skip('Test only relevant for py-evm.')
