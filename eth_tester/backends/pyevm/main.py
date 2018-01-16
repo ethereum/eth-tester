@@ -27,6 +27,7 @@ from eth_tester.exceptions import (
     BlockNotFound,
     TransactionNotFound,
     UnknownFork,
+    TransactionFailed,
 )
 
 from eth_tester.utils.formatting import (
@@ -411,6 +412,8 @@ class PyEVMBackend(object):
         )
 
         computation = _execute_and_revert_transaction(self.chain, signed_evm_transaction, 'pending')
+        if computation.is_error:
+            raise TransactionFailed(str(computation._error))
 
         gas_used = computation.gas_meter.start_gas - computation.gas_meter.gas_remaining
 
@@ -423,4 +426,7 @@ class PyEVMBackend(object):
         )
 
         computation = _execute_and_revert_transaction(self.chain, signed_evm_transaction)
+        if computation.is_error:
+            raise TransactionFailed(str(computation._error))
+
         return computation.output
