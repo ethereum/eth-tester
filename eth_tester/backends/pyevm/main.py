@@ -321,6 +321,7 @@ class PyEVMBackend(object):
         is_pending = block.number == self.chain.get_block().number
         return serialize_block(block, full_transaction, is_pending)
 
+    @replace_exceptions({EVMBlockNotFound: BlockNotFound})
     def get_block_by_hash(self, block_hash, full_transaction=True):
         block = _get_block_by_hash(self.chain, block_hash)
         is_pending = block.number == self.chain.get_block().number
