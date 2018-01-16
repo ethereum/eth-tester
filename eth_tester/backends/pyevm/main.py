@@ -34,10 +34,6 @@ from eth_tester.utils.formatting import (
     replace_exceptions,
 )
 
-from eth_tester.utils.formatting import (
-    replace_exceptions,
-)
-
 from .serializers import (
     serialize_block,
     serialize_transaction,
