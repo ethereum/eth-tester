@@ -59,7 +59,7 @@ if is_pyethereum16_available():
         TransactionFailed as Pyeth16TransactionFailed,
     )
 else:
-    Pyeth16TransactionFailed = Exception
+    Pyeth16TransactionFailed = None
 
 
 #

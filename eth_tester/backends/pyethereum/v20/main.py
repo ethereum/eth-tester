@@ -57,7 +57,7 @@ if is_pyethereum21_available():
         TransactionFailed as Pyeth21TransactionFailed,
     )
 else:
-    Pyeth21TransactionFailed = Exception
+    Pyeth21TransactionFailed = None
 
 
 def _get_block_by_number(evm, block_number):
