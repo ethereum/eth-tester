@@ -24,3 +24,7 @@ class UnknownFork(Exception):
 
 class AccountLocked(Exception):
     pass
+
+
+class TransactionFailed(Exception):
+    pass

@@ -26,6 +26,7 @@ from eth_tester.exceptions import (
     BlockNotFound,
     TransactionNotFound,
     UnknownFork,
+    TransactionFailed,
 )
 from eth_tester.backends.base import BaseChainBackend
 from eth_tester.backends.pyethereum.utils import (
@@ -46,6 +47,17 @@ from eth_tester.backends.pyethereum.serializers import (
 from eth_tester.backends.pyethereum.validation import (
     validate_transaction,
 )
+from eth_tester.utils.formatting import (
+    replace_exceptions,
+)
+
+
+if is_pyethereum21_available():
+    from ethereum.tools.tester import (
+        TransactionFailed as Pyeth21TransactionFailed,
+    )
+else:
+    Pyeth21TransactionFailed = None
 
 
 def _get_block_by_number(evm, block_number):
@@ -388,6 +400,7 @@ class PyEthereum21Backend(BaseChainBackend):
         _send_transaction(self.evm, transaction)
         return self.evm.last_tx.hash
 
+    @replace_exceptions({Pyeth21TransactionFailed: TransactionFailed})
     def estimate_gas(self, transaction):
         snapshot = self.take_snapshot()
         _send_transaction(self.evm, transaction)
@@ -395,6 +408,7 @@ class PyEthereum21Backend(BaseChainBackend):
         self.revert_to_snapshot(snapshot)
         return gas_used
 
+    @replace_exceptions({Pyeth21TransactionFailed: TransactionFailed})
     def call(self, transaction, block_number="latest"):
         if block_number != "latest":
             raise NotImplementedError("Block number must be 'latest'.")
