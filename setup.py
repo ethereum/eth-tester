@@ -31,7 +31,7 @@ setup(
             "ethereum>=2.1.0,<2.2.0",
         ],
         'py-evm': [
-            "py-evm>=0.2.0a8,<0.3.0",
+            "py-evm>=0.2.0a9,<0.3.0",
         ],
     },
     py_modules=['eth_tester'],
