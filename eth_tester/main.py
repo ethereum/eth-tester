@@ -606,3 +606,59 @@ class EthereumTester(object):
 
         for item in filter.get_all():
             yield normalize_fn(item)
+
+    @to_tuple
+    def get_logs_directly(self, from_block=None, to_block=None, address=None, topics=None):
+        self.validator.validate_inbound_filter_params(
+            from_block=from_block,
+            to_block=to_block,
+            address=address,
+            topics=topics,
+        )
+        (
+            raw_from_block,
+            raw_to_block,
+            raw_address,
+            raw_topics,
+        ) = self.normalizer.normalize_inbound_filter_params(
+            from_block=from_block,
+            to_block=to_block,
+            address=address,
+            topics=topics,
+        )
+
+        raw_filter_params = {
+            'from_block': raw_from_block,
+            'to_block': raw_to_block,
+            'addresses': raw_address,
+            'topics': raw_topics,
+        }
+        filter_fn = partial(
+            check_if_log_matches,
+            **raw_filter_params,
+        )
+        current_filter = Filter(
+            filter_params=raw_filter_params,
+            filter_fn=filter_fn,
+        )
+        if raw_from_block is None:
+            raw_from_block = 'latest'
+        if isinstance(raw_from_block, int):
+            lower_bound = raw_from_block
+        else:
+            lower_bound = self.get_block_by_number(raw_from_block)['number']
+        if raw_to_block is None:
+            raw_to_block = 'latest'
+        if isinstance(raw_to_block, int):
+            upper_bound = raw_to_block
+        else:
+            upper_bound = self.get_block_by_number(raw_to_block)['number']
+        for block_number in range(lower_bound, upper_bound + 1):
+            block = self.get_block_by_number(block_number)
+            for transaction_hash in block['transactions']:
+                receipt = self.get_transaction_receipt(transaction_hash)
+                for log_entry in receipt['logs']:
+                    raw_log_entry = self.normalizer.normalize_inbound_log_entry(log_entry)
+                    current_filter.add(raw_log_entry)
+        for item in current_filter.get_all():
+            yield self.normalizer.normalize_outbound_log_entry(item)

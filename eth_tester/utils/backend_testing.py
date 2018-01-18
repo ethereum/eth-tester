@@ -942,7 +942,9 @@ class BaseTestBackendDirect(object):
 
         specific_logs_changes = eth_tester.get_only_filter_changes(filter_event)
         specific_logs_all = eth_tester.get_all_filter_logs(filter_event)
-        assert len(specific_logs_changes) == len(specific_logs_all) == expected
+        specific_direct_logs_all = eth_tester.get_logs_directly(topics=filter_topics)
+        assert len(specific_logs_changes) == len(specific_logs_all) == \
+            len(specific_direct_logs_all) == expected
 
     def test_log_filter_includes_old_logs(self, eth_tester):
         """
@@ -974,7 +976,8 @@ class BaseTestBackendDirect(object):
 
         logs_changes = eth_tester.get_only_filter_changes(filter_any_id)
         logs_all = eth_tester.get_all_filter_logs(filter_any_id)
-        assert len(logs_changes) == len(logs_all) == 2
+        direct_logs_all = eth_tester.get_logs_directly(from_block=0)
+        assert len(logs_changes) == len(logs_all) == len(direct_logs_all) == 2
 
     def test_delete_filter(self, eth_tester):
         self.skip_if_no_evm_execution()
