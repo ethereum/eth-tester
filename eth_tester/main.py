@@ -608,7 +608,7 @@ class EthereumTester(object):
             yield normalize_fn(item)
 
     @to_tuple
-    def get_logs_directly(self, from_block=None, to_block=None, address=None, topics=None):
+    def get_logs(self, from_block=None, to_block=None, address=None, topics=None):
         self.validator.validate_inbound_filter_params(
             from_block=from_block,
             to_block=to_block,
