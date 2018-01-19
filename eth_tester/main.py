@@ -642,13 +642,13 @@ class EthereumTester(object):
             filter_params=raw_filter_params,
             filter_fn=filter_fn,
         )
-        
+
         # Set from/to block defaults
         if raw_from_block is None:
             raw_from_block = 'latest'
         if raw_to_block is None:
             raw_to_block = 'latest'
-            
+
         # Determine lower bound for block range.
         if isinstance(raw_from_block, int):
             lower_bound = raw_from_block
@@ -660,7 +660,7 @@ class EthereumTester(object):
             upper_bound = raw_to_block
         else:
             upper_bound = self.get_block_by_number(raw_to_block)['number']
-        
+
         # Enumerate the blocks in the block range to find all log entries which match.
         for block_number in range(lower_bound, upper_bound + 1):
             block = self.get_block_by_number(block_number)
@@ -669,7 +669,7 @@ class EthereumTester(object):
                 for log_entry in receipt['logs']:
                     raw_log_entry = self.normalizer.normalize_inbound_log_entry(log_entry)
                     log_filter.add(raw_log_entry)
-        
+
         # Return the matching log entries
         for item in log_filter.get_all():
             yield self.normalizer.normalize_outbound_log_entry(item)
