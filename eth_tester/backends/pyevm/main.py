@@ -207,7 +207,7 @@ def _get_vm_for_block_number(chain, block_number, mutable=False):
     return vm
 
 
-def _insert_transaction_to_pending(chain, transaction):
+def _insert_transaction_to_pending_block(chain, transaction):
     _, block = chain.get_vm().apply_transaction(transaction)
     chain.header = block.header
 
@@ -405,14 +405,14 @@ class PyEVMBackend(object):
         vm = _get_vm_for_block_number(self.chain, "latest")
         TransactionClass = vm.get_transaction_class()
         evm_transaction = rlp.decode(raw_transaction, TransactionClass)
-        _insert_transaction_to_pending(self.chain, evm_transaction)
+        _insert_transaction_to_pending_block(self.chain, evm_transaction)
         return evm_transaction.hash
 
     def send_transaction(self, transaction):
         signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
             transaction,
         )
-        _insert_transaction_to_pending(self.chain, signed_evm_transaction)
+        _insert_transaction_to_pending_block(self.chain, signed_evm_transaction)
         return signed_evm_transaction.hash
 
     def _max_available_gas(self):
