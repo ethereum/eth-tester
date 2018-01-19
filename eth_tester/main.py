@@ -627,6 +627,7 @@ class EthereumTester(object):
             topics=topics,
         )
 
+        # Setup the filter object
         raw_filter_params = {
             'from_block': raw_from_block,
             'to_block': raw_to_block,
@@ -637,28 +638,38 @@ class EthereumTester(object):
             check_if_log_matches,
             **raw_filter_params,
         )
-        current_filter = Filter(
+        log_filter = Filter(
             filter_params=raw_filter_params,
             filter_fn=filter_fn,
         )
+        
+        # Set from/to block defaults
         if raw_from_block is None:
             raw_from_block = 'latest'
+        if raw_to_block is None:
+            raw_to_block = 'latest'
+            
+        # Determine lower bound for block range.
         if isinstance(raw_from_block, int):
             lower_bound = raw_from_block
         else:
             lower_bound = self.get_block_by_number(raw_from_block)['number']
-        if raw_to_block is None:
-            raw_to_block = 'latest'
+
+        # Determine upper bound for block range.
         if isinstance(raw_to_block, int):
             upper_bound = raw_to_block
         else:
             upper_bound = self.get_block_by_number(raw_to_block)['number']
+        
+        # Enumerate the blocks in the block range to find all log entries which match.
         for block_number in range(lower_bound, upper_bound + 1):
             block = self.get_block_by_number(block_number)
             for transaction_hash in block['transactions']:
                 receipt = self.get_transaction_receipt(transaction_hash)
                 for log_entry in receipt['logs']:
                     raw_log_entry = self.normalizer.normalize_inbound_log_entry(log_entry)
-                    current_filter.add(raw_log_entry)
-        for item in current_filter.get_all():
+                    log_filter.add(raw_log_entry)
+        
+        # Return the matching log entries
+        for item in log_filter.get_all():
             yield self.normalizer.normalize_outbound_log_entry(item)
