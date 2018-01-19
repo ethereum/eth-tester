@@ -189,9 +189,10 @@ def _get_transaction_by_hash(chain, transaction_hash):
 def _execute_and_revert_transaction(chain, transaction, block_number="latest"):
     vm = _get_vm_for_block_number(chain, block_number, mutable=True)
 
-    snapshot = vm.state.snapshot()
-    computation = vm.execute_transaction(transaction)
-    vm.state.revert(snapshot)
+    state = vm.state
+    snapshot = state.snapshot()
+    computation, _ = state.execute_transaction(transaction)
+    state.revert(snapshot)
     return computation
 
 
@@ -204,6 +205,11 @@ def _get_vm_for_block_number(chain, block_number, mutable=False):
             block.header._mutable = True
     vm = chain.get_vm(header=block.header)
     return vm
+
+
+def _insert_transaction_to_pending(chain, transaction):
+    _, block = chain.get_vm().apply_transaction(transaction)
+    chain.header = block.header
 
 
 class PyEVMBackend(object):
@@ -341,7 +347,14 @@ class PyEVMBackend(object):
             transaction_hash,
         )
         is_pending = block.number == self.chain.get_block().number
-        return serialize_transaction_receipt(block, transaction, transaction_index, is_pending)
+        block_receipts = block.get_receipts(self.chain.chaindb)
+        return serialize_transaction_receipt(
+            block,
+            block_receipts,
+            transaction,
+            transaction_index,
+            is_pending,
+        )
 
     #
     # Account state
@@ -392,14 +405,14 @@ class PyEVMBackend(object):
         vm = _get_vm_for_block_number(self.chain, "latest")
         TransactionClass = vm.get_transaction_class()
         evm_transaction = rlp.decode(raw_transaction, TransactionClass)
-        self.chain.apply_transaction(evm_transaction)
+        _insert_transaction_to_pending(self.chain, evm_transaction)
         return evm_transaction.hash
 
     def send_transaction(self, transaction):
         signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
             transaction,
         )
-        self.chain.apply_transaction(signed_evm_transaction)
+        _insert_transaction_to_pending(self.chain, signed_evm_transaction)
         return signed_evm_transaction.hash
 
     def _max_available_gas(self):
