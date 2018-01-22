@@ -81,8 +81,8 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
     }
 
 
-def serialize_transaction_receipt(block, transaction, transaction_index, is_pending):
-    receipt = block.receipts[transaction_index]
+def serialize_transaction_receipt(block, receipts, transaction, transaction_index, is_pending):
+    receipt = receipts[transaction_index]
 
     if transaction.to == b'':
         contract_addr = to_canonical_address(generate_contract_address(
@@ -95,7 +95,7 @@ def serialize_transaction_receipt(block, transaction, transaction_index, is_pend
     if transaction_index == 0:
         origin_gas = 0
     else:
-        origin_gas = receipt.gas_used - block.receipts[transaction_index - 1].gas_used
+        origin_gas = receipt.gas_used - receipts[transaction_index - 1].gas_used
 
     return {
         "transaction_hash": transaction.hash,
