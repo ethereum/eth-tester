@@ -422,8 +422,12 @@ class PyEVMBackend(object):
 
     def call(self, transaction, block_number="latest"):
         # TODO: move this to the VM level.
+        defaulted_transaction = transaction.copy()
+        if 'gas' not in defaulted_transaction:
+            defaulted_transaction['gas'] = self._max_available_gas()
+
         signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
-            transaction,
+            defaulted_transaction,
         )
 
         computation = _execute_and_revert_transaction(self.chain, signed_evm_transaction)
