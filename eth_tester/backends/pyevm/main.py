@@ -191,7 +191,7 @@ def _execute_and_revert_transaction(chain, transaction, block_number="latest"):
 
     state = vm.state
     snapshot = state.snapshot()
-    computation, _ = state.execute_transaction(transaction)
+    computation = state.execute_transaction(transaction)
     state.revert(snapshot)
     return computation
 
@@ -249,11 +249,11 @@ class PyEVMBackend(object):
     def revert_to_snapshot(self, snapshot):
         block = self.chain.get_block_by_hash(snapshot)
         if block.number > 0:
-            self.chain.chaindb.set_as_canonical_chain_head(block.header)
+            self.chain.chaindb._set_as_canonical_chain_head(block.header)
             self.chain = self.chain.get_chain_at_block_parent(block)
             self.chain.import_block(block)
         else:
-            self.chain.chaindb.set_as_canonical_chain_head(block.header)
+            self.chain.chaindb._set_as_canonical_chain_head(block.header)
             self.chain = self.chain.from_genesis_header(self.chain.chaindb, block.header)
 
     def reset_to_genesis(self):
