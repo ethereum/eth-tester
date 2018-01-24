@@ -191,7 +191,7 @@ def _execute_and_revert_transaction(chain, transaction, block_number="latest"):
 
     state = vm.state
     snapshot = state.snapshot()
-    computation, _ = state.execute_transaction(transaction)
+    computation = state.execute_transaction(transaction)
     state.revert(snapshot)
     return computation
 
