@@ -14,6 +14,7 @@ TRANSACTION_KEYS = {
     'gas_price',
     'value',
     'data',
+    'nonce',
 }
 
 

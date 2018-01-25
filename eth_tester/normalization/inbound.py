@@ -82,6 +82,7 @@ TRANSACTION_NORMALIZERS = {
     'to': to_canonical_address,
     'gas': identity,
     'gas_price': identity,
+    'nonce': identity,
     'value': identity,
     'data': decode_hex,
 }
