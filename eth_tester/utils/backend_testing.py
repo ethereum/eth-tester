@@ -79,6 +79,9 @@ SIMPLE_TRANSACTION = {
 }
 
 
+TRANSACTION_WTH_NONCE = assoc(SIMPLE_TRANSACTION, 'nonce', 0)
+
+
 BLOCK_KEYS = {
     "number",
     "hash",
@@ -115,8 +118,8 @@ class BaseTestBackendDirect(object):
     #
     # Utils
     #
-    def _send_and_check_transaction(self, eth_tester, _from):
-        transaction = assoc(SIMPLE_TRANSACTION, 'from', _from)
+    def _send_and_check_transaction(self, eth_tester, test_transaction, _from):
+        transaction = assoc(test_transaction, 'from', _from)
 
         txn_hash = eth_tester.send_transaction(transaction)
         txn = eth_tester.get_transaction_by_hash(txn_hash)
@@ -165,7 +168,7 @@ class BaseTestBackendDirect(object):
             'gas_price': 1,
         })
 
-        self._send_and_check_transaction(eth_tester, account)
+        self._send_and_check_transaction(eth_tester, SIMPLE_TRANSACTION, account)
 
     def test_add_account_with_password(self, eth_tester):
         account = eth_tester.add_account(PK_A, 'test-password')
@@ -186,15 +189,15 @@ class BaseTestBackendDirect(object):
         })
 
         with pytest.raises(AccountLocked):
-            self._send_and_check_transaction(eth_tester, account)
+            self._send_and_check_transaction(eth_tester, SIMPLE_TRANSACTION, account)
 
         eth_tester.unlock_account(account, 'test-password')
-        self._send_and_check_transaction(eth_tester, account)
+        self._send_and_check_transaction(eth_tester, SIMPLE_TRANSACTION, account)
 
         eth_tester.lock_account(account)
 
         with pytest.raises(AccountLocked):
-            self._send_and_check_transaction(eth_tester, account)
+            self._send_and_check_transaction(eth_tester, SIMPLE_TRANSACTION, account)
 
     def test_get_balance_of_listed_accounts(self, eth_tester):
         for account in eth_tester.get_accounts():
@@ -268,11 +271,22 @@ class BaseTestBackendDirect(object):
         with pytest.raises(rlp.exceptions.DecodingError):
             eth_tester.send_raw_transaction(invalid_transaction_hex)
 
-    def test_send_transaction(self, eth_tester):
+    @pytest.mark.parametrize(
+        'test_transaction',
+        (
+            SIMPLE_TRANSACTION,
+            TRANSACTION_WTH_NONCE,
+        ),
+        ids=[
+            'Simple transaction',
+            'Transaction with nonce',
+        ],
+    )
+    def test_send_transaction(self, eth_tester, test_transaction):
         accounts = eth_tester.get_accounts()
         assert accounts, "No accounts available for transaction sending"
 
-        self._send_and_check_transaction(eth_tester, accounts[0])
+        self._send_and_check_transaction(eth_tester, test_transaction, accounts[0])
 
     def test_auto_mine_transactions_enabled(self, eth_tester):
         eth_tester.mine_blocks()
