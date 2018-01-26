@@ -79,6 +79,9 @@ SIMPLE_TRANSACTION = {
 }
 
 
+TRANSACTION_WTH_NONCE = assoc(SIMPLE_TRANSACTION, 'nonce', 1)
+
+
 BLOCK_KEYS = {
     "number",
     "hash",
@@ -272,13 +275,7 @@ class BaseTestBackendDirect(object):
         'test_transaction',
         (
             SIMPLE_TRANSACTION,
-            {
-                "to": BURN_ADDRESS,
-                "gas_price": 1,
-                "value": 0,
-                "gas": 21000,
-                "nonce": 1,
-            },
+            TRANSACTION_WTH_NONCE,
         ),
         ids=[
             'Simple transaction',
