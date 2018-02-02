@@ -18,10 +18,10 @@ setup(
     include_package_data=True,
     install_requires=[
         "cytoolz>=0.9.0,<1.0.0",
-        "eth-utils>=0.7.1,<1.0.0",
+        "eth-utils>=1.0.0-beta.1,<2.0.0",
         "rlp>=0.6.0,<1.0.0",
         "semantic_version>=2.6.0,<3.0.0",
-        "eth-keys>=0.1.0b3,<0.2.0",
+        "eth-keys>=0.2.0b1,<0.3.0",
     ],
     extras_require={
         'pyethereum16': [
