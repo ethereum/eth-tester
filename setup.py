@@ -34,6 +34,7 @@ setup(
             "py-evm==0.2.0a10",  # evm is very high velocity and might change API at each alpha
         ],
     },
+    setup_requires=['setuptools-markdown'],
     py_modules=['eth_tester'],
     license="MIT",
     zip_safe=False,
