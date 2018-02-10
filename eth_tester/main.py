@@ -4,6 +4,7 @@ import collections
 import itertools
 import operator
 import time
+import functools
 
 from cytoolz.itertoolz import (
     remove,
@@ -46,6 +47,9 @@ from eth_tester.utils.filters import (
     Filter,
     check_if_log_matches,
 )
+from eth_tester.utils.transactions import (
+    extract_valid_transaction_params,
+)
 
 
 def backend_proxy_method(backend_method_name):
@@ -62,6 +66,29 @@ def get_default_fork_blocks():
         'FORK_ANTI_DOS': 0,
         'FORK_STATE_CLEANUP': 0,
     }
+
+
+def handle_auto_mining(func):
+    @functools.wraps(func)
+    def func_wrapper(self, *args, **kwargs):
+        if not self.auto_mine_transactions:
+            snapshot = self.take_snapshot()
+
+        transaction_hash = func(self, *args, **kwargs)
+
+        if self.auto_mine_transactions:
+            self.mine_block()
+        else:
+            pending_transaction = self.get_transaction_by_hash(transaction_hash)
+            pending_transaction = extract_valid_transaction_params(pending_transaction)
+            # Remove any pending transactions with the same nonce
+            self._pending_transactions = [tx for tx in self._pending_transactions
+                                          if pending_transaction['nonce'] != tx['nonce']]
+            self._pending_transactions.append(pending_transaction)
+            self.revert_to_snapshot(snapshot)
+
+        return transaction_hash
+    return func_wrapper
 
 
 class EthereumTester(object):
@@ -110,6 +137,8 @@ class EthereumTester(object):
     _log_filters = None
     _block_filters = None
     _pending_transaction_filters = None
+
+    _pending_transactions = []
 
     _snapshot_counter = None
     _snapshots = None
@@ -285,6 +314,9 @@ class EthereumTester(object):
     #
     def enable_auto_mine_transactions(self):
         self.auto_mine_transactions = True
+        sent_transaction_hashes = [self.send_transaction(tx) for tx in self._pending_transactions]
+        self._pending_transactions.clear()
+        return sent_transaction_hashes
 
     def disable_auto_mine_transactions(self):
         self.auto_mine_transactions = False
@@ -359,6 +391,7 @@ class EthereumTester(object):
                     raw_log_entry = self.normalizer.normalize_inbound_log_entry(log_entry)
                     filter.add(raw_log_entry)
 
+    @handle_auto_mining
     def send_raw_transaction(self, raw_transaction_hex):
         self.validator.validate_inbound_raw_transaction(raw_transaction_hex)
         raw_transaction = self.normalizer.normalize_inbound_raw_transaction(raw_transaction_hex)
@@ -367,15 +400,10 @@ class EthereumTester(object):
         transaction_hash = self.normalizer.normalize_outbound_transaction_hash(
             raw_transaction_hash,
         )
-
         self._handle_filtering_for_transaction(transaction_hash)
-
-        # mine the transaction if auto-transaction-mining is enabled.
-        if self.auto_mine_transactions:
-            self.mine_block()
-
         return transaction_hash
 
+    @handle_auto_mining
     def send_transaction(self, transaction):
         self.validator.validate_inbound_transaction(transaction, txn_type='send')
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
@@ -396,10 +424,6 @@ class EthereumTester(object):
         )
 
         self._handle_filtering_for_transaction(transaction_hash)
-
-        # mine the transaction if auto-transaction-mining is enabled.
-        if self.auto_mine_transactions:
-            self.mine_block()
 
         return transaction_hash
 
