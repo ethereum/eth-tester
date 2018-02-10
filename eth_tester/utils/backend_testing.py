@@ -49,6 +49,7 @@ from eth_tester.exceptions import (
     FilterNotFound,
     ValidationError,
     TransactionFailed,
+    TransactionNotFound,
 )
 from .emitter_contract import (
     _deploy_emitter,
@@ -452,15 +453,15 @@ class BaseTestBackendDirect(object):
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
         assert receipt['transaction_hash'] == transaction_hash
 
-    def test_get_transaction_receipt_for_unmined_transaction(self, eth_tester):
+    def test_get_transaction_receipt_for_unmined_transaction_raises(self, eth_tester):
         eth_tester.disable_auto_mine_transactions()
         transaction_hash = eth_tester.send_transaction({
             "from": eth_tester.get_accounts()[0],
             "to": BURN_ADDRESS,
             "gas": 21000,
         })
-        receipt = eth_tester.get_transaction_receipt(transaction_hash)
-        assert receipt['block_number'] is None
+        with pytest.raises(TransactionNotFound):
+            eth_tester.get_transaction_receipt(transaction_hash)
 
     def test_call_return13(self, eth_tester):
         self.skip_if_no_evm_execution()
