@@ -82,7 +82,8 @@ def handle_auto_mining(func):
             pending_transaction = self.get_transaction_by_hash(transaction_hash)
             # Remove any pending transactions with the same nonce
             self._pending_transactions = [tx for tx in self._pending_transactions
-                                          if pending_transaction['nonce'] != tx['nonce']]
+                                          if not (pending_transaction['nonce'] == tx['nonce']
+                                                  and pending_transaction['from'] == tx['from'])]
             self._pending_transactions.append(pending_transaction)
             self.revert_to_snapshot(snapshot)
 
