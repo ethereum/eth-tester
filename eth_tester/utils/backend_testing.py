@@ -461,6 +461,17 @@ class BaseTestBackendDirect(object):
         transaction = eth_tester.get_transaction_by_hash(transaction_hash)
         assert transaction['hash'] == transaction_hash
 
+    def test_get_transaction_by_hash_for_unmined_transaction(self, eth_tester):
+        eth_tester.disable_auto_mine_transactions()
+        transaction_hash = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+        })
+        transaction = eth_tester.get_transaction_by_hash(transaction_hash)
+        assert transaction['hash'] == transaction_hash
+        assert transaction['block_hash'] is None
+
     def test_get_transaction_receipt_for_mined_transaction(self, eth_tester):
         transaction_hash = eth_tester.send_transaction({
             "from": eth_tester.get_accounts()[0],

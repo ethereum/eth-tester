@@ -273,15 +273,25 @@ class EthereumTester(object):
     #
     # Blocks, Transactions, Receipts
     #
+
+    def _get_pending_transaction_by_hash(self, transaction_hash):
+        for transaction in self._pending_transactions:
+            if transaction['hash'] == transaction_hash:
+                return transaction
+
     def get_transaction_by_hash(self, transaction_hash):
         self.validator.validate_inbound_transaction_hash(transaction_hash)
-        raw_transaction_hash = self.normalizer.normalize_inbound_transaction_hash(
-            transaction_hash,
-        )
-        raw_transaction = self.backend.get_transaction_by_hash(raw_transaction_hash)
-        self.validator.validate_outbound_transaction(raw_transaction)
-        transaction = self.normalizer.normalize_outbound_transaction(raw_transaction)
-        return transaction
+        pending_transaction = self._get_pending_transaction_by_hash(transaction_hash)
+        if pending_transaction:
+            return pending_transaction
+        else:
+            raw_transaction_hash = self.normalizer.normalize_inbound_transaction_hash(
+                transaction_hash,
+            )
+            raw_transaction = self.backend.get_transaction_by_hash(raw_transaction_hash)
+            self.validator.validate_outbound_transaction(raw_transaction)
+            transaction = self.normalizer.normalize_outbound_transaction(raw_transaction)
+            return transaction
 
     def get_block_by_number(self, block_number="latest", full_transactions=False):
         self.validator.validate_inbound_block_number(block_number)
