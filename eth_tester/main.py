@@ -80,7 +80,6 @@ def handle_auto_mining(func):
             self.mine_block()
         else:
             pending_transaction = self.get_transaction_by_hash(transaction_hash)
-            pending_transaction = extract_valid_transaction_params(pending_transaction)
             # Remove any pending transactions with the same nonce
             self._pending_transactions = [tx for tx in self._pending_transactions
                                           if pending_transaction['nonce'] != tx['nonce']]
@@ -314,7 +313,8 @@ class EthereumTester(object):
     #
     def enable_auto_mine_transactions(self):
         self.auto_mine_transactions = True
-        sent_transaction_hashes = [self.send_transaction(tx) for tx in self._pending_transactions]
+        sent_transaction_hashes = [self.send_transaction(extract_valid_transaction_params(tx))
+                                   for tx in self._pending_transactions]
         self._pending_transactions.clear()
         return sent_transaction_hashes
 
