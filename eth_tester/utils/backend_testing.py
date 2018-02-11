@@ -289,7 +289,7 @@ class BaseTestBackendDirect(object):
 
         self._send_and_check_transaction(eth_tester, test_transaction, accounts[0])
 
-    def test_auto_mine_transactions_enabled(self, eth_tester):
+    def test_block_number_auto_mine_transactions_enabled(self, eth_tester):
         eth_tester.mine_blocks()
         eth_tester.enable_auto_mine_transactions()
         before_block_number = eth_tester.get_block_by_number('latest')['number']
@@ -301,7 +301,7 @@ class BaseTestBackendDirect(object):
         after_block_number = eth_tester.get_block_by_number('latest')['number']
         assert before_block_number == after_block_number - 1
 
-    def test_auto_mine_transactions_disabled(self, eth_tester):
+    def test_auto_mine_transactions_disabled_block_number(self, eth_tester):
         eth_tester.mine_blocks()
         eth_tester.disable_auto_mine_transactions()
         before_block_number = eth_tester.get_block_by_number('latest')['number']
@@ -312,6 +312,23 @@ class BaseTestBackendDirect(object):
         })
         after_block_number = eth_tester.get_block_by_number('latest')['number']
         assert before_block_number == after_block_number
+
+    def test_auto_mine_transactions_disabled_replace_transaction(self, eth_tester):
+        eth_tester.mine_blocks()
+        eth_tester.disable_auto_mine_transactions()
+        transaction = {
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "value": 1,
+            "gas": 21000,
+            "nonce": 0,
+        }
+        try:
+            eth_tester.send_transaction(transaction)
+            transaction["value"] = 2
+            eth_tester.send_transaction(transaction)
+        except Exception:
+            pytest.xfail("Sending replacement transaction caused exception")
 
     #
     # Blocks
