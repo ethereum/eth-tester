@@ -378,13 +378,13 @@ class PyEVMBackend(object):
     # Transactions
     #
     @to_dict
-    def _normalize_transaction(self, transaction):
+    def _normalize_transaction(self, transaction, block_number='latest'):
         for key in transaction:
             if key == 'from':
                 continue
             yield key, transaction[key]
         if 'nonce' not in transaction:
-            yield 'nonce', self.get_nonce(transaction['from'])
+            yield 'nonce', self.get_nonce(transaction['from'], block_number)
         if 'data' not in transaction:
             yield 'data', b''
         if 'gas_price' not in transaction:
@@ -394,9 +394,9 @@ class PyEVMBackend(object):
         if 'to' not in transaction:
             yield 'to', b''
 
-    def _get_normalized_and_signed_evm_transaction(self, transaction):
+    def _get_normalized_and_signed_evm_transaction(self, transaction, block_number='latest'):
         signing_key = self._key_lookup[transaction['from']]
-        normalized_transaction = self._normalize_transaction(transaction)
+        normalized_transaction = self._normalize_transaction(transaction, block_number)
         evm_transaction = self.chain.create_unsigned_transaction(**normalized_transaction)
         signed_evm_transaction = evm_transaction.as_signed_transaction(signing_key)
         return signed_evm_transaction
@@ -441,9 +441,10 @@ class PyEVMBackend(object):
 
         signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
             defaulted_transaction,
+            block_number,
         )
 
-        computation = _execute_and_revert_transaction(self.chain, signed_evm_transaction)
+        computation = _execute_and_revert_transaction(self.chain, signed_evm_transaction, block_number)
         if computation.is_error:
             raise TransactionFailed(str(computation._error))
 
