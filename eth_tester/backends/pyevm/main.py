@@ -444,7 +444,9 @@ class PyEVMBackend(object):
             block_number,
         )
 
-        computation = _execute_and_revert_transaction(self.chain, signed_evm_transaction, block_number)
+        computation = _execute_and_revert_transaction(self.chain,
+            signed_evm_transaction,
+            block_number)
         if computation.is_error:
             raise TransactionFailed(str(computation._error))
 
