@@ -328,7 +328,43 @@ class BaseTestBackendDirect(object):
             transaction["value"] = 2
             eth_tester.send_transaction(transaction)
         except Exception:
-            pytest.xfail("Sending replacement transaction caused exception")
+            pytest.fail("Sending replacement transaction caused exception")
+
+    def test_auto_mine_transactions_disabled_multiple_accounts(self, eth_tester):
+        eth_tester.mine_blocks()
+        eth_tester.disable_auto_mine_transactions()
+
+        tx1 = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "value": 1,
+            "gas": 21000,
+            "nonce": 0,
+        })
+        tx2 = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[1],
+            "to": BURN_ADDRESS,
+            "value": 1,
+            "gas": 21000,
+            "nonce": 0,
+        })
+
+        assert tx1 == eth_tester.get_transaction_by_hash(tx1)['hash']
+        assert tx2 == eth_tester.get_transaction_by_hash(tx2)['hash']
+
+        tx2_replacement = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[1],
+            "to": BURN_ADDRESS,
+            "value": 2,
+            "gas": 21000,
+            "nonce": 0,
+        })
+
+        # Replaces the correct transaction
+        assert tx1 == eth_tester.get_transaction_by_hash(tx1)['hash']
+        assert tx2_replacement == eth_tester.get_transaction_by_hash(tx2_replacement)['hash']
+        with pytest.raises(TransactionNotFound):
+            eth_tester.get_transaction_by_hash(tx2)
 
     #
     # Blocks
