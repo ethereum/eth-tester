@@ -490,6 +490,8 @@ class BaseTestBackendDirect(object):
         assert result == (20,)
 
     def test_call_query_previous_state(self, eth_tester):
+        self.skip_if_no_evm_execution()
+        
         math_address = _deploy_math(eth_tester)
         call_math_transaction = _make_call_math_transaction(
             eth_tester,
