@@ -366,6 +366,36 @@ class BaseTestBackendDirect(object):
         with pytest.raises(TransactionNotFound):
             eth_tester.get_transaction_by_hash(tx2)
 
+    def test_auto_mine_transactions_disabled_returns_hashes_when_enabled(self, eth_tester):
+        self.skip_if_no_evm_execution()
+        eth_tester.mine_blocks()
+        eth_tester.disable_auto_mine_transactions()
+
+        tx1 = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "value": 1,
+            "gas": 21000,
+            "nonce": 0,
+        })
+        tx2 = eth_tester.send_transaction({  # noqa: F841
+            "from": eth_tester.get_accounts()[1],
+            "to": BURN_ADDRESS,
+            "value": 1,
+            "gas": 21000,
+            "nonce": 0,
+        })
+        tx2_replacement = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[1],
+            "to": BURN_ADDRESS,
+            "value": 2,
+            "gas": 21000,
+            "nonce": 0,
+        })
+
+        sent_transactions = eth_tester.enable_auto_mine_transactions()
+        assert sent_transactions == [tx1, tx2_replacement]
+
     #
     # Blocks
     #
