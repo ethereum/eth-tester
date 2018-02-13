@@ -278,13 +278,15 @@ class EthereumTester(object):
         for transaction in self._pending_transactions:
             if transaction['hash'] == transaction_hash:
                 return transaction
+        raise TransactionNotFound(
+            "No transaction found for transaction hash: {0}".format(transaction_hash)
+        )
 
     def get_transaction_by_hash(self, transaction_hash):
         self.validator.validate_inbound_transaction_hash(transaction_hash)
-        pending_transaction = self._get_pending_transaction_by_hash(transaction_hash)
-        if pending_transaction:
-            return pending_transaction
-        else:
+        try:
+            return self._get_pending_transaction_by_hash(transaction_hash)
+        except TransactionNotFound:
             raw_transaction_hash = self.normalizer.normalize_inbound_transaction_hash(
                 transaction_hash,
             )
