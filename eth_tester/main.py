@@ -49,6 +49,7 @@ from eth_tester.utils.filters import (
 )
 from eth_tester.utils.transactions import (
     extract_valid_transaction_params,
+    remove_matching_transaction_from_list,
 )
 
 
@@ -81,9 +82,8 @@ def handle_auto_mining(func):
         else:
             pending_transaction = self.get_transaction_by_hash(transaction_hash)
             # Remove any pending transactions with the same nonce
-            self._pending_transactions = [tx for tx in self._pending_transactions
-                                          if not (pending_transaction['nonce'] == tx['nonce']
-                                                  and pending_transaction['from'] == tx['from'])]
+            self._pending_transactions = remove_matching_transaction_from_list(
+                self._pending_transactions, pending_transaction)
             self._pending_transactions.append(pending_transaction)
             self.revert_to_snapshot(snapshot)
 
