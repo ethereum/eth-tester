@@ -410,9 +410,24 @@ class PyEthereum21Backend(BaseChainBackend):
 
     @replace_exceptions({Pyeth21TransactionFailed: TransactionFailed})
     def call(self, transaction, block_number="latest"):
-        if block_number != "latest":
-            raise NotImplementedError("Block number must be 'latest'.")
-        snapshot = self.take_snapshot()
-        output = _send_transaction(self.evm, transaction)
-        self.revert_to_snapshot(snapshot)
+        from ethereum.messages import apply_message
+
+        if isinstance(block_number, bytes):
+            state = self.evm.chain.mk_poststate_of_blockhash(block_number)
+        elif isinstance(block_number, int) or isinstance(block_number, str):
+            block = _get_block_by_number(self.evm, block_number)
+            state = self.evm.chain.mk_poststate_of_blockhash(block.hash)
+        else:
+            raise BlockNotFound("Invalid block identifer.")
+
+        output = apply_message(
+            state,
+            sender=transaction['from'],
+            to=transaction['to'],
+            code_address=transaction['to'],
+            data=transaction['data'],
+            gas=transaction['gas'],
+        )
+        if output is None:
+            raise TransactionFailed
         return output
