@@ -65,7 +65,6 @@ from .throws_contract import (
     _make_call_throws_transaction,
     _decode_throws_result,
 )
-from eth_tester.backends.pyethereum.utils import is_pyethereum16_available
 
 
 PK_A = '0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d'
@@ -490,7 +489,6 @@ class BaseTestBackendDirect(object):
         result = _decode_math_result('add', raw_result)
         assert result == (20,)
 
-    @pytest.mark.skipif(is_pyethereum16_available(), reason="v1.6 not supported")
     def test_call_query_previous_state(self, eth_tester):
         self.skip_if_no_evm_execution()
 
