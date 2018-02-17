@@ -34,7 +34,10 @@ def eth_tester():
 
 
 class TestPyEthereum16BackendDirect(BaseTestBackendDirect):
-    pass
+    
+    @pytest.mark.skip(reason="v1.6 not supported")
+    def test_call_query_previous_state(self, eth_tester):
+        pass
 
 
 class TestPyEthereum16BackendFuzz(BaseTestBackendFuzz):

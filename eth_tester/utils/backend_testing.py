@@ -489,6 +489,34 @@ class BaseTestBackendDirect(object):
         result = _decode_math_result('add', raw_result)
         assert result == (20,)
 
+    def test_call_query_previous_state(self, eth_tester):
+        self.skip_if_no_evm_execution()
+
+        math_address = _deploy_math(eth_tester)
+        call_math_transaction = _make_call_math_transaction(
+            eth_tester,
+            math_address,
+            'counter'
+        )
+
+        call_math_transaction_inc = _make_call_math_transaction(
+            eth_tester,
+            math_address,
+            'increment',
+        )
+
+        eth_tester.mine_blocks(2)
+        eth_tester.send_transaction(call_math_transaction_inc)
+
+        raw_result = eth_tester.call(call_math_transaction, 1)
+        result = _decode_math_result('counter', raw_result)
+
+        raw_result_new = eth_tester.call(call_math_transaction)
+        result_new = _decode_math_result('counter', raw_result_new)
+
+        assert result == (0,)
+        assert result_new == (1,)
+
     def test_estimate_gas(self, eth_tester):
         self.skip_if_no_evm_execution()
 
