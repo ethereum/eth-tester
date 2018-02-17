@@ -80,12 +80,14 @@ def handle_auto_mining(func):
         if self.auto_mine_transactions:
             self.mine_block()
         else:
-            pending_transaction = self.get_transaction_by_hash(transaction_hash)
-            # Remove any pending transactions with the same nonce
-            self._pending_transactions = remove_matching_transaction_from_list(
-                self._pending_transactions, pending_transaction)
-            self._pending_transactions.append(pending_transaction)
-            self.revert_to_snapshot(snapshot)
+            try:
+                pending_transaction = self.get_transaction_by_hash(transaction_hash)
+                # Remove any pending transactions with the same nonce
+                self._pending_transactions = remove_matching_transaction_from_list(
+                    self._pending_transactions, pending_transaction)
+                self._pending_transactions.append(pending_transaction)
+            finally:
+                self.revert_to_snapshot(snapshot)
 
         return transaction_hash
     return func_wrapper
