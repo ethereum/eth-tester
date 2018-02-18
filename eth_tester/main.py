@@ -72,15 +72,13 @@ def get_default_fork_blocks():
 def handle_auto_mining(func):
     @functools.wraps(func)
     def func_wrapper(self, *args, **kwargs):
-        if not self.auto_mine_transactions:
-            snapshot = self.take_snapshot()
-
-        transaction_hash = func(self, *args, **kwargs)
-
         if self.auto_mine_transactions:
+            transaction_hash = func(self, *args, **kwargs)
             self.mine_block()
         else:
+            snapshot = self.take_snapshot()
             try:
+                transaction_hash = func(self, *args, **kwargs)
                 pending_transaction = self.get_transaction_by_hash(transaction_hash)
                 # Remove any pending transactions with the same nonce
                 self._pending_transactions = remove_matching_transaction_from_list(
@@ -88,7 +86,6 @@ def handle_auto_mining(func):
                 self._pending_transactions.append(pending_transaction)
             finally:
                 self.revert_to_snapshot(snapshot)
-
         return transaction_hash
     return func_wrapper
 
