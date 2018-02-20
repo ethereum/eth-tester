@@ -49,6 +49,7 @@ from eth_tester.exceptions import (
     FilterNotFound,
     ValidationError,
     TransactionFailed,
+    TransactionNotFound,
 )
 from .emitter_contract import (
     _deploy_emitter,
@@ -288,7 +289,7 @@ class BaseTestBackendDirect(object):
 
         self._send_and_check_transaction(eth_tester, test_transaction, accounts[0])
 
-    def test_auto_mine_transactions_enabled(self, eth_tester):
+    def test_block_number_auto_mine_transactions_enabled(self, eth_tester):
         eth_tester.mine_blocks()
         eth_tester.enable_auto_mine_transactions()
         before_block_number = eth_tester.get_block_by_number('latest')['number']
@@ -300,7 +301,7 @@ class BaseTestBackendDirect(object):
         after_block_number = eth_tester.get_block_by_number('latest')['number']
         assert before_block_number == after_block_number - 1
 
-    def test_auto_mine_transactions_disabled(self, eth_tester):
+    def test_auto_mine_transactions_disabled_block_number(self, eth_tester):
         eth_tester.mine_blocks()
         eth_tester.disable_auto_mine_transactions()
         before_block_number = eth_tester.get_block_by_number('latest')['number']
@@ -311,6 +312,89 @@ class BaseTestBackendDirect(object):
         })
         after_block_number = eth_tester.get_block_by_number('latest')['number']
         assert before_block_number == after_block_number
+
+    def test_auto_mine_transactions_disabled_replace_transaction(self, eth_tester):
+        eth_tester.mine_blocks()
+        eth_tester.disable_auto_mine_transactions()
+        transaction = {
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "value": 1,
+            "gas": 21000,
+            "nonce": 0,
+        }
+        try:
+            eth_tester.send_transaction(transaction)
+            transaction["value"] = 2
+            eth_tester.send_transaction(transaction)
+        except Exception:
+            pytest.fail("Sending replacement transaction caused exception")
+
+    def test_auto_mine_transactions_disabled_multiple_accounts(self, eth_tester):
+        eth_tester.mine_blocks()
+        eth_tester.disable_auto_mine_transactions()
+
+        tx1 = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "value": 1,
+            "gas": 21000,
+            "nonce": 0,
+        })
+        tx2 = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[1],
+            "to": BURN_ADDRESS,
+            "value": 1,
+            "gas": 21000,
+            "nonce": 0,
+        })
+
+        assert tx1 == eth_tester.get_transaction_by_hash(tx1)['hash']
+        assert tx2 == eth_tester.get_transaction_by_hash(tx2)['hash']
+
+        tx2_replacement = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[1],
+            "to": BURN_ADDRESS,
+            "value": 2,
+            "gas": 21000,
+            "nonce": 0,
+        })
+
+        # Replaces the correct transaction
+        assert tx1 == eth_tester.get_transaction_by_hash(tx1)['hash']
+        assert tx2_replacement == eth_tester.get_transaction_by_hash(tx2_replacement)['hash']
+        with pytest.raises(TransactionNotFound):
+            eth_tester.get_transaction_by_hash(tx2)
+
+    def test_auto_mine_transactions_disabled_returns_hashes_when_enabled(self, eth_tester):
+        self.skip_if_no_evm_execution()
+        eth_tester.mine_blocks()
+        eth_tester.disable_auto_mine_transactions()
+
+        tx1 = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "value": 1,
+            "gas": 21000,
+            "nonce": 0,
+        })
+        tx2 = eth_tester.send_transaction({  # noqa: F841
+            "from": eth_tester.get_accounts()[1],
+            "to": BURN_ADDRESS,
+            "value": 1,
+            "gas": 21000,
+            "nonce": 0,
+        })
+        tx2_replacement = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[1],
+            "to": BURN_ADDRESS,
+            "value": 2,
+            "gas": 21000,
+            "nonce": 0,
+        })
+
+        sent_transactions = eth_tester.enable_auto_mine_transactions()
+        assert sent_transactions == [tx1, tx2_replacement]
 
     #
     # Blocks
@@ -443,6 +527,17 @@ class BaseTestBackendDirect(object):
         transaction = eth_tester.get_transaction_by_hash(transaction_hash)
         assert transaction['hash'] == transaction_hash
 
+    def test_get_transaction_by_hash_for_unmined_transaction(self, eth_tester):
+        eth_tester.disable_auto_mine_transactions()
+        transaction_hash = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+        })
+        transaction = eth_tester.get_transaction_by_hash(transaction_hash)
+        assert transaction['hash'] == transaction_hash
+        assert transaction['block_hash'] is None
+
     def test_get_transaction_receipt_for_mined_transaction(self, eth_tester):
         transaction_hash = eth_tester.send_transaction({
             "from": eth_tester.get_accounts()[0],
@@ -452,15 +547,15 @@ class BaseTestBackendDirect(object):
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
         assert receipt['transaction_hash'] == transaction_hash
 
-    def test_get_transaction_receipt_for_unmined_transaction(self, eth_tester):
+    def test_get_transaction_receipt_for_unmined_transaction_raises(self, eth_tester):
         eth_tester.disable_auto_mine_transactions()
         transaction_hash = eth_tester.send_transaction({
             "from": eth_tester.get_accounts()[0],
             "to": BURN_ADDRESS,
             "gas": 21000,
         })
-        receipt = eth_tester.get_transaction_receipt(transaction_hash)
-        assert receipt['block_number'] is None
+        with pytest.raises(TransactionNotFound):
+            eth_tester.get_transaction_receipt(transaction_hash)
 
     def test_call_return13(self, eth_tester):
         self.skip_if_no_evm_execution()
