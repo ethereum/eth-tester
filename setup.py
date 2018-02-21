@@ -18,10 +18,10 @@ setup(
     include_package_data=True,
     install_requires=[
         "cytoolz>=0.9.0,<1.0.0",
-        "eth-utils>=1.0.0-beta.1,<2.0.0",
+        "eth-utils>=1.0.0-beta.2,<2.0.0",
         "rlp>=0.6.0,<1.0.0",
         "semantic_version>=2.6.0,<3.0.0",
-        "eth-keys>=0.2.0b1,<0.3.0",
+        "eth-keys>=0.2.0-beta.2,<0.3.0",
     ],
     extras_require={
         'pyethereum16': [
@@ -31,7 +31,7 @@ setup(
             "ethereum>=2.1.0,<2.2.0",
         ],
         'py-evm': [
-            "py-evm==0.2.0a10",  # evm is very high velocity and might change API at each alpha
+            "py-evm==0.2.0a10,<1.0.0",  # evm is very high velocity and might change API at each alpha
         ],
     },
     setup_requires=['setuptools-markdown'],
