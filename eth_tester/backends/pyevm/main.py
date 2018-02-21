@@ -8,7 +8,6 @@ import rlp
 from eth_utils import (
     encode_hex,
     int_to_big_endian,
-    pad_left,
     to_dict,
     to_tuple,
     to_wei,
@@ -89,7 +88,7 @@ def get_default_account_keys():
     keys = KeyAPI()
 
     for i in range(1, 11):
-        pk_bytes = pad_left(int_to_big_endian(i), 32, b'\x00')
+        pk_bytes = int_to_big_endian(i).rjust(32, b'\x00')
         private_key = keys.PrivateKey(pk_bytes)
         yield private_key
 
