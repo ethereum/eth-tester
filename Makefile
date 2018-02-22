@@ -22,7 +22,7 @@ clean-pyc:
 	find . -name '*~' -exec rm -f {} +
 
 lint:
-	flake8 eth_tester
+	tox -elint
 
 test:
 	py.test tests
@@ -34,7 +34,7 @@ release: clean
 	CURRENT_SIGN_SETTING=$(git config commit.gpgSign)
 	git config commit.gpgSign true
 	bumpversion $(bump)
-	git push && git push --tags
+	git push upstream && git push upstream --tags
 	python setup.py sdist bdist_wheel upload
 	git config commit.gpgSign "$(CURRENT_SIGN_SETTING)"
 
