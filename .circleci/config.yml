@@ -91,7 +91,6 @@ workflows:
       - lint
       - py35-core
       - py36-core
-      - pypy3-core
       - py35-pyevm
       - py36-pyevm
       - py35-pyethereum16
