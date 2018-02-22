@@ -6,17 +6,17 @@ from cytoolz.dicttoolz import (
 )
 
 from eth_utils import (
-    keccak,
-    to_dict,
+    apply_to_return_value,
+    is_bytes,
     is_dict,
     is_integer,
     is_list_like,
-    is_text,
-    is_bytes,
     is_null,
-    force_bytes,
+    is_text,
+    keccak,
+    to_bytes,
+    to_dict,
     to_tuple,
-    apply_to_return_value,
 )
 
 from eth_tester.utils.accounts import (
@@ -31,37 +31,37 @@ ZERO_ADDRESS = b'\x00' * 20
 
 @apply_to_return_value(b'|'.join)
 @to_tuple
-def stringify(value):
+def bytes_repr(value):
     if is_bytes(value):
         yield value
     elif is_text(value):
-        yield force_bytes(value)
+        yield to_bytes(text=value)
     elif is_list_like(value):
         yield b''.join((
             b'(',
-            b','.join((stringify(item) for item in value)),
+            b','.join((bytes_repr(item) for item in value)),
             b')',
         ))
     elif is_dict(value):
         yield b''.join((
             b'{',
             b','.join((
-                b":".join((stringify(key), stringify(item)))
+                b":".join((bytes_repr(key), bytes_repr(item)))
                 for key, item
                 in value.items()
             )),
             b'}',
         ))
     elif is_integer(value):
-        yield force_bytes(str(value))
+        yield to_bytes(value)
     elif is_null(value):
         yield 'None@{0}'.format(id(value))
     else:
-        raise TypeError("Unsupported type for stringification: {0}".format(type(value)))
+        raise TypeError("Unsupported type for bytes_repr: {0}".format(type(value)))
 
 
 def fake_rlp_hash(value):
-    return keccak(stringify(value))
+    return keccak(bytes_repr(value))
 
 
 def add_hash(fn):
@@ -71,7 +71,7 @@ def add_hash(fn):
         if 'hash' in value:
             return value
         else:
-            return assoc(value, 'hash', keccak(stringify(value)))
+            return assoc(value, 'hash', keccak(bytes_repr(value)))
     return inner
 
 

@@ -14,7 +14,6 @@ import rlp
 
 from eth_utils import (
     encode_hex,
-    remove_0x_prefix,
     to_tuple,
 )
 
@@ -363,15 +362,15 @@ class PyEthereum16Backend(BaseChainBackend):
     #
     def get_nonce(self, account, block_number="latest"):
         block = _get_block_by_number(self.evm, block_number)
-        return block.get_nonce(remove_0x_prefix(account))
+        return block.get_nonce(account)
 
     def get_balance(self, account, block_number="latest"):
         block = _get_block_by_number(self.evm, block_number)
-        return block.get_balance(remove_0x_prefix(account))
+        return block.get_balance(account)
 
     def get_code(self, account, block_number="latest"):
         block = _get_block_by_number(self.evm, block_number)
-        return block.get_code(remove_0x_prefix(account))
+        return block.get_code(account)
 
     #
     # Transactions

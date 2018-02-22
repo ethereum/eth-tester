@@ -8,11 +8,8 @@ from cytoolz.functoolz import (
 from eth_utils import (
     decode_hex,
     is_address,
-    is_hex,
     is_list_like,
     is_string,
-    is_text,
-    remove_0x_prefix,
     to_canonical_address,
     to_tuple,
 )
@@ -26,10 +23,6 @@ from .common import (
 from eth_tester.validation.inbound import (
     is_flat_topic_array,
 )
-
-
-def is_32byte_hex_string(value):
-    return is_text(value) and is_hex(value) and len(remove_0x_prefix(value)) == 64
 
 
 @to_tuple
