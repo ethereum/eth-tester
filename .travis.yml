@@ -5,12 +5,14 @@ matrix:
   include:
     # lint
     - python: "3.5"
-      env: TOX_POSARGS="-e flake8"
+      env: TOX_POSARGS="-e lint"
     # core
     - python: "3.5"
       env: TOX_POSARGS="-e py35-core"
     - python: "3.6"
       env: TOX_POSARGS="-e py36-core"
+    - python: "pypy3.5"
+      env: TOX_POSARGS="-e pypy3-core"
     # pyethereum 1.6.x
     - python: "3.5"
       env: TOX_POSARGS="-e py35-pyethereum16"
