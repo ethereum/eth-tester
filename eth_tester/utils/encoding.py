@@ -2,17 +2,20 @@ from __future__ import unicode_literals
 
 from cytoolz.functoolz import (
     compose,
-    partial,
+    curry,
 )
 
 from eth_utils import (
     int_to_big_endian,
-    pad_left,
 )
 
 
-zpad = partial(pad_left, pad_with=b'\x00')
-zpad32 = partial(pad_left, to_size=32, pad_with=b'\x00')
+@curry
+def zpad(value, length):
+    return value.rjust(length, b'\x00')
+
+
+zpad32 = zpad(length=32)
 
 
 int_to_32byte_big_endian = compose(

@@ -10,7 +10,6 @@ import rlp
 
 from eth_utils import (
     is_integer,
-    remove_0x_prefix,
     to_dict,
     to_tuple,
     to_wei,
@@ -377,15 +376,15 @@ class PyEthereum21Backend(BaseChainBackend):
     # NOTE: Added as a helper, might be more broadly useful
     def get_nonce(self, account, block_number="latest"):
         state = _get_state_by_block_number(self.evm, block_number)
-        return state.get_nonce(remove_0x_prefix(account))
+        return state.get_nonce(account)
 
     def get_balance(self, account, block_number="latest"):
         state = _get_state_by_block_number(self.evm, block_number)
-        return state.get_balance(remove_0x_prefix(account))
+        return state.get_balance(account)
 
     def get_code(self, account, block_number="latest"):
         state = _get_state_by_block_number(self.evm, block_number)
-        return state.get_code(remove_0x_prefix(account))
+        return state.get_code(account)
 
     #
     # Transactions

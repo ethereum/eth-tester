@@ -5,7 +5,6 @@ from eth_utils import (
     big_endian_to_int,
     int_to_big_endian,
     is_bytes,
-    pad_left,
 )
 
 from eth_tester.constants import (
@@ -19,7 +18,7 @@ from .jacobian import (
 
 
 def _pad32(value):
-    return pad_left(value, 32, b'\x00')
+    return value.rjust(32, b'\x00')
 
 
 def _encode_raw_public_key(raw_public_key):

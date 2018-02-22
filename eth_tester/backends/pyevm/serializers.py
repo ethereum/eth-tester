@@ -1,11 +1,6 @@
 import rlp
 
-from cytoolz import (
-    partial,
-)
-
 from eth_utils import (
-    pad_left,
     to_canonical_address,
 )
 
@@ -17,7 +12,8 @@ from eth_tester.utils.encoding import (
 )
 
 
-pad32 = partial(pad_left, to_size=32, pad_with=b'\x00')
+def pad32(value):
+    return value.rjust(32, b'\x00')
 
 
 def serialize_block(block, full_transaction, is_pending):
