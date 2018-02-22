@@ -396,6 +396,27 @@ class BaseTestBackendDirect(object):
         sent_transactions = eth_tester.enable_auto_mine_transactions()
         assert sent_transactions == [tx1, tx2_replacement]
 
+    def test_manual_mine_pending_transactions(self, eth_tester):
+        self.skip_if_no_evm_execution()
+        eth_tester.mine_blocks()
+        eth_tester.disable_auto_mine_transactions()
+
+        txn_hash = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "value": 1,
+            "gas": 21000,
+            "nonce": 0,
+        })
+
+        with pytest.raises(TransactionNotFound):
+            eth_tester.get_transaction_receipt(txn_hash)
+
+        eth_tester.mine_block()
+
+        receipt = eth_tester.get_transaction_receipt(txn_hash)
+        assert receipt['transaction_hash'] == txn_hash
+
     #
     # Blocks
     #

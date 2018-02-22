@@ -325,9 +325,8 @@ class EthereumTester(object):
     #
     def enable_auto_mine_transactions(self):
         self.auto_mine_transactions = True
-        sent_transaction_hashes = [self.send_transaction(extract_valid_transaction_params(tx))
-                                   for tx in self._pending_transactions]
-        self._pending_transactions.clear()
+        sent_transaction_hashes = self._add_pending_transactions_to_pending_block()
+        self.mine_block()
         return sent_transaction_hashes
 
     def disable_auto_mine_transactions(self):
@@ -339,6 +338,9 @@ class EthereumTester(object):
         else:
             self.validator.validate_inbound_account(coinbase)
             raw_coinbase = self.normalizer.normalize_inbound_account(coinbase)
+
+        if not self.auto_mine_transactions:
+            self._add_pending_transactions_to_pending_block()
 
         raw_block_hashes = self.backend.mine_blocks(num_blocks, raw_coinbase)
 
@@ -385,6 +387,14 @@ class EthereumTester(object):
                     raw_log_entry = self.normalizer.normalize_inbound_log_entry(log_entry)
                     filter.add(raw_log_entry)
 
+    def _add_pending_transactions_to_pending_block(self):
+        sent_transaction_hashes = [
+            self._add_transaction_to_pending_block(extract_valid_transaction_params(tx))
+            for tx in self._pending_transactions
+        ]
+        self._pending_transactions.clear()
+        return sent_transaction_hashes
+
     #
     # Transaction Sending
     #
@@ -417,6 +427,30 @@ class EthereumTester(object):
 
     @handle_auto_mining
     def send_transaction(self, transaction):
+        return self._add_transaction_to_pending_block(transaction)
+
+    def call(self, transaction, block_number="latest"):
+        self.validator.validate_inbound_transaction(transaction, txn_type='call')
+        raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
+        self.validator.validate_inbound_block_number(block_number)
+        raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
+        raw_result = self.backend.call(raw_transaction, raw_block_number)
+        self.validator.validate_outbound_return_data(raw_result)
+        result = self.normalizer.normalize_outbound_return_data(raw_result)
+        return result
+
+    def estimate_gas(self, transaction):
+        self.validator.validate_inbound_transaction(transaction, txn_type='estimate')
+        raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
+        raw_gas_estimate = self.backend.estimate_gas(raw_transaction)
+        self.validator.validate_outbound_gas_estimate(raw_gas_estimate)
+        gas_estimate = self.normalizer.normalize_outbound_gas_estimate(raw_gas_estimate)
+        return gas_estimate
+
+    #
+    # Private Transaction API
+    #
+    def _add_transaction_to_pending_block(self, transaction):
         self.validator.validate_inbound_transaction(transaction, txn_type='send')
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
 
@@ -438,24 +472,6 @@ class EthereumTester(object):
         self._handle_filtering_for_transaction(transaction_hash)
 
         return transaction_hash
-
-    def call(self, transaction, block_number="latest"):
-        self.validator.validate_inbound_transaction(transaction, txn_type='call')
-        raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
-        self.validator.validate_inbound_block_number(block_number)
-        raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
-        raw_result = self.backend.call(raw_transaction, raw_block_number)
-        self.validator.validate_outbound_return_data(raw_result)
-        result = self.normalizer.normalize_outbound_return_data(raw_result)
-        return result
-
-    def estimate_gas(self, transaction):
-        self.validator.validate_inbound_transaction(transaction, txn_type='estimate')
-        raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
-        raw_gas_estimate = self.backend.estimate_gas(raw_transaction)
-        self.validator.validate_outbound_gas_estimate(raw_gas_estimate)
-        gas_estimate = self.normalizer.normalize_outbound_gas_estimate(raw_gas_estimate)
-        return gas_estimate
 
     #
     # Snapshot and Revert
