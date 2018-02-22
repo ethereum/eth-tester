@@ -31,7 +31,7 @@ setup(
             "ethereum>=2.1.0,<2.2.0",
         ],
         'py-evm': [
-            "py-evm==0.2.0a10,<1.0.0",  # evm is very high velocity and might change API at each alpha
+            "py-evm>=0.2.0a11,<1.0.0",  # evm is very high velocity and might change API at each alpha
         ],
     },
     setup_requires=['setuptools-markdown'],
