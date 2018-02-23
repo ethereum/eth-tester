@@ -131,15 +131,17 @@ class BaseTestBackendDirect(object):
 
         txn_hash = eth_tester.send_transaction(transaction)
         txn = eth_tester.get_transaction_by_hash(txn_hash)
+        self._check_transactions(transaction, txn)
 
-        assert is_same_address(txn['from'], transaction['from'])
-        if 'to' not in transaction or transaction['to'] == '':
-            assert txn['to'] == ''
+    def _check_transactions(self, expected_transaction, actual_transaction):
+        assert is_same_address(actual_transaction['from'], expected_transaction['from'])
+        if 'to' not in expected_transaction or expected_transaction['to'] == '':
+            assert actual_transaction['to'] == ''
         else:
-            assert is_same_address(txn['to'], transaction['to'])
-        assert txn['gas_price'] == transaction['gas_price']
-        assert txn['gas'] == transaction['gas']
-        assert txn['value'] == transaction['value']
+            assert is_same_address(actual_transaction['to'], expected_transaction['to'])
+        assert actual_transaction['gas_price'] == expected_transaction['gas_price']
+        assert actual_transaction['gas'] == expected_transaction['gas']
+        assert actual_transaction['value'] == expected_transaction['value']
 
     #
     # Testing Flags
@@ -411,26 +413,45 @@ class BaseTestBackendDirect(object):
         sent_transactions = eth_tester.enable_auto_mine_transactions()
         assert sent_transactions == [tx1, tx2_replacement]
 
-    def test_manual_mine_pending_transactions(self, eth_tester):
+    @pytest.mark.parametrize(
+        'test_transaction',
+        (
+            SIMPLE_TRANSACTION,
+            CONTRACT_TRANSACTION_EMPTY_TO,
+            CONTRACT_TRANSACTION_MISSING_TO,
+        ),
+        ids=[
+            'Simple transaction',
+            'Create Contract - empty to',
+            'Create Contract - missing to',
+        ],
+    )
+    def test_manual_mine_pending_transactions(self, eth_tester, test_transaction):
+        accounts = eth_tester.get_accounts()
+        assert accounts, "No accounts available for transaction sending"
+
+        complete_transaction = assoc(test_transaction, 'from', accounts[0])
+
         self.skip_if_no_evm_execution()
         eth_tester.mine_blocks()
         eth_tester.disable_auto_mine_transactions()
 
-        txn_hash = eth_tester.send_transaction({
-            "from": eth_tester.get_accounts()[0],
-            "to": BURN_ADDRESS,
-            "value": 1,
-            "gas": 21000,
-            "nonce": 0,
-        })
+        txn_hash = eth_tester.send_transaction(complete_transaction)
 
         with pytest.raises(TransactionNotFound):
             eth_tester.get_transaction_receipt(txn_hash)
+
+        pending_transaction = eth_tester.get_transaction_by_hash(txn_hash)
+        self._check_transactions(complete_transaction, pending_transaction)
 
         eth_tester.mine_block()
 
         receipt = eth_tester.get_transaction_receipt(txn_hash)
         assert receipt['transaction_hash'] == txn_hash
+        assert receipt['block_number']
+
+        mined_transaction = eth_tester.get_transaction_by_hash(txn_hash)
+        self._check_transactions(complete_transaction, mined_transaction)
 
     #
     # Blocks
