@@ -1,18 +1,18 @@
 from __future__ import absolute_import
 
-import operator
-
 from cytoolz.functoolz import (
     partial,
     identity,
     compose,
 )
 
-from eth_utils import (
+from eth_utils.curried import (
+    apply_one_of_formatters,
     to_checksum_address,
     encode_hex,
     is_address,
     is_bytes,
+    is_canonical_address,
     is_dict,
 )
 
@@ -26,6 +26,10 @@ from .common import (
 normalize_account = to_checksum_address
 normalize_account_list = partial(normalize_array, normalizer=normalize_account)
 
+to_empty_or_checksum_address = apply_one_of_formatters((
+    (lambda addr: addr == b'', lambda addr: ''),
+    (is_canonical_address, to_checksum_address),
+))
 
 TRANSACTION_NORMALIZERS = {
     "hash": encode_hex,
@@ -34,10 +38,7 @@ TRANSACTION_NORMALIZERS = {
     "block_number": identity,
     "transaction_index": identity,
     "from": to_checksum_address,
-    "to": normalize_if(
-        conditional_fn=compose(operator.not_, partial(operator.eq, b'')),
-        normalizer=to_checksum_address,
-    ),
+    "to": to_empty_or_checksum_address,
     "value": identity,
     "gas": identity,
     "gas_price": identity,

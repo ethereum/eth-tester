@@ -82,6 +82,13 @@ SIMPLE_TRANSACTION = {
 
 TRANSACTION_WTH_NONCE = assoc(SIMPLE_TRANSACTION, 'nonce', 0)
 
+CONTRACT_TRANSACTION_EMPTY_TO = {
+    "to": '',
+    "gas_price": 1,
+    "value": 0,
+    "gas": 100000,
+}
+CONTRACT_TRANSACTION_MISSING_TO = dissoc(CONTRACT_TRANSACTION_EMPTY_TO, 'to')
 
 BLOCK_KEYS = {
     "number",
@@ -126,10 +133,14 @@ class BaseTestBackendDirect(object):
         txn = eth_tester.get_transaction_by_hash(txn_hash)
 
         assert is_same_address(txn['from'], transaction['from'])
-        assert is_same_address(txn['to'], transaction['to'])
+        if 'to' not in transaction or transaction['to'] == '':
+            assert txn['to'] == ''
+        else:
+            assert is_same_address(txn['to'], transaction['to'])
         assert txn['gas_price'] == transaction['gas_price']
         assert txn['gas'] == transaction['gas']
         assert txn['value'] == transaction['value']
+
     #
     # Testing Flags
     #
@@ -277,10 +288,14 @@ class BaseTestBackendDirect(object):
         (
             SIMPLE_TRANSACTION,
             TRANSACTION_WTH_NONCE,
+            CONTRACT_TRANSACTION_EMPTY_TO,
+            CONTRACT_TRANSACTION_MISSING_TO,
         ),
         ids=[
             'Simple transaction',
             'Transaction with nonce',
+            'Create Contract - empty to',
+            'Create Contract - missing to',
         ],
     )
     def test_send_transaction(self, eth_tester, test_transaction):
