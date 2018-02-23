@@ -8,7 +8,7 @@ VALID_TRANSACTION_PARAMS = [
     'from',
     'to',
     'gas',
-    'gasPrice',
+    'gas_price',
     'value',
     'data',
     'nonce',

@@ -71,10 +71,11 @@ from .throws_contract import (
 PK_A = '0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d'
 PK_A_ADDRESS = '0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd'
 
+NON_DEFAULT_GAS_PRICE = 504
 
 SIMPLE_TRANSACTION = {
     "to": BURN_ADDRESS,
-    "gas_price": 1,
+    "gas_price": NON_DEFAULT_GAS_PRICE,
     "value": 0,
     "gas": 21000,
 }
@@ -84,7 +85,7 @@ TRANSACTION_WTH_NONCE = assoc(SIMPLE_TRANSACTION, 'nonce', 0)
 
 CONTRACT_TRANSACTION_EMPTY_TO = {
     "to": '',
-    "gas_price": 1,
+    "gas_price": NON_DEFAULT_GAS_PRICE,
     "value": 0,
     "gas": 100000,
 }
@@ -179,7 +180,7 @@ class BaseTestBackendDirect(object):
             'to': account,
             'value': 1 * denoms.ether,
             'gas': 21000,
-            'gas_price': 1,
+            'gas_price': NON_DEFAULT_GAS_PRICE,
         })
 
         self._send_and_check_transaction(eth_tester, SIMPLE_TRANSACTION, account)
@@ -199,7 +200,7 @@ class BaseTestBackendDirect(object):
             'to': account,
             'value': 1 * denoms.ether,
             'gas': 21000,
-            'gas_price': 1,
+            'gas_price': NON_DEFAULT_GAS_PRICE,
         })
 
         with pytest.raises(AccountLocked):
