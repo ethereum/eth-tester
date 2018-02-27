@@ -393,11 +393,22 @@ class PyEVMBackend(object):
         if 'to' not in transaction:
             yield 'to', b''
 
-    def _get_normalized_and_signed_evm_transaction(self, transaction, block_number='latest'):
-        signing_key = self._key_lookup[transaction['from']]
+    def _mk_evm_transaction(self, transaction, block_number):
+        '''
+        :param dict transaction: a full transaction dict with all fields
+        '''
         normalized_transaction = self._normalize_transaction(transaction, block_number)
-        evm_transaction = self.chain.create_unsigned_transaction(**normalized_transaction)
-        signed_evm_transaction = evm_transaction.as_signed_transaction(signing_key)
+        signed_evm_transaction = self.chain.create_transaction(**normalized_transaction)
+        return signed_evm_transaction
+
+    def _get_normalized_and_signed_evm_transaction(self, transaction, block_number='latest'):
+        if set(['v', 'r', 's']) <= set(transaction.keys()):
+            signed_evm_transaction = self._mk_evm_transaction(transaction, block_number)
+        else:
+            signing_key = self._key_lookup[transaction['from']]
+            normalized_transaction = self._normalize_transaction(transaction, block_number)
+            evm_transaction = self.chain.create_unsigned_transaction(**normalized_transaction)
+            signed_evm_transaction = evm_transaction.as_signed_transaction(signing_key)
         return signed_evm_transaction
 
     def send_raw_transaction(self, raw_transaction):

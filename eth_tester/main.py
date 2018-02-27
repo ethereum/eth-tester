@@ -6,6 +6,9 @@ import operator
 import time
 import functools
 
+from cytoolz.dicttoolz import (
+    merge,
+)
 from cytoolz.itertoolz import (
     remove,
 )
@@ -389,7 +392,7 @@ class EthereumTester(object):
 
     def _add_pending_transactions_to_pending_block(self):
         sent_transaction_hashes = [
-            self._add_transaction_to_pending_block(extract_valid_transaction_params(tx))
+            self._add_transaction_to_pending_block(tx)
             for tx in self._pending_transactions
         ]
         self._pending_transactions.clear()
@@ -451,8 +454,20 @@ class EthereumTester(object):
     # Private Transaction API
     #
     def _add_transaction_to_pending_block(self, transaction):
-        self.validator.validate_inbound_transaction(transaction, txn_type='send')
-        raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
+        transaction_params_without_sig = extract_valid_transaction_params(transaction)
+        # take off signature params to pass the validation
+        self.validator.validate_inbound_transaction(
+            transaction_params_without_sig,
+            txn_type='send',
+        )
+        raw_transaction_without_sig = self.normalizer.normalize_inbound_transaction(
+            transaction_params_without_sig,
+        )
+        # update the original transaction dict with the normalized paramters
+        raw_transaction = merge(
+            transaction,
+            raw_transaction_without_sig,
+        )
 
         if raw_transaction['from'] in self._account_passwords:
             unlocked_until = self._account_unlock[raw_transaction['from']]
