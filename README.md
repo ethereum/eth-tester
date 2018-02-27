@@ -163,7 +163,7 @@ Any `block_number` parameter will accept the following string values.
 The `EthereumTester` object is the sole API entrypoint.  Instantiation of this
 object accepts the following parameters.
 
-- `backend`: The chain backend being used.  See the [chain backends](#chain-backends)
+- `backend`: The chain backend being used.  See the [chain backends](#backends)
 - `validator`: The validator to used.  See the [validators](#validation)
 - `normalizer`: The normalizer to used.  See the [normalizers](#normalization)
 - `auto_mine_transactions`: If *truthy* transactions will be automatically mined at the time they are submitted.  See [`enable_auto_mine_transactions`](#api-enable_auto_mine_transactions) and [`disable_auto_mine_transactions`](#api-disable_auto_mine_transactions).
