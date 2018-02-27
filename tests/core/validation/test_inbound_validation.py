@@ -176,13 +176,17 @@ def test_filter_params_input_validation(validator, filter_params, is_valid):
 
 
 @to_dict
-def _make_transaction(_from=None,
-                      to=None,
-                      gas=None,
-                      gas_price=None,
-                      value=None,
-                      data=None,
-                      nonce=None):
+def _make_transaction(
+        _from=None,
+        to=None,
+        gas=None,
+        gas_price=None,
+        value=None,
+        data=None,
+        nonce=None,
+        r=None,
+        s=None,
+        v=None):
     if _from is not None:
         yield 'from', _from
     if to is not None:
@@ -197,6 +201,12 @@ def _make_transaction(_from=None,
         yield 'data', data
     if nonce is not None:
         yield 'nonce', nonce
+    if r is not None:
+        yield 'r', r
+    if s is not None:
+        yield 's', s
+    if v is not None:
+        yield 'v', v
 
 
 @pytest.mark.parametrize(
@@ -233,6 +243,22 @@ def test_transaction_send_input_validation(validator, transaction, is_valid):
     else:
         with pytest.raises(ValidationError):
             validator.validate_inbound_transaction(transaction, txn_type='send')
+
+
+@pytest.mark.parametrize(
+    "transaction, txn_type, is_valid",
+    (
+        (_make_transaction(_from=ADDRESS_A, gas=21000), 'send_signed', False),
+        (_make_transaction(_from=ADDRESS_A, gas=21000, r=1, s=1, v=1), 'send_signed', True),
+        (_make_transaction(_from=ADDRESS_A, gas=21000, r=1, s=1, v=256), 'send_signed', False),
+    ),
+)
+def test_transaction_input_validation(validator, transaction, txn_type, is_valid):
+    if is_valid:
+        validator.validate_inbound_transaction(transaction, txn_type)
+    else:
+        with pytest.raises(ValidationError):
+            validator.validate_inbound_transaction(transaction, txn_type)
 
 
 @pytest.mark.parametrize(

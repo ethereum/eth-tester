@@ -1,5 +1,11 @@
 from __future__ import unicode_literals
 
+import math
+
+from cytoolz import (
+    curry,
+)
+
 import functools
 
 from eth_utils import (
@@ -15,6 +21,7 @@ from eth_utils import (
 
 from eth_tester.constants import (
     UINT256_MAX,
+    UINT8_MAX,
 )
 from eth_tester.exceptions import (
     ValidationError,
@@ -31,10 +38,18 @@ def validate_positive_integer(value):
         raise ValidationError(error_message)
 
 
-def validate_uint256(value):
+@curry
+def validate_uint(max_val, value):
     validate_positive_integer(value)
-    if value > UINT256_MAX:
-        raise ValidationError("Value exceeds maximum 256 bit integer size:  {0}".format(value))
+    if value > max_val:
+        bitsize = int(math.log2(max_val))
+        raise ValidationError(
+            "Value exceeds maximum {:d} bit integer size:  {}".format(bitsize, value)
+        )
+
+
+validate_uint256 = validate_uint(UINT256_MAX)
+validate_uint8 = validate_uint(UINT8_MAX)
 
 
 def validate_bytes(value):

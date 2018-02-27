@@ -12,6 +12,9 @@ VALID_TRANSACTION_PARAMS = [
     'value',
     'data',
     'nonce',
+    'r',
+    's',
+    'v',
 ]
 
 

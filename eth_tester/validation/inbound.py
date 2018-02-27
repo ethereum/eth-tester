@@ -31,6 +31,7 @@ from eth_tester.exceptions import (
 from .common import (
     validate_positive_integer,
     validate_uint256,
+    validate_uint8,
     validate_text,
 )
 
@@ -155,8 +156,15 @@ TRANSACTION_KEYS = {
     'nonce',
 }
 
+SIGNED_TRANSACTION_KEYS = {
+    'r',
+    's',
+    'v',
+}
+
 TRANSACTION_TYPE_INFO = {
     'send': TRANSACTION_KEYS,
+    'send_signed': TRANSACTION_KEYS.union(SIGNED_TRANSACTION_KEYS),
     'call': TRANSACTION_KEYS.difference({'nonce'}),
     'estimate': TRANSACTION_KEYS.difference({'nonce'}),
 }
@@ -183,6 +191,8 @@ def validate_transaction(value, txn_type):
 
     if txn_type == 'send':
         required_keys = {'from', 'gas'}
+    elif txn_type == 'send_signed':
+        required_keys = {'from', 'gas'} | SIGNED_TRANSACTION_KEYS
     elif txn_type in {'estimate', 'call'}:
         required_keys = set(['from'])
     else:
@@ -233,6 +243,11 @@ def validate_transaction(value, txn_type):
             # TypeError is for python2
             # binascii.Error is for python3
             raise ValidationError(bad_data_message)
+
+    if txn_type == 'send_signed':
+        validate_uint256(value['r'])
+        validate_uint256(value['s'])
+        validate_uint8(value['v'])
 
 
 def validate_raw_transaction(raw_transaction):

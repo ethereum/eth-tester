@@ -85,6 +85,9 @@ TRANSACTION_NORMALIZERS = {
     'nonce': identity,
     'value': identity,
     'data': decode_hex,
+    'r': identity,
+    's': identity,
+    'v': identity,
 }
 
 
