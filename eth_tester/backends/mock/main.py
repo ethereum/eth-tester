@@ -317,19 +317,7 @@ class MockBackend(BaseChainBackend):
 
     def send_signed_transaction(self, signed_transaction):
         transaction = dissoc(signed_transaction, 'r', 's', 'v')
-        full_transaction = create_transaction(
-            transaction,
-            self.block,
-            len(self.block['transactions']) + 1,
-            is_pending=True,
-        )
-        self.receipts[full_transaction['hash']] = make_receipt(
-            full_transaction,
-            self.block,
-            len(self.block['transactions']),
-        )
-        self.block['transactions'].append(full_transaction)
-        return full_transaction['hash']
+        return self.send_transaction(transaction)
 
     def estimate_gas(self, transaction):
         raise NotImplementedError("Must be implemented by subclasses")
