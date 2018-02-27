@@ -262,7 +262,8 @@ class BaseTestBackendDirect(object):
     #
     # Transaction Sending
     #
-    def test_send_raw_transaction_valid_raw_transaction(self, eth_tester):
+    @pytest.mark.parametrize('is_pending', [True, False])
+    def test_send_raw_transaction_valid_raw_transaction(self, eth_tester, is_pending):
         # send funds to our sender
         raw_privkey = b'\x11' * 32
         test_key = keys.PrivateKey(raw_privkey)
@@ -275,7 +276,18 @@ class BaseTestBackendDirect(object):
         # transaction: nonce=0, gas_price=1, gas=21000, to=BURN_ADDRESS, value=50000, data=b'',
         #     and signed with `test_key`
         transaction_hex = "0xf861800182520894dead00000000000000000000000000000000000082c350801ba073128146b850e2d38a4742d1afa48544e0ac6bc4b4dcb562583cd2224ad9a082a0680086a2801d02b12431cc3c79ec6c6a0cb846a0b3a8ec970f6e1b76d55ee7e2"  # noqa: E501
+
+        if is_pending:
+            eth_tester.disable_auto_mine_transactions()
+
         transaction_hash = eth_tester.send_raw_transaction(transaction_hex)
+
+        if is_pending:
+            with pytest.raises(TransactionNotFound):
+                eth_tester.get_transaction_receipt(transaction_hash)
+
+            eth_tester.enable_auto_mine_transactions()
+
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
         # assert that the raw transaction is confirmed and successful
         assert receipt['transaction_hash'] == transaction_hash
