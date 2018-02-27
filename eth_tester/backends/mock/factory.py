@@ -75,8 +75,16 @@ def add_hash(fn):
     return inner
 
 
-@to_dict
 def create_transaction(transaction, block, transaction_index, is_pending, overrides=None):
+    filled_txn = _fill_transaction(transaction, block, transaction_index, is_pending, overrides)
+    if 'hash' in filled_txn:
+        return filled_txn
+    else:
+        return assoc(filled_txn, 'hash', fake_rlp_hash(filled_txn))
+
+
+@to_dict
+def _fill_transaction(transaction, block, transaction_index, is_pending, overrides=None):
     if overrides is None:
         overrides = {}
 
@@ -88,7 +96,8 @@ def create_transaction(transaction, block, transaction_index, is_pending, overri
     if 'hash' in overrides:
         yield 'hash', overrides['hash']
     else:
-        yield 'hash', fake_rlp_hash(transaction)
+        # calculate hash after all fields are filled
+        pass
 
     if 'from' in overrides:
         yield 'from', overrides['from']

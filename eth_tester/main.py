@@ -6,6 +6,9 @@ import operator
 import time
 import functools
 
+from cytoolz import (
+    dissoc,
+)
 from cytoolz.itertoolz import (
     remove,
 )
@@ -467,9 +470,12 @@ class EthereumTester(object):
             if is_locked:
                 raise AccountLocked("The account is currently locked")
 
-        if (hasattr(self.backend, 'send_signed_transaction')
-                and all(key in transaction for key in {'r', 's', 'v'})):
-            raw_transaction_hash = self.backend.send_signed_transaction(raw_transaction)
+        if all(key in transaction for key in {'r', 's', 'v'}):
+            if hasattr(self.backend, 'send_signed_transaction'):
+                raw_transaction_hash = self.backend.send_signed_transaction(raw_transaction)
+            else:
+                unsigned_transaction = dissoc(raw_transaction, 'r', 's', 'v')
+                raw_transaction_hash = self.backend.send_transaction(unsigned_transaction)
         else:
             raw_transaction_hash = self.backend.send_transaction(raw_transaction)
 
