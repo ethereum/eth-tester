@@ -470,7 +470,7 @@ class EthereumTester(object):
             if is_locked:
                 raise AccountLocked("The account is currently locked")
 
-        if all(key in transaction for key in {'r', 's', 'v'}):
+        if {'r', 's', 'v'}.issubset(transaction.keys()):
             if hasattr(self.backend, 'send_signed_transaction'):
                 raw_transaction_hash = self.backend.send_signed_transaction(raw_transaction)
             else:
