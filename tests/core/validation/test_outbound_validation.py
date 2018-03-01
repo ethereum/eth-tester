@@ -35,7 +35,7 @@ def validator():
         (b'\x00' * 32, True),
         (b'\xff' * 32, True),
         ('\x00' * 32, False),
-        (encode_hex('\x00' * 32), False),
+        (encode_hex(b'\x00' * 32), False),
     ),
 )
 def test_block_hash_output_validation(validator, block_hash, is_valid):

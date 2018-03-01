@@ -397,8 +397,7 @@ class PyEVMBackend(object):
         signing_key = self._key_lookup[transaction['from']]
         normalized_transaction = self._normalize_transaction(transaction, block_number)
         evm_transaction = self.chain.create_unsigned_transaction(**normalized_transaction)
-        signed_evm_transaction = evm_transaction.as_signed_transaction(signing_key)
-        return signed_evm_transaction
+        return evm_transaction.as_signed_transaction(signing_key)
 
     def send_raw_transaction(self, raw_transaction):
         vm = _get_vm_for_block_number(self.chain, "latest")
@@ -406,6 +405,12 @@ class PyEVMBackend(object):
         evm_transaction = rlp.decode(raw_transaction, TransactionClass)
         _insert_transaction_to_pending_block(self.chain, evm_transaction)
         return evm_transaction.hash
+
+    def send_signed_transaction(self, signed_transaction, block_number='latest'):
+        normalized_transaction = self._normalize_transaction(signed_transaction, block_number)
+        signed_evm_transaction = self.chain.create_transaction(**normalized_transaction)
+        _insert_transaction_to_pending_block(self.chain, signed_evm_transaction)
+        return signed_evm_transaction.hash
 
     def send_transaction(self, transaction):
         signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(

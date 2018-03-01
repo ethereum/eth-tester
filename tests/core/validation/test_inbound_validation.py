@@ -176,13 +176,17 @@ def test_filter_params_input_validation(validator, filter_params, is_valid):
 
 
 @to_dict
-def _make_transaction(_from=None,
-                      to=None,
-                      gas=None,
-                      gas_price=None,
-                      value=None,
-                      data=None,
-                      nonce=None):
+def _make_transaction(
+        _from=None,
+        to=None,
+        gas=None,
+        gas_price=None,
+        value=None,
+        data=None,
+        nonce=None,
+        r=None,
+        s=None,
+        v=None):
     if _from is not None:
         yield 'from', _from
     if to is not None:
@@ -197,41 +201,51 @@ def _make_transaction(_from=None,
         yield 'data', data
     if nonce is not None:
         yield 'nonce', nonce
+    if r is not None:
+        yield 'r', r
+    if s is not None:
+        yield 's', s
+    if v is not None:
+        yield 'v', v
 
 
 @pytest.mark.parametrize(
-    "transaction,is_valid",
+    "txn_type, transaction, is_valid",
     (
-        ({}, False),
-        (_make_transaction(to=ADDRESS_B, gas=21000), False),
-        (_make_transaction(_from=ADDRESS_A, gas=21000), True),
-        (_make_transaction(_from=ADDRESS_A, to=ADDRESS_B), False),
-        (_make_transaction(_from=ADDRESS_A, to=ADDRESS_B, gas=21000), True),
-        (_make_transaction(_from='', to=ADDRESS_B, gas=21000), False),
-        (_make_transaction(_from=ADDRESS_A, to='', gas=21000), True),
-        (_make_transaction(_from=decode_hex(ADDRESS_A), to=ADDRESS_B, gas=21000), False),
-        (_make_transaction(_from=ADDRESS_A, to=decode_hex(ADDRESS_B), gas=21000), False),
-        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, value=0), True),
-        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, value=-1), False),
-        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, data=''), True),
-        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, data='0x'), True),
-        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, data='0x0'), False),
-        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=0), True),
-        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=1), True),
-        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=-1), False),
-        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce='0x1'), False),
-        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce='arst'), False),
-        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=True), False),
-        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=1.0), False),
-        (_make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=-1), False),
+        ('send', {}, False),
+        ('send', _make_transaction(to=ADDRESS_B, gas=21000), False),
+        ('send', _make_transaction(_from=ADDRESS_A, gas=21000), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to=ADDRESS_B), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to=ADDRESS_B, gas=21000), True),
+        ('send', _make_transaction(_from='', to=ADDRESS_B, gas=21000), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to=b'', gas=21000), False),
+        ('send', _make_transaction(_from=decode_hex(ADDRESS_A), to=ADDRESS_B, gas=21000), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to=decode_hex(ADDRESS_B), gas=21000), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, value=0), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, value=-1), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, data=''), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, data='0x'), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, data='0x0'), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=0), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=1), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=-1), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce='0x1'), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce='arst'), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=True), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=1.0), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, nonce=-1), False),
+        ('send_signed', _make_transaction(_from=ADDRESS_A, gas=21000), False),
+        ('send_signed', _make_transaction(_from=ADDRESS_A, gas=21000, r=1, s=1, v=1), True),
+        ('send_signed', _make_transaction(_from=ADDRESS_A, gas=21000, r=1, s=1, v=256), False),
     ),
 )
-def test_transaction_send_input_validation(validator, transaction, is_valid):
+def test_transaction_input_validation(validator, txn_type, transaction, is_valid):
     if is_valid:
-        validator.validate_inbound_transaction(transaction, txn_type='send')
+        validator.validate_inbound_transaction(transaction, txn_type)
     else:
         with pytest.raises(ValidationError):
-            validator.validate_inbound_transaction(transaction, txn_type='send')
+            validator.validate_inbound_transaction(transaction, txn_type)
 
 
 @pytest.mark.parametrize(

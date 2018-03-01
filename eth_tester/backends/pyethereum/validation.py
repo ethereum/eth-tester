@@ -15,6 +15,9 @@ TRANSACTION_KEYS = {
     'value',
     'data',
     'nonce',
+    'r',
+    's',
+    'v',
 }
 
 
@@ -23,11 +26,11 @@ def validate_transaction(transaction):
     if 'from' not in transaction:
         raise ValidationError("Transactions must specify a 'from' address")
     elif not is_address(transaction['from']):
-        raise ValidationError("transaction[from]: Unrecognized address format: {0}".format(
+        raise ValidationError("transaction[from]: Unrecognized address format: {!r}".format(
             transaction['from'],
         ))
-    elif 'to' in transaction and not is_address(transaction['to']):
-        raise ValidationError("transaction[to]: Unrecognized address format: {0}".format(
+    elif 'to' in transaction and transaction['to'] != b'' and not is_address(transaction['to']):
+        raise ValidationError("transaction[to]: Unrecognized address format: {!r}".format(
             transaction['to'],
         ))
 

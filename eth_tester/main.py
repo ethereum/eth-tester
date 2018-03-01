@@ -6,6 +6,9 @@ import operator
 import time
 import functools
 
+from cytoolz import (
+    dissoc,
+)
 from cytoolz.itertoolz import (
     remove,
 )
@@ -18,6 +21,7 @@ from cytoolz.functoolz import (
 from eth_utils import (
     is_integer,
     is_same_address,
+    to_list,
     to_tuple,
 )
 
@@ -325,7 +329,7 @@ class EthereumTester(object):
     #
     def enable_auto_mine_transactions(self):
         self.auto_mine_transactions = True
-        sent_transaction_hashes = self._add_pending_transactions_to_pending_block()
+        sent_transaction_hashes = self._pop_pending_transactions_to_pending_block()
         self.mine_block()
         return sent_transaction_hashes
 
@@ -340,7 +344,7 @@ class EthereumTester(object):
             raw_coinbase = self.normalizer.normalize_inbound_account(coinbase)
 
         if not self.auto_mine_transactions:
-            self._add_pending_transactions_to_pending_block()
+            self._pop_pending_transactions_to_pending_block()
 
         raw_block_hashes = self.backend.mine_blocks(num_blocks, raw_coinbase)
 
@@ -387,13 +391,16 @@ class EthereumTester(object):
                     raw_log_entry = self.normalizer.normalize_inbound_log_entry(log_entry)
                     filter.add(raw_log_entry)
 
-    def _add_pending_transactions_to_pending_block(self):
-        sent_transaction_hashes = [
-            self._add_transaction_to_pending_block(extract_valid_transaction_params(tx))
-            for tx in self._pending_transactions
-        ]
+    def _pop_pending_transactions_to_pending_block(self):
+        sent_transaction_hashes = self._add_all_to_pending_block(self._pending_transactions)
         self._pending_transactions.clear()
         return sent_transaction_hashes
+
+    @to_list
+    def _add_all_to_pending_block(self, pending_transactions):
+        for pending in pending_transactions:
+            txn = extract_valid_transaction_params(pending)
+            yield self._add_transaction_to_pending_block(txn, txn_type='send_signed')
 
     #
     # Transaction Sending
@@ -450,8 +457,8 @@ class EthereumTester(object):
     #
     # Private Transaction API
     #
-    def _add_transaction_to_pending_block(self, transaction):
-        self.validator.validate_inbound_transaction(transaction, txn_type='send')
+    def _add_transaction_to_pending_block(self, transaction, txn_type='send'):
+        self.validator.validate_inbound_transaction(transaction, txn_type=txn_type)
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
 
         if raw_transaction['from'] in self._account_passwords:
@@ -463,7 +470,15 @@ class EthereumTester(object):
             if is_locked:
                 raise AccountLocked("The account is currently locked")
 
-        raw_transaction_hash = self.backend.send_transaction(raw_transaction)
+        if {'r', 's', 'v'}.issubset(transaction.keys()):
+            try:
+                raw_transaction_hash = self.backend.send_signed_transaction(raw_transaction)
+            except NotImplementedError:
+                unsigned_transaction = dissoc(raw_transaction, 'r', 's', 'v')
+                raw_transaction_hash = self.backend.send_transaction(unsigned_transaction)
+        else:
+            raw_transaction_hash = self.backend.send_transaction(raw_transaction)
+
         self.validator.validate_outbound_transaction_hash(raw_transaction_hash)
         transaction_hash = self.normalizer.normalize_outbound_transaction_hash(
             raw_transaction_hash,

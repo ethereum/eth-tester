@@ -5,10 +5,12 @@ from cytoolz.functoolz import (
     partial,
 )
 
-from eth_utils import (
+from eth_utils.curried import (
+    apply_one_of_formatters,
     decode_hex,
     is_address,
     is_list_like,
+    is_hex,
     is_string,
     to_canonical_address,
     to_tuple,
@@ -70,14 +72,22 @@ def normalize_private_key(value):
     return decode_hex(value)
 
 
+to_empty_or_canonical_address = apply_one_of_formatters((
+    (lambda addr: addr == '', lambda addr: b''),
+    (is_hex, to_canonical_address),
+))
+
 TRANSACTION_NORMALIZERS = {
     'from': to_canonical_address,
-    'to': to_canonical_address,
+    'to': to_empty_or_canonical_address,
     'gas': identity,
     'gas_price': identity,
     'nonce': identity,
     'value': identity,
     'data': decode_hex,
+    'r': identity,
+    's': identity,
+    'v': identity,
 }
 
 
