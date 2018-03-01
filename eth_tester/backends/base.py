@@ -74,6 +74,9 @@ class BaseChainBackend(object):
     def send_transaction(self, transaction):
         raise NotImplementedError("Must be implemented by subclasses")
 
+    def send_signed_transaction(self, transaction):
+        raise NotImplementedError("Must be implemented by subclasses")
+
     def estimate_gas(self, transaction):
         raise NotImplementedError("Must be implemented by subclasses")
 

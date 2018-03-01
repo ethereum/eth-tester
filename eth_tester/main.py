@@ -471,9 +471,9 @@ class EthereumTester(object):
                 raise AccountLocked("The account is currently locked")
 
         if {'r', 's', 'v'}.issubset(transaction.keys()):
-            if hasattr(self.backend, 'send_signed_transaction'):
+            try:
                 raw_transaction_hash = self.backend.send_signed_transaction(raw_transaction)
-            else:
+            except NotImplementedError:
                 unsigned_transaction = dissoc(raw_transaction, 'r', 's', 'v')
                 raw_transaction_hash = self.backend.send_transaction(unsigned_transaction)
         else:
