@@ -258,7 +258,6 @@ class PyEVMBackend(object):
                 "`PyEVMBackend` requires py-evm to be installed and importable. "
                 "Please install the `py-evm` library."
             )
-
         self.reset_to_genesis()
 
     #
@@ -454,18 +453,10 @@ class PyEVMBackend(object):
         return header.gas_limit - header.gas_used
 
     def estimate_gas(self, transaction):
-        # TODO: move this to the VM level (and use binary search approach)
         signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
             dict(transaction, gas=self._max_available_gas()),
         )
-
-        computation = _execute_and_revert_transaction(self.chain, signed_evm_transaction, 'pending')
-        if computation.is_error:
-            raise TransactionFailed(str(computation._error))
-
-        gas_used = computation.get_gas_used()
-
-        return int(max(gas_used * GAS_ESTIMATE_BUFFER, MINIMUM_GAS_ESTIMATE))
+        return self.chain.estimate_gas(signed_evm_transaction)
 
     def call(self, transaction, block_number="latest"):
         # TODO: move this to the VM level.
