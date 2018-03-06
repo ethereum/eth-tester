@@ -21,6 +21,7 @@ from eth_tester.constants import (
     FORK_DAO,
     FORK_ANTI_DOS,
     FORK_STATE_CLEANUP,
+    FORK_SPURIOUS_DRAGON,
 )
 from eth_tester.exceptions import (
     BlockNotFound,
@@ -67,7 +68,13 @@ GENESIS_EXTRA_DATA = b''
 GENESIS_INITIAL_ALLOC = {}
 
 
-SUPPORTED_FORKS = {FORK_HOMESTEAD, FORK_DAO, FORK_ANTI_DOS, FORK_STATE_CLEANUP}
+SUPPORTED_FORKS = {
+    FORK_HOMESTEAD,
+    FORK_DAO,
+    FORK_ANTI_DOS,
+    FORK_STATE_CLEANUP,
+    FORK_SPURIOUS_DRAGON
+}
 
 MINIMUM_GAS_ESTIMATE = 30000
 # A buffer of 1.1 would mean allocate 10% more gas than estimated
@@ -280,9 +287,10 @@ class PyEVMBackend(object):
 
     def configure_fork_blocks(self):
         self.chain.configure_forks(
-            homestead=self.fork_blocks.get(FORK_HOMESTEAD),
-            dao=self.fork_blocks.get(FORK_DAO),
-            anti_dos=self.fork_blocks.get(FORK_ANTI_DOS),
+            homestead_start_block=self.fork_blocks.get(FORK_HOMESTEAD),
+            dao_start_block=self.fork_blocks.get(FORK_DAO),
+            tangerine_whistle_start_block=self.fork_blocks.get(FORK_ANTI_DOS),
+            spurious_dragon_block=self.fork_blocks.get(FORK_SPURIOUS_DRAGON)
         )
 
     #

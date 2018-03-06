@@ -66,6 +66,7 @@ def get_default_fork_blocks():
         'FORK_DAO': 0,
         'FORK_ANTI_DOS': 0,
         'FORK_STATE_CLEANUP': 0,
+        'FORK_SPURIOUS_DRAGON': 0,
     }
 
 
