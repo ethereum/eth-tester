@@ -20,6 +20,7 @@ from eth_tester.constants import (
     FORK_DAO,
     FORK_ANTI_DOS,
     FORK_STATE_CLEANUP,
+    FORK_SPURIOUS_DRAGON,
 )
 from eth_tester.exceptions import (
     BlockNotFound,
@@ -224,6 +225,8 @@ class PyEthereum21Backend(BaseChainBackend):
             self.evm.chain.env.config['ANTI_DOS_FORK_BLKNUM'] = fork_block
         elif fork_name == FORK_STATE_CLEANUP:
             self.evm.chain.env.config['CLEARING_FORK_BLKNUM'] = fork_block
+        elif fork_name == FORK_SPURIOUS_DRAGON:
+            self.evm.chain.env.config['SPURIOUS_DRAGON_FORK_BLKNUM'] = fork_block
         else:
             raise UnknownFork("Unknown fork name: {0}".format(fork_name))
 
@@ -236,6 +239,8 @@ class PyEthereum21Backend(BaseChainBackend):
             return self.evm.chain.env.config['ANTI_DOS_FORK_BLKNUM']
         elif fork_name == FORK_STATE_CLEANUP:
             return self.evm.chain.env.config['CLEARING_FORK_BLKNUM']
+        elif fork_name == FORK_SPURIOUS_DRAGON:
+            return self.evm.chain.env.config['SPURIOUS_DRAGON_FORK_BLKNUM']
         else:
             raise UnknownFork("Unknown fork name: {0}".format(fork_name))
 

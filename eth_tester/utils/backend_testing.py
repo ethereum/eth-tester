@@ -42,6 +42,7 @@ from eth_tester.constants import (
     FORK_DAO,
     FORK_ANTI_DOS,
     FORK_STATE_CLEANUP,
+    FORK_SPURIOUS_DRAGON,
 )
 from eth_tester.exceptions import (
     AccountLocked,
@@ -1252,6 +1253,7 @@ class BaseTestBackendDirect(object):
             (FORK_DAO, 0, 12345),
             (FORK_ANTI_DOS, 0, 12345),
             (FORK_STATE_CLEANUP, 0, 12345),
+            (FORK_SPURIOUS_DRAGON, 0, 12345),
         )
     )
     def test_getting_and_setting_fork_blocks(self,
