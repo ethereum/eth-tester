@@ -9,6 +9,10 @@ from cytoolz import (
 
 import rlp
 
+from evm.utils.spoof import (
+    SpoofTransaction
+)
+
 from eth_utils import (
     encode_hex,
     int_to_big_endian,
@@ -422,6 +426,11 @@ class PyEVMBackend(object):
         if 'to' not in transaction:
             yield 'to', b''
 
+    def _get_normalized_and_unsigned_evm_transaction(self, transaction, block_number='latest'):
+        normalized_transaction = self._normalize_transaction(transaction, block_number)
+        evm_transaction = self.chain.create_unsigned_transaction(**normalized_transaction)
+        return evm_transaction
+
     def _get_normalized_and_signed_evm_transaction(self, transaction, block_number='latest'):
         signing_key = self._key_lookup[transaction['from']]
         normalized_transaction = self._normalize_transaction(transaction, block_number)
@@ -453,10 +462,20 @@ class PyEVMBackend(object):
         return header.gas_limit - header.gas_used
 
     def estimate_gas(self, transaction):
-        signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
+        evm_transaction = self._get_normalized_and_unsigned_evm_transaction(
             dict(transaction, gas=self._max_available_gas()),
         )
-        return self.chain.estimate_gas(signed_evm_transaction)
+
+        spoof_evm_transaction = SpoofTransaction(
+            evm_transaction,
+            get_sender=lambda: transaction['from'],
+            sender=transaction['from'],
+            intrinsic_gas=21000,
+            s=1,
+            r=1,
+            v=37)
+
+        return self.chain.estimate_gas(spoof_evm_transaction)
 
     def call(self, transaction, block_number="latest"):
         # TODO: move this to the VM level.
