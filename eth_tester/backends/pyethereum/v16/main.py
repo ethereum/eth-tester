@@ -399,6 +399,9 @@ class PyEthereum16Backend(BaseChainBackend):
         )
         return self.evm.last_tx.hash
 
+    def send_signed_transaction(self, transaction):
+        raise NotImplementedError("Not implemented in the PyEthereum16Backend backend")
+
     @replace_exceptions({Pyeth16TransactionFailed: TransactionFailed})
     def call(self, transaction, block_number="latest"):
         from ethereum import tester
