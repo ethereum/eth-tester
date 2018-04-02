@@ -404,6 +404,9 @@ class PyEthereum21Backend(BaseChainBackend):
         _send_transaction(self.evm, transaction)
         return self.evm.last_tx.hash
 
+    def send_signed_transaction(self, transaction):
+        raise NotImplementedError("Not implemented in the PyEthereum21Backend backend")
+
     @replace_exceptions({Pyeth21TransactionFailed: TransactionFailed})
     def estimate_gas(self, transaction):
         snapshot = self.take_snapshot()
