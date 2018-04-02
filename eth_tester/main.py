@@ -25,25 +25,28 @@ from eth_utils import (
     to_tuple,
 )
 
+from eth_tester.backends import (
+    get_chain_backend,
+)
+from eth_tester.constants import (
+    FORK_HOMESTEAD,
+    FORK_DAO,
+    FORK_SPURIOUS_DRAGON,
+    FORK_TANGERINE_WHISTLE,
+    FORK_BYZANTIUM,
+)
 from eth_tester.exceptions import (
     AccountLocked,
     BlockNotFound,
     FilterNotFound,
     SnapshotNotFound,
     TransactionNotFound,
+    UnknownFork,
     ValidationError,
 )
-
 from eth_tester.normalization import (
     get_normalizer_backend,
 )
-from eth_tester.backends import (
-    get_chain_backend,
-)
-from eth_tester.validation import (
-    get_validator,
-)
-
 from eth_tester.utils.accounts import (
     private_key_to_address,
 )
@@ -54,6 +57,9 @@ from eth_tester.utils.filters import (
 from eth_tester.utils.transactions import (
     extract_valid_transaction_params,
     remove_matching_transaction_from_list,
+)
+from eth_tester.validation import (
+    get_validator,
 )
 
 
@@ -66,11 +72,11 @@ def backend_proxy_method(backend_method_name):
 
 def get_default_fork_blocks():
     return {
-        'FORK_HOMESTEAD': 0,
-        'FORK_DAO': 0,
-        'FORK_ANTI_DOS': 0,
-        'FORK_STATE_CLEANUP': 0,
-        'FORK_SPURIOUS_DRAGON': 0,
+        FORK_HOMESTEAD: None,
+        FORK_DAO: None,
+        FORK_SPURIOUS_DRAGON: None,
+        FORK_TANGERINE_WHISTLE: None,
+        FORK_BYZANTIUM: None,
     }
 
 
@@ -130,7 +136,10 @@ class EthereumTester(object):
         self.auto_mine_transactions = auto_mine_transactions
 
         for fork_name, fork_block in fork_blocks.items():
-            self.set_fork_block(fork_name, fork_block)
+            try:
+                self.set_fork_block(fork_name, fork_block)
+            except UnknownFork:
+                pass
 
         self._reset_local_state()
 
@@ -168,8 +177,18 @@ class EthereumTester(object):
     #
     # Fork Rules
     #
-    set_fork_block = backend_proxy_method('set_fork_block')
-    get_fork_block = backend_proxy_method('get_fork_block')
+    def get_supported_forks(self):
+        return self.backend.get_supported_forks()
+
+    def set_fork_block(self, fork_name, block_number):
+        if fork_name not in self.get_supported_forks():
+            raise UnknownFork("Unknown fork: {0}".format(fork_name))
+        return self.backend.set_fork_block(fork_name, block_number)
+
+    def get_fork_block(self, fork_name):
+        if fork_name not in self.get_supported_forks():
+            raise UnknownFork("Unknown fork: {0}".format(fork_name))
+        return self.backend.get_fork_block(fork_name)
 
     #
     # Time Traveling

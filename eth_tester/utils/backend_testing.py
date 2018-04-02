@@ -40,9 +40,9 @@ from eth_tester.constants import (
     BURN_ADDRESS,
     FORK_HOMESTEAD,
     FORK_DAO,
-    FORK_ANTI_DOS,
-    FORK_STATE_CLEANUP,
     FORK_SPURIOUS_DRAGON,
+    FORK_TANGERINE_WHISTLE,
+    FORK_BYZANTIUM,
 )
 from eth_tester.exceptions import (
     AccountLocked,
@@ -51,6 +51,7 @@ from eth_tester.exceptions import (
     ValidationError,
     TransactionFailed,
     TransactionNotFound,
+    UnknownFork,
 )
 from .emitter_contract import (
     _deploy_emitter,
@@ -1249,11 +1250,11 @@ class BaseTestBackendDirect(object):
     @pytest.mark.parametrize(
         'fork_name,expected_init_block,set_to_block',
         (
-            (FORK_HOMESTEAD, 0, 12345),
-            (FORK_DAO, 0, 12345),
-            (FORK_ANTI_DOS, 0, 12345),
-            (FORK_STATE_CLEANUP, 0, 12345),
-            (FORK_SPURIOUS_DRAGON, 0, 12345),
+            (FORK_HOMESTEAD, None, 12345),
+            (FORK_DAO, None, 12345),
+            (FORK_SPURIOUS_DRAGON, None, 12345),
+            (FORK_TANGERINE_WHISTLE, None, 12345),
+            (FORK_BYZANTIUM, None, 12345),
         )
     )
     def test_getting_and_setting_fork_blocks(self,
@@ -1261,9 +1262,17 @@ class BaseTestBackendDirect(object):
                                              fork_name,
                                              expected_init_block,
                                              set_to_block):
+        if fork_name not in eth_tester.get_supported_forks():
+            with pytest.raises(UnknownFork):
+                eth_tester.get_fork_block(fork_name)
+            with pytest.raises(UnknownFork):
+                eth_tester.set_fork_block(fork_name, set_to_block)
+            return
+
         # TODO: this should realy test something about the EVM actually using
         # the *right* rules but for now this should suffice.
         init_fork_block = eth_tester.get_fork_block(fork_name)
+
         if fork_name == FORK_DAO:
             # support pyethereum2.0
             assert init_fork_block in {expected_init_block, 999999999999999}
