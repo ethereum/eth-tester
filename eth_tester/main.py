@@ -21,29 +21,26 @@ from cytoolz.functoolz import (
 from eth_utils import (
     is_integer,
     is_same_address,
+    to_dict,
     to_list,
     to_tuple,
 )
 
+from eth_tester.backends import (
+    get_chain_backend,
+)
 from eth_tester.exceptions import (
     AccountLocked,
     BlockNotFound,
     FilterNotFound,
     SnapshotNotFound,
     TransactionNotFound,
+    UnknownFork,
     ValidationError,
 )
-
 from eth_tester.normalization import (
     get_normalizer_backend,
 )
-from eth_tester.backends import (
-    get_chain_backend,
-)
-from eth_tester.validation import (
-    get_validator,
-)
-
 from eth_tester.utils.accounts import (
     private_key_to_address,
 )
@@ -55,6 +52,9 @@ from eth_tester.utils.transactions import (
     extract_valid_transaction_params,
     remove_matching_transaction_from_list,
 )
+from eth_tester.validation import (
+    get_validator,
+)
 
 
 def backend_proxy_method(backend_method_name):
@@ -64,14 +64,10 @@ def backend_proxy_method(backend_method_name):
     return proxy_method
 
 
-def get_default_fork_blocks():
-    return {
-        'FORK_HOMESTEAD': 0,
-        'FORK_DAO': 0,
-        'FORK_ANTI_DOS': 0,
-        'FORK_STATE_CLEANUP': 0,
-        'FORK_SPURIOUS_DRAGON': 0,
-    }
+@to_dict
+def get_default_fork_blocks(supported_forks):
+    for fork_name in supported_forks:
+        yield (fork_name, None)
 
 
 def handle_auto_mining(func):
@@ -120,14 +116,21 @@ class EthereumTester(object):
         if normalizer is None:
             normalizer = get_normalizer_backend()
 
-        if fork_blocks is None:
-            fork_blocks = get_default_fork_blocks()
-
         self.backend = backend
         self.validator = validator
         self.normalizer = normalizer
 
         self.auto_mine_transactions = auto_mine_transactions
+
+        if fork_blocks is None:
+            fork_blocks = get_default_fork_blocks(self.get_supported_forks())
+
+        unsupported_forks = set(fork_blocks.keys()).difference(self.get_supported_forks())
+        if unsupported_forks:
+            raise UnknownFork(
+                "The following forks are not supported by the backend you are "
+                "using: {0}".format(sorted(unsupported_forks))
+            )
 
         for fork_name, fork_block in fork_blocks.items():
             self.set_fork_block(fork_name, fork_block)
@@ -168,8 +171,18 @@ class EthereumTester(object):
     #
     # Fork Rules
     #
-    set_fork_block = backend_proxy_method('set_fork_block')
-    get_fork_block = backend_proxy_method('get_fork_block')
+    def get_supported_forks(self):
+        return self.backend.get_supported_forks()
+
+    def set_fork_block(self, fork_name, block_number):
+        if fork_name not in self.get_supported_forks():
+            raise UnknownFork("Unknown fork: {0}".format(fork_name))
+        return self.backend.set_fork_block(fork_name, block_number)
+
+    def get_fork_block(self, fork_name):
+        if fork_name not in self.get_supported_forks():
+            raise UnknownFork("Unknown fork: {0}".format(fork_name))
+        return self.backend.get_fork_block(fork_name)
 
     #
     # Time Traveling

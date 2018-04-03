@@ -23,6 +23,9 @@ from eth_utils import (
 from eth_tester.backends.base import (
     BaseChainBackend,
 )
+from eth_tester.constants import (
+    KNOWN_FORKS,
+)
 from eth_tester.exceptions import (
     BlockNotFound,
     TransactionNotFound,
@@ -126,6 +129,9 @@ class MockBackend(BaseChainBackend):
     #
     # Fork block numbers
     #
+    def get_supported_forks(self):
+        return KNOWN_FORKS
+
     def set_fork_block(self, fork_name, fork_block):
         self.fork_blocks[fork_name] = fork_block
 

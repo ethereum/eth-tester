@@ -185,29 +185,36 @@ Ethereum tester supports the following hard forks.
 
 - Homestead
 - DAO
-- Anti DOS
-- State Clearing
+- Spurious Dragon
+- Tangerine Whistle
+- Byzantium
 
 By default, all forks will be active at the genesis block (block 0).
 
 Manual configuration and retrieval of fork rules can be done with the following
 API.
 
+#### `EthereumTester.get_supported_forks()`
+
+Returns a `set` of the supported fork names.
+
 #### `EthereumTester.set_fork_block(fork_name, fork_block)`
 
 Sets the fork rules for the fork denoted by `fork_name` to activate at `fork_block`.
+
+The `fork_name` parameter must be one of the following strings.
+
+- Homestead: `"FORK_HOMESTEAD"`
+- DAO: `"FORK_DAO"`
+- Spurious Dragon: `"FORK_SPURIOUS_DRAGON"`
+- Tangerine Whistle: `"FORK_TANGERINE_WHISTLE"`
+- Byzantium: `"FORK_BYZANTIUM"`
 
 #### `EthereumTester.get_fork_block(fork_name)`
 
 Returns the block number on which the named fork will activate.
 
-
-The `fork_name` parameter must be one of the following strings.
-
-- `"FORK_HOMESTEAD"`
-- `"FORK_DAO"`
-- `"FORK_ANTI_DOS"`
-- `"FORK_STATE_CLEANUP"`
+The `fork_name` parameter follows the same restrictions as `set_fork_block`
 
 
 ### Time Travel

@@ -3,6 +3,10 @@ from __future__ import absolute_import
 import pkg_resources
 import time
 
+from cytoolz import (
+    frequencies,
+)
+
 import rlp
 
 from eth_utils import (
@@ -19,9 +23,9 @@ from eth_keys import KeyAPI
 from eth_tester.constants import (
     FORK_HOMESTEAD,
     FORK_DAO,
-    FORK_ANTI_DOS,
-    FORK_STATE_CLEANUP,
     FORK_SPURIOUS_DRAGON,
+    FORK_TANGERINE_WHISTLE,
+    FORK_BYZANTIUM,
 )
 from eth_tester.exceptions import (
     BlockNotFound,
@@ -71,9 +75,9 @@ GENESIS_INITIAL_ALLOC = {}
 SUPPORTED_FORKS = {
     FORK_HOMESTEAD,
     FORK_DAO,
-    FORK_ANTI_DOS,
-    FORK_STATE_CLEANUP,
-    FORK_SPURIOUS_DRAGON
+    FORK_SPURIOUS_DRAGON,
+    FORK_TANGERINE_WHISTLE,
+    FORK_BYZANTIUM,
 }
 
 MINIMUM_GAS_ESTIMATE = 30000
@@ -218,12 +222,45 @@ def _insert_transaction_to_pending_block(chain, transaction):
     chain.header = block.header
 
 
+FORK_NAME_MAPPING = {
+    FORK_HOMESTEAD: 'homestead',
+    FORK_TANGERINE_WHISTLE: 'tangerine-whistle',
+    FORK_SPURIOUS_DRAGON: 'spurious-dragon',
+    FORK_BYZANTIUM: 'byzantium',
+}
+
+
+def _mk_fork_configuration_params(fork_config):
+    all_block_numbers = tuple(fork_config.values())
+    if len(all_block_numbers) != len(set(all_block_numbers)):
+        duplicates = tuple(sorted(
+            blk_num for blk_num, freq
+            in frequencies(all_block_numbers).items()
+            if freq > 1
+        ))
+        raise ValueError("Duplicate block numbers: {0}".format(duplicates))
+
+    args = {
+        (block_number, FORK_NAME_MAPPING[fork_name])
+        for fork_name, block_number
+        in fork_config.items()
+        if (block_number is not None and fork_name != FORK_DAO)
+    }
+
+    if FORK_DAO in fork_config:
+        kwargs = {'dao_start_block': fork_config[FORK_DAO]}
+    else:
+        kwargs = {}
+
+    return args, kwargs
+
+
 class PyEVMBackend(object):
     chain = None
-    fork_blocks = None
+    fork_config = None
 
     def __init__(self):
-        self.fork_blocks = {}
+        self.fork_config = {}
 
         if not is_pyevm_available():
             raise pkg_resources.DistributionNotFound(
@@ -268,30 +305,28 @@ class PyEVMBackend(object):
     #
     # Fork block numbers
     #
+    def get_supported_forks(self):
+        return SUPPORTED_FORKS
+
     def set_fork_block(self, fork_name, fork_block):
-        if fork_name in SUPPORTED_FORKS:
-            if fork_block:
-                self.fork_blocks[fork_name] = fork_block
+        if fork_name in self.get_supported_forks():
+            if fork_block is not None:
+                self.fork_config[fork_name] = fork_block
+            elif fork_block is None:
+                self.fork_config.pop(fork_name, None)
         else:
             raise UnknownFork("Unknown fork name: {0}".format(fork_name))
-        self.chain.configure_forks()
+        self.configure_forks()
 
     def get_fork_block(self, fork_name):
-        if fork_name in SUPPORTED_FORKS:
-            return self.fork_blocks.get(fork_name, 0)
-        elif fork_name == FORK_STATE_CLEANUP:
-            # TODO: get EIP160 rules implemented in py-evm
-            return self.fork_blocks.get(fork_name, 0)
+        if fork_name in self.get_supported_forks():
+            return self.fork_config.get(fork_name, None)
         else:
             raise UnknownFork("Unknown fork name: {0}".format(fork_name))
 
-    def configure_fork_blocks(self):
-        self.chain.configure_forks(
-            homestead_start_block=self.fork_blocks.get(FORK_HOMESTEAD),
-            dao_start_block=self.fork_blocks.get(FORK_DAO),
-            tangerine_whistle_start_block=self.fork_blocks.get(FORK_ANTI_DOS),
-            spurious_dragon_block=self.fork_blocks.get(FORK_SPURIOUS_DRAGON)
-        )
+    def configure_forks(self):
+        args, kwargs = _mk_fork_configuration_params(self.fork_config)
+        self.chain.configure_forks(*args, **kwargs)
 
     #
     # Meta
@@ -441,7 +476,7 @@ class PyEVMBackend(object):
         if computation.is_error:
             raise TransactionFailed(str(computation._error))
 
-        gas_used = computation.gas_meter.start_gas - computation.gas_meter.gas_remaining
+        gas_used = computation.get_gas_used()
 
         return int(max(gas_used * GAS_ESTIMATE_BUFFER, MINIMUM_GAS_ESTIMATE))
 
