@@ -2,10 +2,6 @@ from __future__ import unicode_literals
 
 import pytest
 
-from hypothesis import (
-    settings,
-)
-
 from eth_tester import (
     EthereumTester,
     PyEthereum21Backend,
@@ -17,8 +13,6 @@ from eth_tester.backends.pyethereum.utils import (
 
 from eth_tester.utils.backend_testing import (
     BaseTestBackendDirect,
-    BaseTestBackendFuzz,
-    EVMStateFuzzer,
 )
 
 
@@ -35,12 +29,3 @@ def eth_tester():
 
 class TestPyEthereum21BackendDirect(BaseTestBackendDirect):
     pass
-
-
-class TestPyEthereum21BackendFuzz(BaseTestBackendFuzz):
-    pass
-
-
-
-#TestPyEthereum21EVMStateFuzzer = EVMStateFuzzer.TestCase
-#TestPyEthereum21EVMStateFuzzer.settings = settings(max_examples=20, stateful_step_count=50)

@@ -2,10 +2,6 @@ from __future__ import unicode_literals
 
 import pytest
 
-from hypothesis import (
-    settings,
-)
-
 from eth_tester import (
     EthereumTester,
     PyEthereum16Backend,
@@ -17,8 +13,6 @@ from eth_tester.backends.pyethereum.utils import (
 
 from eth_tester.utils.backend_testing import (
     BaseTestBackendDirect,
-    BaseTestBackendFuzz,
-    EVMStateFuzzer,
 )
 
 
@@ -34,16 +28,7 @@ def eth_tester():
 
 
 class TestPyEthereum16BackendDirect(BaseTestBackendDirect):
-    
+
     @pytest.mark.skip(reason="v1.6 not supported")
     def test_call_query_previous_state(self, eth_tester):
         pass
-
-
-class TestPyEthereum16BackendFuzz(BaseTestBackendFuzz):
-    pass
-
-
-
-#TestPyEthereum16EVMStateFuzzer = EVMStateFuzzer.TestCase
-#TestPyEthereum16EVMStateFuzzer.settings = settings(max_examples=20, stateful_step_count=50)
