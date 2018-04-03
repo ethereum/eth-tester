@@ -1262,12 +1262,13 @@ class BaseTestBackendDirect(object):
                                              fork_name,
                                              expected_init_block,
                                              set_to_block):
-        if fork_name not in eth_tester.get_supported_forks():
-            with pytest.raises(UnknownFork):
-                eth_tester.get_fork_block(fork_name)
-            with pytest.raises(UnknownFork):
-                eth_tester.set_fork_block(fork_name, set_to_block)
-            return
+        if eth_tester.backend.__class__.__name__ == 'PyEthereum16Backend':
+            if fork_name == FORK_BYZANTIUM:
+                with pytest.raises(UnknownFork):
+                    eth_tester.get_fork_block(fork_name)
+                with pytest.raises(UnknownFork):
+                    eth_tester.set_fork_block(fork_name, set_to_block)
+                return
 
         # TODO: this should realy test something about the EVM actually using
         # the *right* rules but for now this should suffice.
