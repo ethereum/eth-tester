@@ -48,9 +48,13 @@ from .utils import is_pyevm_available
 if is_pyevm_available():
     from evm.exceptions import (
         BlockNotFound as EVMBlockNotFound,
+        InvalidInstruction as EVMInvalidInstruction,
+        Revert as EVMRevert,
     )
 else:
     EVMBlockNotFound = None
+    EVMInvalidInstruction = None
+    EVMRevert = None
 
 
 ZERO_ADDRESS = 20 * b'\x00'
@@ -457,6 +461,9 @@ class PyEVMBackend(object):
         header = self.chain.get_block().header
         return header.gas_limit - header.gas_used
 
+    @replace_exceptions({
+        EVMInvalidInstruction: TransactionFailed,
+        EVMRevert: TransactionFailed})
     def estimate_gas(self, transaction):
         evm_transaction = self._get_normalized_and_unsigned_evm_transaction(
             dict(
@@ -464,8 +471,7 @@ class PyEVMBackend(object):
                 gas=self._max_available_gas(),
                 nonce=0))
 
-        estimate = self.chain.estimate_gas(evm_transaction)
-
+        return self.chain.estimate_gas(evm_transaction)
 
     def call(self, transaction, block_number="latest"):
         # TODO: move this to the VM level.
