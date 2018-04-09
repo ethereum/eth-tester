@@ -465,11 +465,8 @@ class PyEVMBackend(object):
         EVMInvalidInstruction: TransactionFailed,
         EVMRevert: TransactionFailed})
     def estimate_gas(self, transaction):
-        evm_transaction = self._get_normalized_and_unsigned_evm_transaction(
-            dict(
-                transaction,
-                gas=self._max_available_gas(),
-                nonce=0))
+        evm_transaction = self._get_normalized_and_unsigned_evm_transaction(dict(
+            transaction))
 
         return self.chain.estimate_gas(evm_transaction)
 
