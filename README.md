@@ -724,7 +724,7 @@ use.
 
 ```python
 >>> from eth_tester import EthereumTester
->>> from eth_tester.backends.pyethereum import PyEthereum16Backend
+>>> from eth_tester import PyEthereum16Backend
 >>> t = EthereumTester(backend=PyEthereum16Backend())
 ```
 
