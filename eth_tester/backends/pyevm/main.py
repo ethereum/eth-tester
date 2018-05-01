@@ -197,7 +197,7 @@ def _get_transaction_by_hash(chain, transaction_hash):
 
 
 def _execute_and_revert_transaction(chain, transaction, block_number="latest"):
-    vm = _get_vm_for_block_number(chain, block_number, mutable=True)
+    vm = _get_vm_for_block_number(chain, block_number)
 
     state = vm.state
     snapshot = state.snapshot()
@@ -206,20 +206,10 @@ def _execute_and_revert_transaction(chain, transaction, block_number="latest"):
     return computation
 
 
-def _get_vm_for_block_number(chain, block_number, mutable=False):
+def _get_vm_for_block_number(chain, block_number):
     block = _get_block_by_number(chain, block_number)
-    if mutable and not block.header.is_mutable():
-        if hasattr(block.header, 'make_mutable'):
-            block.header.make_mutable()
-        else:
-            block.header._mutable = True
     vm = chain.get_vm(header=block.header)
     return vm
-
-
-def _insert_transaction_to_pending_block(chain, transaction):
-    _, block = chain.get_vm().apply_transaction(transaction)
-    chain.header = block.header
 
 
 FORK_NAME_MAPPING = {
@@ -332,7 +322,7 @@ class PyEVMBackend(object):
     # Meta
     #
     def time_travel(self, to_timestamp):
-        self.chain.header.timestamp = to_timestamp
+        self.chain.header = self.chain.header.copy(timestamp=to_timestamp)
         return to_timestamp
 
     #
@@ -403,18 +393,15 @@ class PyEVMBackend(object):
     #
     def get_nonce(self, account, block_number="latest"):
         vm = _get_vm_for_block_number(self.chain, block_number)
-        with vm.state.state_db(read_only=True) as state_db:
-            return state_db.get_nonce(account)
+        return vm.state.account_db.get_nonce(account)
 
     def get_balance(self, account, block_number="latest"):
         vm = _get_vm_for_block_number(self.chain, block_number)
-        with vm.state.state_db(read_only=True) as state_db:
-            return state_db.get_balance(account)
+        return vm.state.account_db.get_balance(account)
 
     def get_code(self, account, block_number="latest"):
         vm = _get_vm_for_block_number(self.chain, block_number)
-        with vm.state.state_db(read_only=True) as state_db:
-            return state_db.get_code(account)
+        return vm.state.account_db.get_code(account)
 
     #
     # Transactions
@@ -446,20 +433,20 @@ class PyEVMBackend(object):
         vm = _get_vm_for_block_number(self.chain, "latest")
         TransactionClass = vm.get_transaction_class()
         evm_transaction = rlp.decode(raw_transaction, TransactionClass)
-        _insert_transaction_to_pending_block(self.chain, evm_transaction)
+        self.chain.apply_transaction(evm_transaction)
         return evm_transaction.hash
 
     def send_signed_transaction(self, signed_transaction, block_number='latest'):
         normalized_transaction = self._normalize_transaction(signed_transaction, block_number)
         signed_evm_transaction = self.chain.create_transaction(**normalized_transaction)
-        _insert_transaction_to_pending_block(self.chain, signed_evm_transaction)
+        self.chain.apply_transaction(signed_evm_transaction)
         return signed_evm_transaction.hash
 
     def send_transaction(self, transaction):
         signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
             transaction,
         )
-        _insert_transaction_to_pending_block(self.chain, signed_evm_transaction)
+        self.chain.apply_transaction(signed_evm_transaction)
         return signed_evm_transaction.hash
 
     def _max_available_gas(self):

@@ -1,7 +1,0 @@
-pytest>=3.2.1,<4.0.0
-pytest-xdist>=1.22.2,<2
-tox>=1.8.0
-flake8==3.0.4
-eth-abi>=1.0.0-beta.1,<2
-bumpversion==0.5.3
-eth-hash[pycryptodome]>=0.1.0a2,<1.0.0
