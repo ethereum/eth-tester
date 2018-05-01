@@ -197,7 +197,7 @@ def _get_transaction_by_hash(chain, transaction_hash):
 
 
 def _execute_and_revert_transaction(chain, transaction, block_number="latest"):
-    vm = _get_vm_for_block_number(chain, block_number, mutable=True)
+    vm = _get_vm_for_block_number(chain, block_number)
 
     state = vm.state
     snapshot = state.snapshot()
@@ -206,7 +206,7 @@ def _execute_and_revert_transaction(chain, transaction, block_number="latest"):
     return computation
 
 
-def _get_vm_for_block_number(chain, block_number, mutable=False):
+def _get_vm_for_block_number(chain, block_number):
     block = _get_block_by_number(chain, block_number)
     vm = chain.get_vm(header=block.header)
     return vm

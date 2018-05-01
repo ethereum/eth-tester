@@ -13,7 +13,6 @@ extras_require = {
     'test': [
         'pytest>=3.2.1,<4.0.0',
         'pytest-xdist>=1.22.2,<2',
-        'flake8==3.0.4',
         'eth-abi>=1.0.0-beta.1,<2',
         'eth-hash[pycryptodome]>=0.1.0a2,<1.0.0',
     ],
