@@ -51,6 +51,9 @@ if is_pyevm_available():
         InvalidInstruction as EVMInvalidInstruction,
         Revert as EVMRevert,
     )
+    from evm.utils.spoof import (
+        SpoofTransaction as EVMSpoofTransaction
+    )
 else:
     EVMBlockNotFound = None
     EVMInvalidInstruction = None
@@ -467,8 +470,9 @@ class PyEVMBackend(object):
     def estimate_gas(self, transaction):
         evm_transaction = self._get_normalized_and_unsigned_evm_transaction(dict(
             transaction))
+        spoofed_transaction = EVMSpoofTransaction(evm_transaction, from_=transaction['from'])
 
-        return self.chain.estimate_gas(evm_transaction)
+        return self.chain.estimate_gas(spoofed_transaction)
 
     def call(self, transaction, block_number="latest"):
         # TODO: move this to the VM level.
