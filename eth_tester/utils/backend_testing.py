@@ -728,7 +728,7 @@ class BaseTestBackendDirect(object):
             'willThrow',
         )
         with pytest.raises(TransactionFailed):
-            eth_tester.estimate_gas(dissoc(call_will_throw_transaction, 'gas'))
+            eth_tester.estimate_gas(call_will_throw_transaction)
 
         call_set_value_transaction = _make_call_throws_transaction(
             eth_tester,
@@ -736,7 +736,7 @@ class BaseTestBackendDirect(object):
             'setValue',
             fn_args=(2,),
         )
-        gas_estimation = eth_tester.estimate_gas(dissoc(call_set_value_transaction, 'gas'))
+        gas_estimation = eth_tester.estimate_gas(call_set_value_transaction)
         assert gas_estimation
 
     #
