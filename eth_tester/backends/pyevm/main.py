@@ -47,7 +47,7 @@ from .utils import is_pyevm_available
 
 if is_pyevm_available():
     from evm.exceptions import (
-        BlockNotFound as EVMBlockNotFound,
+        HeaderNotFound as EVMHeaderNotFound,
         InvalidInstruction as EVMInvalidInstruction,
         Revert as EVMRevert,
     )
@@ -55,7 +55,7 @@ if is_pyevm_available():
         SpoofTransaction as EVMSpoofTransaction
     )
 else:
-    EVMBlockNotFound = None
+    EVMHeaderNotFound = None
     EVMInvalidInstruction = None
     EVMRevert = None
 
@@ -359,13 +359,13 @@ class PyEVMBackend(object):
     #
     # Chain data
     #
-    @replace_exceptions({EVMBlockNotFound: BlockNotFound})
+    @replace_exceptions({EVMHeaderNotFound: BlockNotFound})
     def get_block_by_number(self, block_number, full_transaction=True):
         block = _get_block_by_number(self.chain, block_number)
         is_pending = block.number == self.chain.get_block().number
         return serialize_block(block, full_transaction, is_pending)
 
-    @replace_exceptions({EVMBlockNotFound: BlockNotFound})
+    @replace_exceptions({EVMHeaderNotFound: BlockNotFound})
     def get_block_by_hash(self, block_hash, full_transaction=True):
         block = _get_block_by_hash(self.chain, block_hash)
         is_pending = block.number == self.chain.get_block().number
