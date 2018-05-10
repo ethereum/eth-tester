@@ -46,7 +46,7 @@ extras_require['dev'] = (
 setup(
     name='eth-tester',
     # *IMPORTANT*: Don't manually change the version here. Use the 'bumpversion' utility.
-    version='0.1.0-beta.24',
+    version='0.1.0-beta.25',
     description="""Tools for testing Ethereum applications.""",
     long_description_markdown_filename='README.md',
     author='Piper Merriam',
