@@ -5,6 +5,7 @@ import time
 
 from cytoolz import (
     frequencies,
+    assoc,
 )
 
 import rlp
@@ -468,8 +469,8 @@ class PyEVMBackend(object):
         EVMInvalidInstruction: TransactionFailed,
         EVMRevert: TransactionFailed})
     def estimate_gas(self, transaction):
-        evm_transaction = self._get_normalized_and_unsigned_evm_transaction(dict(
-            transaction))
+        evm_transaction = self._get_normalized_and_unsigned_evm_transaction(assoc(
+            transaction, 'gas', 21000))
         spoofed_transaction = EVMSpoofTransaction(evm_transaction, from_=transaction['from'])
 
         return self.chain.estimate_gas(spoofed_transaction)
