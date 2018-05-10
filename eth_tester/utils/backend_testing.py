@@ -691,7 +691,11 @@ class BaseTestBackendDirect(object):
         call_math_transaction = assoc(estimate_call_math_transaction, 'gas', gas_estimation)
         transaction_hash = eth_tester.send_transaction(call_math_transaction)
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
-        assert receipt['gas_used'] == gas_estimation
+        assert receipt['gas_used'] <= gas_estimation
+        # Tolerance set to the default py-evm tolerance:
+        # https://github.com/ethereum/py-evm/blob/f0276e684edebd7cd9e84cd04b3229ab9dd958b9/evm/estimators/gas.py#L77
+        # https://github.com/ethereum/py-evm/blob/f0276e684edebd7cd9e84cd04b3229ab9dd958b9/evm/estimators/__init__.py#L11
+        assert receipt['gas_used'] >= gas_estimation - 21000
 
     def test_can_call_after_exception_raised_calling(self, eth_tester):
         self.skip_if_no_evm_execution()
@@ -724,7 +728,7 @@ class BaseTestBackendDirect(object):
             'willThrow',
         )
         with pytest.raises(TransactionFailed):
-            eth_tester.estimate_gas(dissoc(call_will_throw_transaction, 'gas'))
+            eth_tester.estimate_gas(call_will_throw_transaction)
 
         call_set_value_transaction = _make_call_throws_transaction(
             eth_tester,
@@ -732,7 +736,7 @@ class BaseTestBackendDirect(object):
             'setValue',
             fn_args=(2,),
         )
-        gas_estimation = eth_tester.estimate_gas(dissoc(call_set_value_transaction, 'gas'))
+        gas_estimation = eth_tester.estimate_gas(call_set_value_transaction)
         assert gas_estimation
 
     #

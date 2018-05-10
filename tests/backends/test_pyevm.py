@@ -10,7 +10,6 @@ from eth_tester import (
 from eth_tester.backends.pyevm.utils import (
     is_pyevm_available,
 )
-
 from eth_tester.utils.backend_testing import (
     BaseTestBackendDirect,
 )

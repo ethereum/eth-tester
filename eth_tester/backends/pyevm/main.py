@@ -47,10 +47,17 @@ from .utils import is_pyevm_available
 
 if is_pyevm_available():
     from evm.exceptions import (
-        BlockNotFound as EVMBlockNotFound,
+        HeaderNotFound as EVMHeaderNotFound,
+        InvalidInstruction as EVMInvalidInstruction,
+        Revert as EVMRevert,
+    )
+    from evm.utils.spoof import (
+        SpoofTransaction as EVMSpoofTransaction
     )
 else:
-    EVMBlockNotFound = None
+    EVMHeaderNotFound = None
+    EVMInvalidInstruction = None
+    EVMRevert = None
 
 
 ZERO_ADDRESS = 20 * b'\x00'
@@ -258,7 +265,6 @@ class PyEVMBackend(object):
                 "`PyEVMBackend` requires py-evm to be installed and importable. "
                 "Please install the `py-evm` library."
             )
-
         self.reset_to_genesis()
 
     #
@@ -353,13 +359,13 @@ class PyEVMBackend(object):
     #
     # Chain data
     #
-    @replace_exceptions({EVMBlockNotFound: BlockNotFound})
+    @replace_exceptions({EVMHeaderNotFound: BlockNotFound})
     def get_block_by_number(self, block_number, full_transaction=True):
         block = _get_block_by_number(self.chain, block_number)
         is_pending = block.number == self.chain.get_block().number
         return serialize_block(block, full_transaction, is_pending)
 
-    @replace_exceptions({EVMBlockNotFound: BlockNotFound})
+    @replace_exceptions({EVMHeaderNotFound: BlockNotFound})
     def get_block_by_hash(self, block_hash, full_transaction=True):
         block = _get_block_by_hash(self.chain, block_hash)
         is_pending = block.number == self.chain.get_block().number
@@ -423,6 +429,11 @@ class PyEVMBackend(object):
         if 'to' not in transaction:
             yield 'to', b''
 
+    def _get_normalized_and_unsigned_evm_transaction(self, transaction, block_number='latest'):
+        normalized_transaction = self._normalize_transaction(transaction, block_number)
+        evm_transaction = self.chain.create_unsigned_transaction(**normalized_transaction)
+        return evm_transaction
+
     def _get_normalized_and_signed_evm_transaction(self, transaction, block_number='latest'):
         signing_key = self._key_lookup[transaction['from']]
         normalized_transaction = self._normalize_transaction(transaction, block_number)
@@ -453,19 +464,15 @@ class PyEVMBackend(object):
         header = self.chain.get_block().header
         return header.gas_limit - header.gas_used
 
+    @replace_exceptions({
+        EVMInvalidInstruction: TransactionFailed,
+        EVMRevert: TransactionFailed})
     def estimate_gas(self, transaction):
-        # TODO: move this to the VM level (and use binary search approach)
-        signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
-            dict(transaction, gas=self._max_available_gas()),
-        )
+        evm_transaction = self._get_normalized_and_unsigned_evm_transaction(dict(
+            transaction))
+        spoofed_transaction = EVMSpoofTransaction(evm_transaction, from_=transaction['from'])
 
-        computation = _execute_and_revert_transaction(self.chain, signed_evm_transaction, 'pending')
-        if computation.is_error:
-            raise TransactionFailed(str(computation._error))
-
-        gas_used = computation.get_gas_used()
-
-        return int(max(gas_used * GAS_ESTIMATE_BUFFER, MINIMUM_GAS_ESTIMATE))
+        return self.chain.estimate_gas(spoofed_transaction)
 
     def call(self, transaction, block_number="latest"):
         # TODO: move this to the VM level.
