@@ -142,14 +142,14 @@ def get_default_genesis_params():
 def setup_tester_chain():
     from evm.chains.tester import MainnetTesterChain
     from evm.db import get_db_backend
-    from evm.db.chain import ChainDB
 
-    db = ChainDB(get_db_backend())
     genesis_params = get_default_genesis_params()
     account_keys = get_default_account_keys()
     genesis_state = generate_genesis_state(account_keys)
 
-    chain = MainnetTesterChain.from_genesis(db, genesis_params, genesis_state)
+    base_db = get_db_backend()
+
+    chain = MainnetTesterChain.from_genesis(base_db, genesis_params, genesis_state)
     return account_keys, chain
 
 
@@ -294,7 +294,7 @@ class PyEVMBackend(object):
             self.chain.import_block(block)
         else:
             self.chain.chaindb._set_as_canonical_chain_head(block.header)
-            self.chain = self.chain.from_genesis_header(self.chain.chaindb, block.header)
+            self.chain = self.chain.from_genesis_header(self.chain.chaindb.db, block.header)
 
     def reset_to_genesis(self):
         self.account_keys, self.chain = setup_tester_chain()
@@ -360,13 +360,17 @@ class PyEVMBackend(object):
     #
     # Chain data
     #
-    @replace_exceptions({EVMHeaderNotFound: BlockNotFound})
+    @replace_exceptions({
+        EVMHeaderNotFound: BlockNotFound,
+    })
     def get_block_by_number(self, block_number, full_transaction=True):
         block = _get_block_by_number(self.chain, block_number)
         is_pending = block.number == self.chain.get_block().number
         return serialize_block(block, full_transaction, is_pending)
 
-    @replace_exceptions({EVMHeaderNotFound: BlockNotFound})
+    @replace_exceptions({
+        EVMHeaderNotFound: BlockNotFound,
+    })
     def get_block_by_hash(self, block_hash, full_transaction=True):
         block = _get_block_by_hash(self.chain, block_hash)
         is_pending = block.number == self.chain.get_block().number
