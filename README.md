@@ -223,6 +223,7 @@ The `fork_name` parameter follows the same restrictions as `set_fork_block`
 The chain can only time travel forward in time.
 
 <a id="api-time_travel"></a>
+
 #### `EthereumTester.time_travel(timestamp)`
 
 The `timestamp` must be an integer, strictly greater than the current timestamp
@@ -237,28 +238,33 @@ Manually mining blocks can be done with the following API.  The `coinbase`
 parameter of these methods **must** be a hexidecimal encoded address.
 
 <a id="api-mine_blocks"></a>
+
 #### `EthereumTester.mine_blocks(num_blocks=1, coinbase=None)`
 
 Mines `num_blocks` new blocks, returning an iterable of the newly mined block hashes.
 
 
 <a id="api-mine_block"></a>
+
 #### `EthereumTester.mine_block(coinbase=None)`
 
 Mines a single new block, returning the mined block's hash.
 
 
 <a id="api-auto_mine_transactions"></a>
+
 #### Auto-mining transactions
 
 By default all transactions are mined immediately.  This means that each transaction you send will result in a new block being mined, and that all blocks will only ever have at most a single transaction.  This behavior can be controlled with the following methods.
 
 <a id="api-enable_auto_mine_transactions"></a>
+
 #### `EthereumTester.enable_auto_mine_transactions()`
 
 Turns on auto-mining of transactions.
 
 <a id="api-disable_auto_mine_transactions"></a>
+
 #### `EthereumTester.disable_auto_mine_transactions()`
 
 Turns **off** auto-mining of transactions.
@@ -285,6 +291,7 @@ in this list will be EIP55 checksummed.
 
 
 <a id="api-add_account"></a>
+
 #### `EthereumTester.add_account(private_key, password=None)`
 
 Adds a new account for the given private key.  Returns the hex encoded address
@@ -306,6 +313,7 @@ as the second parameter.
 
 
 <a id="api-unlock_account"></a>
+
 #### `EthereumTester.unlock_account(account, password, unlock_seconds=None)`
 
 Unlocks the given account if the provided password matches.
@@ -330,7 +338,8 @@ seconds.
 ```
 
 
-<a id="api-unlock_account"></a>
+<a id="api-lock_account"></a>
+
 #### `EthereumTester.lock_account(account)`
 
 Locks the provide account.  
@@ -342,6 +351,7 @@ Raises a `ValidationError` if:
 
 
 <a id="api-get_balance"></a>
+
 #### `EthereumTester.get_balance(account) -> integer`
 
 Returns the balance, in wei, for the provided account.
@@ -353,6 +363,7 @@ Returns the balance, in wei, for the provided account.
 
 
 <a id="api-get_nonce"></a>
+
 #### `EthereumTester.get_nonce(account) -> integer`
 
 Returns the nonce for the provided account.
@@ -363,6 +374,7 @@ Returns the nonce for the provided account.
 ```
 
 <a id="api-get_code"></a>
+
 #### `EthereumTester.get_code(account) -> hex string`
 
 Returns the code for the given account.
@@ -376,6 +388,7 @@ Returns the code for the given account.
 ### Blocks, Transactions, and Receipts
 
 <a id="api-get_transaction_by_hash"></a>
+
 #### `EthereumTester.get_transaction_by_hash(transaction_hash) -> transaction-object`
 
 Returns the transaction for the given hash, raising a
@@ -403,7 +416,8 @@ transaction cannot be found.
 > Note: For unmined transaction, `transaction_index`, `block_number` and `block_hash` will all be `None`.
 
 
-<a id="api-get_block_by_numbera>
+<a id="api-get_block_by_number"></a>
+
 #### `EthereumTester.get_block_by_number(block_number, full_transactions=False) -> block-object`
 
 Returns the block for the given `block_number`.  See [block
@@ -438,6 +452,7 @@ cannot be found.
 
 
 <a id="api-get_block_by_hash"></a>
+
 #### `EthereumTester.get_block_by_hash(block_hash, full_transactions=True) -> block-object`
 
 Returns the block for the given `block_hash`.  The `full_transactions`
@@ -470,6 +485,7 @@ cannot be found.
 ```
 
 <a id="api-get_transaction_receipt"></a>
+
 #### `EthereumTester.get_transaction_receipt(transaction_hash)`
 
 Returns the receipt for the given `transaction_hash`, raising
@@ -519,6 +535,7 @@ values.
 #### Methods
 
 <a id="api-send_transaction"></a>
+
 #### `EthereumTester.send_transaction(transaction) -> transaction_hash`
 
 Sends the provided `transaction` object, returning the `transaction_hash` for
@@ -526,6 +543,7 @@ the sent transaction.
 
 
 <a id="api-call"></a>
+
 #### `EthereumTester.call(transaction, block_number='latest')`
 
 Executes the provided `transaction` object at the evm state from the block
@@ -533,6 +551,7 @@ denoted by the `block_number` parameter, returning the resulting bytes return
 value from the evm.
 
 <a id="api-estimate_gas"></a>
+
 #### `EthereumTester.estimate_gas(transaction)`
 
 Executes the provided `transaction` object, measuring and returning the gas
@@ -542,6 +561,7 @@ consumption.
 ### Logs and Filters
 
 <a id="api-create_block_filter"></a>
+
 #### `EthereumTester.create_block_filter() -> integer`
 
 Creates a new filter for newly mined blocks.  Returns the `filter_id` which can
@@ -568,6 +588,7 @@ be used to retrieve the block hashes for the mined blocks.
 ```
 
 <a id="api-create_pending_transaction_filter"></a>
+
 #### `EthereumTester.create_pending_transaction_filter() -> integer`
 
 Creates a new filter for pending transactions.  Returns the `filter_id` which
@@ -593,6 +614,7 @@ can be used to retrieve the transaction hashes for the pending transactions.
 ```
 
 <a id="api-create_log_filter"></a>
+
 #### `EthereumTester.create_log_filter(from_block=None, to_block=None, address=None, topics=None) -> integer`
 
 Creates a new filter for logs produced by transactions.  The parameters for
@@ -630,6 +652,7 @@ this function can be used to filter the log entries.
 See [the filtering guide](#guide-filtering) for detailed information on how to use filters.
 
 <a id="api-delete_filter"></a>
+
 #### `EthereumTester.delete_filter(filter_id)`
 
 Removes the filter for the provide `filter_id`.  If no filter is found for the
@@ -637,6 +660,7 @@ given `filter_id`, raises [`FilterNotFound`](#errors-FilterNotFound).
 
 
 <a id="api-get_only_filter_changes"></a>
+
 #### `EthereumTester.get_only_filter_changes(filter_id) -> transaction_hash or block_hash or log_entry`
 
 Returns all new values for the provided `filter_id` that have not previously
@@ -645,6 +669,7 @@ been returned through this API.  Raises
 `filter_id`.
 
 <a id="api-get_only_filter_changes"></a>
+
 #### `EthereumTester.get_all_filter_logs(filter_id) -> transaction_hash or block_hash or log_entry`
 
 Returns all values for the provided `filter_id`. Raises
@@ -655,12 +680,14 @@ Returns all values for the provided `filter_id`. Raises
 ### Snapshots and Resetting
 
 <a id="api-take_snapshot"></a>
+
 #### `EthereumTester.take_snapshot() -> snapshot_id`
 
 Takes a snapshot of the current chain state and returns the snapshot id.
 
 
 <a id="api-revert_to_snapshot"></a>
+
 #### `EthereumTester.revert_to_snapshot(snapshot_id)`
 
 Reverts the chain to the chain state associated with the given `snapshot_id`.
@@ -670,12 +697,14 @@ for the given id.
 ### Errors and Exceptions
 
 <a id="errors-TransactionNotFound"></a>
+
 #### `eth_tester.exceptions.TransactionNotFound`
 
 Raised in cases where a transaction cannot be found for the provided transaction hash.
 
 
 <a id="errors-BlockNotFound"></a>
+
 #### `eth_tester.exceptions.BlockNotFound`
 
 Raised in cases where a block cannot be found for either a provided number or
@@ -683,12 +712,14 @@ hash.
 
 
 <a id="errors-FilterNotFound"></a>
+
 #### `eth_tester.exceptions.FilterNotFound`
 
 Raised in cases where a filter cannot be found for the provided filter id.
 
 
 <a id="errors-SnapshotNotFound"></a>
+
 #### `eth_tester.exceptions.SnapshotNotFound`
 
 Raised in cases where a snapshot cannot be found for the provided snapshot id.
