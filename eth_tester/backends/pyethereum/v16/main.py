@@ -189,16 +189,16 @@ class PyEthereum16Backend(BaseChainBackend):
     def get_supported_forks(self):
         return SUPPORTED_FORKS
 
-    def set_fork_block(self, fork_name, fork_block):
+    def set_fork_block(self, fork_name, fork_block=0):
         if fork_name == FORK_HOMESTEAD:
-            self.evm.env.config['HOMESTEAD_FORK_BLKNUM'] = fork_block or 0
+            self.evm.env.config['HOMESTEAD_FORK_BLKNUM'] = fork_block
         elif fork_name == FORK_DAO:
-            self.evm.env.config['DAO_FORK_BLKNUM'] = fork_block or 0
+            self.evm.env.config['DAO_FORK_BLKNUM'] = fork_block
         elif fork_name == FORK_SPURIOUS_DRAGON:
-            self.evm.env.config['ANTI_DOS_FORK_BLKNUM'] = fork_block or 0
-            self.evm.env.config['SPURIOUS_DRAGON_FORK_BLKNUM'] = fork_block or 0
+            self.evm.env.config['ANTI_DOS_FORK_BLKNUM'] = fork_block
+            self.evm.env.config['SPURIOUS_DRAGON_FORK_BLKNUM'] = fork_block
         elif fork_name == FORK_TANGERINE_WHISTLE:
-            self.evm.env.config['CLEARING_FORK_BLKNUM'] = fork_block or 0
+            self.evm.env.config['CLEARING_FORK_BLKNUM'] = fork_block
         else:
             raise UnknownFork("Unknown fork name: {0}".format(fork_name))
         self.fork_blocks[fork_name] = fork_block
