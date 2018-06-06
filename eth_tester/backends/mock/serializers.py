@@ -51,4 +51,5 @@ def serialize_receipt(transaction, block, transaction_index, is_pending):
         partial(assoc, key='block_number', value=block_number),
         partial(assoc, key='block_hash', value=block_hash),
         partial(assoc, key='transaction_index', value=transaction_index),
+        partial(assoc, key='state_root', value=b'\x00'),
     )

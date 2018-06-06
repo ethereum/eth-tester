@@ -138,6 +138,7 @@ RECEIPT_NORMALIZERS = {
         normalizer=to_checksum_address,
     ),
     "logs": partial(normalize_array, normalizer=normalize_log_entry),
+    "state_root": identity,
 }
 
 

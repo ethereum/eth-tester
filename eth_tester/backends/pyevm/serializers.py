@@ -77,7 +77,13 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
     }
 
 
-def serialize_transaction_receipt(block, receipts, transaction, transaction_index, is_pending):
+def serialize_transaction_receipt(
+    block,
+    receipts,
+    transaction,
+    transaction_index,
+    is_pending
+):
     receipt = receipts[transaction_index]
 
     if transaction.to == b'':
@@ -105,6 +111,7 @@ def serialize_transaction_receipt(block, receipts, transaction, transaction_inde
             serialize_log(block, transaction, transaction_index, log, log_index, is_pending)
             for log_index, log in enumerate(receipt.logs)
         ],
+        'state_root': receipt.state_root,
     }
 
 
