@@ -391,6 +391,7 @@ class PyEVMBackend(object):
         )
         is_pending = block.number == self.chain.get_block().number
         block_receipts = block.get_receipts(self.chain.chaindb)
+
         return serialize_transaction_receipt(
             block,
             block_receipts,

@@ -51,6 +51,7 @@ def serialize_transaction_receipt(block,
             serialize_log(block, transaction, transaction_index, log, log_index, is_pending)
             for log_index, log in enumerate(transaction_receipt.logs)
         ],
+        "state_root": transaction_receipt.state_root,
     }
 
 

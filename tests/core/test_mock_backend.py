@@ -21,3 +21,11 @@ def eth_tester():
 
 class TestMockBackendDirect(BaseTestBackendDirect):
     supports_evm_execution = False
+
+    @pytest.mark.skip(reason="receipt status not supported in MockBackend")
+    def test_get_transaction_receipt_byzantium(self, eth_tester, test_transaction):
+        pass
+
+    @pytest.mark.skip(reason="receipt status not supported in MockBackend")
+    def test_get_transaction_receipt_byzantium(self, eth_tester, test_transaction):
+        pass

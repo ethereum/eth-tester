@@ -184,7 +184,9 @@ def _make_receipt(transaction_hash=ZERO_32BYTES,
                   cumulative_gas_used=0,
                   gas_used=21000,
                   contract_address=None,
-                  logs=None):
+                  logs=None,
+                  state_root=b'\x00'
+                 ):
     return {
         "transaction_hash": transaction_hash,
         "transaction_index": transaction_index,
@@ -194,6 +196,7 @@ def _make_receipt(transaction_hash=ZERO_32BYTES,
         "gas_used": gas_used,
         "contract_address": contract_address,
         "logs": logs or [],
+        "state_root": state_root
     }
 
 

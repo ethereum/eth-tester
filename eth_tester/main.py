@@ -8,6 +8,7 @@ import functools
 
 from cytoolz import (
     dissoc,
+    assoc
 )
 from cytoolz.itertoolz import (
     remove,
@@ -24,6 +25,7 @@ from eth_utils import (
     to_dict,
     to_list,
     to_tuple,
+    to_int
 )
 
 from eth_tester.backends import (
@@ -336,6 +338,20 @@ class EthereumTester(object):
         raw_receipt = self.backend.get_transaction_receipt(raw_transaction_hash)
         self.validator.validate_outbound_receipt(raw_receipt)
         receipt = self.normalizer.normalize_outbound_receipt(raw_receipt)
+
+        if 'FORK_BYZANTIUM' in self.get_supported_forks():
+            byzantium_fork_block = self.get_fork_block('FORK_BYZANTIUM')
+            transaction = self.get_transaction_by_hash(transaction_hash)
+        else:
+            byzantium_fork_block = None
+        if((byzantium_fork_block is not None) and
+           (transaction['block_number'] is not None) and
+           (transaction['block_number'] >= byzantium_fork_block)
+           ):
+            status = to_int(receipt.pop('state_root'))
+            if status > 1:
+                raise ValidationError('Invalid status value: only 0 or 1 are valid')
+            return assoc(receipt, 'status', status)
         return receipt
 
     #
