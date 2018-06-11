@@ -79,7 +79,7 @@ jobs:
   py36-pyethereum21:
     <<: *common
     docker:
-      - image: circleci/python:3.6
+      - image: circleci/python:3.6-jessie
         environment:
           TOXENV: py36-pyethereum21
   py35-pyevm:
