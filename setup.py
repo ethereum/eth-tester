@@ -14,7 +14,7 @@ extras_require = {
         'pytest>=3.2.1,<4.0.0',
         'pytest-xdist>=1.22.2,<2',
         'eth-abi>=1.0.0-beta.1,<2',
-        'eth-hash[pycryptodome]>=0.1.0a2,<1.0.0',
+        'eth-hash[pycryptodome]>=0.1.4,<1.0.0',
     ],
     'dev': [
         'bumpversion>=0.5.3,<1.0.0',
@@ -32,13 +32,14 @@ extras_require = {
     'py-evm': [
         # Pin py-evm to exact version, until it leaves alpha.
         # EVM is very high velocity and might change API at each alpha.
-        "py-evm==0.2.0a18",
+        "py-evm==0.2.0a26",
     ],
 }
 
 extras_require['dev'] = (
     extras_require['dev'] +
     extras_require['test'] +
+    extras_require['py-evm'] +
     extras_require['lint']
 )
 # convenience in case someone leaves out the `-`
