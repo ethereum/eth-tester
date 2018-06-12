@@ -142,6 +142,16 @@ def get_default_genesis_params():
 def setup_tester_chain():
     from evm.chains.tester import MainnetTesterChain
     from evm.db import get_db_backend
+    from evm.vm.forks.byzantium import ByzantiumVM
+
+    class ByzantiumNoProofVM(ByzantiumVM):
+        """Byzantium VM rules, without validating any miner proof of work"""
+
+        def validate_seal(self, header):
+            pass
+
+    class MainnetTesterNoProofChain(MainnetTesterChain):
+        vm_configuration = ((0, ByzantiumNoProofVM), )
 
     genesis_params = get_default_genesis_params()
     account_keys = get_default_account_keys()
@@ -149,7 +159,7 @@ def setup_tester_chain():
 
     base_db = get_db_backend()
 
-    chain = MainnetTesterChain.from_genesis(base_db, genesis_params, genesis_state)
+    chain = MainnetTesterNoProofChain.from_genesis(base_db, genesis_params, genesis_state)
     return account_keys, chain
 
 
