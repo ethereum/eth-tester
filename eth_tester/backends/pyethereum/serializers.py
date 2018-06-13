@@ -21,15 +21,13 @@ from eth_tester.backends.pyethereum.utils import (
 def serialize_transaction_receipt(block,
                                   transaction,
                                   transaction_receipt,
+                                  prev_transaction_receipt,
                                   transaction_index,
                                   is_pending):
-    if hasattr(block, 'transaction_list'):
-        origin_gas = block.transaction_list[0].startgas
-    elif hasattr(block, 'transactions'):
-        origin_gas = block.transactions[0].startgas
+    if prev_transaction_receipt is not None:
+        prev_transaction_gas_used = prev_transaction_receipt.gas_used
     else:
-        raise Exception('Invariant: failed to match pyethereum16 or pyethereum21 API')
-
+        prev_transaction_gas_used = 0
     if transaction.creates is not None:
         contract_addr = transaction.creates
     elif transaction.to == b'\x00' * 20:
@@ -44,8 +42,8 @@ def serialize_transaction_receipt(block,
         "transaction_index": None if is_pending else transaction_index,
         "block_number": None if is_pending else block.number,
         "block_hash": None if is_pending else block.hash,
-        "cumulative_gas_used": origin_gas - transaction.startgas + transaction_receipt.gas_used,
-        "gas_used": transaction_receipt.gas_used,
+        "cumulative_gas_used": transaction_receipt.gas_used,
+        "gas_used": transaction_receipt.gas_used - prev_transaction_gas_used,
         "contract_address": contract_addr,
         "logs": [
             serialize_log(block, transaction, transaction_index, log, log_index, is_pending)

@@ -356,6 +356,7 @@ class PyEthereum16Backend(BaseChainBackend):
             block,
             transaction,
             block.get_receipt(transaction_index),
+            block.get_receipt(transaction_index - 1) if transaction_index > 0 else None,
             transaction_index,
             is_pending,
         )

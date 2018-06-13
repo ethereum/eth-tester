@@ -380,6 +380,7 @@ class PyEthereum21Backend(BaseChainBackend):
             block,
             transaction,
             state.receipts[transaction_index],
+            state.receipts[transaction_index - 1] if transaction_index > 0 else None,
             transaction_index,
             is_pending,
         )
