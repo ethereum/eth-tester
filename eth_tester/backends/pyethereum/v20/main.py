@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import os
+
 import pkg_resources
 
 from semantic_version import (
@@ -242,6 +244,7 @@ class PyEthereum21Backend(BaseChainBackend):
             self.evm.chain.env.config['CLEARING_FORK_BLKNUM'] = fork_block or 0
         elif fork_name == FORK_BYZANTIUM:
             self.evm.chain.env.config['METROPOLIS_FORK_BLKNUM'] = fork_block or 0
+            os.environ['ETHEREUM_TESTER_VALIDATOR'] = 'eth_tester.validation.byzantium.ByzantiumValidator'
         else:
             raise UnknownFork("Unknown fork name: {0}".format(fork_name))
 
@@ -376,6 +379,19 @@ class PyEthereum21Backend(BaseChainBackend):
             transaction_hash,
         )
         state = _get_state_by_block_hash(self.evm, block.hash)
+
+        if self.get_fork_block('FORK_BYZANTIUM') is not None:
+            status = int.from_bytes(state.receipts[transaction_index].state_root,
+                                    byteorder='big')
+            return serialize_transaction_receipt(
+                block,
+                transaction,
+                state.receipts[transaction_index],
+                transaction_index,
+                is_pending,
+                status=status,
+            )
+
         return serialize_transaction_receipt(
             block,
             transaction,

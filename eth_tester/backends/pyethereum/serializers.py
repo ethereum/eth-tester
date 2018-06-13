@@ -22,7 +22,8 @@ def serialize_transaction_receipt(block,
                                   transaction,
                                   transaction_receipt,
                                   transaction_index,
-                                  is_pending):
+                                  is_pending,
+                                  status=None):
     if hasattr(block, 'transaction_list'):
         origin_gas = block.transaction_list[0].startgas
     elif hasattr(block, 'transactions'):
@@ -39,7 +40,7 @@ def serialize_transaction_receipt(block,
     else:
         contract_addr = None
 
-    return {
+    serialized_transaction = {
         "transaction_hash": transaction.hash,
         "transaction_index": None if is_pending else transaction_index,
         "block_number": None if is_pending else block.number,
@@ -53,6 +54,11 @@ def serialize_transaction_receipt(block,
         ],
         "state_root": transaction_receipt.state_root,
     }
+
+    if status is not None:
+        serialized_transaction['status'] = status
+
+    return serialized_transaction
 
 
 def serialize_transaction_hash(block, transaction, transaction_index, is_pending):

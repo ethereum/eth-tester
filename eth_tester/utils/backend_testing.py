@@ -315,6 +315,37 @@ class BaseTestBackendDirect(object):
 
         self._send_and_check_transaction(eth_tester, test_transaction, accounts[0])
 
+    @pytest.mark.parametrize(
+        'test_transaction',
+        (
+            SIMPLE_TRANSACTION,
+            TRANSACTION_WTH_NONCE,
+            CONTRACT_TRANSACTION_EMPTY_TO,
+            CONTRACT_TRANSACTION_MISSING_TO,
+        ),
+        ids=[
+            'Simple transaction',
+            'Transaction with nonce',
+            'Create Contract - empty to',
+            'Create Contract - missing to',
+        ],
+    )
+    def test_get_transaction_receipt_byzantium(self, eth_tester, test_transaction):
+        if eth_tester.backend.__class__.__name__ == 'PyEthereum16Backend':
+            return
+
+        backend = eth_tester.backend.__class__()
+        backend.set_fork_block(FORK_BYZANTIUM, 0)
+        byzantium_eth_tester = eth_tester.__class__(backend=backend)
+        accounts = byzantium_eth_tester.get_accounts()
+        assert accounts, "No accounts available for transaction sending"
+
+        transaction = assoc(test_transaction, 'from', accounts[0])
+        txn_hash = byzantium_eth_tester.send_transaction(transaction)
+        txn = byzantium_eth_tester.get_transaction_receipt(txn_hash)
+
+        assert txn['status']
+
     def test_block_number_auto_mine_transactions_enabled(self, eth_tester):
         eth_tester.mine_blocks()
         eth_tester.enable_auto_mine_transactions()
