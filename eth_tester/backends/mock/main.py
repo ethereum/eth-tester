@@ -319,6 +319,7 @@ class MockBackend(BaseChainBackend):
             len(self.block['transactions']),
         )
         self.block['transactions'].append(full_transaction)
+        self.block['gas_used'] += self.receipts[full_transaction['hash']]['gas_used']
         return full_transaction['hash']
 
     def send_signed_transaction(self, signed_transaction):
