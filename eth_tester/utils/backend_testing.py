@@ -1209,6 +1209,31 @@ class BaseTestBackendDirect(object):
             eth_tester.delete_filter(12345)
 
     #
+    # Serializer
+    #
+    def test_receipt_gas_used_computation(self, eth_tester):
+        eth_tester.disable_auto_mine_transactions()
+
+        tx_hashes = []
+        for i in range(4):
+            tx = {
+                'from': eth_tester.get_accounts()[i],
+                'to': eth_tester.get_accounts()[i + 1],
+                'gas': (i + 1) * 20000 + 10000,
+                'value': 1
+            }
+            tx_hash = eth_tester.send_transaction(tx)
+            tx_hashes.append(tx_hash)
+        eth_tester.mine_block()
+
+        cumulative_gas_used = 0
+        for tx_hash in tx_hashes:
+            receipt = eth_tester.get_transaction_receipt(tx_hash)
+            cumulative_gas_used += receipt['gas_used']
+            assert receipt['gas_used'] == 21000
+            assert receipt['cumulative_gas_used'] == cumulative_gas_used
+
+    #
     # Time Travel
     #
     def test_time_traveling(self, eth_tester):
