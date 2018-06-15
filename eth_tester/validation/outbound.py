@@ -9,6 +9,7 @@ from eth_utils import (
 )
 
 from eth_tester.constants import (
+    UINT256_MAX,
     UINT2048_MAX,
 )
 from eth_tester.exceptions import (
@@ -81,9 +82,9 @@ validate_log_entry = partial(validate_dict, key_validators=LOG_ENTRY_VALIDATORS)
 
 def validate_signature_v(value):
     validate_positive_integer(value)
-    if value not in {0, 1, 27, 28}:
-        # TODO: what is the correct validation for this?
-        raise ValidationError("The `v` portion of the signature must be 0, 1, 27, or 28")
+
+    if value not in [0, 1, 27, 28] and value not in range(35, UINT256_MAX + 1):
+        raise ValidationError("The `v` portion of the signature must be 0, 1, 27, 28 or >= 35")
 
 
 TRANSACTION_VALIDATORS = {
