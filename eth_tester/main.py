@@ -415,10 +415,16 @@ class EthereumTester(object):
     #
     def _process_block_logs(self, block):
         for _, filter in self._log_filters.items():
+            known_txs = [
+                x['transaction_hash']
+                for x in filter.values
+            ]
             for transaction_hash in block['transactions']:
                 receipt = self.get_transaction_receipt(transaction_hash)
                 for log_entry in receipt['logs']:
                     raw_log_entry = self.normalizer.normalize_inbound_log_entry(log_entry)
+                    if raw_log_entry['transaction_hash'] in known_txs:
+                        continue
                     filter.add(raw_log_entry)
 
     def _pop_pending_transactions_to_pending_block(self):
