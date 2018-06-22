@@ -45,6 +45,9 @@ class Filter(object):
             self.queue.put_nowait(item)
 
     def remove(self, *values):
+        if not values:
+            # Nothing to do below
+            return
         try:
             values_to_remove = set(values)
         except TypeError:
