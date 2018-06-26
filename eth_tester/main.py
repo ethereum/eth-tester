@@ -414,12 +414,15 @@ class EthereumTester(object):
     # Private mining API
     #
     def _process_block_logs(self, block):
-        for _, filter in self._log_filters.items():
-            for transaction_hash in block['transactions']:
-                receipt = self.get_transaction_receipt(transaction_hash)
-                for log_entry in receipt['logs']:
-                    raw_log_entry = self.normalizer.normalize_inbound_log_entry(log_entry)
-                    filter.add(raw_log_entry)
+        for fid, filter in self._log_filters.items():
+            self._add_log_entries_to_filter(block, filter)
+
+    def _add_log_entries_to_filter(self, block, filter_):
+        for transaction_hash in block['transactions']:
+            receipt = self.get_transaction_receipt(transaction_hash)
+            for log_entry in receipt['logs']:
+                raw_log_entry = self.normalizer.normalize_inbound_log_entry(log_entry)
+                filter_.add(raw_log_entry)
 
     def _pop_pending_transactions_to_pending_block(self):
         sent_transaction_hashes = self._add_all_to_pending_block(self._pending_transactions)
@@ -634,10 +637,11 @@ class EthereumTester(object):
             check_if_log_matches,
             **raw_filter_params
         )
-        self._log_filters[raw_filter_id] = Filter(
+        new_filter = Filter(
             filter_params=raw_filter_params,
             filter_fn=filter_fn,
         )
+        self._log_filters[raw_filter_id] = new_filter
 
         if is_integer(raw_from_block):
             if is_integer(raw_to_block):
@@ -646,7 +650,7 @@ class EthereumTester(object):
                 upper_bound = self.get_block_by_number('pending')['number']
             for block_number in range(raw_from_block, upper_bound):
                 block = self.get_block_by_number(block_number)
-                self._process_block_logs(block)
+                self._add_log_entries_to_filter(block, new_filter)
 
         filter_id = self.normalizer.normalize_outbound_filter_id(raw_filter_id)
         return filter_id

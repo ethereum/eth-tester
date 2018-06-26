@@ -1331,3 +1331,29 @@ class BaseTestBackendDirect(object):
         txn = eth_tester.get_transaction_receipt(txn_hash)
 
         assert 'status' not in txn
+
+    def test_duplicate_log_entries(self, eth_tester):
+        self.skip_if_no_evm_execution()
+
+        # setup the emitter
+        emitter_address = _deploy_emitter(eth_tester)
+
+        def _emit(v):
+            return _call_emitter(
+                eth_tester,
+                emitter_address,
+                'logSingle',
+                [EMITTER_ENUM['LogSingleWithIndex'], v],
+            )
+
+        filter_id_1 = eth_tester.create_log_filter(from_block=0)
+        assert len(eth_tester.get_all_filter_logs(filter_id_1)) == 0
+        # emit 2 logs pre-filtering
+        _emit(1)
+        assert len(eth_tester.get_all_filter_logs(filter_id_1)) == 1
+        _emit(2)
+        assert len(eth_tester.get_all_filter_logs(filter_id_1)) == 2
+
+        filter_id_2 = eth_tester.create_log_filter(from_block=0)
+        assert len(eth_tester.get_all_filter_logs(filter_id_1)) == 2
+        assert len(eth_tester.get_all_filter_logs(filter_id_2)) == 2
