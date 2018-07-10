@@ -1,7 +1,5 @@
 from __future__ import absolute_import
 
-import pkg_resources
-
 from semantic_version import (
     Spec,
 )
@@ -28,6 +26,7 @@ from eth_tester.exceptions import (
     TransactionNotFound,
     UnknownFork,
     TransactionFailed,
+    BackendDistributionNotFound,
 )
 from eth_tester.backends.base import BaseChainBackend
 from eth_tester.backends.pyethereum.utils import (
@@ -170,13 +169,13 @@ class PyEthereum16Backend(BaseChainBackend):
         if not is_pyethereum16_available():
             version = get_pyethereum_version()
             if version is None:
-                raise pkg_resources.DistributionNotFound(
+                raise BackendDistributionNotFound(
                     "The `ethereum` package is not available.  The "
                     "`PyEthereum16Backend` requires a 1.6.x version of the "
                     "ethereum package to be installed."
                 )
             elif version not in Spec('>=1.6.0,<1.7.0'):
-                raise pkg_resources.DistributionNotFound(
+                raise BackendDistributionNotFound(
                     "The `PyEthereum16Backend` requires a 1.6.x version of the "
                     "`ethereum` package.  Found {0}".format(version)
                 )

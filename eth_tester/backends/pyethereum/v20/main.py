@@ -1,7 +1,5 @@
 from __future__ import absolute_import
 
-import pkg_resources
-
 from semantic_version import (
     Spec,
 )
@@ -27,6 +25,7 @@ from eth_tester.exceptions import (
     TransactionNotFound,
     UnknownFork,
     TransactionFailed,
+    BackendDistributionNotFound,
 )
 from eth_tester.backends.base import BaseChainBackend
 from eth_tester.backends.pyethereum.utils import (
@@ -206,13 +205,13 @@ class PyEthereum21Backend(BaseChainBackend):
         if not is_pyethereum21_available():
             version = get_pyethereum_version()
             if version is None:
-                raise pkg_resources.DistributionNotFound(
+                raise BackendDistributionNotFound(
                     "The `ethereum` package is not available.  The "
                     "`PyEthereum21Backend` requires a 2.0.0+ version of the "
                     "ethereum package to be installed."
                 )
             elif version not in Spec('>=2.0.0,<2.2.0'):
-                raise pkg_resources.DistributionNotFound(
+                raise BackendDistributionNotFound(
                     "The `PyEthereum21Backend` requires a 2.0.0+ version of the "
                     "`ethereum` package.  Found {0}".format(version)
                 )

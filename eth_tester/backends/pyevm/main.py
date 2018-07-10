@@ -33,6 +33,7 @@ from eth_tester.exceptions import (
     TransactionNotFound,
     UnknownFork,
     TransactionFailed,
+    BackendDistributionNotFound,
 )
 
 from eth_tester.utils.formatting import (
@@ -271,7 +272,7 @@ class PyEVMBackend(object):
         self.fork_config = {}
 
         if not is_pyevm_available():
-            raise pkg_resources.DistributionNotFound(
+            raise BackendDistributionNotFound(
                 "The `py-evm` package is not available.  The "
                 "`PyEVMBackend` requires py-evm to be installed and importable. "
                 "Please install the `py-evm` library."
