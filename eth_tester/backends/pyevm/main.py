@@ -9,6 +9,10 @@ from cytoolz import (
 
 import rlp
 
+from eth_abi import (
+    decode_single
+)
+
 from eth_utils import (
     encode_hex,
     int_to_big_endian,
@@ -507,6 +511,16 @@ class PyEVMBackend(object):
             block_number,
         )
         if computation.is_error:
-            raise TransactionFailed(str(computation._error))
+            msg = str(computation._error)
+
+            # Check to see if it's a EIP838 standard error, with ABI signature
+            # of Error(string). If so - extract the message/reason.
+            if isinstance(computation._error, EVMRevert) and \
+               len(computation._error.args) > 0 and \
+               computation._error.args[0][:4] == b'\x08\xc3y\xa0':
+                error_str = computation._error.args[0][36:]
+                msg = decode_single('bytes', error_str)
+
+            raise TransactionFailed(msg)
 
         return computation.output
