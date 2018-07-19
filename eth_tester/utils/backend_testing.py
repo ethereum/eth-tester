@@ -740,6 +740,37 @@ class BaseTestBackendDirect(object):
         assert gas_estimation
 
     #
+    # Test revert with reason message
+    #
+    def test_revert_reason_message(self, eth_tester):
+        self.skip_if_no_evm_execution()
+
+        revert_address = _deploy_throws(eth_tester, contract_idx=1)
+
+        call_with_revert = _make_call_throws_transaction(
+            eth_tester,
+            revert_address,
+            'do_revert',
+            fn_args=(True,),
+            contract_idx=1
+        )
+        call_without_revert = _make_call_throws_transaction(
+            eth_tester,
+            revert_address,
+            'do_revert',
+            fn_args=(False,),
+            contract_idx=1
+        )
+
+        raw_result = eth_tester.call(call_without_revert)
+        result = _decode_throws_result('do_revert', raw_result, contract_idx=1)
+        assert result[0] == b'No ribbert'
+
+        with pytest.raises(TransactionFailed) as excinfo:
+            eth_tester.call(call_with_revert)
+        assert excinfo.value.args[0] == b'ribbert, ribbert'
+
+    #
     # Snapshot and Revert
     #
     def test_genesis_snapshot_and_revert(self, eth_tester):
