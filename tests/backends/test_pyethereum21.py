@@ -28,4 +28,7 @@ def eth_tester():
 
 
 class TestPyEthereum21BackendDirect(BaseTestBackendDirect):
-    pass
+
+    @pytest.mark.skip(reason="v2.1 not supported")
+    def test_revert_reason_message(self, eth_tester):
+        pass

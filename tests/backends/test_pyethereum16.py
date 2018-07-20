@@ -44,3 +44,7 @@ class TestPyEthereum16BackendDirect(BaseTestBackendDirect):
     @pytest.mark.skip(reason="v1.6 not supported")
     def test_get_transaction_receipt_byzantium(self, eth_tester, test_transaction):
         pass
+
+    @pytest.mark.skip(reason="v1.6 not supported")
+    def test_revert_reason_message(self, eth_tester):
+        pass
