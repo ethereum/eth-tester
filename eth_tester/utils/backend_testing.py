@@ -700,10 +700,11 @@ class BaseTestBackendDirect(object):
     def test_can_call_after_exception_raised_calling(self, eth_tester):
         self.skip_if_no_evm_execution()
 
-        throws_address = _deploy_throws(eth_tester)
+        throws_address = _deploy_throws(eth_tester, 'throw_contract')
         call_will_throw_transaction = _make_call_throws_transaction(
             eth_tester,
             throws_address,
+            'throw_contract',
             'willThrow',
         )
         with pytest.raises(TransactionFailed):
@@ -712,19 +713,21 @@ class BaseTestBackendDirect(object):
         call_value_transaction = _make_call_throws_transaction(
             eth_tester,
             throws_address,
+            'throw_contract',
             'value',
         )
         raw_result = eth_tester.call(call_value_transaction)
-        result = _decode_throws_result('value', raw_result)
+        result = _decode_throws_result('throw_contract', 'value', raw_result)
         assert result == (1,)
 
     def test_can_estimate_gas_after_exception_raised_estimating_gas(self, eth_tester):
         self.skip_if_no_evm_execution()
 
-        throws_address = _deploy_throws(eth_tester)
+        throws_address = _deploy_throws(eth_tester, 'throw_contract')
         call_will_throw_transaction = _make_call_throws_transaction(
             eth_tester,
             throws_address,
+            'throw_contract',
             'willThrow',
         )
         with pytest.raises(TransactionFailed):
@@ -733,6 +736,7 @@ class BaseTestBackendDirect(object):
         call_set_value_transaction = _make_call_throws_transaction(
             eth_tester,
             throws_address,
+            'throw_contract',
             'setValue',
             fn_args=(2,),
         )
@@ -745,30 +749,30 @@ class BaseTestBackendDirect(object):
     def test_revert_reason_message(self, eth_tester):
         self.skip_if_no_evm_execution()
 
-        revert_address = _deploy_throws(eth_tester, contract_idx=1)
+        revert_address = _deploy_throws(eth_tester, 'revert_contract')
 
         call_with_revert = _make_call_throws_transaction(
             eth_tester,
             revert_address,
+            'revert_contract',
             'do_revert',
             fn_args=(True,),
-            contract_idx=1
         )
         call_without_revert = _make_call_throws_transaction(
             eth_tester,
             revert_address,
+            'revert_contract',
             'do_revert',
             fn_args=(False,),
-            contract_idx=1
         )
 
         raw_result = eth_tester.call(call_without_revert)
-        result = _decode_throws_result('do_revert', raw_result, contract_idx=1)
+        result = _decode_throws_result('revert_contract', 'do_revert', raw_result)
         assert result[0] == b'No ribbert'
 
         with pytest.raises(TransactionFailed) as excinfo:
             eth_tester.call(call_with_revert)
-        assert excinfo.value.args[0] == b'ribbert, ribbert'
+        assert len(excinfo.value.args) > 0 and excinfo.value.args[0] == b'ribbert, ribbert'
 
     #
     # Snapshot and Revert
