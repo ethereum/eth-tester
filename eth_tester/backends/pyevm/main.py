@@ -9,6 +9,13 @@ from cytoolz import (
 
 import rlp
 
+from eth_abi import (
+    decode_single
+)
+from eth_abi.exceptions import (
+    DecodingError
+)
+
 from eth_utils import (
     encode_hex,
     int_to_big_endian,
@@ -63,7 +70,7 @@ else:
 
 ZERO_ADDRESS = 20 * b'\x00'
 ZERO_HASH32 = 32 * b'\x00'
-
+EIP838_SIG = b'\x08\xc3y\xa0'
 
 EMPTY_RLP_LIST_HASH = b'\x1d\xccM\xe8\xde\xc7]z\xab\x85\xb5g\xb6\xcc\xd4\x1a\xd3\x12E\x1b\x94\x8at\x13\xf0\xa1B\xfd@\xd4\x93G'  # noqa: E501
 BLANK_ROOT_HASH = b'V\xe8\x1f\x17\x1b\xccU\xa6\xff\x83E\xe6\x92\xc0\xf8n\x5bH\xe0\x1b\x99l\xad\xc0\x01b/\xb5\xe3c\xb4!'  # noqa: E501
@@ -490,6 +497,17 @@ class PyEVMBackend(object):
 
         return self.chain.estimate_gas(spoofed_transaction)
 
+    def is_eip838_error(self, error):
+        if not isinstance(error, EVMRevert):
+            return False
+        elif len(error.args) == 0:
+            return False
+
+        try:
+            return error.args[0][:4] == EIP838_SIG
+        except TypeError:
+            return False
+
     def call(self, transaction, block_number="latest"):
         # TODO: move this to the VM level.
         defaulted_transaction = transaction.copy()
@@ -507,6 +525,19 @@ class PyEVMBackend(object):
             block_number,
         )
         if computation.is_error:
-            raise TransactionFailed(str(computation._error))
+            msg = str(computation._error)
+
+            # Check to see if it's a EIP838 standard error, with ABI signature
+            # of Error(string). If so - extract the message/reason.
+            if self.is_eip838_error(computation._error):
+                error_str = computation._error.args[0][36:]
+                try:
+                    msg = decode_single('string', error_str)
+                except DecodingError:
+                    # Invalid encoded bytes, leave msg as computation._error
+                    # byte string.
+                    pass
+
+            raise TransactionFailed(msg)
 
         return computation.output
