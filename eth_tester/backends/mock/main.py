@@ -23,13 +23,9 @@ from eth_utils import (
 from eth_tester.backends.base import (
     BaseChainBackend,
 )
-from eth_tester.constants import (
-    KNOWN_FORKS,
-)
 from eth_tester.exceptions import (
     BlockNotFound,
     TransactionNotFound,
-    UnknownFork,
 )
 
 from eth_tester.utils.accounts import (
@@ -125,21 +121,6 @@ class MockBackend(BaseChainBackend):
     @property
     def account_state_lookup(self):
         return dict(self.alloc)
-
-    #
-    # Fork block numbers
-    #
-    def get_supported_forks(self):
-        return KNOWN_FORKS
-
-    def set_fork_block(self, fork_name, fork_block):
-        self.fork_blocks[fork_name] = fork_block
-
-    def get_fork_block(self, fork_name):
-        try:
-            return self.fork_blocks[fork_name]
-        except KeyError:
-            raise UnknownFork("Unknown fork: {0}".format(fork_name))
 
     #
     # Meta

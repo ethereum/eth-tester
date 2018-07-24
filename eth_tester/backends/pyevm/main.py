@@ -37,7 +37,6 @@ from eth_tester.constants import (
 from eth_tester.exceptions import (
     BlockNotFound,
     TransactionNotFound,
-    UnknownFork,
     TransactionFailed,
     BackendDistributionNotFound,
 )
@@ -319,31 +318,6 @@ class PyEVMBackend(object):
 
     def reset_to_genesis(self):
         self.account_keys, self.chain = setup_tester_chain()
-
-    #
-    # Fork block numbers
-    #
-    def get_supported_forks(self):
-        return SUPPORTED_FORKS
-
-    def set_fork_block(self, fork_name, fork_block):
-        if fork_name in self.get_supported_forks():
-            if fork_block is not None:
-                self.fork_config[fork_name] = fork_block
-            elif fork_block is None:
-                self.fork_config.pop(fork_name, None)
-        else:
-            raise UnknownFork("Unknown fork name: {0}".format(fork_name))
-        self.configure_forks()
-
-    def get_fork_block(self, fork_name):
-        if fork_name in self.get_supported_forks():
-            return self.fork_config.get(fork_name, None)
-        else:
-            raise UnknownFork("Unknown fork name: {0}".format(fork_name))
-
-    def configure_forks(self):
-        pass
 
     #
     # Meta

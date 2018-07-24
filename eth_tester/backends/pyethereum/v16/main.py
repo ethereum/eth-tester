@@ -24,7 +24,6 @@ from eth_tester.constants import (
 from eth_tester.exceptions import (
     BlockNotFound,
     TransactionNotFound,
-    UnknownFork,
     TransactionFailed,
     BackendDistributionNotFound,
 )
@@ -181,32 +180,6 @@ class PyEthereum16Backend(BaseChainBackend):
                 )
         self.fork_blocks = {}
         self.reset_to_genesis()
-
-    #
-    # Fork Rules
-    #
-    def get_supported_forks(self):
-        return SUPPORTED_FORKS
-
-    def set_fork_block(self, fork_name, fork_block):
-        if fork_name == FORK_HOMESTEAD:
-            self.evm.env.config['HOMESTEAD_FORK_BLKNUM'] = fork_block or 0
-        elif fork_name == FORK_DAO:
-            self.evm.env.config['DAO_FORK_BLKNUM'] = fork_block or 0
-        elif fork_name == FORK_SPURIOUS_DRAGON:
-            self.evm.env.config['ANTI_DOS_FORK_BLKNUM'] = fork_block or 0
-            self.evm.env.config['SPURIOUS_DRAGON_FORK_BLKNUM'] = fork_block or 0
-        elif fork_name == FORK_TANGERINE_WHISTLE:
-            self.evm.env.config['CLEARING_FORK_BLKNUM'] = fork_block or 0
-        else:
-            raise UnknownFork("Unknown fork name: {0}".format(fork_name))
-        self.fork_blocks[fork_name] = fork_block
-
-    def get_fork_block(self, fork_name):
-        if fork_name in self.get_supported_forks():
-            return self.fork_blocks.get(fork_name)
-        else:
-            raise UnknownFork("Unknown fork name: {0}".format(fork_name))
 
     #
     # Snapshots
