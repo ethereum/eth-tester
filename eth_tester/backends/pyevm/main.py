@@ -54,12 +54,12 @@ from .serializers import (
 from .utils import is_pyevm_available
 
 if is_pyevm_available():
-    from evm.exceptions import (
+    from eth.exceptions import (
         HeaderNotFound as EVMHeaderNotFound,
         InvalidInstruction as EVMInvalidInstruction,
         Revert as EVMRevert,
     )
-    from evm.utils.spoof import (
+    from eth.utils.spoof import (
         SpoofTransaction as EVMSpoofTransaction
     )
 else:
@@ -147,18 +147,23 @@ def get_default_genesis_params():
 
 
 def setup_tester_chain():
-    from evm.chains.tester import MainnetTesterChain
-    from evm.db import get_db_backend
-    from evm.vm.forks.byzantium import ByzantiumVM
+    from eth.chains.base import MiningChain
+    from eth.db import get_db_backend
+    from eth.vm.forks.byzantium import ByzantiumVM
 
     class ByzantiumNoProofVM(ByzantiumVM):
         """Byzantium VM rules, without validating any miner proof of work"""
 
+        @classmethod
         def validate_seal(self, header):
             pass
 
-    class MainnetTesterNoProofChain(MainnetTesterChain):
+    class MainnetTesterNoProofChain(MiningChain):
         vm_configuration = ((0, ByzantiumNoProofVM), )
+
+        @classmethod
+        def validate_seal(cls, block):
+            pass
 
     genesis_params = get_default_genesis_params()
     account_keys = get_default_account_keys()
@@ -233,7 +238,7 @@ def _execute_and_revert_transaction(chain, transaction, block_number="latest"):
 
 def _get_vm_for_block_number(chain, block_number):
     block = _get_block_by_number(chain, block_number)
-    vm = chain.get_vm(header=block.header)
+    vm = chain.get_vm(at_header=block.header)
     return vm
 
 
@@ -307,7 +312,6 @@ class PyEVMBackend(object):
         block = self.chain.get_block_by_hash(snapshot)
         if block.number > 0:
             self.chain.chaindb._set_as_canonical_chain_head(block.header)
-            self.chain = self.chain.get_chain_at_block_parent(block)
             self.chain.import_block(block)
         else:
             self.chain.chaindb._set_as_canonical_chain_head(block.header)
@@ -339,8 +343,7 @@ class PyEVMBackend(object):
             raise UnknownFork("Unknown fork name: {0}".format(fork_name))
 
     def configure_forks(self):
-        args, kwargs = _mk_fork_configuration_params(self.fork_config)
-        self.chain.configure_forks(*args, **kwargs)
+        pass
 
     #
     # Meta
