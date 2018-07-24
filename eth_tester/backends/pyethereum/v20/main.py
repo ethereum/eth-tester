@@ -23,7 +23,6 @@ from eth_tester.constants import (
 from eth_tester.exceptions import (
     BlockNotFound,
     TransactionNotFound,
-    UnknownFork,
     TransactionFailed,
     BackendDistributionNotFound,
 )
@@ -217,40 +216,6 @@ class PyEthereum21Backend(BaseChainBackend):
                 )
         self.fork_blocks = {}
         self.reset_to_genesis()
-
-    #
-    # Fork block numbers
-    #
-    def get_supported_forks(self):
-        return SUPPORTED_FORKS
-
-    def set_fork_block(self, fork_name, fork_block):
-        if fork_name == FORK_HOMESTEAD:
-            self.evm.chain.env.config['HOMESTEAD_FORK_BLKNUM'] = fork_block or 0
-        elif fork_name == FORK_DAO:
-            # NOTE: REALLY WEIRD HACK to get the dao_fork_blk to accept block 0
-            if not fork_block:
-                self.evm.chain.env.config['DAO_FORK_BLKNUM'] = 999999999999999
-            else:
-                self.evm.chain.env.config['DAO_FORK_BLKNUM'] = fork_block or 0
-        elif fork_name == FORK_SPURIOUS_DRAGON:
-            # pyethereum seems to use both of these.
-            self.evm.chain.env.config['ANTI_DOS_FORK_BLKNUM'] = fork_block or 0
-            self.evm.chain.env.config['SPURIOUS_DRAGON_FORK_BLKNUM'] = fork_block or 0
-        elif fork_name == FORK_TANGERINE_WHISTLE:
-            self.evm.chain.env.config['CLEARING_FORK_BLKNUM'] = fork_block or 0
-        elif fork_name == FORK_BYZANTIUM:
-            self.evm.chain.env.config['METROPOLIS_FORK_BLKNUM'] = fork_block or 0
-        else:
-            raise UnknownFork("Unknown fork name: {0}".format(fork_name))
-
-        self.fork_blocks[fork_name] = fork_block
-
-    def get_fork_block(self, fork_name):
-        if fork_name in self.get_supported_forks():
-            return self.fork_blocks.get(fork_name)
-        else:
-            raise UnknownFork("Unknown fork name: {0}".format(fork_name))
 
     #
     # Snapshot API

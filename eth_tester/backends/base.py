@@ -21,21 +21,6 @@ class BaseChainBackend(metaclass=ABCMeta):
         raise NotImplementedError("Must be implemented by subclasses")
 
     #
-    # Fork block numbers
-    #
-    @abstractmethod
-    def get_supported_forks(self):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    @abstractmethod
-    def set_fork_block(self, fork_name, fork_block):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    @abstractmethod
-    def get_fork_block(self, fork_name):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    #
     # Meta
     #
     @abstractmethod

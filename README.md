@@ -181,41 +181,7 @@ object accepts the following parameters.
 ### Fork Rules
 <a id="fork-rules"></a>
 
-Ethereum tester supports the following hard forks.
-
-- Homestead
-- DAO
-- Spurious Dragon
-- Tangerine Whistle
-- Byzantium
-
-By default, all forks will be active at the genesis block (block 0).
-
-Manual configuration and retrieval of fork rules can be done with the following
-API.
-
-#### `EthereumTester.get_supported_forks()`
-
-Returns a `set` of the supported fork names.
-
-#### `EthereumTester.set_fork_block(fork_name, fork_block)`
-
-Sets the fork rules for the fork denoted by `fork_name` to activate at `fork_block`.
-
-The `fork_name` parameter must be one of the following strings.
-
-- Homestead: `"FORK_HOMESTEAD"`
-- DAO: `"FORK_DAO"`
-- Spurious Dragon: `"FORK_SPURIOUS_DRAGON"`
-- Tangerine Whistle: `"FORK_TANGERINE_WHISTLE"`
-- Byzantium: `"FORK_BYZANTIUM"`
-
-#### `EthereumTester.get_fork_block(fork_name)`
-
-Returns the block number on which the named fork will activate.
-
-The `fork_name` parameter follows the same restrictions as `set_fork_block`
-
+Ethereum tester uses the Byzantium rules, starting at block 0.
 
 ### Time Travel
 <a id="time-travel"></a>
@@ -742,7 +708,6 @@ $ pip install eth-tester[<backend-name>]
 You should replace `<backend-name>` with the name of the desired testing
 backend.  Available backends are:
 
-* `pyethereum16`: [PyEthereum v1.6.x](https://pypi.python.org/pypi/ethereum/1.6.1)
 * `pyethereum21`: [PyEthereum v2.1.0+](https://pypi.python.org/pypi/ethereum)
 * `py-evm`: [PyEVM (alpha)](https://pypi.python.org/pypi/py-evm) **(experimental)**
 
@@ -755,8 +720,8 @@ use.
 
 ```python
 >>> from eth_tester import EthereumTester
->>> from eth_tester import PyEthereum16Backend
->>> t = EthereumTester(backend=PyEthereum16Backend())
+>>> from eth_tester import PyEthereum21Backend
+>>> t = EthereumTester(backend=PyEthereum21Backend())
 ```
 
 Ethereum tester also supports configuration using the environment variable
@@ -767,7 +732,6 @@ backend class you wish to use.
 
 Ethereum tester can be used with the following backends.
 
-* PyEthereum 1.6.x (default)
 * PyEthereum 2.0.0+ (experimental)
 * PyEVM (experimental)
 * MockBackend
@@ -780,15 +744,6 @@ It mocks out all of the objects and interactions.
 ```python
 >>> from eth_tester import MockBackend
 >>> t = EthereumTester(MockBackend())
-```
-
-#### PyEthereum 1.6.x
-
-Uses the PyEthereum library at version `v1.6.x`
-
-```python
->>> from eth_tester import PyEthereum16Backend
->>> t = EthereumTester(PyEthereum16Backend())
 ```
 
 #### PyEthereum 2.0.0+

@@ -27,11 +27,6 @@ from eth_tester.constants import (
     UINT256_MIN,
     UINT256_MAX,
     BURN_ADDRESS,
-    FORK_HOMESTEAD,
-    FORK_DAO,
-    FORK_SPURIOUS_DRAGON,
-    FORK_TANGERINE_WHISTLE,
-    FORK_BYZANTIUM,
 )
 from eth_tester.exceptions import (
     AccountLocked,
@@ -40,7 +35,6 @@ from eth_tester.exceptions import (
     ValidationError,
     TransactionFailed,
     TransactionNotFound,
-    UnknownFork,
 )
 from .emitter_contract import (
     _deploy_emitter,
@@ -1297,53 +1291,12 @@ class BaseTestBackendDirect(object):
         with pytest.raises(ValidationError):
             eth_tester.time_travel(before_timestamp - 10)
 
-    #
-    # Fork Configuration
-    #
-    @pytest.mark.parametrize(
-        'fork_name,expected_init_block,set_to_block',
-        (
-            (FORK_HOMESTEAD, None, 12345),
-            (FORK_DAO, None, 12345),
-            (FORK_SPURIOUS_DRAGON, None, 12345),
-            (FORK_TANGERINE_WHISTLE, None, 12345),
-            (FORK_BYZANTIUM, None, 12345),
-        )
-    )
-    def test_getting_and_setting_fork_blocks(self,
-                                             eth_tester,
-                                             fork_name,
-                                             expected_init_block,
-                                             set_to_block):
-        if eth_tester.backend.__class__.__name__ == 'PyEthereum16Backend':
-            if fork_name == FORK_BYZANTIUM:
-                with pytest.raises(UnknownFork):
-                    eth_tester.get_fork_block(fork_name)
-                with pytest.raises(UnknownFork):
-                    eth_tester.set_fork_block(fork_name, set_to_block)
-                return
-
-        # TODO: this should realy test something about the EVM actually using
-        # the *right* rules but for now this should suffice.
-        init_fork_block = eth_tester.get_fork_block(fork_name)
-
-        if fork_name == FORK_DAO:
-            # support pyethereum2.0
-            assert init_fork_block in {expected_init_block, 999999999999999}
-        else:
-            assert init_fork_block == expected_init_block
-
-        eth_tester.set_fork_block(fork_name, set_to_block)
-        after_set_fork_block = eth_tester.get_fork_block(fork_name)
-        assert after_set_fork_block == set_to_block
-
     @pytest.mark.parametrize(
         'test_transaction', (SIMPLE_TRANSACTION,), ids=['Simple transaction']
     )
     def test_get_transaction_receipt_byzantium(self, eth_tester, test_transaction):
         backend = eth_tester.backend.__class__()
         byzantium_eth_tester = eth_tester.__class__(backend=backend)
-        backend.set_fork_block(FORK_BYZANTIUM, 0)
         accounts = byzantium_eth_tester.get_accounts()
         assert accounts, "No accounts available for transaction sending"
 
@@ -1353,19 +1306,6 @@ class BaseTestBackendDirect(object):
 
         assert 'status' in txn
         assert txn['status'] == 1
-
-    @pytest.mark.parametrize(
-        'test_transaction', (SIMPLE_TRANSACTION,), ids=['Simple transaction']
-    )
-    def test_get_transaction_receipt_pre_byzantium(self, eth_tester, test_transaction):
-        accounts = eth_tester.get_accounts()
-        assert accounts, "No accounts available for transaction sending"
-
-        transaction = assoc(test_transaction, 'from', accounts[0])
-        txn_hash = eth_tester.send_transaction(transaction)
-        txn = eth_tester.get_transaction_receipt(txn_hash)
-
-        assert 'status' not in txn
 
     def test_duplicate_log_entries(self, eth_tester):
         self.skip_if_no_evm_execution()

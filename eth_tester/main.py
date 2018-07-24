@@ -37,7 +37,6 @@ from eth_tester.exceptions import (
     FilterNotFound,
     SnapshotNotFound,
     TransactionNotFound,
-    UnknownFork,
     ValidationError,
 )
 from eth_tester.normalization import (
@@ -107,8 +106,7 @@ class EthereumTester(object):
                  backend=None,
                  validator=None,
                  normalizer=None,
-                 auto_mine_transactions=True,
-                 fork_blocks=None):
+                 auto_mine_transactions=True):
         if backend is None:
             backend = get_chain_backend()
 
@@ -123,19 +121,6 @@ class EthereumTester(object):
         self.normalizer = normalizer
 
         self.auto_mine_transactions = auto_mine_transactions
-
-        if fork_blocks is None:
-            fork_blocks = get_default_fork_blocks(self.get_supported_forks())
-
-        unsupported_forks = set(fork_blocks.keys()).difference(self.get_supported_forks())
-        if unsupported_forks:
-            raise UnknownFork(
-                "The following forks are not supported by the backend you are "
-                "using: {0}".format(sorted(unsupported_forks))
-            )
-
-        for fork_name, fork_block in fork_blocks.items():
-            self.set_fork_block(fork_name, fork_block)
 
         self._reset_local_state()
 
@@ -169,22 +154,6 @@ class EthereumTester(object):
         # raw accounts
         self._account_passwords = {}
         self._account_unlock = collections.defaultdict(lambda: False)
-
-    #
-    # Fork Rules
-    #
-    def get_supported_forks(self):
-        return self.backend.get_supported_forks()
-
-    def set_fork_block(self, fork_name, block_number):
-        if fork_name not in self.get_supported_forks():
-            raise UnknownFork("Unknown fork: {0}".format(fork_name))
-        return self.backend.set_fork_block(fork_name, block_number)
-
-    def get_fork_block(self, fork_name):
-        if fork_name not in self.get_supported_forks():
-            raise UnknownFork("Unknown fork: {0}".format(fork_name))
-        return self.backend.get_fork_block(fork_name)
 
     #
     # Time Traveling
@@ -339,20 +308,11 @@ class EthereumTester(object):
         self.validator.validate_outbound_receipt(raw_receipt)
         receipt = self.normalizer.normalize_outbound_receipt(raw_receipt)
 
-        if 'FORK_BYZANTIUM' in self.get_supported_forks():
-            byzantium_fork_block = self.get_fork_block('FORK_BYZANTIUM')
-            transaction = self.get_transaction_by_hash(transaction_hash)
-        else:
-            byzantium_fork_block = None
-        if((byzantium_fork_block is not None) and
-           (transaction['block_number'] is not None) and
-           (transaction['block_number'] >= byzantium_fork_block)
-           ):
-            status = to_int(receipt.pop('state_root'))
-            if status > 1:
-                raise ValidationError('Invalid status value: only 0 or 1 are valid')
-            return assoc(receipt, 'status', status)
-        return receipt
+        # Assume backend supports Byzantium
+        status = to_int(receipt.pop('state_root'))
+        if status > 1:
+            raise ValidationError('Invalid status value: only 0 or 1 are valid')
+        return assoc(receipt, 'status', status)
 
     #
     # Mining

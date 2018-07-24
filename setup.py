@@ -32,7 +32,7 @@ extras_require = {
     'py-evm': [
         # Pin py-evm to exact version, until it leaves alpha.
         # EVM is very high velocity and might change API at each alpha.
-        "py-evm==0.2.0a26",
+        "py-evm==0.2.0a28",
     ],
 }
 
