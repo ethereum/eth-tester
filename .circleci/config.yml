@@ -58,18 +58,6 @@ jobs:
       - image: circleci/python:3.6
         environment:
           TOXENV: py36-core
-  py35-pyethereum16:
-    <<: *common
-    docker:
-      - image: circleci/python:3.5
-        environment:
-          TOXENV: py35-pyethereum16
-  py36-pyethereum16:
-    <<: *common
-    docker:
-      - image: circleci/python:3.6-jessie
-        environment:
-          TOXENV: py36-pyethereum16
   py35-pyethereum21:
     <<: *common
     docker:
@@ -102,8 +90,6 @@ workflows:
       - lint
       - py35-core
       - py36-core
-      - py35-pyethereum16
-      - py36-pyethereum16
       - py35-pyethereum21
       - py36-pyethereum21
       - py35-pyevm

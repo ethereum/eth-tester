@@ -708,7 +708,6 @@ $ pip install eth-tester[<backend-name>]
 You should replace `<backend-name>` with the name of the desired testing
 backend.  Available backends are:
 
-* `pyethereum16`: [PyEthereum v1.6.x](https://pypi.python.org/pypi/ethereum/1.6.1)
 * `pyethereum21`: [PyEthereum v2.1.0+](https://pypi.python.org/pypi/ethereum)
 * `py-evm`: [PyEVM (alpha)](https://pypi.python.org/pypi/py-evm) **(experimental)**
 
@@ -721,8 +720,8 @@ use.
 
 ```python
 >>> from eth_tester import EthereumTester
->>> from eth_tester import PyEthereum16Backend
->>> t = EthereumTester(backend=PyEthereum16Backend())
+>>> from eth_tester import PyEthereum21Backend
+>>> t = EthereumTester(backend=PyEthereum21Backend())
 ```
 
 Ethereum tester also supports configuration using the environment variable
@@ -733,7 +732,6 @@ backend class you wish to use.
 
 Ethereum tester can be used with the following backends.
 
-* PyEthereum 1.6.x (default)
 * PyEthereum 2.0.0+ (experimental)
 * PyEVM (experimental)
 * MockBackend
@@ -746,15 +744,6 @@ It mocks out all of the objects and interactions.
 ```python
 >>> from eth_tester import MockBackend
 >>> t = EthereumTester(MockBackend())
-```
-
-#### PyEthereum 1.6.x
-
-Uses the PyEthereum library at version `v1.6.x`
-
-```python
->>> from eth_tester import PyEthereum16Backend
->>> t = EthereumTester(PyEthereum16Backend())
 ```
 
 #### PyEthereum 2.0.0+
