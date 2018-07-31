@@ -23,7 +23,7 @@ from .common import (
 )
 
 from eth_tester.validation.inbound import (
-    is_flat_topic_array,
+    is_valid_topic_array,
 )
 
 

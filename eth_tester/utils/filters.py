@@ -83,12 +83,23 @@ def is_flat_topic_array(value):
     return is_tuple(value) and all(is_topic(item) for item in value)
 
 
-def is_nested_topic_array(value):
-    return bool(value) and is_tuple(value) and all((is_topic_array(item) for item in value))
+@to_tuple
+def validate_topic_array_items(value):
+    for item in value:
+        if is_tuple(item):
+            yield is_flat_topic_array(item)
+        else:
+            yield is_topic(item)
+
+
+def is_valid_with_nested_topic_array(value):
+    return bool(value) and is_tuple(value) and all(validate_topic_array_items(value))
+    #  return bool(value) and is_tuple(value) and all(
+    #      (is_flat_topic_array(item) if is_tuple(item) else is_topic(item) for item in value))
 
 
 def is_topic_array(value):
-    return is_flat_topic_array(value) or is_nested_topic_array(value)
+    return is_flat_topic_array(value) or is_valid_with_nested_topic_array(value)
 
 
 def check_single_topic_match(log_topic, filter_topic):
@@ -138,7 +149,8 @@ def check_if_topics_match(log_topics, filter_topics):
         return True
     elif is_flat_topic_array(filter_topics):
         return check_if_log_matches_flat_topics(log_topics, filter_topics)
-    elif is_nested_topic_array(filter_topics):
+    # TODO: This isnt going to work
+    elif is_valid_with_nested_topic_array(filter_topics):
         return any(
             check_if_log_matches_flat_topics(log_topics, sub_filter_topics)
             for sub_filter_topics

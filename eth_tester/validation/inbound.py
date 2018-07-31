@@ -97,10 +97,12 @@ def validate_account(value):
         raise ValidationError("Address does not validate EIP55 checksum")
 
 
-def is_flat_topic_array(value):
+def is_valid_topic_array(value):
     if not is_list_like(value):
         return False
-    return all(is_topic(item) for item in value)
+    return all(
+        is_valid_topic_array(item) if is_list_like(item) else is_topic(item)
+        for item in value)
 
 
 def validate_filter_params(from_block, to_block, address, topics):
@@ -133,9 +135,7 @@ def validate_filter_params(from_block, to_block, address, topics):
         pass
     elif not is_list_like(topics):
         raise ValidationError(invalid_topics_message)
-    elif is_flat_topic_array(topics):
-        return True
-    elif all(is_flat_topic_array(item) for item in topics):
+    elif is_valid_topic_array(topics):
         return True
     else:
         raise ValidationError(invalid_topics_message)

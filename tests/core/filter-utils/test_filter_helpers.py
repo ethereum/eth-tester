@@ -15,7 +15,7 @@ from eth_tester.utils.filters import (
     check_if_log_matches,
     is_topic,
     is_flat_topic_array,
-    is_nested_topic_array,
+    is_valid_with_nested_topic_array,
     is_topic_array,
 )
 
@@ -131,17 +131,17 @@ NESTED_TOPICS_E = (TOPIC_A, TOPICS_MANY, TOPICS_EMPTY)
         ([b'a', None, b'b'], False),
         (list(), False),
         ([None], False),
-        (TOPIC_A, False),
-        (TOPICS_EMPTY, False),
-        (TOPICS_SINGLE_NULL, False),
-        (TOPICS_MANY, False),
-        (TOPICS_MANY_WITH_NULL, False),
         (([],), False),
         (([tuple()],), False),
         ([tuple()], False),
         ((tuple(), []), False),
         ((TOPICS_EMPTY, (b'arst',)), False),
+        (TOPIC_A, False),
+        (TOPICS_EMPTY, False),
         # good values
+        (TOPICS_SINGLE_NULL, True),
+        (TOPICS_MANY, True),
+        (TOPICS_MANY_WITH_NULL, True),
         (NESTED_TOPICS_A, True),
         (NESTED_TOPICS_B, True),
         (NESTED_TOPICS_C, True),
@@ -149,8 +149,8 @@ NESTED_TOPICS_E = (TOPIC_A, TOPICS_MANY, TOPICS_EMPTY)
         (NESTED_TOPICS_E, True),
     )
 )
-def test_is_nested_topic_array(value, expected):
-    actual = is_nested_topic_array(value)
+def test_is_valid_with_nested_topic_array(value, expected):
+    actual = is_valid_with_nested_topic_array(value)
     assert actual is expected
 
 
