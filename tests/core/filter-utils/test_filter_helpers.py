@@ -17,6 +17,7 @@ from eth_tester.utils.filters import (
     is_flat_topic_array,
     is_valid_with_nested_topic_array,
     is_topic_array,
+    extrapolate_flat_topic_from_topic_list,
 )
 
 
@@ -274,12 +275,12 @@ TOPICS_B_C_A = (TOPIC_B, TOPIC_C, TOPIC_A)
 
 
 FILTER_MATCH_ALL = tuple()
-FILTER_MATCH_ANY_ONE = (None,)
-FILTER_MATCH_ANY_TWO = (None, None)
-FILTER_MATCH_ANY_THREE = (None, None, None)
-FILTER_MATCH_ONLY_A = (TOPIC_A,)
-FILTER_MATCH_ONLY_B = (TOPIC_B,)
-FILTER_MATCH_ONLY_C = (TOPIC_C,)
+FILTER_MATCH_ONE_OR_MORE = (None,)
+FILTER_MATCH_TWO_OR_MORE = (None, None)
+FILTER_MATCH_THREE_OR_MORE = (None, None, None)
+FILTER_MATCH_A = (TOPIC_A,)
+FILTER_MATCH_B = (TOPIC_B,)
+FILTER_MATCH_C = (TOPIC_C,)
 FILTER_MATCH_A_ANY = (TOPIC_A, None)
 FILTER_MATCH_B_ANY = (TOPIC_B, None)
 FILTER_MATCH_C_ANY = (TOPIC_C, None)
@@ -310,38 +311,38 @@ FILTER_MATCH_A_C_B = (TOPIC_A, TOPIC_C, TOPIC_B)
         (TOPICS_B_A_C, FILTER_MATCH_ALL, True),
         (TOPICS_B_C_A, FILTER_MATCH_ALL, True),
         # length 1 matches
-        (TOPICS_EMPTY, FILTER_MATCH_ANY_ONE, False),
-        (TOPICS_ONLY_A, FILTER_MATCH_ANY_ONE, True),
-        (TOPICS_ONLY_B, FILTER_MATCH_ANY_ONE, True),
-        (TOPICS_ONLY_C, FILTER_MATCH_ANY_ONE, True),
-        (TOPICS_EMPTY, FILTER_MATCH_ONLY_A, False),
-        (TOPICS_EMPTY, FILTER_MATCH_ONLY_B, False),
-        (TOPICS_EMPTY, FILTER_MATCH_ONLY_C, False),
-        (TOPICS_ONLY_A, FILTER_MATCH_ONLY_A, True),
-        (TOPICS_ONLY_B, FILTER_MATCH_ONLY_B, True),
-        (TOPICS_ONLY_C, FILTER_MATCH_ONLY_C, True),
-        (TOPICS_ONLY_B, FILTER_MATCH_ONLY_A, False),
-        (TOPICS_ONLY_C, FILTER_MATCH_ONLY_A, False),
-        (TOPICS_ONLY_A, FILTER_MATCH_ONLY_B, False),
-        (TOPICS_ONLY_C, FILTER_MATCH_ONLY_B, False),
-        (TOPICS_ONLY_A, FILTER_MATCH_ONLY_C, False),
-        (TOPICS_ONLY_B, FILTER_MATCH_ONLY_C, False),
-        (TOPICS_A_A, FILTER_MATCH_ONLY_A, True),
-        (TOPICS_A_B, FILTER_MATCH_ONLY_A, True),
-        (TOPICS_A_C, FILTER_MATCH_ONLY_A, True),
-        (TOPICS_A_B_C, FILTER_MATCH_ONLY_A, True),
-        (TOPICS_A_C_B, FILTER_MATCH_ONLY_A, True),
-        (TOPICS_B_A, FILTER_MATCH_ONLY_A, False),
-        (TOPICS_B_C, FILTER_MATCH_ONLY_A, False),
-        (TOPICS_B_A_C, FILTER_MATCH_ONLY_A, False),
-        (TOPICS_B_C_A, FILTER_MATCH_ONLY_A, False),
+        (TOPICS_EMPTY, FILTER_MATCH_ONE_OR_MORE, False),
+        (TOPICS_ONLY_A, FILTER_MATCH_ONE_OR_MORE, True),
+        (TOPICS_ONLY_B, FILTER_MATCH_ONE_OR_MORE, True),
+        (TOPICS_ONLY_C, FILTER_MATCH_ONE_OR_MORE, True),
+        (TOPICS_EMPTY, FILTER_MATCH_A, False),
+        (TOPICS_EMPTY, FILTER_MATCH_B, False),
+        (TOPICS_EMPTY, FILTER_MATCH_C, False),
+        (TOPICS_ONLY_A, FILTER_MATCH_A, True),
+        (TOPICS_ONLY_B, FILTER_MATCH_B, True),
+        (TOPICS_ONLY_C, FILTER_MATCH_C, True),
+        (TOPICS_ONLY_B, FILTER_MATCH_A, False),
+        (TOPICS_ONLY_C, FILTER_MATCH_A, False),
+        (TOPICS_ONLY_A, FILTER_MATCH_B, False),
+        (TOPICS_ONLY_C, FILTER_MATCH_B, False),
+        (TOPICS_ONLY_A, FILTER_MATCH_C, False),
+        (TOPICS_ONLY_B, FILTER_MATCH_C, False),
+        (TOPICS_A_A, FILTER_MATCH_A, True),
+        (TOPICS_A_B, FILTER_MATCH_A, True),
+        (TOPICS_A_C, FILTER_MATCH_A, True),
+        (TOPICS_A_B_C, FILTER_MATCH_A, True),
+        (TOPICS_A_C_B, FILTER_MATCH_A, True),
+        (TOPICS_B_A, FILTER_MATCH_A, False),
+        (TOPICS_B_C, FILTER_MATCH_A, False),
+        (TOPICS_B_A_C, FILTER_MATCH_A, False),
+        (TOPICS_B_C_A, FILTER_MATCH_A, False),
         # length 2 matches
-        (TOPICS_EMPTY, FILTER_MATCH_ANY_TWO, False),
-        (TOPICS_A_A, FILTER_MATCH_ANY_TWO, True),
-        (TOPICS_A_B, FILTER_MATCH_ANY_TWO, True),
-        (TOPICS_ONLY_A, FILTER_MATCH_ANY_TWO, False),
-        (TOPICS_ONLY_B, FILTER_MATCH_ANY_TWO, False),
-        (TOPICS_ONLY_C, FILTER_MATCH_ANY_TWO, False),
+        (TOPICS_EMPTY, FILTER_MATCH_TWO_OR_MORE, False),
+        (TOPICS_A_A, FILTER_MATCH_TWO_OR_MORE, True),
+        (TOPICS_A_B, FILTER_MATCH_TWO_OR_MORE, True),
+        (TOPICS_ONLY_A, FILTER_MATCH_TWO_OR_MORE, False),
+        (TOPICS_ONLY_B, FILTER_MATCH_TWO_OR_MORE, False),
+        (TOPICS_ONLY_C, FILTER_MATCH_TWO_OR_MORE, False),
         (TOPICS_A_A, FILTER_MATCH_A_B, False),
         (TOPICS_A_B, FILTER_MATCH_A_B, True),
         (TOPICS_A_B_C, FILTER_MATCH_A_B, True),
@@ -370,26 +371,29 @@ FILTER_MATCH_A_C_B = (TOPIC_A, TOPIC_C, TOPIC_B)
         (TOPICS_A_B, FILTER_MATCH_ANY_C, False),
         (TOPICS_A_B_C, FILTER_MATCH_ANY_C, False),
         # length 3 matches
-        (TOPICS_EMPTY, FILTER_MATCH_ANY_THREE, False),
-        (TOPICS_A_B_C, FILTER_MATCH_ANY_THREE, True),
-        (TOPICS_A_C_B, FILTER_MATCH_ANY_THREE, True),
-        (TOPICS_B_A_C, FILTER_MATCH_ANY_THREE, True),
-        (TOPICS_B_C_A, FILTER_MATCH_ANY_THREE, True),
-        (TOPICS_A_A, FILTER_MATCH_ANY_THREE, False),
+        (TOPICS_EMPTY, FILTER_MATCH_THREE_OR_MORE, False),
+        (TOPICS_A_B_C, FILTER_MATCH_THREE_OR_MORE, True),
+        (TOPICS_A_C_B, FILTER_MATCH_THREE_OR_MORE, True),
+        (TOPICS_B_A_C, FILTER_MATCH_THREE_OR_MORE, True),
+        (TOPICS_B_C_A, FILTER_MATCH_THREE_OR_MORE, True),
+        (TOPICS_A_A, FILTER_MATCH_THREE_OR_MORE, False),
         (TOPICS_A_B_C, FILTER_MATCH_A_B_C, True),
         (TOPICS_A_C_B, FILTER_MATCH_A_B_C, False),
         (TOPICS_A_C_B, FILTER_MATCH_A_C_B, True),
         (TOPICS_A_B_C, FILTER_MATCH_A_C_B, False),
-        # nested matches
-        (TOPICS_EMPTY, (FILTER_MATCH_ONLY_A, FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), False),
-        (TOPICS_ONLY_A, (FILTER_MATCH_ONLY_A, FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), True),
-        (TOPICS_ONLY_B, (FILTER_MATCH_ONLY_A, FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), True),
-        (TOPICS_ONLY_C, (FILTER_MATCH_ONLY_A, FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), True),
-        (TOPICS_A_B, (FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C), False),
-        (TOPICS_A_B, (FILTER_MATCH_ONLY_B, FILTER_MATCH_ONLY_C, FILTER_MATCH_ONLY_A), True),
+        # positional topic options matches
+        (TOPICS_EMPTY, (FILTER_MATCH_A, FILTER_MATCH_B, FILTER_MATCH_C), False),
+        (TOPICS_ONLY_A, (FILTER_MATCH_A, FILTER_MATCH_B, FILTER_MATCH_C), False),
+        (TOPICS_ONLY_B, (FILTER_MATCH_A, FILTER_MATCH_B, FILTER_MATCH_C), False),
+        (TOPICS_ONLY_C, (FILTER_MATCH_A, FILTER_MATCH_B, FILTER_MATCH_C), False),
+        (TOPICS_A_B, (FILTER_MATCH_B, FILTER_MATCH_C), False),
+        (TOPICS_A_B, (FILTER_MATCH_B, FILTER_MATCH_C, FILTER_MATCH_A), False),
         (TOPICS_A_C, (FILTER_MATCH_A_ANY, FILTER_MATCH_ANY_A), True),
         (TOPICS_B_A, (FILTER_MATCH_A_ANY, FILTER_MATCH_ANY_A), True),
-        (TOPICS_B_C, (FILTER_MATCH_A_ANY, FILTER_MATCH_ANY_A), False),
+        (TOPICS_B_C, (FILTER_MATCH_A_ANY, FILTER_MATCH_ANY_A), True),
+        (TOPICS_A_B_C, (FILTER_MATCH_A, FILTER_MATCH_A_B_C, FILTER_MATCH_C), True),
+        (TOPICS_A_B_C, (FILTER_MATCH_A, FILTER_MATCH_A_C_B, FILTER_MATCH_C), True),
+        (TOPICS_A_B_C, (FILTER_MATCH_A, FILTER_MATCH_A_C_B, TOPIC_C), True),
     ),
     ids=topic_id,
 )
@@ -466,8 +470,8 @@ def _make_filter(from_block=None, to_block=None, topics=None, addresses=None):
         # topics
         (_make_log(topics=(TOPIC_A,)), _make_filter(topics=FILTER_MATCH_ALL), True),
         (_make_log(topics=(TOPIC_A, TOPIC_B)), _make_filter(topics=FILTER_MATCH_ALL), True),
-        (_make_log(topics=(TOPIC_A,)), _make_filter(topics=FILTER_MATCH_ONLY_A), True),
-        (_make_log(topics=(TOPIC_B,)), _make_filter(topics=FILTER_MATCH_ONLY_A), False),
+        (_make_log(topics=(TOPIC_A,)), _make_filter(topics=FILTER_MATCH_A), True),
+        (_make_log(topics=(TOPIC_B,)), _make_filter(topics=FILTER_MATCH_A), False),
         (_make_log(topics=(TOPIC_A, TOPIC_A)), _make_filter(topics=FILTER_MATCH_A_ANY), True),
         (_make_log(topics=(TOPIC_A, TOPIC_B)), _make_filter(topics=FILTER_MATCH_A_ANY), True),
         (_make_log(topics=(TOPIC_B, TOPIC_A)), _make_filter(topics=FILTER_MATCH_A_ANY), False),
@@ -493,3 +497,31 @@ def _make_filter(from_block=None, to_block=None, topics=None, addresses=None):
 def test_check_if_log_matches(log_entry, filter_params, expected):
     actual = check_if_log_matches(log_entry, **filter_params)
     assert actual == expected
+
+
+@pytest.mark.parametrize(
+    'topic_list_input,expected_flat_topics',
+    (
+        (
+            ('A', ('A','B'), 'A'),
+            (
+                ('A', 'A', 'A'),
+                ('A', 'B', 'A')
+            ),
+        ),
+        (
+            ('A', ('A','B', 'C'), ('A', 'B')),
+            (
+                ('A', 'A', 'A'),
+                ('A', 'A', 'B'),
+                ('A', 'B', 'A'),
+                ('A', 'B', 'B'),
+                ('A', 'C', 'A'),
+                ('A', 'C', 'B')
+            ),
+        )
+    )
+)
+def test_extrapolate_flat_topic_from_topic_list(topic_list_input, expected_flat_topics):
+    assert tuple(extrapolate_flat_topic_from_topic_list(topic_list_input)) == expected_flat_topics
+
