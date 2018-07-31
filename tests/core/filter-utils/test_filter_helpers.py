@@ -101,7 +101,7 @@ TOPICS_MANY_WITH_NULL = (TOPIC_A, None, TOPIC_B)
         (TOPICS_MANY_WITH_NULL, True),
     )
 )
-def test_is_flat_topic_array(value, expected):
+def test_is_valid_topic_array_with_flat_topic_arrays(value, expected):
     actual = is_flat_topic_array(value)
     assert actual is expected
 
@@ -110,6 +110,7 @@ NESTED_TOPICS_A = (TOPICS_EMPTY,)
 NESTED_TOPICS_B = (TOPICS_EMPTY, TOPICS_SINGLE_NULL)
 NESTED_TOPICS_C = (TOPICS_SINGLE_NULL, TOPICS_MANY)
 NESTED_TOPICS_D = (TOPICS_MANY_WITH_NULL, TOPICS_MANY, TOPICS_EMPTY)
+NESTED_TOPICS_E = (TOPIC_A, TOPICS_MANY, TOPICS_EMPTY)
 
 
 @pytest.mark.parametrize(
@@ -145,6 +146,7 @@ NESTED_TOPICS_D = (TOPICS_MANY_WITH_NULL, TOPICS_MANY, TOPICS_EMPTY)
         (NESTED_TOPICS_B, True),
         (NESTED_TOPICS_C, True),
         (NESTED_TOPICS_D, True),
+        (NESTED_TOPICS_E, True),
     )
 )
 def test_is_nested_topic_array(value, expected):

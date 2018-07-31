@@ -161,6 +161,7 @@ TOPIC_B = encode_hex(b'\x00' * 31 + b'\x02')
         (_make_filter_params(topics=[TOPIC_A, TOPIC_B]), True),
         (_make_filter_params(topics=[TOPIC_A, None]), True),
         (_make_filter_params(topics=[[TOPIC_A], [TOPIC_B]]), True),
+        (_make_filter_params(topics=[TOPIC_A, [TOPIC_B, TOPIC_A]]), True),
         (_make_filter_params(topics=[[TOPIC_A], [TOPIC_B, None]]), True),
         (_make_filter_params(topics=[ADDRESS_A]), False),
         (_make_filter_params(topics=[ADDRESS_A, TOPIC_B]), False),
