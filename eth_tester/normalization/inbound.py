@@ -27,13 +27,17 @@ from eth_tester.validation.inbound import (
 )
 
 
+def normalize_topic(topic):
+    if topic is None:
+        return None
+    else:
+        return decode_hex(topic)
+
+
 @to_tuple
 def normalize_topic_list(topics):
     for topic in topics:
-        if topic is None:
-            yield None
-        else:
-            yield decode_hex(topic)
+        yield normalize_topic(topic)
 
 
 @to_tuple
@@ -56,11 +60,11 @@ def normalize_filter_params(from_block, to_block, address, topics):
 
     if topics is None:
         yield topics
-    elif is_flat_topic_array(topics):
-        yield normalize_topic_list(topics)
-    elif all(is_flat_topic_array(item) for item in topics):
+    elif is_valid_topic_array(topics):
         yield tuple(
             normalize_topic_list(item)
+            if is_list_like(item) else
+            normalize_topic(item)
             for item
             in topics
         )
