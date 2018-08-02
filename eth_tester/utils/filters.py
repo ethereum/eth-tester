@@ -1,3 +1,4 @@
+import itertools
 from eth_utils import (
     to_tuple,
     is_bytes,
@@ -83,12 +84,13 @@ def is_flat_topic_array(value):
     return is_tuple(value) and all(is_topic(item) for item in value)
 
 
-def is_nested_topic_array(value):
-    return bool(value) and is_tuple(value) and all((is_topic_array(item) for item in value))
+def is_valid_with_nested_topic_array(value):
+    return bool(value) and is_tuple(value) and all(
+         (is_flat_topic_array(item) if is_tuple(item) else is_topic(item) for item in value))
 
 
 def is_topic_array(value):
-    return is_flat_topic_array(value) or is_nested_topic_array(value)
+    return is_flat_topic_array(value) or is_valid_with_nested_topic_array(value)
 
 
 def check_single_topic_match(log_topic, filter_topic):
@@ -133,16 +135,20 @@ def check_if_log_matches_flat_topics(log_topics, filter_topics):
         )
 
 
+def extrapolate_flat_topic_from_topic_list(value):
+    _value = tuple(item if is_tuple(item) else (item,) for item in value)
+    return itertools.product(*_value)
+
+
 def check_if_topics_match(log_topics, filter_topics):
     if filter_topics is None:
         return True
     elif is_flat_topic_array(filter_topics):
         return check_if_log_matches_flat_topics(log_topics, filter_topics)
-    elif is_nested_topic_array(filter_topics):
+    elif is_valid_with_nested_topic_array(filter_topics):
         return any(
-            check_if_log_matches_flat_topics(log_topics, sub_filter_topics)
-            for sub_filter_topics
-            in filter_topics
+            check_if_log_matches_flat_topics(log_topics, topic_combination)
+            for topic_combination in extrapolate_flat_topic_from_topic_list(filter_topics)
         )
     else:
         raise ValueError("Unrecognized topics format: {0}".format(filter_topics))
