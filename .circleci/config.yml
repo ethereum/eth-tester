@@ -79,7 +79,7 @@ jobs:
   py37-pyethereum21:
     <<: *common
     docker:
-      - image: circleci/python:3.7-jessie
+      - image: circleci/python:3.7
         environment:
           TOXENV: py37-pyethereum21
   py35-pyevm:
