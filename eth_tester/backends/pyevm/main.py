@@ -145,7 +145,7 @@ def get_default_genesis_params():
     return genesis_params
 
 
-def setup_tester_chain():
+def setup_tester_chain(genesis_parameter_overrides=None, genesis_state_overrides=None):
     from eth.chains.base import MiningChain
     from eth.db import get_db_backend
     from eth.vm.forks.byzantium import ByzantiumVM
@@ -165,8 +165,16 @@ def setup_tester_chain():
             pass
 
     genesis_params = get_default_genesis_params()
+    if genesis_parameter_overrides is not None:
+        if not all(bool(override in genesis_params) for override in genesis_parameter_overrides):
+            raise ValueError("Invalid genesis parameter overrides. Availible parameters are {}".format(', '.join(genesis_params)))
+        genesis_params.update(genesis_parameter_overrides)
+
     account_keys = get_default_account_keys()
+
     genesis_state = generate_genesis_state(account_keys)
+    if genesis_state_overrides is not None:
+        genesis_state.update(genesis_state_overrides)
 
     base_db = get_db_backend()
 
@@ -278,7 +286,7 @@ class PyEVMBackend(object):
     chain = None
     fork_config = None
 
-    def __init__(self):
+    def __init__(self, genesis_parameter_overrides=None):
         self.fork_config = {}
 
         if not is_pyevm_available():
@@ -287,7 +295,9 @@ class PyEVMBackend(object):
                 "`PyEVMBackend` requires py-evm to be installed and importable. "
                 "Please install the `py-evm` library."
             )
-        self.reset_to_genesis()
+
+        self.account_keys = None  # set below
+        self.reset_to_genesis(genesis_parameter_overrides=genesis_parameter_overrides)
 
     #
     # Private Accounts API
@@ -316,8 +326,9 @@ class PyEVMBackend(object):
             self.chain.chaindb._set_as_canonical_chain_head(block.header)
             self.chain = self.chain.from_genesis_header(self.chain.chaindb.db, block.header)
 
-    def reset_to_genesis(self):
-        self.account_keys, self.chain = setup_tester_chain()
+    def reset_to_genesis(self, genesis_parameter_overrides=None, genesis_state_overrides=None):
+        self.account_keys, self.chain = setup_tester_chain(genesis_parameter_overrides=genesis_parameter_overrides,
+                                                           genesis_state_overrides=genesis_state_overrides)
 
     #
     # Meta

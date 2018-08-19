@@ -81,17 +81,13 @@ class MockBackend(BaseChainBackend):
     receipts = None
     fork_blocks = None
 
-    def __init__(self, alloc=None, genesis_block=None):
-        if alloc is None:
-            alloc = get_default_alloc()
-        if genesis_block is None:
-            genesis_block = make_genesis_block()
-
+    def __init__(self, alloc=None, genesis_block=None, genesis_parameter_overrides=None):
         self.fork_blocks = {}
 
+        if alloc is None:
+            alloc = get_default_alloc()
         self.genesis_alloc = copy.deepcopy(alloc)
-        self.genesis_block = copy.deepcopy(genesis_block)
-        self.reset_to_genesis()
+        self.reset_to_genesis(genesis_parameter_overrides=genesis_parameter_overrides)
 
     #
     # Snapshot API
@@ -110,7 +106,11 @@ class MockBackend(BaseChainBackend):
         self.block = snapshot['block']
         self.receipts = snapshot['receipts']
 
-    def reset_to_genesis(self):
+    def reset_to_genesis(self, genesis_block=None, genesis_parameter_overrides=None, genesis_state_overrides=None):
+        if genesis_block is None:
+            genesis_block = make_genesis_block(overrides=genesis_parameter_overrides)
+        self.genesis_block = copy.deepcopy(genesis_block)
+
         self.alloc = self.genesis_alloc
         self.blocks = []
         self.block = self.genesis_block

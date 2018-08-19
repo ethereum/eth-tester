@@ -236,8 +236,8 @@ BLANK_ROOT_HASH = b'V\xe8\x1f\x17\x1b\xccU\xa6\xff\x83E\xe6\x92\xc0\xf8n\x5bH\xe
 EMPTY_UNCLE_HASH = b'\x1d\xccM\xe8\xde\xc7]z\xab\x85\xb5g\xb6\xcc\xd4\x1a\xd3\x12E\x1b\x94\x8at\x13\xf0\xa1B\xfd@\xd4\x93G'  # noqa: E501
 
 
-def make_genesis_block():
-    return {
+def make_genesis_block(overrides=None):
+    genesis_block =  {
         "number": 0,
         "hash": ZERO_32BYTES,
         "parent_hash": ZERO_32BYTES,
@@ -259,6 +259,12 @@ def make_genesis_block():
         "uncles": [],
     }
 
+    if overrides is not None:
+        if not (all(bool(override in genesis_block) for override in overrides)):
+            raise ValueError("Invalid genesis parameters. Availible parameters are {}".format(', '.join(genesis_block)))
+        genesis_block.update(overrides)
+
+    return genesis_block
 
 @add_hash
 @to_dict
