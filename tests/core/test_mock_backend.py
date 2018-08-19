@@ -18,7 +18,6 @@ def eth_tester():
     return EthereumTester(backend=backend)
 
 
-
 class TestMockBackendDirect(BaseTestBackendDirect):
     supports_evm_execution = False
 

@@ -26,13 +26,6 @@ def get_chain_backend_class(backend_import_path=None):
             if vi.major != 3 or vi.minor < 5:
                 warnings.warn(UserWarning("Py-EVM does not support python < 3.5"))
             backend_import_path = get_import_path(PyEVMBackend)
-        elif is_pyethereum21_available():
-            vi = sys.version_info
-            if vi.major != 3 or vi.minor < 5:
-                warnings.warn(UserWarning("PyEthereum 2.1.0+ does not support python < 3.5"))
-            backend_import_path = get_import_path(PyEthereum21Backend)
-        elif is_pyethereum16_available():
-            backend_import_path = get_import_path(PyEthereum16Backend)
         else:
             warnings.warn(UserWarning(
                 "Ethereum Tester: No backend was explicitely set, and no *full* "
