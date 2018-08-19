@@ -237,7 +237,7 @@ EMPTY_UNCLE_HASH = b'\x1d\xccM\xe8\xde\xc7]z\xab\x85\xb5g\xb6\xcc\xd4\x1a\xd3\x1
 
 
 def make_genesis_block(overrides=None):
-    genesis_block =  {
+    genesis_block = {
         "number": 0,
         "hash": ZERO_32BYTES,
         "parent_hash": ZERO_32BYTES,
@@ -261,10 +261,13 @@ def make_genesis_block(overrides=None):
 
     if overrides is not None:
         if not (all(bool(override in genesis_block) for override in overrides)):
-            raise ValueError("Invalid genesis parameters. Availible parameters are {}".format(', '.join(genesis_block)))
+            fields = ', '.join(genesis_block)
+            error = "Invalid genesis overrides; Valid parameters are {}".format(fields)
+            raise ValueError(error)
         genesis_block.update(overrides)
 
     return genesis_block
+
 
 @add_hash
 @to_dict

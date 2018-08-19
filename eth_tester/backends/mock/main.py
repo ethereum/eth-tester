@@ -87,7 +87,8 @@ class MockBackend(BaseChainBackend):
         if alloc is None:
             alloc = get_default_alloc()
         self.genesis_alloc = copy.deepcopy(alloc)
-        self.reset_to_genesis(genesis_parameter_overrides=genesis_parameter_overrides)
+        self.reset_to_genesis(genesis_block=genesis_block,
+                              genesis_parameter_overrides=genesis_parameter_overrides)
 
     #
     # Snapshot API
@@ -106,7 +107,9 @@ class MockBackend(BaseChainBackend):
         self.block = snapshot['block']
         self.receipts = snapshot['receipts']
 
-    def reset_to_genesis(self, genesis_block=None, genesis_parameter_overrides=None, genesis_state_overrides=None):
+    def reset_to_genesis(self, genesis_block=None,
+                         genesis_parameter_overrides=None, genesis_state_overrides=None):
+
         if genesis_block is None:
             genesis_block = make_genesis_block(overrides=genesis_parameter_overrides)
         self.genesis_block = copy.deepcopy(genesis_block)
