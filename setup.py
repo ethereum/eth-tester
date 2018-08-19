@@ -21,14 +21,6 @@ extras_require = {
         'tox>=2.9.1,<3.0.0',
         'wheel>=0.30.0,<1.0.0',
     ],
-    'pyethereum16': [
-        "ethereum>=1.6.0,<2.0.0",
-        "rlp<1",
-    ],
-    'pyethereum21': [
-        "ethereum>=2.1.0,<2.2.0",
-        "rlp<1",
-    ],
     'py-evm': [
         # Pin py-evm to exact version, until it leaves alpha.
         # EVM is very high velocity and might change API at each alpha.
