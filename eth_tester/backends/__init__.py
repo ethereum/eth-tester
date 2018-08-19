@@ -1,23 +1,13 @@
 import os
 import sys
-
 import warnings
 
 from eth_tester.utils.module_loading import (
     get_import_path,
     import_string,
 )
-
-from .mock import (  # noqa: F401
+from .mock import (   # noqa: F401
     MockBackend,
-)
-from .pyethereum.v16 import (
-    PyEthereum16Backend,
-    is_pyethereum16_available,
-)
-from .pyethereum.v20 import (
-    PyEthereum21Backend,
-    is_pyethereum21_available,
 )
 from .pyevm import (  # noqa: F401
     PyEVMBackend,
