@@ -1211,6 +1211,28 @@ class BaseTestBackendDirect(object):
         direct_logs_all = eth_tester.get_logs(from_block=0)
         assert len(logs_changes) == len(logs_all) == len(direct_logs_all) == 2
 
+    def test_log_filter_includes_latest_block_with_to_block(self, eth_tester):
+        self.skip_if_no_evm_execution()
+
+        emitter_address = _deploy_emitter(eth_tester)
+        no_of_events = 2
+        for i in range(1, no_of_events + 1):
+            _call_emitter(
+                eth_tester,
+                emitter_address,
+                'logSingle',
+                [EMITTER_ENUM['LogSingleWithIndex'], i],
+            )
+
+        filter_any_id = eth_tester.create_log_filter(
+            from_block=0,
+            to_block=eth_tester.get_block_by_number('latest')['number']
+        )
+
+        logs_changes = eth_tester.get_only_filter_changes(filter_any_id)
+        logs_all = eth_tester.get_all_filter_logs(filter_any_id)
+        assert len(logs_changes) == len(logs_all) == no_of_events
+
     def test_delete_filter(self, eth_tester):
         self.skip_if_no_evm_execution()
 

@@ -605,7 +605,7 @@ class EthereumTester(object):
 
         if is_integer(raw_from_block):
             if is_integer(raw_to_block):
-                upper_bound = raw_to_block
+                upper_bound = raw_to_block + 1
             else:
                 upper_bound = self.get_block_by_number('pending')['number']
             for block_number in range(raw_from_block, upper_bound):
