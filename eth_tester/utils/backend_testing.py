@@ -249,11 +249,6 @@ class BaseTestBackendDirect(object):
     #
     @pytest.mark.parametrize('is_pending', [True, False])
     def test_send_raw_transaction_valid_raw_transaction(self, eth_tester, is_pending):
-        if is_pending:
-            from eth_tester.backends import PyEthereum16Backend, PyEthereum21Backend
-            if isinstance(eth_tester.backend, (PyEthereum16Backend, PyEthereum21Backend)):
-                pytest.xfail("backend does not support presigned pending transactions")
-
         # send funds to our sender
         raw_privkey = b'\x11' * 32
         test_key = keys.PrivateKey(raw_privkey)

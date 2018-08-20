@@ -1,23 +1,13 @@
 import os
 import sys
-
 import warnings
 
 from eth_tester.utils.module_loading import (
     get_import_path,
     import_string,
 )
-
-from .mock import (  # noqa: F401
+from .mock import (   # noqa: F401
     MockBackend,
-)
-from .pyethereum.v16 import (
-    PyEthereum16Backend,
-    is_pyethereum16_available,
-)
-from .pyethereum.v20 import (
-    PyEthereum21Backend,
-    is_pyethereum21_available,
 )
 from .pyevm import (  # noqa: F401
     PyEVMBackend,
@@ -36,13 +26,6 @@ def get_chain_backend_class(backend_import_path=None):
             if vi.major != 3 or vi.minor < 5:
                 warnings.warn(UserWarning("Py-EVM does not support python < 3.5"))
             backend_import_path = get_import_path(PyEVMBackend)
-        elif is_pyethereum21_available():
-            vi = sys.version_info
-            if vi.major != 3 or vi.minor < 5:
-                warnings.warn(UserWarning("PyEthereum 2.1.0+ does not support python < 3.5"))
-            backend_import_path = get_import_path(PyEthereum21Backend)
-        elif is_pyethereum16_available():
-            backend_import_path = get_import_path(PyEthereum16Backend)
         else:
             warnings.warn(UserWarning(
                 "Ethereum Tester: No backend was explicitely set, and no *full* "
