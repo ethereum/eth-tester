@@ -24,7 +24,7 @@ def eth_tester():
 
 class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
-    def test_reset_to_genesis(self, eth_tester):
+    def test_override_genesis_parameters(self, eth_tester):
         super().test_reset_to_genesis(eth_tester)
 
         param_overrides = {'gas_limit': 4750000}
