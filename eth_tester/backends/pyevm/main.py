@@ -161,7 +161,7 @@ def get_default_genesis_params(overrides=None):
     return genesis_params
 
 
-def setup_tester_chain(genesis_parameter_overrides=None, genesis_state_overrides=None):
+def setup_tester_chain(genesis_params=None, genesis_state=None):
     from eth.chains.base import MiningChain
     from eth.db import get_db_backend
     from eth.vm.forks.byzantium import ByzantiumVM
@@ -180,19 +180,13 @@ def setup_tester_chain(genesis_parameter_overrides=None, genesis_state_overrides
         def validate_seal(cls, block):
             pass
 
-    genesis_params = get_default_genesis_params()
-    if genesis_parameter_overrides is not None:
-        if not all(bool(override in genesis_params) for override in genesis_parameter_overrides):
-            fields = ', '.join(genesis_params)
-            error = "Invalid genesis overrides; Valid parameters are {}".format(fields)
-            raise ValueError(error)
-        genesis_params.update(genesis_parameter_overrides)
+    if genesis_params is None:
+        genesis_params = get_default_genesis_params()
 
     account_keys = get_default_account_keys()
 
-    genesis_state = generate_genesis_state(account_keys)
-    if genesis_state_overrides is not None:
-        genesis_state.update(genesis_state_overrides)
+    if genesis_state is None:
+        genesis_state = generate_genesis_state(account_keys)
 
     base_db = get_db_backend()
 
@@ -304,7 +298,7 @@ class PyEVMBackend(object):
     chain = None
     fork_config = None
 
-    def __init__(self, genesis_parameter_overrides=None):
+    def __init__(self, genesis_parameters=None, genesis_state=None):
         self.fork_config = {}
 
         if not is_pyevm_available():
@@ -315,7 +309,29 @@ class PyEVMBackend(object):
             )
 
         self.account_keys = None  # set below
-        self.reset_to_genesis(genesis_parameter_overrides=genesis_parameter_overrides)
+        self.reset_to_genesis(genesis_parameters, genesis_state)
+
+    #
+    # Genesis
+    #
+
+    @staticmethod
+    def generate_genesis_params(overrides=None):
+        return get_default_genesis_params(overrides=overrides)
+
+    @staticmethod
+    def generate_genesis_state(overrides=None):
+        return generate_genesis_state(overrides=overrides)
+
+    @classmethod
+    def from_genesis_overrides(cls, genesis_overrides=None, state_overrides=None):
+        params = cls.generate_genesis_params(overrides=genesis_overrides)
+        state = cls.generate_genesis_state(overrides=state_overrides)
+        instance = cls(genesis_parameters=params, genesis_state=state)
+        return instance
+
+    def reset_to_genesis(self, genesis_params=None, genesis_state=None):
+        self.account_keys, self.chain = setup_tester_chain(genesis_params, genesis_state)
 
     #
     # Private Accounts API
@@ -343,10 +359,6 @@ class PyEVMBackend(object):
         else:
             self.chain.chaindb._set_as_canonical_chain_head(block.header)
             self.chain = self.chain.from_genesis_header(self.chain.chaindb.db, block.header)
-
-    def reset_to_genesis(self, genesis_parameter_overrides=None, genesis_state_overrides=None):
-        self.account_keys, self.chain = setup_tester_chain(genesis_parameter_overrides,
-                                                           genesis_state_overrides)
 
     #
     # Meta
