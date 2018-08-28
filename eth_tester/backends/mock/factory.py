@@ -3,6 +3,7 @@ import time
 
 from cytoolz.dicttoolz import (
     assoc,
+    merge,
 )
 
 from eth_utils import (
@@ -237,7 +238,7 @@ EMPTY_UNCLE_HASH = b'\x1d\xccM\xe8\xde\xc7]z\xab\x85\xb5g\xb6\xcc\xd4\x1a\xd3\x1
 
 
 def make_genesis_block(overrides=None):
-    genesis_block = {
+    default_genesis_block = {
         "number": 0,
         "hash": ZERO_32BYTES,
         "parent_hash": ZERO_32BYTES,
@@ -260,11 +261,18 @@ def make_genesis_block(overrides=None):
     }
 
     if overrides is not None:
-        if not (all(bool(override in genesis_block) for override in overrides)):
-            fields = ', '.join(genesis_block)
-            error = "Invalid genesis overrides; Valid parameters are {}".format(fields)
-            raise ValueError(error)
-        genesis_block.update(overrides)
+        allowed_fields = set(default_genesis_block.keys())
+        override_fields = set(overrides.keys())
+        unexpected_fields = tuple(sorted(override_fields.difference(allowed_fields)))
+        if unexpected_fields:
+            raise ValueError(
+                "The following invalid fields were supplied to override the genesis parameters: {0}.".format(
+                    unexpected_fields)
+            )
+
+        genesis_block = merge(default_genesis_block, overrides)
+    else:
+        genesis_block = default_genesis_block
 
     return genesis_block
 

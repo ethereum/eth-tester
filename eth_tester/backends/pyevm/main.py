@@ -5,6 +5,7 @@ import time
 from cytoolz import (
     frequencies,
     assoc,
+    merge,
 )
 
 import rlp
@@ -119,14 +120,14 @@ def get_default_account_keys():
 
 
 @to_dict
-def generate_genesis_state(account_keys):
+def generate_genesis_state(account_keys, overrides=None):  # TODO: Merge genesis state overrides
     for private_key in account_keys:
         account_state = get_default_account_state()
         yield private_key.public_key.to_canonical_address(), account_state
 
 
-def get_default_genesis_params():
-    genesis_params = {
+def get_default_genesis_params(overrides=None):
+    default_genesis_params = {
         "bloom": 0,
         "coinbase": GENESIS_COINBASE,
         "difficulty": GENESIS_DIFFICULTY,
@@ -142,6 +143,21 @@ def get_default_genesis_params():
         "transaction_root": BLANK_ROOT_HASH,
         "uncles_hash": EMPTY_RLP_LIST_HASH
     }
+
+    if overrides is not None:
+        allowed_fields = set(default_genesis_params.keys())
+        override_fields = set(overrides.keys())
+        unexpected_fields = tuple(sorted(override_fields.difference(allowed_fields)))
+        if unexpected_fields:
+            raise ValueError(
+                "The following invalid fields were supplied to override the genesis parameters: {0}.".format(
+                    unexpected_fields)
+            )
+
+        genesis_params = merge(default_genesis_params, overrides)
+    else:
+        genesis_params = default_genesis_params
+
     return genesis_params
 
 
