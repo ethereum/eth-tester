@@ -265,10 +265,8 @@ def make_genesis_block(overrides=None):
         override_fields = set(overrides.keys())
         unexpected_fields = tuple(sorted(override_fields.difference(allowed_fields)))
         if unexpected_fields:
-            raise ValueError(
-                "The following invalid fields were supplied to override the genesis parameters: {0}.".format(
-                    unexpected_fields)
-            )
+            err = "The following invalid fields were supplied to override genesis parameters: {0}."
+            raise ValueError(err.format(unexpected_fields))
 
         genesis_block = merge(default_genesis_block, overrides)
     else:
