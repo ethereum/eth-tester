@@ -41,7 +41,7 @@ extras_require['pyevm'] = extras_require['py-evm']
 setup(
     name='eth-tester',
     # *IMPORTANT*: Don't manually change the version here. Use the 'bumpversion' utility.
-    version='0.1.0-beta.31',
+    version='0.1.0-beta.32',
     description="""Tools for testing Ethereum applications.""",
     long_description_markdown_filename='README.md',
     author='Piper Merriam',
