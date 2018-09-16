@@ -24,6 +24,8 @@ extras_require = {
         # Pin py-evm to exact version, until it leaves alpha.
         # EVM is very high velocity and might change API at each alpha.
         "py-evm==0.2.0a32",
+        "eth-hash[pysha3]>=0.1.4,<1.0.0;implementation_name=='cpython'",
+        "eth-hash[pycryptodome]>=0.1.4,<1.0.0;implementation_name=='pypy'",
     ],
 }
 
