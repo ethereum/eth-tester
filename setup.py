@@ -13,7 +13,6 @@ extras_require = {
     'test': [
         'pytest>=3.2.1,<4.0.0',
         'pytest-xdist>=1.22.2,<2',
-        'eth-abi>=1.0.0-beta.1,<2',
         'eth-hash[pycryptodome]>=0.1.4,<1.0.0',
     ],
     'dev': [
@@ -25,6 +24,8 @@ extras_require = {
         # Pin py-evm to exact version, until it leaves alpha.
         # EVM is very high velocity and might change API at each alpha.
         "py-evm==0.2.0a32",
+        "eth-hash[pysha3]>=0.1.4,<1.0.0;implementation_name=='cpython'",
+        "eth-hash[pycryptodome]>=0.1.4,<1.0.0;implementation_name=='pypy'",
     ],
 }
 
@@ -55,6 +56,7 @@ setup(
         "rlp>=0.6.0,<2.0.0",
         "semantic_version>=2.6.0,<3.0.0",
         "eth-keys>=0.2.0-beta.3,<0.3.0",
+        "eth-abi>=1.0.0-beta.1,<2",
     ],
     extras_require=extras_require,
     setup_requires=['setuptools-markdown'],
@@ -71,5 +73,6 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
 )
