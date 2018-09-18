@@ -216,11 +216,11 @@ def _get_block_by_hash(chain, block_hash):
     block = chain.get_block_by_hash(block_hash)
 
     if block.number >= chain.get_block().number:
-        raise BlockNotFound("No block fuond for block hash: {0}".format(block_hash))
+        raise BlockNotFound("No block found for block hash: {0}".format(block_hash))
 
     block_at_height = chain.get_canonical_block_by_number(block.number)
     if block != block_at_height:
-        raise BlockNotFound("No block fuond for block hash: {0}".format(block_hash))
+        raise BlockNotFound("No block found for block hash: {0}".format(block_hash))
 
     return block
 
