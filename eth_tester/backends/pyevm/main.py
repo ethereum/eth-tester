@@ -150,19 +150,10 @@ def get_default_genesis_params(overrides=None):
         "transaction_root": BLANK_ROOT_HASH,
         "uncles_hash": EMPTY_RLP_LIST_HASH
     }
-
     if overrides is not None:
-        allowed_fields = set(default_genesis_params.keys())
-        override_fields = set(overrides.keys())
-        unexpected_fields = tuple(sorted(override_fields.difference(allowed_fields)))
-        if unexpected_fields:
-            err = "The following invalid fields were supplied to override genesis parameters: {0}."
-            raise ValueError(err.format(unexpected_fields))
-
-        genesis_params = merge(default_genesis_params, overrides)
+        genesis_params = merge_genesis_overrides(default_genesis_params, overrides=overrides)
     else:
         genesis_params = default_genesis_params
-
     return genesis_params
 
 

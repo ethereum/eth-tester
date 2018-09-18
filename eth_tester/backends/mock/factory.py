@@ -20,6 +20,7 @@ from eth_utils import (
     to_tuple,
 )
 
+from eth_tester.backends.common import merge_genesis_overrides
 from eth_tester.utils.accounts import (
     generate_contract_address,
 )
@@ -259,19 +260,11 @@ def make_genesis_block(overrides=None):
         "transactions": [],
         "uncles": [],
     }
-
     if overrides is not None:
-        allowed_fields = set(default_genesis_block.keys())
-        override_fields = set(overrides.keys())
-        unexpected_fields = tuple(sorted(override_fields.difference(allowed_fields)))
-        if unexpected_fields:
-            err = "The following invalid fields were supplied to override genesis parameters: {0}."
-            raise ValueError(err.format(unexpected_fields))
-
-        genesis_block = merge(default_genesis_block, overrides)
+        genesis_block = merge_genesis_overrides(defaults=default_genesis_block,
+                                                overrides=overrides)
     else:
         genesis_block = default_genesis_block
-
     return genesis_block
 
 
