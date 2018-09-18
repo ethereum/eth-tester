@@ -5,7 +5,6 @@ import time
 from cytoolz import (
     frequencies,
     assoc,
-    merge,
 )
 
 import rlp
@@ -320,19 +319,19 @@ class PyEVMBackend(object):
         return get_default_genesis_params(overrides=overrides)
 
     @staticmethod
-    def generate_genesis_state(overrides=None):
-        account_keys = get_default_account_keys()
+    def generate_genesis_state(overrides=None, accounts=None):
+        account_keys = get_default_account_keys(quantity=accounts)
         return generate_genesis_state(account_keys=account_keys, overrides=overrides)
 
     @classmethod
-    def from_genesis_overrides(cls, parameter_overrides=None, state_overrides=None):
+    def from_genesis_overrides(cls, parameter_overrides=None, state_overrides=None, accounts=None):
         params = cls.generate_genesis_params(overrides=parameter_overrides)
-        state = cls.generate_genesis_state(overrides=state_overrides)
+        state = cls.generate_genesis_state(overrides=state_overrides, accounts=accounts)
         instance = cls(genesis_parameters=params, genesis_state=state)
         return instance
 
-    def reset_to_genesis(self, genesis_params=None, genesis_state=None):
-        self.account_keys, self.chain = setup_tester_chain(genesis_params, genesis_state)
+    def reset_to_genesis(self, genesis_params=None, genesis_state=None, accounts=None):
+        self.account_keys, self.chain = setup_tester_chain(genesis_params, genesis_state, accounts)
 
     #
     # Private Accounts API

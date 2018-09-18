@@ -3,7 +3,6 @@ import time
 
 from cytoolz.dicttoolz import (
     assoc,
-    merge,
 )
 
 from eth_utils import (
