@@ -123,25 +123,3 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         assert genesis_block['gas_limit'] == param_overrides['gas_limit']
         genesis_block = tester.get_block_by_number(1)
         assert genesis_block['gas_limit'] == block_one_gas_limit
-
-    def test_from_genesis_overrides(self):
-        state_overrides = {'balance': to_wei(900000, 'ether')}
-        param_overrides = {'gas_limit': 4750000}
-        block_one_gas_limit = 4745362
-        test_accounts = 6
-
-        # Use the alternate constructor to create a backend from custom genesis parameters
-        pyevm_backend = PyEVMBackend.from_genesis_overrides(parameter_overrides=param_overrides,
-                                                            state_overrides=state_overrides,
-                                                            num_accounts=test_accounts)
-
-        assert len(pyevm_backend.account_keys) == test_accounts
-        for private_key in pyevm_backend.account_keys:
-            account = private_key.public_key.to_canonical_address()
-            balance = pyevm_backend.get_balance(account=account)
-            assert balance == state_overrides['balance']
-
-        genesis_block = pyevm_backend.get_block_by_number(0)
-        assert genesis_block['gas_limit'] == param_overrides['gas_limit']
-        genesis_block = pyevm_backend.get_block_by_number(1)
-        assert genesis_block['gas_limit'] == block_one_gas_limit

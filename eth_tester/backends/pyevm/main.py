@@ -323,15 +323,9 @@ class PyEVMBackend(object):
         account_keys = get_default_account_keys(quantity=num_accounts)
         return generate_genesis_state_for_keys(account_keys=account_keys, overrides=overrides)
 
-    @classmethod
-    def from_genesis_overrides(cls, parameter_overrides=None, state_overrides=None, num_accounts=None):
-        params = cls.generate_genesis_params(overrides=parameter_overrides)
-        state = cls.generate_genesis_state(overrides=state_overrides, num_accounts=num_accounts)
-        instance = cls(genesis_parameters=params, genesis_state=state)
-        return instance
-
     def reset_to_genesis(self, genesis_params=None, genesis_state=None, num_accounts=None):
-        self.account_keys, self.chain = setup_tester_chain(genesis_params, genesis_state, num_accounts)
+        self.account_keys, self.chain = setup_tester_chain(genesis_params, genesis_state,
+                                                           num_accounts)
 
     #
     # Private Accounts API
