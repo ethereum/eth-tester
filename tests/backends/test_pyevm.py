@@ -7,7 +7,7 @@ from eth_tester import (
     EthereumTester,
     PyEVMBackend,
 )
-from eth_tester.backends.pyevm.main import generate_genesis_state, get_default_account_keys
+from eth_tester.backends.pyevm.main import generate_genesis_state, get_default_account_keys, get_default_genesis_params
 
 from eth_tester.backends.pyevm.utils import (
     is_pyevm_available,
@@ -29,6 +29,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
     def test_generate_custom_genesis_state(self):
         state_overrides = {'balance': to_wei(900000, 'ether')}
+        invalid_overrides = {'gato': 'con botas'}
 
         # Test creating a specific number of accounts
         account_keys = get_default_account_keys(quantity=2)
@@ -43,6 +44,11 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
             assert account_state['balance'] == state_overrides['balance']
             assert account_state['code'] == b''
 
+        # Only existing default genesis state keys can be overridden
+        with pytest.raises(ValueError):
+            _invalid_genesis_state = generate_genesis_state(account_keys=account_keys,
+                                                            overrides=invalid_overrides)
+
         # Use staticmethod state overriding
         genesis_state = PyEVMBackend.generate_genesis_state(overrides=state_overrides, accounts=3)
         assert len(genesis_state) == 3
@@ -50,20 +56,42 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
             assert account_state['balance'] == state_overrides['balance']
             assert account_state['code'] == b''
 
-    def test_override_genesis_state(self):
+        # Only existing default genesis state keys can be overridden
+        with pytest.raises(ValueError):
+            _invalid_genesis_state = PyEVMBackend.generate_genesis_state(overrides=invalid_overrides)
 
+    def test_override_genesis_state(self):
         state_overrides = {'balance': to_wei(900000, 'ether')}
+        test_accounts = 3
 
         # Initialize PyEVM backend with custom genesis state
-        genesis_state = PyEVMBackend.generate_genesis_state(overrides=state_overrides, accounts=3)
+        genesis_state = PyEVMBackend.generate_genesis_state(overrides=state_overrides,
+                                                            accounts=test_accounts)
+
+        # Test the correct number of accounts are created with the specified balance override
         pyevm_backend = PyEVMBackend(genesis_state=genesis_state)
-        assert len(pyevm_backend.account_keys) == 3
-        for account, state in genesis_state.items():
-            assert pyevm_backend.get_balance(account=account) == state_overrides['balance']
+        assert len(pyevm_backend.account_keys) == test_accounts
+        for private_key in pyevm_backend.account_keys:
+            account = private_key.public_key.to_canonical_address()
+            balance = pyevm_backend.get_balance(account=account)
+            assert balance == state_overrides['balance']
+
+        # Test integration with EthereumTester
+        tester = EthereumTester(backend=pyevm_backend)
+        for private_key in pyevm_backend.account_keys:
+            account = private_key.public_key.to_checksum_address()
+            balance = tester.get_balance(account=account)
+            assert balance == state_overrides['balance']
 
     def test_generate_custom_genesis_parameters(self):
-        # Establish overrides, for example a custom genesis gas limit
+
+        # Establish parameter overrides, for example a custom genesis gas limit
         param_overrides = {'gas_limit': 4750000}
+
+        # Test the underlying default parameter merging functionality
+        genesis_params = get_default_genesis_params(overrides=param_overrides)
+        assert genesis_params['block_number'] == 0
+        assert genesis_params['gas_limit'] == param_overrides['gas_limit']
 
         # Use the the staticmethod to generate custom genesis parameters
         genesis_params = PyEVMBackend.generate_genesis_params(param_overrides)
@@ -76,6 +104,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
             _invalid_genesis_params = PyEVMBackend.generate_genesis_params(overrides=invalid_overrides)
 
     def test_override_genesis_parameters(self):
+
         # Establish a custom gas limit
         param_overrides = {'gas_limit': 4750000}
         block_one_gas_limit = 4745362
@@ -99,15 +128,19 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         state_overrides = {'balance': to_wei(900000, 'ether')}
         param_overrides = {'gas_limit': 4750000}
         block_one_gas_limit = 4745362
+        test_accounts = 6
 
         # Use the alternate constructor to create a backend from custom genesis parameters
         pyevm_backend = PyEVMBackend.from_genesis_overrides(parameter_overrides=param_overrides,
                                                             state_overrides=state_overrides,
-                                                            accounts=6)
-        assert len(pyevm_backend.account_keys) == 6
+                                                            accounts=test_accounts)
+
+        assert len(pyevm_backend.account_keys) == test_accounts
         for private_key in pyevm_backend.account_keys:
-            balance = pyevm_backend.get_balance(account=private_key.public_key.to_canonical_address())
+            account = private_key.public_key.to_canonical_address()
+            balance = pyevm_backend.get_balance(account=account)
             assert balance == state_overrides['balance']
+
         genesis_block = pyevm_backend.get_block_by_number(0)
         assert genesis_block['gas_limit'] == param_overrides['gas_limit']
         genesis_block = pyevm_backend.get_block_by_number(1)
