@@ -45,6 +45,7 @@ from eth_tester.exceptions import (
 from eth_tester.utils.formatting import (
     replace_exceptions,
 )
+from eth_tester.backends.common import merge_genesis_overrides
 
 from .serializers import (
     serialize_block,
@@ -100,13 +101,19 @@ MINIMUM_GAS_ESTIMATE = 30000
 GAS_ESTIMATE_BUFFER = 1.5
 
 
-def get_default_account_state():
-    return {
+def get_default_account_state(overrides=None):
+    default_account_state = {
         'balance': to_wei(1000000, 'ether'),
         'storage': {},
         'code': b'',
         'nonce': 0,
     }
+    if overrides is not None:
+        account_state = merge_genesis_overrides(defaults=default_account_state,
+                                                overrides=overrides)
+    else:
+        account_state = default_account_state
+    return account_state
 
 
 @to_tuple
