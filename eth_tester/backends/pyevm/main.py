@@ -127,9 +127,9 @@ def get_default_account_keys(quantity=None):
 
 
 @to_dict
-def generate_genesis_state(account_keys, overrides=None):  # TODO: Merge genesis state overrides
+def generate_genesis_state(account_keys, overrides=None):
     for private_key in account_keys:
-        account_state = get_default_account_state()
+        account_state = get_default_account_state(overrides=overrides)
         yield private_key.public_key.to_canonical_address(), account_state
 
 
@@ -166,7 +166,7 @@ def get_default_genesis_params(overrides=None):
     return genesis_params
 
 
-def setup_tester_chain(genesis_params=None, genesis_state=None):
+def setup_tester_chain(genesis_params=None, genesis_state=None, accounts=None):
     from eth.chains.base import MiningChain
     from eth.db import get_db_backend
     from eth.vm.forks.byzantium import ByzantiumVM
@@ -188,7 +188,10 @@ def setup_tester_chain(genesis_params=None, genesis_state=None):
     if genesis_params is None:
         genesis_params = get_default_genesis_params()
 
-    account_keys = get_default_account_keys()
+    if genesis_state:
+        accounts = len(genesis_state)
+
+    account_keys = get_default_account_keys(quantity=accounts)
 
     if genesis_state is None:
         genesis_state = generate_genesis_state(account_keys)
@@ -314,7 +317,8 @@ class PyEVMBackend(object):
             )
 
         self.account_keys = None  # set below
-        self.reset_to_genesis(genesis_parameters, genesis_state)
+        accounts = len(genesis_state) if genesis_state else None
+        self.reset_to_genesis(genesis_parameters, genesis_state, accounts)
 
     #
     # Genesis
