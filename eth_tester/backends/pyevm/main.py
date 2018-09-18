@@ -117,10 +117,10 @@ def get_default_account_state(overrides=None):
 
 
 @to_tuple
-def get_default_account_keys():
+def get_default_account_keys(quantity=None):
     keys = KeyAPI()
-
-    for i in range(1, 11):
+    quantity = quantity or 10
+    for i in range(1, quantity+1):
         pk_bytes = int_to_big_endian(i).rjust(32, b'\x00')
         private_key = keys.PrivateKey(pk_bytes)
         yield private_key
