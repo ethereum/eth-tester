@@ -7,7 +7,7 @@ from eth_tester import (
     EthereumTester,
     PyEVMBackend,
 )
-from eth_tester.backends.pyevm.main import generate_genesis_state, get_default_account_keys, get_default_genesis_params
+from eth_tester.backends.pyevm.main import generate_genesis_state_for_keys, get_default_account_keys, get_default_genesis_params
 
 from eth_tester.backends.pyevm.utils import (
     is_pyevm_available,
@@ -38,7 +38,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         assert len(account_keys) == 10
 
         # Test the underlying state merging functionality
-        genesis_state = generate_genesis_state(account_keys=account_keys, overrides=state_overrides)
+        genesis_state = generate_genesis_state_for_keys(account_keys=account_keys, overrides=state_overrides)
         assert len(genesis_state) == len(account_keys) == 10
         for _public_address, account_state in genesis_state.items():
             assert account_state['balance'] == state_overrides['balance']
@@ -46,11 +46,11 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         # Only existing default genesis state keys can be overridden
         with pytest.raises(ValueError):
-            _invalid_genesis_state = generate_genesis_state(account_keys=account_keys,
-                                                            overrides=invalid_overrides)
+            _invalid_genesis_state = generate_genesis_state_for_keys(account_keys=account_keys,
+                                                                     overrides=invalid_overrides)
 
         # Use staticmethod state overriding
-        genesis_state = PyEVMBackend.generate_genesis_state(overrides=state_overrides, accounts=3)
+        genesis_state = PyEVMBackend.generate_genesis_state(overrides=state_overrides, num_accounts=3)
         assert len(genesis_state) == 3
         for _public_address, account_state in genesis_state.items():
             assert account_state['balance'] == state_overrides['balance']
@@ -66,7 +66,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         # Initialize PyEVM backend with custom genesis state
         genesis_state = PyEVMBackend.generate_genesis_state(overrides=state_overrides,
-                                                            accounts=test_accounts)
+                                                            num_accounts=test_accounts)
 
         # Test the correct number of accounts are created with the specified balance override
         pyevm_backend = PyEVMBackend(genesis_state=genesis_state)
@@ -133,7 +133,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         # Use the alternate constructor to create a backend from custom genesis parameters
         pyevm_backend = PyEVMBackend.from_genesis_overrides(parameter_overrides=param_overrides,
                                                             state_overrides=state_overrides,
-                                                            accounts=test_accounts)
+                                                            num_accounts=test_accounts)
 
         assert len(pyevm_backend.account_keys) == test_accounts
         for private_key in pyevm_backend.account_keys:
