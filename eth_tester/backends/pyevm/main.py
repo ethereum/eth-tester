@@ -44,6 +44,7 @@ from eth_tester.exceptions import (
 from eth_tester.utils.formatting import (
     replace_exceptions,
 )
+from eth_tester.backends.common import merge_genesis_overrides
 
 from .serializers import (
     serialize_block,
@@ -99,34 +100,40 @@ MINIMUM_GAS_ESTIMATE = 30000
 GAS_ESTIMATE_BUFFER = 1.5
 
 
-def get_default_account_state():
-    return {
+def get_default_account_state(overrides=None):
+    default_account_state = {
         'balance': to_wei(1000000, 'ether'),
         'storage': {},
         'code': b'',
         'nonce': 0,
     }
+    if overrides is not None:
+        account_state = merge_genesis_overrides(defaults=default_account_state,
+                                                overrides=overrides)
+    else:
+        account_state = default_account_state
+    return account_state
 
 
 @to_tuple
-def get_default_account_keys():
+def get_default_account_keys(quantity=None):
     keys = KeyAPI()
-
-    for i in range(1, 11):
+    quantity = quantity or 10
+    for i in range(1, quantity+1):
         pk_bytes = int_to_big_endian(i).rjust(32, b'\x00')
         private_key = keys.PrivateKey(pk_bytes)
         yield private_key
 
 
 @to_dict
-def generate_genesis_state(account_keys):
+def generate_genesis_state_for_keys(account_keys, overrides=None):
     for private_key in account_keys:
-        account_state = get_default_account_state()
+        account_state = get_default_account_state(overrides=overrides)
         yield private_key.public_key.to_canonical_address(), account_state
 
 
-def get_default_genesis_params():
-    genesis_params = {
+def get_default_genesis_params(overrides=None):
+    default_genesis_params = {
         "bloom": 0,
         "coinbase": GENESIS_COINBASE,
         "difficulty": GENESIS_DIFFICULTY,
@@ -142,10 +149,14 @@ def get_default_genesis_params():
         "transaction_root": BLANK_ROOT_HASH,
         "uncles_hash": EMPTY_RLP_LIST_HASH
     }
+    if overrides is not None:
+        genesis_params = merge_genesis_overrides(default_genesis_params, overrides=overrides)
+    else:
+        genesis_params = default_genesis_params
     return genesis_params
 
 
-def setup_tester_chain():
+def setup_tester_chain(genesis_params=None, genesis_state=None, num_accounts=None):
     from eth.chains.base import MiningChain
     from eth.db import get_db_backend
     from eth.vm.forks.byzantium import ByzantiumVM
@@ -164,9 +175,16 @@ def setup_tester_chain():
         def validate_seal(cls, block):
             pass
 
-    genesis_params = get_default_genesis_params()
-    account_keys = get_default_account_keys()
-    genesis_state = generate_genesis_state(account_keys)
+    if genesis_params is None:
+        genesis_params = get_default_genesis_params()
+
+    if genesis_state:
+        num_accounts = len(genesis_state)
+
+    account_keys = get_default_account_keys(quantity=num_accounts)
+
+    if genesis_state is None:
+        genesis_state = generate_genesis_state_for_keys(account_keys)
 
     base_db = get_db_backend()
 
@@ -197,11 +215,11 @@ def _get_block_by_hash(chain, block_hash):
     block = chain.get_block_by_hash(block_hash)
 
     if block.number >= chain.get_block().number:
-        raise BlockNotFound("No block fuond for block hash: {0}".format(block_hash))
+        raise BlockNotFound("No block found for block hash: {0}".format(block_hash))
 
     block_at_height = chain.get_canonical_block_by_number(block.number)
     if block != block_at_height:
-        raise BlockNotFound("No block fuond for block hash: {0}".format(block_hash))
+        raise BlockNotFound("No block found for block hash: {0}".format(block_hash))
 
     return block
 
@@ -278,7 +296,7 @@ class PyEVMBackend(object):
     chain = None
     fork_config = None
 
-    def __init__(self):
+    def __init__(self, genesis_parameters=None, genesis_state=None):
         self.fork_config = {}
 
         if not is_pyevm_available():
@@ -287,7 +305,27 @@ class PyEVMBackend(object):
                 "`PyEVMBackend` requires py-evm to be installed and importable. "
                 "Please install the `py-evm` library."
             )
-        self.reset_to_genesis()
+
+        self.account_keys = None  # set below
+        accounts = len(genesis_state) if genesis_state else None
+        self.reset_to_genesis(genesis_parameters, genesis_state, accounts)
+
+    #
+    # Genesis
+    #
+
+    @staticmethod
+    def _generate_genesis_params(overrides=None):
+        return get_default_genesis_params(overrides=overrides)
+
+    @staticmethod
+    def _generate_genesis_state(overrides=None, num_accounts=None):
+        account_keys = get_default_account_keys(quantity=num_accounts)
+        return generate_genesis_state_for_keys(account_keys=account_keys, overrides=overrides)
+
+    def reset_to_genesis(self, genesis_params=None, genesis_state=None, num_accounts=None):
+        self.account_keys, self.chain = setup_tester_chain(genesis_params, genesis_state,
+                                                           num_accounts)
 
     #
     # Private Accounts API
@@ -315,9 +353,6 @@ class PyEVMBackend(object):
         else:
             self.chain.chaindb._set_as_canonical_chain_head(block.header)
             self.chain = self.chain.from_genesis_header(self.chain.chaindb.db, block.header)
-
-    def reset_to_genesis(self):
-        self.account_keys, self.chain = setup_tester_chain()
 
     #
     # Meta
