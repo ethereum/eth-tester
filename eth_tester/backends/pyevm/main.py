@@ -315,11 +315,11 @@ class PyEVMBackend(object):
     #
 
     @staticmethod
-    def generate_genesis_params(overrides=None):
+    def _generate_genesis_params(overrides=None):
         return get_default_genesis_params(overrides=overrides)
 
     @staticmethod
-    def generate_genesis_state(overrides=None, num_accounts=None):
+    def _generate_genesis_state(overrides=None, num_accounts=None):
         account_keys = get_default_account_keys(quantity=num_accounts)
         return generate_genesis_state_for_keys(account_keys=account_keys, overrides=overrides)
 
