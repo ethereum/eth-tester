@@ -347,12 +347,13 @@ class PyEVMBackend(object):
 
     def revert_to_snapshot(self, snapshot):
         block = self.chain.get_block_by_hash(snapshot)
+        chaindb = self.chain.chaindb
         if block.number > 0:
-            self.chain.chaindb._set_as_canonical_chain_head(block.header)
+            chaindb._set_as_canonical_chain_head(chaindb.db, block.header.hash)
             self.chain.import_block(block)
         else:
-            self.chain.chaindb._set_as_canonical_chain_head(block.header)
-            self.chain = self.chain.from_genesis_header(self.chain.chaindb.db, block.header)
+            chaindb._set_as_canonical_chain_head(chaindb.db, block.header.hash)
+            self.chain = self.chain.from_genesis_header(chaindb.db, block.header)
 
     #
     # Meta
