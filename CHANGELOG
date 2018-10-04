@@ -1,3 +1,13 @@
+0.1.0-beta.33
+-------------
+
+Released Oct 4, 2018
+
+- Add some low-level internal tools for setting genesis parameters (API subject to change)
+  https://github.com/ethereum/eth-tester/pull/123
+- Upgrade py-evm to alpha 33 https://github.com/ethereum/eth-tester/pull/134
+- Misc testing & dependency fixes https://github.com/ethereum/eth-tester/pull/127
+
 0.1.0
 -----
 
