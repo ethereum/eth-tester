@@ -23,7 +23,7 @@ extras_require = {
     'py-evm': [
         # Pin py-evm to exact version, until it leaves alpha.
         # EVM is very high velocity and might change API at each alpha.
-        "py-evm==0.2.0a32",
+        "py-evm==0.2.0a33",
         "eth-hash[pysha3]>=0.1.4,<1.0.0;implementation_name=='cpython'",
         "eth-hash[pycryptodome]>=0.1.4,<1.0.0;implementation_name=='pypy'",
     ],
@@ -52,7 +52,7 @@ setup(
     install_requires=[
         "toolz>0.8.2,<1;implementation_name=='pypy'",
         "cytoolz>=0.8.2,<1.0.0;implementation_name=='cpython'",
-        "eth-utils>=1.0.1,<2.0.0",
+        "eth-utils>=1.1.1,<2.0.0",
         "rlp>=0.6.0,<2.0.0",
         "semantic_version>=2.6.0,<3.0.0",
         "eth-keys>=0.2.0-beta.3,<0.3.0",
