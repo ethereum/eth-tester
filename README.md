@@ -718,7 +718,7 @@ The most direct way is to manually pass in the backend instance you wish to
 use.
 
 ```python
->>> from eth_tester import EthereumTester
+>>> from eth_tester import EthereumTester, MockBackend
 >>> t = EthereumTester(backend=MockBackend())
 ```
 
@@ -739,7 +739,7 @@ This backend has limited functionality.  It cannot perform any VM computations.
 It mocks out all of the objects and interactions.
 
 ```python
->>> from eth_tester import MockBackend
+>>> from eth_tester import EthereumTester, MockBackend
 >>> t = EthereumTester(MockBackend())
 ```
 
@@ -750,9 +750,105 @@ It mocks out all of the objects and interactions.
 Uses the experimental Py-EVM library.
 
 ```python
->>> from eth_tester import PyEVMBackend
+>>> from eth_tester import EthereumTester, PyEVMBackend
 >>> t = EthereumTester(PyEVMBackend())
 ```
+
+
+#### PyEVM Genesis Parameters and State
+
+If you need to specify custom genesis parameters and state, you can build your own parameters `dict` to use instead of the default
+when initializing a backend.  Only default values can be overridden or a `ValueError` will be raised.
+
+```
+# Default Genesis Parameters
+
+default_genesis_params = {
+    "bloom": 0,
+    "coinbase": GENESIS_COINBASE,
+    "difficulty": GENESIS_DIFFICULTY,
+    "extra_data": GENESIS_EXTRA_DATA,
+    "gas_limit": GENESIS_GAS_LIMIT,
+    "gas_used": 0,
+    "mix_hash": GENESIS_MIX_HASH,
+    "nonce": GENESIS_NONCE,
+    "block_number": GENESIS_BLOCK_NUMBER,
+    "parent_hash": GENESIS_PARENT_HASH,
+    "receipt_root": BLANK_ROOT_HASH,
+    "timestamp": int(time.time()),
+    "transaction_root": BLANK_ROOT_HASH,
+    "uncles_hash": EMPTY_RLP_LIST_HASH
+}
+```
+
+To generate a genesis parameters `dict` with an overridden parameters, pass a `genesis_overrides` `dict` \
+to `PyEVM.generate_genesis_params`.
+
+```python
+>>> from eth_tester import PyEVMBackend, EthereumTester
+
+>>> genesis_overrides = {'gas_limit': 4500000}
+>>> custom_genesis_params = PyEVMBackend._generate_genesis_params(overrides=genesis_overrides)
+
+# Generates the following `dict`:
+
+# custom_genesis_params = {
+#     "bloom": 0,
+#     "coinbase": GENESIS_COINBASE,
+#     "difficulty": GENESIS_DIFFICULTY,
+#     "extra_data": GENESIS_EXTRA_DATA,
+#     "gas_limit": 4500000    # <<< Overidden Value <<<
+#     "gas_used": 0,
+#     "mix_hash": GENESIS_MIX_HASH,
+#     "nonce": GENESIS_NONCE,
+#     "block_number": GENESIS_BLOCK_NUMBER,
+#     "parent_hash": GENESIS_PARENT_HASH,
+#     "receipt_root": BLANK_ROOT_HASH,
+#     "timestamp": int(time.time()),
+#     "transaction_root": BLANK_ROOT_HASH,
+#     "uncles_hash": EMPTY_RLP_LIST_HASH
+# }
+```
+
+Then pass the generated `custom_genesis_params` `dict` to the backend's `__init__`
+```python
+>>> from eth_tester import PyEVMBackend, EthereumTester
+>>> pyevm_backend = PyEVMBackend(genesis_parameters=custom_genesis_params)
+>>> t = EthereumTester(backend=pyevm_backend)
+```
+
+Overriding genesis state is similar to overriding genesis state, but requires the consideration of test accounts.
+To override the genesis state of accounts, pass a `state_overrides` `dict` to `PyEVM.generate_genesis_state`,
+and optionally, the number of accounts to create.  
+
+*NOTE: The same state is applied to all generated test accounts.* 
+
+```
+# Default Account Genesis State
+
+default_account_state = {
+    'balance': to_wei(1000000, 'ether'),
+    'storage': {},
+    'code': b'',
+    'nonce': 0,
+}
+```
+
+For Example, to create 3 test accounts, each with a balance of 100 ETH each: 
+
+```python
+>>> from eth_tester import EthereumTester, PyEVMBackend
+>>>  from eth_utils import to_wei
+
+>>> state_overrides = {'balance': to_wei(100, 'ether')}
+>>> custom_genesis_state = PyEVMBackend._generate_genesis_state(overrides=state_overrides, num_accounts=3)
+
+# Then pass the generated `custom_genesis_state` `dict` to the backend's `__init__`
+
+>>> pyevm_backend = PyEVMBackend(genesis_state=custom_genesis_state)
+>>> t = EthereumTester(backend=pyevm_backend)
+```
+
 
 ### Implementing Custom Backends
 
