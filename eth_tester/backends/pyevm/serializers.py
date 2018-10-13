@@ -1,9 +1,5 @@
 import rlp
 
-from eth_utils import (
-    to_canonical_address,
-)
-
 from eth_tester.utils.address import (
     generate_contract_address,
 )

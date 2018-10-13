@@ -1,5 +1,3 @@
-import rlp
-
 from eth_keys import (
     keys,
 )
