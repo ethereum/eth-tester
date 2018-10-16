@@ -6,19 +6,6 @@ import operator
 import time
 import functools
 
-from cytoolz import (
-    dissoc,
-    assoc
-)
-from cytoolz.itertoolz import (
-    remove,
-)
-from cytoolz.functoolz import (
-    compose,
-    excepts,
-    partial,
-)
-
 from eth_utils import (
     is_integer,
     is_same_address,
@@ -26,6 +13,15 @@ from eth_utils import (
     to_list,
     to_tuple,
     to_int
+)
+
+from eth_utils.toolz import (
+    assoc,
+    dissoc,
+    remove,
+    compose,
+    excepts,
+    partial,
 )
 
 from eth_tester.backends import (

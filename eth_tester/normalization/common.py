@@ -1,10 +1,10 @@
-from cytoolz.functoolz import (
-    curry,
-)
-
 from eth_utils import (
     to_dict,
     to_tuple,
+)
+
+from eth_utils.toolz import (
+    curry,
 )
 
 

@@ -1,11 +1,11 @@
 from __future__ import unicode_literals
 
-from cytoolz import (
-    partial,
-)
-
 from eth_utils import (
     is_canonical_address,
+)
+
+from eth_utils.toolz import (
+    partial,
 )
 
 from eth_tester.constants import (

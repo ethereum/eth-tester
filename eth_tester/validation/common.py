@@ -2,10 +2,6 @@ from __future__ import unicode_literals
 
 import math
 
-from cytoolz import (
-    curry,
-)
-
 import functools
 
 from eth_utils import (
@@ -17,6 +13,10 @@ from eth_utils import (
     is_list_like,
     to_dict,
     to_tuple,
+)
+
+from eth_utils.toolz import (
+    curry,
 )
 
 from eth_tester.constants import (

@@ -1,15 +1,6 @@
 import itertools
 import copy
 
-from cytoolz.dicttoolz import (
-    dissoc,
-    assoc,
-)
-from cytoolz.functoolz import (
-    compose,
-    partial,
-)
-
 from eth_utils import (
     decode_hex,
     int_to_big_endian,
@@ -18,6 +9,13 @@ from eth_utils import (
     to_canonical_address,
     to_tuple,
     is_integer,
+)
+
+from eth_utils.toolz import (
+    assoc,
+    compose,
+    dissoc,
+    partial,
 )
 
 from eth_tester.backends.base import (

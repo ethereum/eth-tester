@@ -1,11 +1,5 @@
 from __future__ import absolute_import
 
-from cytoolz.functoolz import (
-    partial,
-    identity,
-    compose,
-)
-
 from eth_utils.curried import (
     apply_one_of_formatters,
     to_checksum_address,
@@ -14,6 +8,12 @@ from eth_utils.curried import (
     is_bytes,
     is_canonical_address,
     is_dict,
+)
+
+from eth_utils.toolz import (
+    compose,
+    identity,
+    partial,
 )
 
 from .common import (

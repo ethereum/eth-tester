@@ -1,10 +1,6 @@
 import functools
 import time
 
-from cytoolz.dicttoolz import (
-    assoc,
-)
-
 from eth_utils import (
     apply_to_return_value,
     is_bytes,
@@ -17,6 +13,10 @@ from eth_utils import (
     to_bytes,
     to_dict,
     to_tuple,
+)
+
+from eth_utils.toolz import (
+    assoc,
 )
 
 from eth_tester.backends.common import merge_genesis_overrides
