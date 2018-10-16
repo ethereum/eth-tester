@@ -2,10 +2,6 @@ from __future__ import unicode_literals
 
 import binascii
 
-from cytoolz import (
-    partial,
-)
-
 from eth_utils import (
     is_boolean,
     is_checksum_address,
@@ -19,6 +15,10 @@ from eth_utils import (
     is_text,
     remove_0x_prefix,
     decode_hex,
+)
+
+from eth_utils.toolz import (
+    partial,
 )
 
 from eth_tester.constants import (

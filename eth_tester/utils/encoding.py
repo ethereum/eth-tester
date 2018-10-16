@@ -1,12 +1,12 @@
 from __future__ import unicode_literals
 
-from cytoolz.functoolz import (
-    compose,
-    curry,
-)
-
 from eth_utils import (
     int_to_big_endian,
+)
+
+from eth_utils.toolz import (
+    compose,
+    curry,
 )
 
 

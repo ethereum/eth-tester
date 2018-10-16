@@ -1,10 +1,5 @@
 from __future__ import absolute_import
 
-from cytoolz.functoolz import (
-    identity,
-    partial,
-)
-
 from eth_utils.curried import (
     apply_one_of_formatters,
     decode_hex,
@@ -14,6 +9,11 @@ from eth_utils.curried import (
     is_string,
     to_canonical_address,
     to_tuple,
+)
+
+from eth_utils.toolz import (
+    identity,
+    partial,
 )
 
 from .common import (

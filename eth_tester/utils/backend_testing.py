@@ -2,12 +2,6 @@ from __future__ import unicode_literals
 
 import pytest
 
-from cytoolz.dicttoolz import (
-    merge,
-    assoc,
-    dissoc,
-)
-
 import rlp
 
 from eth_utils import (
@@ -17,6 +11,12 @@ from eth_utils import (
     is_dict,
     is_hex,
     denoms,
+)
+
+from eth_utils.toolz import (
+    assoc,
+    dissoc,
+    merge,
 )
 
 from eth_keys import (

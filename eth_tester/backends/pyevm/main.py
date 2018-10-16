@@ -2,11 +2,6 @@ from __future__ import absolute_import
 
 import time
 
-from cytoolz import (
-    frequencies,
-    assoc,
-)
-
 import rlp
 
 from eth_abi import (
@@ -23,6 +18,11 @@ from eth_utils import (
     to_tuple,
     to_wei,
     is_integer,
+)
+
+from eth_utils.toolz import (
+    assoc,
+    frequencies,
 )
 
 from eth_keys import KeyAPI

@@ -1,9 +1,7 @@
-from cytoolz.dicttoolz import (
+from eth_utils.toolz import (
     assoc,
-)
-from cytoolz.functoolz import (
-    pipe,
     partial,
+    pipe,
 )
 
 

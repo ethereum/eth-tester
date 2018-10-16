@@ -2,13 +2,13 @@ from __future__ import absolute_import
 
 import functools
 
-from cytoolz.functoolz import (
-    curry,
-)
-
 from eth_utils import (
     to_dict,
     to_list,
+)
+
+from eth_utils.toolz import (
+    curry,
 )
 
 

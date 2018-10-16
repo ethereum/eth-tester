@@ -1,11 +1,11 @@
-from cytoolz import (
-    identity,
-)
-
 from eth_utils import (
     decode_hex,
     encode_hex,
     to_canonical_address,
+)
+
+from eth_utils.toolz import (
+    identity,
 )
 
 from .base import (
