@@ -1,9 +1,5 @@
 import rlp
 
-from eth_utils import (
-    to_canonical_address,
-)
-
 from eth_tester.utils.address import (
     generate_contract_address,
 )
@@ -87,10 +83,10 @@ def serialize_transaction_receipt(
     receipt = receipts[transaction_index]
 
     if transaction.to == b'':
-        contract_addr = to_canonical_address(generate_contract_address(
+        contract_addr = generate_contract_address(
             transaction.sender,
             transaction.nonce,
-        ))
+        )
     else:
         contract_addr = None
 

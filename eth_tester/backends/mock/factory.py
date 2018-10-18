@@ -20,7 +20,7 @@ from eth_utils.toolz import (
 )
 
 from eth_tester.backends.common import merge_genesis_overrides
-from eth_tester.utils.accounts import (
+from eth_tester.utils.address import (
     generate_contract_address,
 )
 
