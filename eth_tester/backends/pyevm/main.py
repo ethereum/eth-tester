@@ -39,7 +39,6 @@ from eth_tester.exceptions import (
     BlockNotFound,
     TransactionFailed,
     TransactionNotFound,
-    UnknownFork,
     ValidationError,
 )
 
