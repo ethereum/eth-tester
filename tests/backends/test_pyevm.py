@@ -139,9 +139,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         accounts = eth_tester.get_accounts()
         assert accounts, "No accounts available for transaction sending"
 
-        with pytest.raises(ValidationError) as excinfo:
+        with pytest.raises(ValidationError, match=r'No valid "from" key was provided'):
             self._send_and_check_transaction(
                 eth_tester, SIMPLE_TRANSACTION, ZERO_ADDRESS_HEX
             )
-
-        assert "does this account exist?" in str(excinfo.value)

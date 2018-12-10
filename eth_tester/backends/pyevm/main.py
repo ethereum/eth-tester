@@ -473,7 +473,10 @@ class PyEVMBackend(object):
 
     def _get_normalized_and_signed_evm_transaction(self, transaction, block_number='latest'):
         if transaction['from'] not in self._key_lookup:
-            raise ValidationError('"from" key not available, does this account exist?')
+            raise ValidationError(
+                'No valid "from" key was provided in the transaction '
+                'which is required for transaction signing.'
+            )
         signing_key = self._key_lookup[transaction['from']]
         normalized_transaction = self._normalize_transaction(transaction, block_number)
         evm_transaction = self.chain.create_unsigned_transaction(**normalized_transaction)
