@@ -35,10 +35,11 @@ from eth_tester.constants import (
     FORK_BYZANTIUM,
 )
 from eth_tester.exceptions import (
-    BlockNotFound,
-    TransactionNotFound,
-    TransactionFailed,
     BackendDistributionNotFound,
+    BlockNotFound,
+    TransactionFailed,
+    TransactionNotFound,
+    ValidationError,
 )
 
 from eth_tester.utils.formatting import (
@@ -471,6 +472,11 @@ class PyEVMBackend(object):
         return evm_transaction
 
     def _get_normalized_and_signed_evm_transaction(self, transaction, block_number='latest'):
+        if transaction['from'] not in self._key_lookup:
+            raise ValidationError(
+                'No valid "from" key was provided in the transaction '
+                'which is required for transaction signing.'
+            )
         signing_key = self._key_lookup[transaction['from']]
         normalized_transaction = self._normalize_transaction(transaction, block_number)
         evm_transaction = self.chain.create_unsigned_transaction(**normalized_transaction)
