@@ -757,11 +757,11 @@ class BaseTestBackendDirect(object):
 
         raw_result = eth_tester.call(call_without_revert)
         result = _decode_throws_result('revert_contract', 'do_revert', raw_result)
-        assert result[0] == b'No ribbert'
+        assert result[0] == 'No ribbert'
 
         with pytest.raises(TransactionFailed) as excinfo:
             eth_tester.call(call_with_revert)
-        assert len(excinfo.value.args) > 0 and excinfo.value.args[0] == b'ribbert, ribbert'
+        assert len(excinfo.value.args) > 0 and excinfo.value.args[0] == 'ribbert, ribbert'
 
     #
     # Snapshot and Revert
