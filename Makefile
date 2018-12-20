@@ -34,8 +34,9 @@ release: clean
 	CURRENT_SIGN_SETTING=$(git config commit.gpgSign)
 	git config commit.gpgSign true
 	bumpversion $(bump)
+	python setup.py sdist bdist_wheel
 	git push upstream && git push upstream --tags
-	python setup.py sdist bdist_wheel upload
+	twine upload dist/*
 	git config commit.gpgSign "$(CURRENT_SIGN_SETTING)"
 
 build: clean
