@@ -50,9 +50,9 @@ setup(
     url='https://github.com/ethereum/eth-tester',
     include_package_data=True,
     install_requires=[
-        "eth-abi>=2.0.0a1,<3.0.0",
+        "eth-abi>=2.0.0b4,<3.0.0",
         "eth-keys>=0.2.0-beta.3,<0.3.0",
-        "eth-utils>=1.1.1,<2.0.0",
+        "eth-utils>=1.4.1,<2.0.0",
         "rlp>=0.6.0,<2.0.0",
         "semantic_version>=2.6.0,<3.0.0",
     ],
