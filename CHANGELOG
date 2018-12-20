@@ -1,3 +1,26 @@
+0.1.0-beta.34
+-------------
+
+Released Dec 20, 2018
+
+- Breaking changes
+
+  - Update eth-abi from v1 to v2
+    https://github.com/ethereum/eth-tester/pull/141
+
+- Misc
+
+  - Improve error message when trying to sign with an unknown address
+    https://github.com/ethereum/eth-tester/pull/140
+  - Add custom genesis examples to docs
+    https://github.com/ethereum/eth-tester/pull/136
+  - Steps toward pypy support, by using eth_utils.toolz
+    https://github.com/ethereum/eth-tester/pull/138
+  - Remove duplicate generate_contract_address, drop custom secp256k1 and jacobian utilities
+    https://github.com/ethereum/eth-tester/pull/137
+  - Upgrade eth-utils (and eth-abi)
+    https://github.com/ethereum/eth-tester/pull/141
+
 0.1.0-beta.33
 -------------
 
