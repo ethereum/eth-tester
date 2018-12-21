@@ -20,6 +20,8 @@ from eth_utils import (
     is_integer,
 )
 
+from eth_utils.decorators import replace_exceptions
+
 from eth_utils.toolz import (
     assoc,
     frequencies,
@@ -42,9 +44,6 @@ from eth_tester.exceptions import (
     ValidationError,
 )
 
-from eth_tester.utils.formatting import (
-    replace_exceptions,
-)
 from eth_tester.backends.common import merge_genesis_overrides
 
 from .serializers import (
