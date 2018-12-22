@@ -59,7 +59,7 @@ if is_pyevm_available():
         InvalidInstruction as EVMInvalidInstruction,
         Revert as EVMRevert,
     )
-    from eth.utils.spoof import (
+    from eth.vm.spoof import (
         SpoofTransaction as EVMSpoofTransaction
     )
 else:
