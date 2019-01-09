@@ -1,3 +1,17 @@
+0.1.0-beta.35
+-------------
+
+Released Jan 9, 2019
+
+- Misc
+
+  - Upgrade py-evm to 0.2.0a38
+    https://github.com/ethereum/eth-tester/pull/143
+  - Readme fixups
+    https://github.com/ethereum/eth-tester/pull/144
+  - Remove dead `formatting` module, replace with `eth-utils` utilities
+    https://github.com/ethereum/eth-tester/pull/145
+
 0.1.0-beta.34
 -------------
 
