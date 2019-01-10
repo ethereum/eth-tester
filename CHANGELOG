@@ -1,3 +1,13 @@
+0.1.0-beta.36
+-------------
+
+Released Jan 10, 2019
+
+- Misc
+
+  - Upgrade eth-keys and rlp
+    https://github.com/ethereum/eth-tester/pull/146
+
 0.1.0-beta.35
 -------------
 
