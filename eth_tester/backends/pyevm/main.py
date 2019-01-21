@@ -44,6 +44,7 @@ from eth_tester.exceptions import (
     ValidationError,
 )
 
+from eth_tester.backends.base import BaseChainBackend
 from eth_tester.backends.common import merge_genesis_overrides
 
 from .serializers import (
@@ -292,7 +293,7 @@ def _mk_fork_configuration_params(fork_config):
     return args, kwargs
 
 
-class PyEVMBackend(object):
+class PyEVMBackend(BaseChainBackend):
     chain = None
     fork_config = None
 
