@@ -1,3 +1,13 @@
+0.1.0-beta.37
+-------------
+
+Released Jan 22, 2019
+
+- Misc
+
+  - Make PyEVMBackend subclass of BaseChainBackend
+    https://github.com/ethereum/eth-tester/pull/150
+
 0.1.0-beta.36
 -------------
 
