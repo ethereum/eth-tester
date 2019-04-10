@@ -11,7 +11,7 @@ extras_require = {
         'flake8>=3.5.0,<4.0.0',
     ],
     'test': [
-        'pytest>=3.2.1,<4.0.0',
+        'pytest>=4.4.0,<5.0.0',
         'pytest-xdist>=1.22.2,<2',
         'eth-hash[pycryptodome]>=0.1.4,<1.0.0',
     ],
@@ -23,7 +23,7 @@ extras_require = {
     'py-evm': [
         # Pin py-evm to exact version, until it leaves alpha.
         # EVM is very high velocity and might change API at each alpha.
-        "py-evm==0.2.0a39",
+        "py-evm==0.2.0a42",
         "eth-hash[pysha3]>=0.1.4,<1.0.0;implementation_name=='cpython'",
         "eth-hash[pycryptodome]>=0.1.4,<1.0.0;implementation_name=='pypy'",
     ],
