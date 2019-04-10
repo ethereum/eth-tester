@@ -1,3 +1,13 @@
+0.1.0-beta.38
+-------------
+
+Released April 10, 2019
+
+- Misc
+
+  - Update PyEVM and Pytest Dependencies
+    https://github.com/ethereum/eth-tester/pull/152
+
 0.1.0-beta.37
 -------------
 
