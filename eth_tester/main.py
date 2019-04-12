@@ -9,7 +9,6 @@ import functools
 from eth_utils import (
     is_integer,
     is_same_address,
-    to_dict,
     to_list,
     to_tuple,
     to_int
@@ -59,12 +58,6 @@ def backend_proxy_method(backend_method_name):
         backend_method = getattr(self.backend, backend_method_name)
         return backend_method(*args, **kwargs)
     return proxy_method
-
-
-@to_dict
-def get_default_fork_blocks(supported_forks):
-    for fork_name in supported_forks:
-        yield (fork_name, None)
 
 
 def handle_auto_mining(func):
