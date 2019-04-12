@@ -24,18 +24,10 @@ from eth_utils.decorators import replace_exceptions
 
 from eth_utils.toolz import (
     assoc,
-    frequencies,
 )
 
 from eth_keys import KeyAPI
 
-from eth_tester.constants import (
-    FORK_HOMESTEAD,
-    FORK_DAO,
-    FORK_SPURIOUS_DRAGON,
-    FORK_TANGERINE_WHISTLE,
-    FORK_BYZANTIUM,
-)
 from eth_tester.exceptions import (
     BackendDistributionNotFound,
     BlockNotFound,
@@ -87,14 +79,6 @@ GENESIS_MIX_HASH = ZERO_HASH32
 GENESIS_EXTRA_DATA = b''
 GENESIS_INITIAL_ALLOC = {}
 
-
-SUPPORTED_FORKS = {
-    FORK_HOMESTEAD,
-    FORK_DAO,
-    FORK_SPURIOUS_DRAGON,
-    FORK_TANGERINE_WHISTLE,
-    FORK_BYZANTIUM,
-}
 
 MINIMUM_GAS_ESTIMATE = 30000
 # A buffer of 1.1 would mean allocate 10% more gas than estimated
@@ -160,17 +144,17 @@ def get_default_genesis_params(overrides=None):
 def setup_tester_chain(genesis_params=None, genesis_state=None, num_accounts=None):
     from eth.chains.base import MiningChain
     from eth.db import get_db_backend
-    from eth.vm.forks.byzantium import ByzantiumVM
+    from eth.vm.forks.constantinople import ConstantinopleVM
 
-    class ByzantiumNoProofVM(ByzantiumVM):
-        """Byzantium VM rules, without validating any miner proof of work"""
+    class ConstantinopleNoProofVM(ConstantinopleVM):
+        """Constantinople VM rules, without validating any miner proof of work"""
 
         @classmethod
         def validate_seal(self, header):
             pass
 
     class MainnetTesterNoProofChain(MiningChain):
-        vm_configuration = ((0, ByzantiumNoProofVM), )
+        vm_configuration = ((0, ConstantinopleNoProofVM), )
 
         @classmethod
         def validate_seal(cls, block):
@@ -258,39 +242,6 @@ def _get_vm_for_block_number(chain, block_number):
     block = _get_block_by_number(chain, block_number)
     vm = chain.get_vm(at_header=block.header)
     return vm
-
-
-FORK_NAME_MAPPING = {
-    FORK_HOMESTEAD: 'homestead',
-    FORK_TANGERINE_WHISTLE: 'tangerine-whistle',
-    FORK_SPURIOUS_DRAGON: 'spurious-dragon',
-    FORK_BYZANTIUM: 'byzantium',
-}
-
-
-def _mk_fork_configuration_params(fork_config):
-    all_block_numbers = tuple(fork_config.values())
-    if len(all_block_numbers) != len(set(all_block_numbers)):
-        duplicates = tuple(sorted(
-            blk_num for blk_num, freq
-            in frequencies(all_block_numbers).items()
-            if freq > 1
-        ))
-        raise ValueError("Duplicate block numbers: {0}".format(duplicates))
-
-    args = {
-        (block_number, FORK_NAME_MAPPING[fork_name])
-        for fork_name, block_number
-        in fork_config.items()
-        if (block_number is not None and fork_name != FORK_DAO)
-    }
-
-    if FORK_DAO in fork_config:
-        kwargs = {'dao_start_block': fork_config[FORK_DAO]}
-    else:
-        kwargs = {}
-
-    return args, kwargs
 
 
 class PyEVMBackend(BaseChainBackend):
