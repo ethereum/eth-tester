@@ -29,7 +29,7 @@ from eth_tester.exceptions import (
 
 
 def validate_positive_integer(value):
-    error_message = "Value must be positive integers.  Got: {0}".format(
+    error_message = "Value must be positive integers.  Got: {}".format(
         value,
     )
     if not is_integer(value) or is_boolean(value):
@@ -44,7 +44,7 @@ def validate_uint(max_val, value):
     if value > max_val:
         bitsize = int(math.log2(max_val))
         raise ValidationError(
-            "Value exceeds maximum {:d} bit integer size:  {}".format(bitsize, value)
+            f"Value exceeds maximum {bitsize:d} bit integer size:  {value}"
         )
 
 
@@ -54,22 +54,22 @@ validate_uint8 = validate_uint(UINT8_MAX)
 
 def validate_bytes(value):
     if not is_bytes(value):
-        raise ValidationError("Value must be a byte string.  Got type: {0}".format(type(value)))
+        raise ValidationError("Value must be a byte string.  Got type: {}".format(type(value)))
 
 
 def validate_text(value):
     if not is_text(value):
-        raise ValidationError("Value must be a text string.  Got type: {0}".format(type(value)))
+        raise ValidationError("Value must be a text string.  Got type: {}".format(type(value)))
 
 
 def validate_is_dict(value):
     if not is_dict(value):
-        raise ValidationError("Value must be a dictionary.  Got: {0}".format(type(value)))
+        raise ValidationError("Value must be a dictionary.  Got: {}".format(type(value)))
 
 
 def validate_is_list_like(value):
     if not is_list_like(value):
-        raise ValidationError("Value must be a sequence type.  Got: {0}".format(type(value)))
+        raise ValidationError("Value must be a sequence type.  Got: {}".format(type(value)))
 
 
 @to_tuple
@@ -85,13 +85,13 @@ def validate_any(value, validators):
     errors = _accumulate_errors(value, validators)
     if len(errors) == len(validators):
         item_error_messages = tuple(
-            " - [{0}]: {1}".format(idx, str(err))
+            " - [{}]: {}".format(idx, str(err))
             for idx, err
             in errors
         )
         error_message = (
             "Value did not pass any of the provided validators:\n"
-            "{0}".format(
+            "{}".format(
                 "\n".join(item_error_messages)
             )
         )
@@ -102,7 +102,7 @@ def validate_no_extra_keys(value, allowed_keys):
     extra_keys = tuple(sorted(set(value.keys()).difference(allowed_keys)))
     if extra_keys:
         raise ValidationError(
-            "Only the keys '{0}' are allowed.  Got extra keys: '{1}'".format(
+            "Only the keys '{}' are allowed.  Got extra keys: '{}'".format(
                 "/".join(tuple(sorted(allowed_keys))),
                 "/".join(extra_keys),
             )
@@ -113,7 +113,7 @@ def validate_has_required_keys(value, required_keys):
     missing_keys = tuple(sorted(set(required_keys).difference(value.keys())))
     if missing_keys:
         raise ValidationError(
-            "Blocks must contain all of the keys '{0}'.  Missing the keys: '{1}'".format(
+            "Blocks must contain all of the keys '{}'.  Missing the keys: '{}'".format(
                 "/".join(tuple(sorted(required_keys))),
                 "/".join(missing_keys),
             )
@@ -138,13 +138,13 @@ def validate_dict(value, key_validators):
     key_errors = _accumulate_dict_errors(value, key_validators)
     if key_errors:
         key_messages = tuple(
-            "{0}: {1}".format(key, str(err))
+            "{}: {}".format(key, str(err))
             for key, err
             in sorted(key_errors.items())
         )
         error_message = (
             "The following keys failed to validate\n"
-            "- {0}".format(
+            "- {}".format(
                 "\n - ".join(key_messages)
             )
         )
@@ -166,13 +166,13 @@ def validate_array(value, validator):
     item_errors = _accumulate_array_errors(value, validator)
     if item_errors:
         item_messages = tuple(
-            "[{0}]: {1}".format(index, str(err))
+            "[{}]: {}".format(index, str(err))
             for index, err
             in sorted(item_errors)
         )
         error_message = (
             "The following items failed to validate\n"
-            "- {0}".format(
+            "- {}".format(
                 "\n - ".join(item_messages)
             )
         )

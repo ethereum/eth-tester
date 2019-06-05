@@ -56,7 +56,7 @@ def normalize_filter_params(from_block, to_block, address, topics):
             in address
         )
     else:
-        raise TypeError("Address is not in a recognized format: {0}".format(address))
+        raise TypeError(f"Address is not in a recognized format: {address}")
 
     if topics is None:
         yield topics
@@ -69,7 +69,7 @@ def normalize_filter_params(from_block, to_block, address, topics):
             in topics
         )
     else:
-        raise TypeError("Topics are not in a recognized format: {0}".format(address))
+        raise TypeError(f"Topics are not in a recognized format: {address}")
 
 
 def normalize_private_key(value):

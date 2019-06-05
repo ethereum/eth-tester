@@ -1,4 +1,4 @@
-class BaseNormalizer(object):
+class BaseNormalizer:
     #
     # Inbound
     #
