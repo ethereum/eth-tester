@@ -13,7 +13,7 @@ from queue import (
 )
 
 
-class Filter(object):
+class Filter:
     filter_params = None
     filter_fn = None
 
@@ -86,7 +86,7 @@ def is_flat_topic_array(value):
 
 def is_valid_with_nested_topic_array(value):
     return bool(value) and is_tuple(value) and all(
-         (is_flat_topic_array(item) if is_tuple(item) else is_topic(item) for item in value))
+         is_flat_topic_array(item) if is_tuple(item) else is_topic(item) for item in value)
 
 
 def is_topic_array(value):
@@ -108,7 +108,7 @@ def check_if_from_block_match(block_number, _type, from_block):
     elif is_integer(from_block):
         return is_integer(block_number) and block_number >= from_block
     else:
-        raise ValueError("Unrecognized from_block format: {0}".format(from_block))
+        raise ValueError(f"Unrecognized from_block format: {from_block}")
 
 
 def check_if_to_block_match(block_number, _type, to_block):
@@ -119,7 +119,7 @@ def check_if_to_block_match(block_number, _type, to_block):
     elif is_integer(to_block):
         return is_integer(block_number) and block_number <= to_block
     else:
-        raise ValueError("Unrecognized to_block format: {0}".format(to_block))
+        raise ValueError(f"Unrecognized to_block format: {to_block}")
 
 
 def check_if_log_matches_flat_topics(log_topics, filter_topics):
@@ -151,7 +151,7 @@ def check_if_topics_match(log_topics, filter_topics):
             for topic_combination in extrapolate_flat_topic_from_topic_list(filter_topics)
         )
     else:
-        raise ValueError("Unrecognized topics format: {0}".format(filter_topics))
+        raise ValueError(f"Unrecognized topics format: {filter_topics}")
 
 
 def check_if_address_match(address, addresses):
@@ -166,7 +166,7 @@ def check_if_address_match(address, addresses):
     elif is_address(addresses):
         return is_same_address(addresses, address)
     else:
-        raise ValueError("Unrecognized address format: {0}".format(addresses))
+        raise ValueError(f"Unrecognized address format: {addresses}")
 
 
 def check_if_log_matches(log_entry,

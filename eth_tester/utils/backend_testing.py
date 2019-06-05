@@ -102,13 +102,13 @@ BLOCK_KEYS = {
 def _validate_serialized_block(block):
     missing_keys = BLOCK_KEYS.difference(block.keys())
     if missing_keys:
-        error_message = "Serialized block is missing the following keys: {0}".format(
+        error_message = "Serialized block is missing the following keys: {}".format(
             "|".join(sorted(missing_keys)),
         )
         raise AssertionError(error_message)
 
 
-class BaseTestBackendDirect(object):
+class BaseTestBackendDirect:
     #
     # Utils
     #
@@ -153,11 +153,11 @@ class BaseTestBackendDirect(object):
     def test_add_account_no_password(self, eth_tester):
         account = eth_tester.add_account(PK_A)
         assert is_address(account)
-        assert any((
+        assert any(
             is_same_address(account, value)
             for value
             in eth_tester.get_accounts()
-        ))
+        )
 
         # Fund it
         eth_tester.send_transaction({
@@ -173,11 +173,11 @@ class BaseTestBackendDirect(object):
     def test_add_account_with_password(self, eth_tester):
         account = eth_tester.add_account(PK_A, 'test-password')
         assert is_address(account)
-        assert any((
+        assert any(
             is_same_address(account, value)
             for value
             in eth_tester.get_accounts()
-        ))
+        )
 
         # Fund it
         eth_tester.send_transaction({
@@ -892,10 +892,10 @@ class BaseTestBackendDirect(object):
         filter_id = eth_tester.create_pending_transaction_filter()
 
         # send 2 transactions
-        common_transactions = set([
+        common_transactions = {
             eth_tester.send_transaction(_transaction(value=1)),
             eth_tester.send_transaction(_transaction(value=2)),
-        ])
+        }
 
         # take a snapshot
         snapshot_id = eth_tester.take_snapshot()

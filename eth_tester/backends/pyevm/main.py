@@ -193,18 +193,18 @@ def _get_block_by_number(chain, block_number):
             return chain.get_canonical_block_by_number(block_number)
 
     # fallback
-    raise BlockNotFound("No block found for block number: {0}".format(block_number))
+    raise BlockNotFound(f"No block found for block number: {block_number}")
 
 
 def _get_block_by_hash(chain, block_hash):
     block = chain.get_block_by_hash(block_hash)
 
     if block.number >= chain.get_block().number:
-        raise BlockNotFound("No block found for block hash: {0}".format(block_hash))
+        raise BlockNotFound(f"No block found for block hash: {block_hash}")
 
     block_at_height = chain.get_canonical_block_by_number(block.number)
     if block != block_at_height:
-        raise BlockNotFound("No block found for block hash: {0}".format(block_hash))
+        raise BlockNotFound(f"No block found for block hash: {block_hash}")
 
     return block
 
@@ -222,7 +222,7 @@ def _get_transaction_by_hash(chain, transaction_hash):
                 return block, transaction, index
     else:
         raise TransactionNotFound(
-            "No transaction found for transaction hash: {0}".format(
+            "No transaction found for transaction hash: {}".format(
                 encode_hex(transaction_hash)
             )
         )

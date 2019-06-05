@@ -32,7 +32,7 @@ def validate_32_byte_string(value):
     validate_bytes(value)
     if len(value) != 32:
         raise ValidationError(
-            "Must be of length 32.  Got: {0} of length {1}".format(value, len(value))
+            "Must be of length 32.  Got: {} of length {}".format(value, len(value))
         )
 
 
@@ -43,14 +43,14 @@ def validate_nonce(value):
     validate_bytes(value)
     if len(value) != 8:
         raise ValidationError(
-            "Must be of length 8.  Got: {0} of lenght {1}".format(value, len(value))
+            "Must be of length 8.  Got: {} of lenght {}".format(value, len(value))
         )
 
 
 def validate_logs_bloom(value):
     validate_positive_integer(value)
     if value > UINT2048_MAX:
-        raise ValidationError("Value exceeds 2048 bit integer size: {0}".format(value))
+        raise ValidationError(f"Value exceeds 2048 bit integer size: {value}")
 
 
 def validate_canonical_address(value):

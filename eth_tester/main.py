@@ -81,7 +81,7 @@ def handle_auto_mining(func):
     return func_wrapper
 
 
-class EthereumTester(object):
+class EthereumTester:
     backend = None
 
     validator = None
@@ -177,7 +177,7 @@ class EthereumTester(object):
         raw_private_key = self.normalizer.normalize_inbound_private_key(private_key)
         raw_account = private_key_to_address(raw_private_key)
         account = self.normalizer.normalize_outbound_account(raw_account)
-        if any((is_same_address(account, value) for value in self.get_accounts())):
+        if any(is_same_address(account, value) for value in self.get_accounts()):
             raise ValidationError("Account already present in account list")
 
         self.backend.add_account(raw_private_key)
@@ -256,7 +256,7 @@ class EthereumTester(object):
             if transaction['hash'] == transaction_hash:
                 return transaction
         raise TransactionNotFound(
-            "No transaction found for transaction hash: {0}".format(transaction_hash)
+            f"No transaction found for transaction hash: {transaction_hash}"
         )
 
     def get_transaction_by_hash(self, transaction_hash):
@@ -329,7 +329,7 @@ class EthereumTester(object):
 
         if len(raw_block_hashes) != num_blocks:
             raise ValidationError(
-                "Invariant: tried to mine {0} blocks.  Got {1} mined block hashes.".format(
+                "Invariant: tried to mine {} blocks.  Got {} mined block hashes.".format(
                     num_blocks,
                     len(raw_block_hashes),
                 )
@@ -483,7 +483,7 @@ class EthereumTester(object):
         try:
             snapshot = self._snapshots[snapshot_id]
         except KeyError:
-            raise SnapshotNotFound("No snapshot found for id: {0}".format(snapshot_id))
+            raise SnapshotNotFound(f"No snapshot found for id: {snapshot_id}")
         else:
             self.backend.revert_to_snapshot(snapshot)
 

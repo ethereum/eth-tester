@@ -21,7 +21,7 @@ def import_string(dotted_path):
     try:
         return getattr(module, class_name)
     except AttributeError:
-        msg = 'Module "%s" does not define a "%s" attribute/class' % (
+        msg = 'Module "{}" does not define a "{}" attribute/class'.format(
             module_path, class_name)
         raise ImportError(msg)
 

@@ -187,10 +187,10 @@ class MockBackend(BaseChainBackend):
             try:
                 block = self.blocks[block_number]
             except IndexError:
-                raise BlockNotFound("No block found for #{0}".format(block_number))
+                raise BlockNotFound(f"No block found for #{block_number}")
         else:
             raise Exception(
-                "Invariant.  Unrecognized block number format: {0}".format(block_number)
+                f"Invariant.  Unrecognized block number format: {block_number}"
             )
 
         return serialize_block(
@@ -210,7 +210,7 @@ class MockBackend(BaseChainBackend):
                 block = block
                 break
         else:
-            raise BlockNotFound("No block found for hash: {0}".format(block_hash))
+            raise BlockNotFound(f"No block found for hash: {block_hash}")
 
         return serialize_block(
             block,
@@ -225,7 +225,7 @@ class MockBackend(BaseChainBackend):
                     return transaction, block, transaction_index
         else:
             raise TransactionNotFound(
-                "No transaction found for hash: {0}".format(transaction_hash)
+                f"No transaction found for hash: {transaction_hash}"
             )
 
     def get_transaction_by_hash(self, transaction_hash):
@@ -242,7 +242,7 @@ class MockBackend(BaseChainBackend):
             receipt = self.receipts[transaction_hash]
         except KeyError:
             raise TransactionNotFound(
-                "No transaction found for hash: {0}".format(transaction_hash)
+                f"No transaction found for hash: {transaction_hash}"
             )
         _, block, transaction_index = self._get_transaction_by_hash(transaction_hash)
         return serialize_receipt(

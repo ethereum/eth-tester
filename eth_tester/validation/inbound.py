@@ -46,8 +46,8 @@ def is_topic(value):
 
 def validate_32_byte_hex_value(value, name):
     error_message = (
-        "{0} must be a hexidecimal encoded 32 byte string.  Got: "
-        "{1}".format(name, value)
+        "{} must be a hexidecimal encoded 32 byte string.  Got: "
+        "{}".format(name, value)
     )
     if not is_32byte_hex_string(value):
         raise ValidationError(error_message)
@@ -61,7 +61,7 @@ def validate_timestamp(value):
 
     if value >= MAX_TIMESTAMP:
         raise ValidationError(
-            "Timestamp values must be less than {0}.  Got {1}".format(
+            "Timestamp values must be less than {}.  Got {}".format(
                 MAX_TIMESTAMP,
                 value,
             )
@@ -71,7 +71,7 @@ def validate_timestamp(value):
 def validate_block_number(value):
     error_message = (
         "Block number must be a positive integer or one of the strings "
-        "'latest', 'earliest', or 'pending'.  Got: {0}".format(value)
+        "'latest', 'earliest', or 'pending'.  Got: {}".format(value)
     )
     if is_string(value):
         validate_text(value)
@@ -176,14 +176,14 @@ def validate_transaction(value, txn_type):
     if txn_type not in ALLOWED_TRANSACTION_TYPES:
         raise TypeError("the `txn_type` parameter must be one of send/call/estimate")
     if not is_dict(value):
-        raise ValidationError("Transaction must be a dictionary.  Got: {0}".format(type(value)))
+        raise ValidationError("Transaction must be a dictionary.  Got: {}".format(type(value)))
 
     unknown_keys = tuple(sorted(set(value.keys()).difference(
         TRANSACTION_TYPE_INFO[txn_type],
     )))
     if unknown_keys:
         raise ValidationError(
-            "Only the keys '{0}' are allowed.  Got extra keys: '{1}'".format(
+            "Only the keys '{}' are allowed.  Got extra keys: '{}'".format(
                 "/".join(tuple(sorted(TRANSACTION_TYPE_INFO[txn_type]))),
                 "/".join(unknown_keys),
             )
@@ -194,14 +194,14 @@ def validate_transaction(value, txn_type):
     elif txn_type == 'send_signed':
         required_keys = {'from', 'gas'} | SIGNED_TRANSACTION_KEYS
     elif txn_type in {'estimate', 'call'}:
-        required_keys = set(['from'])
+        required_keys = {'from'}
     else:
         raise Exception("Invariant: code path should be unreachable")
 
     missing_required_keys = tuple(sorted(required_keys.difference(value.keys())))
     if missing_required_keys:
         raise ValidationError(
-            "Transaction is missing the required keys: '{0}'".format(
+            "Transaction is missing the required keys: '{}'".format(
                 "/".join(missing_required_keys),
             )
         )
@@ -229,7 +229,7 @@ def validate_transaction(value, txn_type):
     if 'data' in value:
         bad_data_message = (
             "Transaction data must be a hexidecimal encoded string.  Got: "
-            "{0}".format(value['data'])
+            "{}".format(value['data'])
         )
         if not is_text(value['data']):
             raise ValidationError(bad_data_message)
@@ -254,5 +254,5 @@ def validate_raw_transaction(raw_transaction):
     if not is_text(raw_transaction) or not is_hex(raw_transaction):
         raise ValidationError(
             "Raw Transaction must be a hexidecimal encoded string.  Got: "
-            "{0}".format(raw_transaction)
+            "{}".format(raw_transaction)
         )

@@ -40,7 +40,7 @@ def bytes_repr(value):
     elif is_list_like(value):
         yield b''.join((
             b'(',
-            b','.join((bytes_repr(item) for item in value)),
+            b','.join(bytes_repr(item) for item in value),
             b')',
         ))
     elif is_dict(value):
@@ -56,9 +56,9 @@ def bytes_repr(value):
     elif is_integer(value):
         yield to_bytes(value)
     elif is_null(value):
-        yield 'None@{0}'.format(id(value))
+        yield 'None@{}'.format(id(value))
     else:
-        raise TypeError("Unsupported type for bytes_repr: {0}".format(type(value)))
+        raise TypeError("Unsupported type for bytes_repr: {}".format(type(value)))
 
 
 def fake_rlp_hash(value):
