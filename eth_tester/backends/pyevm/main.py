@@ -387,15 +387,15 @@ class PyEVMBackend(BaseChainBackend):
     #
     def get_nonce(self, account, block_number="latest"):
         vm = _get_vm_for_block_number(self.chain, block_number)
-        return vm.state.account_db.get_nonce(account)
+        return vm.state.get_nonce(account)
 
     def get_balance(self, account, block_number="latest"):
         vm = _get_vm_for_block_number(self.chain, block_number)
-        return vm.state.account_db.get_balance(account)
+        return vm.state.get_balance(account)
 
     def get_code(self, account, block_number="latest"):
         vm = _get_vm_for_block_number(self.chain, block_number)
-        return vm.state.account_db.get_code(account)
+        return vm.state.get_code(account)
 
     #
     # Transactions
