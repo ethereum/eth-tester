@@ -1,3 +1,16 @@
+0.2.0-beta.1
+------------
+
+Released June 13, 2019
+
+- Breaking changes
+
+  - Drop Python 3.5
+    https://github.com/ethereum/eth-tester/pull/160
+  - Upgrade to Py-EVM 0.2.0-a43
+    https://github.com/ethereum/eth-tester/pull/162
+
+
 0.1.0-beta.39
 -------------
 
