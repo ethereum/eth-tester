@@ -1,6 +1,11 @@
 Unreleased
 ----------
 
+- Breaking changes
+
+  - Default to IstanbulVM
+    https://github.com/ethereum/eth-tester/pull/169
+
 - Misc
 
   - Upgrade to py-evm v0.3.0-b7
