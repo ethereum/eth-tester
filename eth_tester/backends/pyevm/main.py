@@ -47,6 +47,9 @@ from .serializers import (
 from .utils import is_pyevm_available
 
 if is_pyevm_available():
+    from eth.constants import (
+        GENESIS_PARENT_HASH,
+    )
     from eth.exceptions import (
         HeaderNotFound as EVMHeaderNotFound,
         InvalidInstruction as EVMInvalidInstruction,
@@ -59,6 +62,7 @@ else:
     EVMHeaderNotFound = None
     EVMInvalidInstruction = None
     EVMRevert = None
+    GENESIS_PARENT_HASH = None
 
 
 ZERO_ADDRESS = 20 * b'\x00'
@@ -72,7 +76,6 @@ BLANK_ROOT_HASH = b'V\xe8\x1f\x17\x1b\xccU\xa6\xff\x83E\xe6\x92\xc0\xf8n\x5bH\xe
 GENESIS_BLOCK_NUMBER = 0
 GENESIS_DIFFICULTY = 131072
 GENESIS_GAS_LIMIT = 3141592
-GENESIS_PARENT_HASH = ZERO_HASH32
 GENESIS_COINBASE = ZERO_ADDRESS
 GENESIS_NONCE = b'\x00\x00\x00\x00\x00\x00\x00*'  # 42 encoded as big-endian-integer
 GENESIS_MIX_HASH = ZERO_HASH32
@@ -233,7 +236,7 @@ def _execute_and_revert_transaction(chain, transaction, block_number="latest"):
 
     state = vm.state
     snapshot = state.snapshot()
-    computation = state.execute_transaction(transaction)
+    computation = state.apply_transaction(transaction)
     state.revert(snapshot)
     return computation
 
@@ -300,11 +303,11 @@ class PyEVMBackend(BaseChainBackend):
     def revert_to_snapshot(self, snapshot):
         block = self.chain.get_block_by_hash(snapshot)
         chaindb = self.chain.chaindb
+
+        chaindb._set_as_canonical_chain_head(chaindb.db, block.header.hash, GENESIS_PARENT_HASH)
         if block.number > 0:
-            chaindb._set_as_canonical_chain_head(chaindb.db, block.header.hash)
             self.chain.import_block(block)
         else:
-            chaindb._set_as_canonical_chain_head(chaindb.db, block.header.hash)
             self.chain = self.chain.from_genesis_header(chaindb.db, block.header)
 
     #
