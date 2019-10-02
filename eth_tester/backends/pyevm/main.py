@@ -147,17 +147,17 @@ def get_default_genesis_params(overrides=None):
 def setup_tester_chain(genesis_params=None, genesis_state=None, num_accounts=None):
     from eth.chains.base import MiningChain
     from eth.db import get_db_backend
-    from eth.vm.forks.constantinople import ConstantinopleVM
+    from eth.vm.forks.istanbul import IstanbulVM
 
-    class ConstantinopleNoProofVM(ConstantinopleVM):
-        """Constantinople VM rules, without validating any miner proof of work"""
+    class IstanbulNoProofVM(IstanbulVM):
+        """Istanbul VM rules, without validating any miner proof of work"""
 
         @classmethod
         def validate_seal(self, header):
             pass
 
     class MainnetTesterNoProofChain(MiningChain):
-        vm_configuration = ((0, ConstantinopleNoProofVM), )
+        vm_configuration = ((0, IstanbulNoProofVM), )
 
         @classmethod
         def validate_seal(cls, block):
