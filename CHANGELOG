@@ -1,5 +1,10 @@
 Unreleased
-----------
+-------------
+
+None
+
+v0.3.0-beta.1
+-------------
 
 - Breaking changes
 
@@ -10,6 +15,8 @@ Unreleased
 
   - Upgrade to py-evm v0.3.0-b7
     https://github.com/ethereum/eth-tester/pull/166
+  - Upgrade to py-evm v0.3.0-b8
+    https://github.com/ethereum/eth-tester/pull/171
 
 v0.2.0-beta.2
 ------------
