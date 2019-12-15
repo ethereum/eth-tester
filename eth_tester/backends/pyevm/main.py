@@ -304,7 +304,7 @@ class PyEVMBackend(BaseChainBackend):
         block = self.chain.get_block_by_hash(snapshot)
         chaindb = self.chain.chaindb
 
-        chaindb._set_as_canonical_chain_head(chaindb.db, block.header.hash, GENESIS_PARENT_HASH)
+        chaindb._set_as_canonical_chain_head(chaindb.db, block.header, GENESIS_PARENT_HASH)
         if block.number > 0:
             self.chain.import_block(block)
         else:
