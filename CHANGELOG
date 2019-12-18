@@ -3,6 +3,15 @@ Unreleased
 
 None
 
+v0.4.0-beta.1
+-------------
+
+- Misc
+
+  - Upgrade to py-evm v0.3.0-b11
+    https://github.com/ethereum/eth-tester/pull/172
+
+
 v0.3.0-beta.1
 -------------
 
