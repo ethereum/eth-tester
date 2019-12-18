@@ -38,13 +38,16 @@ extras_require['dev'] = (
 # convenience in case someone leaves out the `-`
 extras_require['pyevm'] = extras_require['py-evm']
 
+with open('./README.md') as readme:
+    long_description = readme.read()
 
 setup(
     name='eth-tester',
     # *IMPORTANT*: Don't manually change the version here. Use the 'bumpversion' utility.
     version='0.3.0-beta.1',
     description="""Tools for testing Ethereum applications.""",
-    long_description_markdown_filename='README.md',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     author='Piper Merriam',
     author_email='pipermerriam@gmail.com',
     url='https://github.com/ethereum/eth-tester',
@@ -58,7 +61,6 @@ setup(
     ],
     extras_require=extras_require,
     python_requires='>=3.6.8,<4',
-    setup_requires=['setuptools-markdown'],
     py_modules=['eth_tester'],
     license="MIT",
     zip_safe=False,
