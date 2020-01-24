@@ -195,7 +195,7 @@ The chain can only time travel forward in time.
 The `timestamp` must be an integer, strictly greater than the current timestamp
 of the latest block.  
 
-> Note: You must mine a block before time traveling will take effect. See https://github.com/ethereum/eth-tester/issues/154 for discussion about improving this functionality.
+> Note: Time traveling will result in a new block being mined.
 
 
 ### Mining

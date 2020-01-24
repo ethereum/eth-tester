@@ -314,7 +314,8 @@ class PyEVMBackend(BaseChainBackend):
     # Meta
     #
     def time_travel(self, to_timestamp):
-        self.chain.header = self.chain.header.copy(timestamp=to_timestamp)
+        self.chain.header = self.chain.header.copy(timestamp=(to_timestamp - 1))
+        self.mine_blocks()
         return to_timestamp
 
     #
