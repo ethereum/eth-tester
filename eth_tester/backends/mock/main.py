@@ -124,7 +124,9 @@ class MockBackend(BaseChainBackend):
     # Meta
     #
     def time_travel(self, timestamp):
-        self.block['timestamp'] = timestamp
+        # timestamp adjusted by 1 b/c a second is added in mine_blocks
+        self.block['timestamp'] = (timestamp - 1)
+        self.mine_blocks()
 
     #
     # Mining

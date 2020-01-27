@@ -357,7 +357,7 @@ def make_block_from_parent(parent_block, overrides=None):
     if 'timestamp' in overrides:
         yield 'timestamp', overrides['timestamp']
     else:
-        yield 'timestamp', parent_block['timestamp'] + 15
+        yield 'timestamp', parent_block['timestamp'] + 1
 
     if 'transactions' in overrides:
         yield 'transactions', overrides['transactions']
