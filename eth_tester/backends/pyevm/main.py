@@ -464,7 +464,7 @@ class PyEVMBackend(BaseChainBackend):
 
     @replace_exceptions({
         EVMInvalidInstruction: TransactionFailed,
-        EVMRevert: TransactionFailed})
+    })
     def estimate_gas(self, transaction):
         evm_transaction = self._get_normalized_and_unsigned_evm_transaction(assoc(
             transaction, 'gas', 21000))

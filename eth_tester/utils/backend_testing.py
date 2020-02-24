@@ -51,6 +51,11 @@ from .throws_contract import (
     _make_call_throws_transaction,
     _decode_throws_result,
 )
+from eth_tester.backends.pyevm.utils import is_pyevm_available
+if is_pyevm_available():
+    from eth.exceptions import (
+        Revert as EVMRevert,
+    )
 
 
 PK_A = '0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d'
@@ -719,7 +724,7 @@ class BaseTestBackendDirect:
             'throw_contract',
             'willThrow',
         )
-        with pytest.raises(TransactionFailed):
+        with pytest.raises(EVMRevert):
             eth_tester.estimate_gas(dissoc(call_will_throw_transaction, 'gas'))
 
         call_set_value_transaction = _make_call_throws_transaction(
