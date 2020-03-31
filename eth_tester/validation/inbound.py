@@ -105,12 +105,16 @@ def is_valid_topic_array(value):
         for item in value)
 
 
-def validate_filter_params(from_block, to_block, address, topics):
+def validate_filter_params(from_block, to_block, address, topics, block_hash):
     # blocks
     if from_block is not None:
         validate_block_number(from_block)
     if to_block is not None:
         validate_block_number(to_block)
+    if block_hash is not None:
+        validate_block_hash(block_hash)
+    if block_hash is not None and (from_block is not None or to_block is not None):
+        raise ValidationError("When filtering by block hash, neither from block nor to block can be set.")
 
     # address
     if address is None:

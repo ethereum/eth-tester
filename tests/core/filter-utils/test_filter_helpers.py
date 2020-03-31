@@ -25,6 +25,8 @@ TOPIC_A = b'\x00' * 32
 TOPIC_B = b'\x00' * 31 + b'\x01'
 TOPIC_C = b'\x00' * 31 + b'\x02'
 
+BLOCK_HASH = b'\x01' * 32
+
 
 def topic_to_name(param):
     if is_list_like(param):
@@ -438,9 +440,10 @@ def test_check_if_address_match(address, addresses, expected):
     assert actual is expected
 
 
-def _make_log(block_number=10, topics=None, address=ADDRESS_A, _type='mined', **kwargs):
+def _make_log(block_number=10, topics=None, address=ADDRESS_A, _type='mined', block_hash=None, **kwargs):
     return dict(
         block_number=block_number,
+        block_hash=block_hash,
         topics=topics or tuple(),
         address=address,
         type=_type,
@@ -448,12 +451,13 @@ def _make_log(block_number=10, topics=None, address=ADDRESS_A, _type='mined', **
     )
 
 
-def _make_filter(from_block=None, to_block=None, topics=None, addresses=None):
+def _make_filter(from_block=None, to_block=None, topics=None, addresses=None, block_hash=None):
     return {
         'from_block': from_block,
         'to_block': to_block,
         'topics': topics,
         'addresses': addresses,
+        'block_hash': block_hash,
     }
 
 
@@ -467,6 +471,9 @@ def _make_filter(from_block=None, to_block=None, topics=None, addresses=None):
         (_make_log(block_number=30), _make_filter(from_block=10, to_block=20), False),
         (_make_log(block_number=30), _make_filter(to_block=20), False),
         (_make_log(block_number=20), _make_filter(to_block=20), True),
+        # block hash
+        (_make_log(block_hash=BLOCK_HASH), _make_filter(block_hash=BLOCK_HASH), True),
+        (_make_log(block_hash=BLOCK_HASH), _make_filter(block_hash=TOPIC_A), False),
         # topics
         (_make_log(topics=(TOPIC_A,)), _make_filter(topics=FILTER_MATCH_ALL), True),
         (_make_log(topics=(TOPIC_A, TOPIC_B)), _make_filter(topics=FILTER_MATCH_ALL), True),

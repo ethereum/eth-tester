@@ -17,7 +17,7 @@ class BaseValidator:
     def validate_inbound_filter_id(self, filter_id):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def validate_inbound_filter_params(self, from_block, to_block, address, topics):
+    def validate_inbound_filter_params(self, from_block, to_block, address, topics, block_hash):
         raise NotImplementedError("must be implemented by subclasses")
 
     def validate_inbound_private_key(self, private_key):

@@ -100,12 +100,13 @@ def test_block_hash_input_validation(validator, block_hash, is_valid):
             validator.validate_inbound_block_hash(block_hash)
 
 
-def _make_filter_params(from_block=None, to_block=None, address=None, topics=None):
+def _make_filter_params(from_block=None, to_block=None, address=None, topics=None, block_hash=None):
     return {
         'from_block': from_block,
         'to_block': to_block,
         'address': address,
         'topics': topics,
+        'block_hash': block_hash,
     }
 
 
@@ -135,12 +136,14 @@ ADDRESS_A = encode_hex(b'\x00' * 19 + b'\x01')
 ADDRESS_B = encode_hex(b'\x00' * 19 + b'\x02')
 TOPIC_A = encode_hex(b'\x00' * 31 + b'\x01')
 TOPIC_B = encode_hex(b'\x00' * 31 + b'\x02')
+BLOCK_HASH = encode_hex(b'\x01' * 32)
 
 
 @pytest.mark.parametrize(
     "filter_params,is_valid",
     (
         (_make_filter_params(), True),
+        # block numbers
         (_make_filter_params(from_block=0), True),
         (_make_filter_params(to_block=0), True),
         (_make_filter_params(from_block=-1), False),
@@ -151,12 +154,19 @@ TOPIC_B = encode_hex(b'\x00' * 31 + b'\x02')
         (_make_filter_params(to_block='0x0'), False),
         (_make_filter_params(from_block='0x1'), False),
         (_make_filter_params(to_block='0x1'), False),
+        # block hash
+        (_make_filter_params(block_hash=BLOCK_HASH), True),
+        (_make_filter_params(block_hash=''), False),
+        (_make_filter_params(block_hash=b'\x01' * 32), False),
+        (_make_filter_params(block_hash=encode_hex(b'\x01' * 31)), False),
+        # address
         (_make_filter_params(address=ADDRESS_A), True),
         (_make_filter_params(address=decode_hex(ADDRESS_A)), False),
         (_make_filter_params(address=[ADDRESS_A, ADDRESS_B]), True),
         (_make_filter_params(address=TOPIC_A), False),
         (_make_filter_params(address=decode_hex(TOPIC_A)), False),
         (_make_filter_params(address=[TOPIC_A, ADDRESS_B]), False),
+        # topics
         (_make_filter_params(topics=[TOPIC_A]), True),
         (_make_filter_params(topics=[TOPIC_A, TOPIC_B]), True),
         (_make_filter_params(topics=[TOPIC_A, None]), True),

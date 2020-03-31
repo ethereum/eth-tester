@@ -41,7 +41,7 @@ def normalize_topic_list(topics):
 
 
 @to_tuple
-def normalize_filter_params(from_block, to_block, address, topics):
+def normalize_filter_params(from_block, to_block, address, topics, block_hash):
     yield from_block
     yield to_block
 
@@ -70,6 +70,7 @@ def normalize_filter_params(from_block, to_block, address, topics):
         )
     else:
         raise TypeError(f"Topics are not in a recognized format: {address}")
+    yield block_hash
 
 
 def normalize_private_key(value):

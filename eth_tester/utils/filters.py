@@ -122,6 +122,13 @@ def check_if_to_block_match(block_number, _type, to_block):
         raise ValueError(f"Unrecognized to_block format: {to_block}")
 
 
+def check_if_block_hash_match(log_block_hash, target_block_hash):
+    if target_block_hash is None:
+        return True
+    else:
+        return  log_block_hash == target_block_hash
+
+
 def check_if_log_matches_flat_topics(log_topics, filter_topics):
     if not filter_topics:
         return True
@@ -173,7 +180,8 @@ def check_if_log_matches(log_entry,
                          from_block,
                          to_block,
                          addresses,
-                         topics):
+                         topics,
+                         block_hash,):
     if not check_if_from_block_match(log_entry['block_number'], log_entry['type'], from_block):
         return False
     elif not check_if_to_block_match(log_entry['block_number'], log_entry['type'], to_block):
@@ -181,6 +189,8 @@ def check_if_log_matches(log_entry,
     elif not check_if_address_match(log_entry['address'], addresses):
         return False
     elif not check_if_topics_match(log_entry['topics'], topics):
+        return False
+    elif not check_if_block_hash_match(log_entry['block_hash'], block_hash):
         return False
     else:
         return True

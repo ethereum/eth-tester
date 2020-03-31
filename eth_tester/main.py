@@ -556,23 +556,26 @@ class EthereumTester:
         filter_id = self.normalizer.normalize_outbound_filter_id(raw_filter_id)
         return filter_id
 
-    def create_log_filter(self, from_block=None, to_block=None, address=None, topics=None):
+    def create_log_filter(self, from_block=None, to_block=None, address=None, topics=None, block_hash=None):
         self.validator.validate_inbound_filter_params(
             from_block=from_block,
             to_block=to_block,
             address=address,
             topics=topics,
+            block_hash=block_hash,
         )
         (
             raw_from_block,
             raw_to_block,
             raw_address,
             raw_topics,
+            raw_block_hash,
         ) = self.normalizer.normalize_inbound_filter_params(
             from_block=from_block,
             to_block=to_block,
             address=address,
             topics=topics,
+            block_hash=block_hash,
         )
 
         raw_filter_id = next(self._filter_counter)
@@ -581,6 +584,7 @@ class EthereumTester:
             'to_block': raw_to_block,
             'addresses': raw_address,
             'topics': raw_topics,
+            'block_hash': raw_block_hash,
         }
         filter_fn = partial(
             check_if_log_matches,
@@ -658,23 +662,26 @@ class EthereumTester:
             yield normalize_fn(item)
 
     @to_tuple
-    def get_logs(self, from_block=None, to_block=None, address=None, topics=None):
+    def get_logs(self, from_block=None, to_block=None, address=None, topics=None, block_hash=None):
         self.validator.validate_inbound_filter_params(
             from_block=from_block,
             to_block=to_block,
             address=address,
             topics=topics,
+            block_hash=block_hash,
         )
         (
             raw_from_block,
             raw_to_block,
             raw_address,
             raw_topics,
+            raw_block_hash
         ) = self.normalizer.normalize_inbound_filter_params(
             from_block=from_block,
             to_block=to_block,
             address=address,
             topics=topics,
+            block_hash=block_hash
         )
 
         # Setup the filter object
@@ -683,6 +690,7 @@ class EthereumTester:
             'to_block': raw_to_block,
             'addresses': raw_address,
             'topics': raw_topics,
+            'block_hash': raw_block_hash,
         }
         filter_fn = partial(
             check_if_log_matches,

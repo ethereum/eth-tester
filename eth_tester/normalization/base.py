@@ -14,7 +14,7 @@ class BaseNormalizer:
     def normalize_inbound_filter_id(self, filter_id):
         raise NotImplementedError("must be implemented by subclasses")
 
-    def normalize_inbound_filter_params(self, from_block, to_block, address, topics):
+    def normalize_inbound_filter_params(self, from_block, to_block, address, topics, block_hash):
         raise NotImplementedError("must be implemented by subclasses")
 
     def normalize_inbound_log_entry(self, log_entry):
