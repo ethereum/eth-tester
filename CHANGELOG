@@ -1,6 +1,11 @@
 Unreleased
 -------------
 
+None
+
+v0.4.0-beta.2
+-------------
+
 - Misc
 
   - Upgrate eth-keys to allow 0.3.* versions
