@@ -4,6 +4,7 @@ Unreleased
 - Misc
 
   - Upgrate eth-keys to allow 0.3.* versions
+  - Upgrate py-evm to v0.3.0-alpha.15, which allows the eth-keys upgrade
 
 v0.4.0-beta.1
 -------------
