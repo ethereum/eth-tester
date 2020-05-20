@@ -244,6 +244,13 @@ class BaseTestBackendDirect:
         assert is_integer(after_block_number)
         assert before_block_number == after_block_number - 10
 
+    def test_gas_limit_constant(self, eth_tester):
+        eth_tester.mine_blocks()
+        before_gas_limit = eth_tester.get_block_by_number('latest')['gas_limit']
+        eth_tester.mine_blocks()
+        after_gas_limit = eth_tester.get_block_by_number('latest')['gas_limit']
+        assert before_gas_limit == after_gas_limit
+
     #
     # Transaction Sending
     #
