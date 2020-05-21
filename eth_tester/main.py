@@ -428,10 +428,12 @@ class EthereumTester:
         result = self.normalizer.normalize_outbound_return_data(raw_result)
         return result
 
-    def estimate_gas(self, transaction):
+    def estimate_gas(self, transaction, block_number="latest"):
         self.validator.validate_inbound_transaction(transaction, txn_type='estimate')
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
-        raw_gas_estimate = self.backend.estimate_gas(raw_transaction)
+        self.validator.validate_inbound_block_number(block_number)
+        raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
+        raw_gas_estimate = self.backend.estimate_gas(raw_transaction, raw_block_number)
         self.validator.validate_outbound_gas_estimate(raw_gas_estimate)
         gas_estimate = self.normalizer.normalize_outbound_gas_estimate(raw_gas_estimate)
         return gas_estimate
