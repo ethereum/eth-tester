@@ -465,12 +465,26 @@ class PyEVMBackend(BaseChainBackend):
     @replace_exceptions({
         EVMInvalidInstruction: TransactionFailed,
         EVMRevert: TransactionFailed})
-    def estimate_gas(self, transaction):
-        evm_transaction = self._get_normalized_and_unsigned_evm_transaction(assoc(
-            transaction, 'gas', 21000))
+    def estimate_gas(self, transaction, block_number="latest"):
+        evm_transaction = self._get_normalized_and_unsigned_evm_transaction(
+            assoc(transaction, 'gas', 21000),
+            block_number
+        )
         spoofed_transaction = EVMSpoofTransaction(evm_transaction, from_=transaction['from'])
 
-        return self.chain.estimate_gas(spoofed_transaction)
+        if block_number == "latest":
+            return self.chain.estimate_gas(spoofed_transaction)
+        elif block_number == "earliest":
+            return self.chain.estimate_gas(
+                spoofed_transaction, self.chain.get_canonical_block_header_by_number(0)
+            )
+        elif block_number == "pending":
+            raise NotImplementedError('"pending" block identifier is unsupported in eth-tester')
+        else:
+            return self.chain.estimate_gas(
+                spoofed_transaction,
+                self.chain.get_canonical_block_header_by_number(block_number),
+            )
 
     def is_eip838_error(self, error):
         if not isinstance(error, EVMRevert):

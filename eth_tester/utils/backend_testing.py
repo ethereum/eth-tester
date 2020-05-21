@@ -686,6 +686,21 @@ class BaseTestBackendDirect:
         # https://github.com/ethereum/py-evm/blob/f0276e684edebd7cd9e84cd04b3229ab9dd958b9/evm/estimators/__init__.py#L11
         assert receipt['gas_used'] >= gas_estimation - 21000
 
+    def test_estimate_gas_with_block_identifier(self, eth_tester):
+        self.skip_if_no_evm_execution()
+
+        math_address = _deploy_math(eth_tester)
+        estimate_call_math_transaction = _make_call_math_transaction(
+            eth_tester, math_address, "increment",
+        )
+        latest_gas_estimation = eth_tester.estimate_gas(
+            estimate_call_math_transaction, "latest"
+        )
+        earliest_gas_estimation = eth_tester.estimate_gas(
+            estimate_call_math_transaction, "earliest"
+        )
+        assert latest_gas_estimation != earliest_gas_estimation
+
     def test_can_call_after_exception_raised_calling(self, eth_tester):
         self.skip_if_no_evm_execution()
 

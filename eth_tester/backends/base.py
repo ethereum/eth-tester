@@ -91,7 +91,7 @@ class BaseChainBackend(metaclass=ABCMeta):
         raise NotImplementedError("Must be implemented by subclasses")
 
     @abstractmethod
-    def estimate_gas(self, transaction):
+    def estimate_gas(self, transaction, block_number="latest"):
         raise NotImplementedError("Must be implemented by subclasses")
 
     @abstractmethod
