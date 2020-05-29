@@ -144,20 +144,23 @@ def get_default_genesis_params(overrides=None):
     return genesis_params
 
 
-def setup_tester_chain(genesis_params=None, genesis_state=None, num_accounts=None):
+def setup_tester_chain(genesis_params=None, genesis_state=None, num_accounts=None, vm_class=None):
     from eth.chains.base import MiningChain
     from eth.db import get_db_backend
-    from eth.vm.forks.muir_glacier import MuirGlacierVM
 
-    class MuirGlacierNoProofVM(MuirGlacierVM):
-        """Muir Glacier VM rules, without validating any miner proof of work"""
+    if not vm_class:
+        from eth.vm.forks.muir_glacier import MuirGlacierVM
+        vm_class = MuirGlacierVM
+
+    class NoProofVM(vm_class):
+        """VM rules, without validating any miner proof of work"""
 
         @classmethod
         def validate_seal(self, header):
             pass
 
     class MainnetTesterNoProofChain(MiningChain):
-        vm_configuration = ((0, MuirGlacierNoProofVM), )
+        vm_configuration = ((0, NoProofVM), )
 
         @classmethod
         def validate_seal(cls, block):
@@ -249,11 +252,8 @@ def _get_vm_for_block_number(chain, block_number):
 
 class PyEVMBackend(BaseChainBackend):
     chain = None
-    fork_config = None
 
-    def __init__(self, genesis_parameters=None, genesis_state=None):
-        self.fork_config = {}
-
+    def __init__(self, genesis_parameters=None, genesis_state=None, vm_class=None):
         if not is_pyevm_available():
             raise BackendDistributionNotFound(
                 "The `py-evm` package is not available.  The "
@@ -263,7 +263,7 @@ class PyEVMBackend(BaseChainBackend):
 
         self.account_keys = None  # set below
         accounts = len(genesis_state) if genesis_state else None
-        self.reset_to_genesis(genesis_parameters, genesis_state, accounts)
+        self.reset_to_genesis(genesis_parameters, genesis_state, accounts, vm_class)
 
     #
     # Genesis
@@ -278,9 +278,13 @@ class PyEVMBackend(BaseChainBackend):
         account_keys = get_default_account_keys(quantity=num_accounts)
         return generate_genesis_state_for_keys(account_keys=account_keys, overrides=overrides)
 
-    def reset_to_genesis(self, genesis_params=None, genesis_state=None, num_accounts=None):
+    def reset_to_genesis(self,
+                         genesis_params=None,
+                         genesis_state=None,
+                         num_accounts=None,
+                         vm_class=None):
         self.account_keys, self.chain = setup_tester_chain(genesis_params, genesis_state,
-                                                           num_accounts)
+                                                           num_accounts, vm_class)
 
     #
     # Private Accounts API
