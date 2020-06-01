@@ -1,10 +1,18 @@
 Unreleased
 -------------
 
+- Breaking changes
+
+  - Make gas limit constant for py-evm backend
+    https://github.com/ethereum/eth-tester/pull/192
+
 - Features
 
   - Add support for gas estimate block identifiers
+    https://github.com/ethereum/eth-tester/pull/189
   - Add support for custom virtual machine fork schedule in PyEVMBackend
+    https://github.com/ethereum/eth-tester/pull/191
+
 
 v0.4.0-beta.2
 -------------

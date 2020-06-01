@@ -146,7 +146,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         # Establish a custom gas limit
         param_overrides = {"gas_limit": 4750000}
-        block_one_gas_limit = 4745362
+        block_one_gas_limit = param_overrides['gas_limit']
 
         # Initialize PyEVM backend with custom genesis parameters
         genesis_params = PyEVMBackend._generate_genesis_params(

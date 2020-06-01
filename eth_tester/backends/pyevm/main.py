@@ -164,7 +164,15 @@ def setup_tester_chain(
         consensus_applier = ConsensusApplier(NoProofConsensus)
         no_proof_vms = consensus_applier.amend_vm_configuration(vm_configuration)
 
-    MainnetTesterNoProofChain = MiningChain.configure(vm_configuration=no_proof_vms)
+    class MainnetTesterNoProofChain(MiningChain):
+        vm_configuration = no_proof_vms
+
+        def create_header_from_parent(self, parent_header, **header_params):
+            # Keep the gas limit constant
+            return super().create_header_from_parent(
+                parent_header,
+                **assoc(header_params, 'gas_limit', parent_header.gas_limit)
+            )
 
     if genesis_params is None:
         genesis_params = get_default_genesis_params()
