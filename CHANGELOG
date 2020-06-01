@@ -1,6 +1,14 @@
 Unreleased
 -------------
 
+None
+
+
+v0.5.0-beta.1
+-------------
+
+Released 2020-06-01
+
 - Breaking changes
 
   - Make gas limit constant for py-evm backend
@@ -21,6 +29,7 @@ v0.4.0-beta.2
 
   - Upgrate eth-keys to allow 0.3.* versions
   - Upgrate py-evm to v0.3.0-alpha.15, which allows the eth-keys upgrade
+
 
 v0.4.0-beta.1
 -------------
