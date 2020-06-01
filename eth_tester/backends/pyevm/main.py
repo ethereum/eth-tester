@@ -164,7 +164,8 @@ def setup_tester_chain(
         consensus_applier = ConsensusApplier(NoProofConsensus)
         no_proof_vms = consensus_applier.amend_vm_configuration(vm_configuration)
 
-    MainnetTesterNoProofChain = MiningChain.configure(vm_configuration=no_proof_vms)
+    class MainnetTesterNoProofChain(MiningChain):
+        vm_configuration = no_proof_vms
 
     if genesis_params is None:
         genesis_params = get_default_genesis_params()
