@@ -3,7 +3,8 @@ Unreleased
 
 - Features
 
-	- Add support for gas estimate block identifiers
+  - Add support for gas estimate block identifiers
+  - Add support for custom virtual machine fork schedule in PyEVMBackend
 
 v0.4.0-beta.2
 -------------
