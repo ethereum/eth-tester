@@ -1,6 +1,10 @@
 from __future__ import unicode_literals
 
 import pytest
+from eth.vm.forks import (
+    FrontierVM,
+    MuirGlacierVM,
+)
 from eth_utils import to_wei
 
 from eth_tester import EthereumTester, PyEVMBackend
@@ -23,6 +27,32 @@ def eth_tester():
         pytest.skip("PyEVM is not available")
     backend = PyEVMBackend()
     return EthereumTester(backend=backend)
+
+
+def test_custom_virtual_machines():
+    if not is_pyevm_available():
+        pytest.skip("PyEVM is not available")
+
+    backend = PyEVMBackend(vm_configuration=(
+        (0, FrontierVM),
+        (3, MuirGlacierVM),
+    ))
+
+    # This should be a FrontierVM block
+    VM_at_2 = backend.chain.get_vm_class_for_block_number(2)
+    # This should be a MuirGlacier block
+    VM_at_3 = backend.chain.get_vm_class_for_block_number(3)
+
+    assert issubclass(VM_at_2, FrontierVM)
+    assert not issubclass(VM_at_2, MuirGlacierVM)
+    assert issubclass(VM_at_3, MuirGlacierVM)
+
+    # Right now, just test that EthereumTester doesn't crash
+    # Maybe some more sophisticated test to make sure the VMs are set correctly?
+    # We should to make sure the VM config translates all the way to the main
+    #   tester, maybe with a custom VM that hard-codes some block value? that can
+    #   be found with tester.get_block_by_number()?
+    EthereumTester(backend=backend)
 
 
 class TestPyEVMBackendDirect(BaseTestBackendDirect):
