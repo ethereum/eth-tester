@@ -144,27 +144,27 @@ def get_default_genesis_params(overrides=None):
     return genesis_params
 
 
-def setup_tester_chain(genesis_params=None, genesis_state=None, num_accounts=None, vm_class=None):
+def setup_tester_chain(
+        genesis_params=None,
+        genesis_state=None,
+        num_accounts=None,
+        vm_configuration=None):
+
     from eth.chains.base import MiningChain
+    from eth.consensus import (
+        NoProofConsensus,
+        ConsensusApplier,
+    )
     from eth.db import get_db_backend
 
-    if not vm_class:
+    if vm_configuration is None:
         from eth.vm.forks.muir_glacier import MuirGlacierVM
-        vm_class = MuirGlacierVM
+        no_proof_vms = ((0, MuirGlacierVM.configure(consensus_class=NoProofConsensus)),)
+    else:
+        consensus_applier = ConsensusApplier(NoProofConsensus)
+        no_proof_vms = consensus_applier.amend_vm_configuration(vm_configuration)
 
-    class NoProofVM(vm_class):
-        """VM rules, without validating any miner proof of work"""
-
-        @classmethod
-        def validate_seal(self, header):
-            pass
-
-    class MainnetTesterNoProofChain(MiningChain):
-        vm_configuration = ((0, NoProofVM), )
-
-        @classmethod
-        def validate_seal(cls, block):
-            pass
+    MainnetTesterNoProofChain = MiningChain.configure(vm_configuration=no_proof_vms)
 
     if genesis_params is None:
         genesis_params = get_default_genesis_params()
@@ -253,7 +253,12 @@ def _get_vm_for_block_number(chain, block_number):
 class PyEVMBackend(BaseChainBackend):
     chain = None
 
-    def __init__(self, genesis_parameters=None, genesis_state=None, vm_class=None):
+    def __init__(self, genesis_parameters=None, genesis_state=None, vm_configuration=None):
+        """
+        :param vm_configuration: The tuple of virtual machines defining a chain schedule as
+            used in py-evm's :attr:`eth.chains.base.Chain.vm_configuration`. (at author time, a
+            series of block numbers and virtual machines)
+        """
         if not is_pyevm_available():
             raise BackendDistributionNotFound(
                 "The `py-evm` package is not available.  The "
@@ -263,7 +268,7 @@ class PyEVMBackend(BaseChainBackend):
 
         self.account_keys = None  # set below
         accounts = len(genesis_state) if genesis_state else None
-        self.reset_to_genesis(genesis_parameters, genesis_state, accounts, vm_class)
+        self.reset_to_genesis(genesis_parameters, genesis_state, accounts, vm_configuration)
 
     #
     # Genesis
@@ -282,9 +287,13 @@ class PyEVMBackend(BaseChainBackend):
                          genesis_params=None,
                          genesis_state=None,
                          num_accounts=None,
-                         vm_class=None):
-        self.account_keys, self.chain = setup_tester_chain(genesis_params, genesis_state,
-                                                           num_accounts, vm_class)
+                         vm_configuration=None):
+        self.account_keys, self.chain = setup_tester_chain(
+            genesis_params,
+            genesis_state,
+            num_accounts,
+            vm_configuration,
+        )
 
     #
     # Private Accounts API
