@@ -1,6 +1,11 @@
 Unreleased
 -------------
 
+- Features
+
+  - Officially support py3.8
+    https://github.com/ethereum/eth-tester/pull/195
+
 - Performance
 
   - Upgrade pyrlp to v2-alpha1, with faster encoding/decoding
