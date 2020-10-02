@@ -51,6 +51,10 @@ from .throws_contract import (
     _make_call_throws_transaction,
     _decode_throws_result,
 )
+from .gas_burner_contract import (
+    _deploy_gas_burner,
+    _make_call_gas_burner_transaction
+)
 
 PK_A = '0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d'
 PK_A_ADDRESS = '0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd'
@@ -933,17 +937,17 @@ class BaseTestBackendDirect:
     def test_estimate_gas_with_block_identifier(self, eth_tester):
         self.skip_if_no_evm_execution()
 
-        math_address = _deploy_math(eth_tester)
-        estimate_call_math_transaction = _make_call_math_transaction(
-            eth_tester, math_address, "increment",
+        gas_burner_address = _deploy_gas_burner(eth_tester)
+        estimate_call_gas_burner_transaction = _make_call_gas_burner_transaction(
+            eth_tester, gas_burner_address, "burnBlockNumberDependentGas",
         )
         latest_gas_estimation = eth_tester.estimate_gas(
-            estimate_call_math_transaction, "latest"
+            estimate_call_gas_burner_transaction, "latest"
         )
         earliest_gas_estimation = eth_tester.estimate_gas(
-            estimate_call_math_transaction, "earliest"
+            estimate_call_gas_burner_transaction, "earliest"
         )
-        assert latest_gas_estimation != earliest_gas_estimation
+        assert latest_gas_estimation > earliest_gas_estimation
 
     def test_can_call_after_exception_raised_calling(self, eth_tester):
         self.skip_if_no_evm_execution()
