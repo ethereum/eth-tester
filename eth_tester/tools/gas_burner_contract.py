@@ -5,13 +5,27 @@ from eth_utils import (
     function_abi_to_4byte_selector,
 )
 
+# The following contract burns gas relative to the current block number. The
+# higher the block number, the more gas is burned. It is used to test
+# functionality that uses block identifiers.
+#
+# pragma solidity >=0.4.22 <0.7.0;
+#
+# contract GasBurner {
+#     uint256 total;
+#     function burnBlockNumberDependentGas() public {
+#         for(uint256 i=0; i<block.number*10; i++) {
+#             total++;
+#         }
+#     }
+# }
 
 GAS_BURNER_BYTECODE = (
-    "6080604052348015600f57600080fd5b5060978061001e6000396000f3fe6080604052348015600f5"
+    "6080604052348015600f57600080fd5b50609b8061001e6000396000f3fe6080604052348015600f5"
     "7600080fd5b506004361060285760003560e01c8063aeecb68814602d575b600080fd5b6033603556"
-    "5b005b60008090505b43811015605f576000808154809291906001019190505550808060010191505"
-    "0603b565b5056fea265627a7a72305820a3f36f9da109907cd816ff48f1fd3bab758923f9dbccbd1a"
-    "0f397cc70ef5423f64736f6c63430005090032"
+    "5b005b60008090505b600a43028110156062576000808154809291906001019190505550808060010"
+    "1915050603b565b5056fea2646970667358221220b69191cdd18045d942bd33c23c74ed334b2604f5"
+    "8490458cc8581e54f8cffed664736f6c63430006060033"
 )
 
 GAS_BURNER_ABI = {

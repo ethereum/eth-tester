@@ -51,7 +51,7 @@ from .throws_contract import (
     _make_call_throws_transaction,
     _decode_throws_result,
 )
-from .gas_burner_contract import (
+from eth_tester.tools.gas_burner_contract import (
     _deploy_gas_burner,
     _make_call_gas_burner_transaction
 )
