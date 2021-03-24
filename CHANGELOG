@@ -4,6 +4,7 @@ Unreleased
 - Features
 
   - Upgrade py-evm to v0.4.0-alpha.3, for Berlin support
+    Default to Berlin
     https://github.com/ethereum/eth-tester/pull/204
 
 

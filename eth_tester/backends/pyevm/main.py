@@ -156,8 +156,8 @@ def setup_tester_chain(
     from eth.db import get_db_backend
 
     if vm_configuration is None:
-        from eth.vm.forks.muir_glacier import MuirGlacierVM
-        no_proof_vms = ((0, MuirGlacierVM.configure(consensus_class=NoProofConsensus)),)
+        from eth.vm.forks import BerlinVM
+        no_proof_vms = ((0, BerlinVM.configure(consensus_class=NoProofConsensus)),)
     else:
         consensus_applier = ConsensusApplier(NoProofConsensus)
         no_proof_vms = consensus_applier.amend_vm_configuration(vm_configuration)

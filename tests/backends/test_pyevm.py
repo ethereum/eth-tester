@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import pytest
 from eth.vm.forks import (
     FrontierVM,
-    MuirGlacierVM,
+    BerlinVM,
 )
 from eth_utils import to_wei
 
@@ -35,17 +35,17 @@ def test_custom_virtual_machines():
 
     backend = PyEVMBackend(vm_configuration=(
         (0, FrontierVM),
-        (3, MuirGlacierVM),
+        (3, BerlinVM),
     ))
 
     # This should be a FrontierVM block
     VM_at_2 = backend.chain.get_vm_class_for_block_number(2)
-    # This should be a MuirGlacier block
+    # This should be a BerlinVM block
     VM_at_3 = backend.chain.get_vm_class_for_block_number(3)
 
     assert issubclass(VM_at_2, FrontierVM)
-    assert not issubclass(VM_at_2, MuirGlacierVM)
-    assert issubclass(VM_at_3, MuirGlacierVM)
+    assert not issubclass(VM_at_2, BerlinVM)
+    assert issubclass(VM_at_3, BerlinVM)
 
     # Right now, just test that EthereumTester doesn't crash
     # Maybe some more sophisticated test to make sure the VMs are set correctly?

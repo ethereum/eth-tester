@@ -284,9 +284,16 @@ class BaseTestBackendDirect:
         # assert that the raw transaction is confirmed and successful
         assert receipt['transaction_hash'] == transaction_hash
 
-    def test_send_raw_transaction_invalid_raw_transaction(self, eth_tester):
+    def test_send_raw_transaction_invalid_rlp_transaction(self, eth_tester):
         self.skip_if_no_evm_execution()
         invalid_transaction_hex = '0x1234'
+        import eth
+        with pytest.raises(eth.exceptions.UnrecognizedTransactionType):
+            eth_tester.send_raw_transaction(invalid_transaction_hex)
+
+    def test_send_raw_transaction_invalid_raw_transaction(self, eth_tester):
+        self.skip_if_no_evm_execution()
+        invalid_transaction_hex = '0xffff'
         with pytest.raises(rlp.exceptions.DecodingError):
             eth_tester.send_raw_transaction(invalid_transaction_hex)
 
