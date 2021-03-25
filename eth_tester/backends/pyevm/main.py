@@ -2,8 +2,6 @@ from __future__ import absolute_import
 
 import time
 
-import rlp
-
 from eth_abi import (
     decode_single
 )
@@ -107,7 +105,7 @@ def get_default_account_state(overrides=None):
 def get_default_account_keys(quantity=None):
     keys = KeyAPI()
     quantity = quantity or 10
-    for i in range(1, quantity+1):
+    for i in range(1, quantity + 1):
         pk_bytes = int_to_big_endian(i).rjust(32, b'\x00')
         private_key = keys.PrivateKey(pk_bytes)
         yield private_key
@@ -158,8 +156,8 @@ def setup_tester_chain(
     from eth.db import get_db_backend
 
     if vm_configuration is None:
-        from eth.vm.forks.muir_glacier import MuirGlacierVM
-        no_proof_vms = ((0, MuirGlacierVM.configure(consensus_class=NoProofConsensus)),)
+        from eth.vm.forks import BerlinVM
+        no_proof_vms = ((0, BerlinVM.configure(consensus_class=NoProofConsensus)),)
     else:
         consensus_applier = ConsensusApplier(NoProofConsensus)
         no_proof_vms = consensus_applier.amend_vm_configuration(vm_configuration)
@@ -461,8 +459,7 @@ class PyEVMBackend(BaseChainBackend):
 
     def send_raw_transaction(self, raw_transaction):
         vm = _get_vm_for_block_number(self.chain, "latest")
-        TransactionClass = vm.get_transaction_class()
-        evm_transaction = rlp.decode(raw_transaction, TransactionClass)
+        evm_transaction = vm.get_transaction_builder().decode(raw_transaction)
         self.chain.apply_transaction(evm_transaction)
         return evm_transaction.hash
 
