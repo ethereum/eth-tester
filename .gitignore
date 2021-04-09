@@ -100,5 +100,8 @@ fabric.properties
 # virtualenv directories
 venv*
 
+# pyenv-virtualenv
+.python-version
+
 # VIM
 *.swp
