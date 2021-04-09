@@ -64,6 +64,12 @@ jobs:
       - image: circleci/python:3.8
         environment:
           TOXENV: py38-core
+  py39-core:
+    <<: *common
+    docker:
+      - image: circleci/python:3.9
+        environment:
+          TOXENV: py39-core
   py36-pyevm:
     <<: *common
     docker:
@@ -82,6 +88,12 @@ jobs:
       - image: circleci/python:3.8
         environment:
           TOXENV: py38-pyevm
+  py39-pyevm:
+    <<: *common
+    docker:
+      - image: circleci/python:3.9
+        environment:
+          TOXENV: py39-pyevm
 
 workflows:
   version: 2
@@ -91,6 +103,8 @@ workflows:
       - py36-core
       - py37-core
       - py38-core
+      - py39-core
       - py36-pyevm
       - py37-pyevm
       - py38-pyevm
+      - py39-pyevm
