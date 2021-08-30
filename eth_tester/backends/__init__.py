@@ -28,7 +28,7 @@ def get_chain_backend_class(backend_import_path=None):
             backend_import_path = get_import_path(PyEVMBackend)
         else:
             warnings.warn(UserWarning(
-                "Ethereum Tester: No backend was explicitely set, and no *full* "
+                "Ethereum Tester: No backend was explicitly set, and no *full* "
                 "backends were available.  Falling back to the `MockBackend` "
                 "which does not support all EVM functionality.  Please refer to "
                 "the `eth-tester` documentation for information on what "

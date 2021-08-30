@@ -5,16 +5,22 @@ from eth_utils import (
 
 
 VALID_TRANSACTION_PARAMS = [
+    'type',
+    'chain_id',
     'from',
     'to',
     'gas',
     'gas_price',
+    'max_fee_per_gas',
+    'max_priority_fee_per_gas',
     'value',
     'data',
     'nonce',
+    'access_list',
     'r',
     's',
     'v',
+    'y_parity',
 ]
 
 

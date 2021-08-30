@@ -382,7 +382,7 @@ class EthereumTester:
     def _add_all_to_pending_block(self, pending_transactions):
         for pending in pending_transactions:
             txn = extract_valid_transaction_params(pending)
-            yield self._add_transaction_to_pending_block(txn, txn_type='send_signed')
+            yield self._add_transaction_to_pending_block(txn, txn_internal_type='send_signed')
 
     #
     # Transaction Sending
@@ -419,7 +419,7 @@ class EthereumTester:
         return self._add_transaction_to_pending_block(transaction)
 
     def call(self, transaction, block_number="latest"):
-        self.validator.validate_inbound_transaction(transaction, txn_type='call')
+        self.validator.validate_inbound_transaction(transaction, txn_internal_type='call')
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
         self.validator.validate_inbound_block_number(block_number)
         raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
@@ -429,7 +429,7 @@ class EthereumTester:
         return result
 
     def estimate_gas(self, transaction, block_number="latest"):
-        self.validator.validate_inbound_transaction(transaction, txn_type='estimate')
+        self.validator.validate_inbound_transaction(transaction, txn_internal_type='estimate')
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
         self.validator.validate_inbound_block_number(block_number)
         raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
@@ -441,8 +441,11 @@ class EthereumTester:
     #
     # Private Transaction API
     #
-    def _add_transaction_to_pending_block(self, transaction, txn_type='send'):
-        self.validator.validate_inbound_transaction(transaction, txn_type=txn_type)
+    def _add_transaction_to_pending_block(self, transaction, txn_internal_type='send'):
+        self.validator.validate_inbound_transaction(
+            transaction,
+            txn_internal_type=txn_internal_type
+        )
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
 
         if raw_transaction['from'] in self._account_passwords:
@@ -454,11 +457,14 @@ class EthereumTester:
             if is_locked:
                 raise AccountLocked("The account is currently locked")
 
-        if {'r', 's', 'v'}.issubset(transaction.keys()):
+        if (
+            {'r', 's', 'v'}.issubset(transaction.keys())
+            or {'r', 's', 'y_parity'}.issubset(transaction.keys())
+        ):
             try:
                 raw_transaction_hash = self.backend.send_signed_transaction(raw_transaction)
             except NotImplementedError:
-                unsigned_transaction = dissoc(raw_transaction, 'r', 's', 'v')
+                unsigned_transaction = dissoc(raw_transaction, 'r', 's', 'v', 'y_parity')
                 raw_transaction_hash = self.backend.send_transaction(unsigned_transaction)
         else:
             raw_transaction_hash = self.backend.send_transaction(raw_transaction)

@@ -1,6 +1,15 @@
 from __future__ import absolute_import
 
+from toolz import compose, curry, dissoc
+
+from eth_utils import (
+    encode_hex,
+    remove_0x_prefix,
+    to_bytes,
+)
+
 from eth_utils.curried import (
+    apply_formatters_to_dict,
     apply_one_of_formatters,
     decode_hex,
     is_address,
@@ -81,21 +90,50 @@ to_empty_or_canonical_address = apply_one_of_formatters((
     (is_hex, to_canonical_address),
 ))
 
+
+@curry
+def remove_gas_price_if_dynamic_fee_transaction(txn_dict):
+    if all(_ in txn_dict for _ in ('max_fee_per_gas', 'max_priority_fee_per_gas')):
+        return dissoc(txn_dict, 'gas_price')
+    else:
+        return txn_dict
+
+
+def _normalize_inbound_access_list(access_list):
+    return tuple([
+        tuple([
+            to_bytes(hexstr=entry['address']),
+            tuple([int(remove_0x_prefix(k)) for k in entry['storage_keys']])
+        ])
+        for entry in access_list
+    ])
+
+
 TRANSACTION_NORMALIZERS = {
+    'chain_id': identity,
+    'type': encode_hex,
     'from': to_canonical_address,
     'to': to_empty_or_canonical_address,
     'gas': identity,
     'gas_price': identity,
+    'max_fee_per_gas': identity,
+    'max_priority_fee_per_gas': identity,
     'nonce': identity,
     'value': identity,
     'data': decode_hex,
+    'access_list': _normalize_inbound_access_list,
     'r': identity,
     's': identity,
     'v': identity,
+    'y_parity': identity,
 }
-
-
-normalize_transaction = partial(normalize_dict, normalizers=TRANSACTION_NORMALIZERS)
+normalize_transaction = compose(
+    # TODO: At some point (the merge?), the inclusion of gas_price==max_fee_per_gas will be removed
+    #  from dynamic fee transactions and we can get rid of this behavior.
+    #  https://github.com/ethereum/execution-specs/pull/251
+    remove_gas_price_if_dynamic_fee_transaction,
+    apply_formatters_to_dict(TRANSACTION_NORMALIZERS),
+)
 
 
 LOG_ENTRY_NORMALIZERS = {
@@ -109,8 +147,6 @@ LOG_ENTRY_NORMALIZERS = {
     'data': decode_hex,
     'topics': partial(normalize_array, normalizer=decode_hex),
 }
-
-
 normalize_log_entry = partial(normalize_dict, normalizers=LOG_ENTRY_NORMALIZERS)
 
 

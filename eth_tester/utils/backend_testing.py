@@ -51,12 +51,15 @@ from .throws_contract import (
     _make_call_throws_transaction,
     _decode_throws_result,
 )
+from .. import (
+    PyEVMBackend,
+)
 
 
 PK_A = '0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d'
 PK_A_ADDRESS = '0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd'
 
-NON_DEFAULT_GAS_PRICE = 504
+NON_DEFAULT_GAS_PRICE = 1000000000
 
 SIMPLE_TRANSACTION = {
     "to": BURN_ADDRESS,
@@ -96,6 +99,7 @@ BLOCK_KEYS = {
     "timestamp",
     "transactions",
     "uncles",
+    "base_fee_per_gas",
 }
 
 
@@ -119,13 +123,22 @@ class BaseTestBackendDirect:
         txn = eth_tester.get_transaction_by_hash(txn_hash)
         self._check_transactions(transaction, txn)
 
-    def _check_transactions(self, expected_transaction, actual_transaction):
+    @staticmethod
+    def _check_transactions(expected_transaction, actual_transaction):
         assert is_same_address(actual_transaction['from'], expected_transaction['from'])
         if 'to' not in expected_transaction or expected_transaction['to'] == '':
             assert actual_transaction['to'] == ''
         else:
             assert is_same_address(actual_transaction['to'], expected_transaction['to'])
-        assert actual_transaction['gas_price'] == expected_transaction['gas_price']
+
+        if expected_transaction.get('gas_price'):
+            assert actual_transaction['gas_price'] == expected_transaction['gas_price']
+        else:
+            assert actual_transaction['max_fee_per_gas'] == expected_transaction['max_fee_per_gas']
+            assert (
+                actual_transaction['max_priority_fee_per_gas'] ==
+                expected_transaction['max_priority_fee_per_gas']
+            )
         assert actual_transaction['gas'] == expected_transaction['gas']
         assert actual_transaction['value'] == expected_transaction['value']
 
@@ -265,10 +278,12 @@ class BaseTestBackendDirect:
             "gas": 21000,
             "value": 1 * denoms.ether,
         })
-        # transaction: nonce=0, gas_price=1, gas=21000, to=BURN_ADDRESS, value=50000, data=b'',
-        #     and signed with `test_key`
-        transaction_hex = "0xf861800182520894dead00000000000000000000000000000000000082c350801ba073128146b850e2d38a4742d1afa48544e0ac6bc4b4dcb562583cd2224ad9a082a0680086a2801d02b12431cc3c79ec6c6a0cb846a0b3a8ec970f6e1b76d55ee7e2"  # noqa: E501
 
+        # transaction: 'to': '0x19E7E376E7C213B7E7e7e46cc70A5dD086DAff2A', 'from':
+        # '0x19E7E376E7C213B7E7e7e46cc70A5dD086DAff2A',  'value': 1337, 'nonce': 0
+        # 'gas': 21000, 'gasPrice': 1000000000, and signed with `test_key`
+
+        transaction_hex = "0xf86580843b9aca008252089419e7e376e7c213b7e7e7e46cc70a5dd086daff2a820539801ba0b101c1f9dc0c588c0194a1093f06e6b30d1fd16d31014ef5851311b7bfbf419ea01cfa8757b7863a630ef7491c62b03d9cd9dff395f61b5df500cc665f0fa5b027"  # noqa: E501
         if is_pending:
             eth_tester.disable_auto_mine_transactions()
 
@@ -317,6 +332,69 @@ class BaseTestBackendDirect:
         assert accounts, "No accounts available for transaction sending"
 
         self._send_and_check_transaction(eth_tester, test_transaction, accounts[0])
+
+    def test_send_access_list_transaction(self, eth_tester):
+        accounts = eth_tester.get_accounts()
+        assert accounts, "No accounts available for transaction sending"
+
+        access_list_transaction = {
+            'chain_id': 131277322940537,
+            'from': accounts[0],
+            'to': accounts[0],
+            'value': 1,
+            'gas': 40000,
+            'gas_price': 1000000000,
+            'access_list': [],
+        }
+        self._send_and_check_transaction(eth_tester, access_list_transaction, accounts[0])
+
+        # with access list
+        access_list_transaction['access_list'] = (
+            {
+                'address': '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+                'storage_keys': (
+                    '0x0000000000000000000000000000000000000000000000000000000000000003',
+                    '0x0000000000000000000000000000000000000000000000000000000000000007',
+                )
+            },
+            {
+                'address': '0xbb9bc244d798123fde783fcc1c72d3bb8c189413',
+                'storage_keys': ()
+            },
+        )
+        self._send_and_check_transaction(eth_tester, access_list_transaction, accounts[0])
+
+    def test_send_dynamic_fee_transaction(self, eth_tester):
+        accounts = eth_tester.get_accounts()
+        assert accounts, "No accounts available for transaction sending"
+
+        dynamic_fee_transaction = {
+            'chain_id': 131277322940537,
+            'from': accounts[0],
+            'to': accounts[0],
+            'value': 1,
+            'gas': 40000,
+            'max_fee_per_gas': 2000000000,
+            'max_priority_fee_per_gas': 1000000000,
+            'access_list': [],
+        }
+        self._send_and_check_transaction(eth_tester, dynamic_fee_transaction, accounts[0])
+
+        # with access list
+        dynamic_fee_transaction['access_list'] = (
+            {
+                'address': '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+                'storage_keys': (
+                    '0x0000000000000000000000000000000000000000000000000000000000000003',
+                    '0x0000000000000000000000000000000000000000000000000000000000000007',
+                )
+            },
+            {
+                'address': '0xbb9bc244d798123fde783fcc1c72d3bb8c189413',
+                'storage_keys': ()
+            },
+        )
+        self._send_and_check_transaction(eth_tester, dynamic_fee_transaction, accounts[0])
 
     def test_block_number_auto_mine_transactions_enabled(self, eth_tester):
         eth_tester.mine_blocks()
@@ -526,6 +604,7 @@ class BaseTestBackendDirect:
             block = eth_tester.get_block_by_hash(block_hash)
             assert block['number'] == block_number
             assert block['hash'] == block_hash
+            assert block['base_fee_per_gas'] is not None
 
     def test_get_block_by_hash_full_transactions(self, eth_tester):
         eth_tester.mine_blocks(2)
@@ -1289,8 +1368,16 @@ class BaseTestBackendDirect:
     def test_receipt_gas_used_computation(self, eth_tester):
         eth_tester.disable_auto_mine_transactions()
 
+        if isinstance(eth_tester.backend, PyEVMBackend):
+            chain_id = eth_tester.backend.chain.chain_id
+
         tx_hashes = []
         for i in range(4):
+            # TODO: PyEvm backend was not consistent in keeping the chain_id, so reset it. This
+            #  needs to be investigated further.
+            if isinstance(eth_tester.backend, PyEVMBackend):
+                eth_tester.backend.chain.chain_id = chain_id
+
             tx = {
                 'from': eth_tester.get_accounts()[i],
                 'to': eth_tester.get_accounts()[i + 1],

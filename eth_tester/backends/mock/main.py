@@ -304,7 +304,7 @@ class MockBackend(BaseChainBackend):
         return full_transaction['hash']
 
     def send_signed_transaction(self, signed_transaction):
-        transaction = dissoc(signed_transaction, 'r', 's', 'v')
+        transaction = dissoc(signed_transaction, 'r', 's', 'v', 'y_parity')
         return self.send_transaction(transaction)
 
     def estimate_gas(self, transaction):

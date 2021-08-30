@@ -1,6 +1,9 @@
 from __future__ import absolute_import
 
+from toolz import assoc, curry
+
 from eth_utils.curried import (
+    apply_formatters_to_dict,
     apply_one_of_formatters,
     to_checksum_address,
     encode_hex,
@@ -21,6 +24,7 @@ from .common import (
     normalize_dict,
     normalize_array,
 )
+from ..utils.encoding import int_to_32byte_big_endian
 
 
 normalize_account = to_checksum_address
@@ -31,7 +35,29 @@ to_empty_or_checksum_address = apply_one_of_formatters((
     (is_canonical_address, to_checksum_address),
 ))
 
+
+@curry
+def fill_gas_price_if_dynamic_fee_transaction(txn_dict):
+    if all(_ in txn_dict for _ in ('max_fee_per_gas', 'max_priority_fee_per_gas')):
+        return assoc(txn_dict, 'gas_price', txn_dict.get('max_fee_per_gas'))
+    else:
+        return txn_dict
+
+
+def _normalize_outbound_access_list(access_list):
+    return tuple([
+        {
+            'address': to_checksum_address(entry[0]),
+            'storage_keys': tuple(
+                [encode_hex(int_to_32byte_big_endian(k)) for k in entry[1]]
+            )
+        }
+        for entry in access_list
+    ])
+
+
 TRANSACTION_NORMALIZERS = {
+    "chain_id": identity,
     "hash": encode_hex,
     "nonce": identity,
     "block_hash": partial(normalize_if, conditional_fn=is_bytes, normalizer=encode_hex),
@@ -42,14 +68,22 @@ TRANSACTION_NORMALIZERS = {
     "value": identity,
     "gas": identity,
     "gas_price": identity,
+    "max_fee_per_gas": identity,
+    "max_priority_fee_per_gas": identity,
     "data": encode_hex,
-    "v": identity,
+    "access_list": _normalize_outbound_access_list,
     "r": identity,
     "s": identity,
+    "v": identity,
+    "y_parity": identity,
 }
-
-
-normalize_transaction = partial(normalize_dict, normalizers=TRANSACTION_NORMALIZERS)
+normalize_transaction = compose(
+    # TODO: At some point (the merge?), the inclusion of gas_price==max_fee_per_gas will be removed
+    #  from dynamic fee transactions and we can get rid of this behavior.
+    #  https://github.com/ethereum/execution-specs/pull/251
+    fill_gas_price_if_dynamic_fee_transaction,
+    apply_formatters_to_dict(TRANSACTION_NORMALIZERS),
+)
 
 
 def is_transaction_hash_list(value):
@@ -65,6 +99,7 @@ BLOCK_NORMALIZERS = {
     "hash": encode_hex,
     "parent_hash": encode_hex,
     "nonce": encode_hex,
+    "base_fee_per_gas": identity,
     "sha3_uncles": encode_hex,
     "logs_bloom": identity,
     "transactions_root": encode_hex,

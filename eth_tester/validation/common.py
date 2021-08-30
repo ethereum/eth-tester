@@ -4,6 +4,8 @@ import math
 
 import functools
 
+from toolz import dissoc
+
 from eth_utils import (
     is_boolean,
     is_bytes,
@@ -111,6 +113,7 @@ def validate_no_extra_keys(value, allowed_keys):
 
 def validate_has_required_keys(value, required_keys):
     missing_keys = tuple(sorted(set(required_keys).difference(value.keys())))
+    missing_keys = dissoc(missing_keys, 'base_fee_per_gas')  # pre-london blocks won't have this
     if missing_keys:
         raise ValidationError(
             "Blocks must contain all of the keys '{}'.  Missing the keys: '{}'".format(
@@ -120,10 +123,17 @@ def validate_has_required_keys(value, required_keys):
         )
 
 
+def validate_transaction_params(value):
+    if "gas_price" in value and any(_ in value for _ in (
+        "max_fee_per_gas", "max_priority_fee_per_gas"
+    )):
+        raise ValidationError("legacy gas price and dynamic fee transaction parameters present")
+
+
 @to_dict
 def _accumulate_dict_errors(value, validators):
     for key, validator_fn in validators.items():
-        item = value[key]
+        item = value.get(key)
         try:
             validator_fn(item)
         except ValidationError as err:
@@ -133,8 +143,10 @@ def _accumulate_dict_errors(value, validators):
 def validate_dict(value, key_validators):
     validate_is_dict(value)
     validate_no_extra_keys(value, key_validators.keys())
-    validate_has_required_keys(value, key_validators.keys())
-
+    if "to" in key_validators:
+        validate_transaction_params(value)  # if transaction
+    else:
+        validate_has_required_keys(value, key_validators.keys())
     key_errors = _accumulate_dict_errors(value, key_validators)
     if key_errors:
         key_messages = tuple(

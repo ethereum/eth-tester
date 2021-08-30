@@ -1,18 +1,10 @@
 from __future__ import unicode_literals
 
-import time
-
 import pytest
-
-try:
-    from unittest import mock
-except ImportError:
-    import mock
+from toolz import dissoc, merge
 
 from eth_utils import (
-    to_dict,
     encode_hex,
-    decode_hex,
 )
 
 from eth_tester.exceptions import (
@@ -58,20 +50,22 @@ HASH32_AS_TEXT = '\x00' * 32
 HASH31 = b'\x00' * 31
 
 
-def _make_transaction(hash=ZERO_32BYTES,
-                      nonce=0,
-                      block_hash=ZERO_32BYTES,
-                      block_number=0,
-                      transaction_index=0,
-                      _from=ZERO_ADDRESS,
-                      to=ZERO_ADDRESS,
-                      value=0,
-                      gas=21000,
-                      gas_price=1,
-                      data=b'',
-                      v=0,
-                      r=0,
-                      s=0):
+def _make_legacy_txn(
+    hash=ZERO_32BYTES,
+    nonce=0,
+    block_hash=ZERO_32BYTES,
+    block_number=0,
+    transaction_index=0,
+    _from=ZERO_ADDRESS,
+    to=ZERO_ADDRESS,
+    value=0,
+    gas=21000,
+    gas_price=1,
+    data=b'',
+    v=0,
+    r=0,
+    s=0
+):
     return {
         "hash": hash,
         "nonce": nonce,
@@ -90,32 +84,91 @@ def _make_transaction(hash=ZERO_32BYTES,
     }
 
 
+def _make_access_list_txn(chain_id=131277322940537, access_list=[], y_parity=0, **kwargs,):
+    legacy_kwargs = dissoc(dict(**kwargs), "chain_id", "access_list", "y_parity")
+    return merge(
+        dissoc(_make_legacy_txn(**legacy_kwargs), "v", ),
+        {
+            "chain_id": chain_id,
+            "access_list": access_list,
+            "y_parity": y_parity,
+        }
+    )
+
+
+def _make_dynamic_fee_txn(
+    chain_id=131277322940537,
+    max_fee_per_gas=2000000000,
+    max_priority_fee_per_gas=1000000000,
+    access_list=[],
+    y_parity=0,
+    **kwargs,
+):
+    legacy_kwargs = dissoc(
+        dict(**kwargs),
+        "chain_id", "max_fee_per_gas", "max_priority_fee_per_gas", "access_list", "y_parity"
+    )
+    return merge(
+        dissoc(_make_legacy_txn(**legacy_kwargs), "v", "gas_price"),
+        {
+            "chain_id": chain_id,
+            "max_fee_per_gas": max_fee_per_gas,
+            "max_priority_fee_per_gas": max_priority_fee_per_gas,
+            "access_list": access_list,
+            "y_parity": y_parity,
+        }
+    )
+
+
 @pytest.mark.parametrize(
     "transaction,is_valid",
     (
-        (_make_transaction(),  True),
-        (_make_transaction(hash=HASH32_AS_TEXT),  False),
-        (_make_transaction(hash=HASH31),  False),
-        (_make_transaction(nonce=-1),  False),
-        (_make_transaction(nonce=1.0),  False),
-        (_make_transaction(nonce=True),  False),
-        (_make_transaction(value=-1),  False),
-        (_make_transaction(value=1.0),  False),
-        (_make_transaction(value=True),  False),
-        (_make_transaction(block_number=-1),  False),
-        (_make_transaction(block_number=1.0),  False),
-        (_make_transaction(block_number=True),  False),
-        (_make_transaction(gas=-1),  False),
-        (_make_transaction(gas=1.0),  False),
-        (_make_transaction(gas=True),  False),
-        (_make_transaction(gas_price=-1),  False),
-        (_make_transaction(gas_price=1.0),  False),
-        (_make_transaction(gas_price=True),  False),
-        (_make_transaction(data=''),  False),
-        (_make_transaction(data='0x'),  False),
-        (_make_transaction(block_hash=HASH32_AS_TEXT),  False),
-        (_make_transaction(block_hash=HASH31),  False),
-        (_make_transaction(transaction_index=None, block_hash=None, block_number=None),  True),
+        (_make_legacy_txn(),  True),
+        (_make_access_list_txn(),  True),
+        (_make_dynamic_fee_txn(),  True),
+        (_make_legacy_txn(hash=HASH32_AS_TEXT),  False),
+        (_make_legacy_txn(hash=HASH31),  False),
+        (_make_legacy_txn(nonce=-1),  False),
+        (_make_legacy_txn(nonce=1.0),  False),
+        (_make_legacy_txn(nonce=True),  False),
+        (_make_legacy_txn(value=-1),  False),
+        (_make_legacy_txn(value=1.0),  False),
+        (_make_legacy_txn(value=True),  False),
+        (_make_legacy_txn(block_number=-1),  False),
+        (_make_legacy_txn(block_number=1.0),  False),
+        (_make_legacy_txn(block_number=True),  False),
+        (_make_legacy_txn(gas=-1),  False),
+        (_make_legacy_txn(gas=1.0),  False),
+        (_make_legacy_txn(gas=True),  False),
+        (_make_legacy_txn(gas_price=-1),  False),
+        (_make_legacy_txn(gas_price=1.0),  False),
+        (_make_legacy_txn(gas_price=True),  False),
+        (_make_legacy_txn(data=''),  False),
+        (_make_legacy_txn(data='0x'),  False),
+        (_make_legacy_txn(block_hash=HASH32_AS_TEXT),  False),
+        (_make_legacy_txn(block_hash=HASH31),  False),
+        (_make_legacy_txn(transaction_index=None, block_hash=None, block_number=None), True),
+        (_make_access_list_txn(transaction_index=None, block_hash=None, block_number=None,), True),
+        (_make_dynamic_fee_txn(transaction_index=None, block_hash=None, block_number=None,), True),
+        (_make_access_list_txn(chain_id='1'), False),
+        (_make_dynamic_fee_txn(chain_id='1'), False),
+        (_make_access_list_txn(chain_id=-1), False),
+        (_make_dynamic_fee_txn(chain_id=-1), False),
+        (_make_access_list_txn(chain_id=None), False),
+        (_make_dynamic_fee_txn(chain_id=None), False),
+        (_make_dynamic_fee_txn(max_fee_per_gas=1.0), False),
+        (_make_dynamic_fee_txn(max_priority_fee_per_gas=1.0), False),
+        (_make_dynamic_fee_txn(max_fee_per_gas='1'), False),
+        (_make_dynamic_fee_txn(max_priority_fee_per_gas='1'), False),
+        (_make_access_list_txn(access_list=((b'\xf0' * 20, (0, 2)),),), True),
+        (_make_dynamic_fee_txn(access_list=((b'\xef' * 20, (1, 2, 3, 4)),),), True),
+        (_make_access_list_txn(access_list=()), True),
+        (_make_dynamic_fee_txn(access_list=()), True),
+        (_make_access_list_txn(access_list=((b'\xf0' * 19, (0, 2)),),), False),
+        (_make_dynamic_fee_txn(access_list=((b'\xf0' * 19, ()),),), False),
+        (_make_access_list_txn(access_list=((b'\xf0' * 20, ('0', 2)),),), False),
+        (_make_dynamic_fee_txn(access_list=((b'\xf0' * 20, (b'', 1)),),), False),
+        (_make_dynamic_fee_txn(access_list=(('', (1, 2)),),), False),
     )
 )
 def test_transaction_output_validation(validator, transaction, is_valid):
@@ -252,8 +305,9 @@ def _make_block(number=0,
                 gas_used=21000,
                 timestamp=4000000,
                 transactions=None,
-                uncles=None):
-    return {
+                uncles=None,
+                base_fee_per_gas=1000000000):
+    block = {
         "number": number,
         "hash": hash,
         "parent_hash": parent_hash,
@@ -273,7 +327,9 @@ def _make_block(number=0,
         "timestamp": timestamp,
         "transactions": transactions or [],
         "uncles": uncles or [],
+        "base_fee_per_gas": base_fee_per_gas,
     }
+    return block
 
 
 @pytest.mark.parametrize(
@@ -321,11 +377,19 @@ def _make_block(number=0,
         (_make_block(timestamp=-1),  False),
         (_make_block(timestamp=1.0),  False),
         (_make_block(timestamp=True),  False),
+        (_make_block(base_fee_per_gas=1000000000),  True),
+        (_make_block(base_fee_per_gas=-1000000000),  False),
+        (_make_block(base_fee_per_gas=1000000000.0),  False),
+        (_make_block(base_fee_per_gas='1000000000'),  False),
         (_make_block(uncles=[ZERO_32BYTES]),  True),
         (_make_block(uncles=[ZERO_32BYTES, HASH32_AS_TEXT]),  False),
         (_make_block(transactions=[ZERO_32BYTES]),  True),
-        (_make_block(transactions=[_make_transaction()]),  True),
-        (_make_block(transactions=[ZERO_32BYTES, _make_transaction()]),  False),
+        (_make_block(transactions=[_make_legacy_txn()]),  True),
+        (_make_block(transactions=[ZERO_32BYTES, _make_legacy_txn()]), False),
+        (_make_block(transactions=[_make_access_list_txn()]), True),
+        (_make_block(transactions=[ZERO_32BYTES, _make_access_list_txn()]), False),
+        (_make_block(transactions=[_make_dynamic_fee_txn()]), True),
+        (_make_block(transactions=[ZERO_32BYTES, _make_dynamic_fee_txn()]), False),
         (_make_block(transactions=[ZERO_32BYTES, HASH32_AS_TEXT]),  False),
     )
 )
