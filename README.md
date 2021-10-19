@@ -38,7 +38,7 @@ pip install eth-tester
 >>> t.send_transaction({
 ...     'from': '0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf',
 ...     'to': '0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF',
-...     'gas': 30000,, 
+...     'gas': 30000,
 ...     'value': 1,
 ...     'max_fee_per_gas': 1000000000,
 ...     'max_priority_fee_per_gas': 1000000000,
@@ -60,9 +60,10 @@ pip install eth-tester
 '0xc20b90af87bc65c3d748cf0a1fa54f3a86ffc94348e0fd91a70f1c5ba6ef4109'
 
 >>> t.get_transaction_by_hash('0xc20b90af87bc65c3d748cf0a1fa54f3a86ffc94348e0fd91a70f1c5ba6ef4109')
-{'hash': '0xc20b90af87bc65c3d748cf0a1fa54f3a86ffc94348e0fd91a70f1c5ba6ef4109',
+{'type': '0x2',
+ 'hash': '0xc20b90af87bc65c3d748cf0a1fa54f3a86ffc94348e0fd91a70f1c5ba6ef4109',
  'nonce': 0,
- 'block_hash': '0xd481955268d1f3db58ee61685a899a35e33e8fd35b9cc0812f85b9f06757140e',
+ 'block_hash': '0x28b95514984b0abbd91d88f1a542eaeeb810c24e0234e09891b7d6b3f94f47ed',
  'block_number': 1,
  'transaction_index': 0,
  'from': '0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf',
@@ -80,19 +81,21 @@ pip install eth-tester
     '0x0000000000000000000000000000000000000000000000000000000000000007')},
   {'address': '0xBB9bc244D798123fDe783fCc1C72d3Bb8C189413',
    'storage_keys': ()}),
- 'y_parity': 0}
+ 'y_parity': 0,
+ 'gas_price': 1000000000}
 
 
-
->>> t.get_transaction_receipt('0x86acbf39865cd2fe86db7203742d2652bc1b58b10a3996befe1ee81738f1f58e')
+>>> t.get_transaction_receipt('0xc20b90af87bc65c3d748cf0a1fa54f3a86ffc94348e0fd91a70f1c5ba6ef4109')
 {'transaction_hash': '0xc20b90af87bc65c3d748cf0a1fa54f3a86ffc94348e0fd91a70f1c5ba6ef4109',
  'transaction_index': 0,
  'block_number': 1,
- 'block_hash': '0xd481955268d1f3db58ee61685a899a35e33e8fd35b9cc0812f85b9f06757140e',
+ 'block_hash': '0x28b95514984b0abbd91d88f1a542eaeeb810c24e0234e09891b7d6b3f94f47ed',
  'cumulative_gas_used': 29600,
  'gas_used': 29600,
+ 'effective_gas_price': 1000000000,
  'contract_address': None,
  'logs': (),
+ 'type': '0x2',
  'status': 1}
 ```
 
@@ -396,25 +399,26 @@ Returns the transaction for the given hash, raising a
 transaction cannot be found.
 
 ```python
->>> t.get_transaction_by_hash('0x140c1da1370a908e4c0f7c6e33bb97182011707c6a9aff954bef1084c8a48b25')
-{'hash': '0x256baca0284f7b76238e56964dec01dce423cb11415e5f47b341a0af088bb85d',
- 'nonce': 1,
- 'block_hash': '0xc25d844e866b4f3f3126e5d5ceba949a7ee12b597a3d54115da63e8596531f58',
- 'block_number': 2,
+>>> t.get_transaction_by_hash('0x21ae665f707e12a5f1bb13ef8c706b65cc5accfd03e7067ce683d831f51122e6')
+{'type': '0x2',
+ 'hash': '0x21ae665f707e12a5f1bb13ef8c706b65cc5accfd03e7067ce683d831f51122e6',
+ 'nonce': 0,
+ 'block_hash': '0x810731efeb7498fc0ac3bc7c72a71571b672c9fdbfbfd8b435f483e368e8ef7e',
+ 'block_number': 1,
  'transaction_index': 0,
- 'from': '0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf',
- 'to': '0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF',
- 'value': 1,
- 'gas': 30000,
+ 'from': '0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF',
+ 'to': '0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf',
+ 'value': 1337,
+ 'gas': 21000,
  'data': '0x',
- 'r': 113110058401990022576610285176909677614233866647576678068104192469544316041227,
- 's': 56040876284016779278390826082806410689817968450346221730224961588578254081442,
+ 'r': 1713666669454033023988006960017431058214051587080823768269189498559514600280,
+ 's': 32003859822305799628524852194521134173285969678963273753063458725692016415033,
  'chain_id': 131277322940537,
- 'max_fee_per_gas': 1000000000,
- 'max_priority_fee_per_gas': 1000000000,
+ 'max_fee_per_gas': 2000000000,
+ 'max_priority_fee_per_gas': 500000000,
  'access_list': (),
- 'y_parity': 1}
-
+ 'y_parity': 0,
+ 'gas_price': 1375000000}
 ```
 
 > Note: For unmined transaction, `transaction_index`, `block_number` and `block_hash` will all be `None`.
@@ -537,6 +541,8 @@ values.
 * `gas`: Sets the gas limit for transaction execution (integer).
 * `value`: The amount of ether in wei that should be sent with the transaction (integer).
 * `data`: The data for the transaction (hexadecimal string).
+* `chain_id`: The integer id for the chain the transaction is meant to interact with.
+
 
 In addition to the above, the following parameters are added based on the type of transaction being sent:
 
@@ -544,13 +550,11 @@ In addition to the above, the following parameters are added based on the type o
 * `gas_price`: Sets the price per unit of gas in wei that will be paid for transaction execution (integer).
 
 #### Access list transactions (EIP-2930)
-* `chain_id`: The integer id for the chain the transaction is meant to interact with
 * `gas_price`: Sets the price per unit of gas in wei that will be paid for transaction execution (integer).
 * `access_list` (optional): Specifies accounts and storage slots expected to be accessed, based on the transaction, in order to 
 gain a discount on the gas for those executions (see quickstart example for usage).
 
 #### Dynamic fee transactions (EIP-1559)
-* `chain_id`: The integer id for the chain the transaction is meant to interact with
 * `max_fee_per_gas`: Sets the maximum fee per unit of gas in wei that will be paid for transaction execution (integer).
 * `max_priority_fee_per_gas`: Sets the fee per unit of gas in wei that is sent to the miner as an incentive for mining the transaction (integer).
 * `access_list` (optional): Specifies accounts and storage slots expected to be accessed, based on the transaction, in order to 
@@ -824,20 +828,15 @@ when initializing a backend.  Only default values can be overridden or a `ValueE
 # Default Genesis Parameters
 
 default_genesis_params = {
-    "bloom": 0,
     "coinbase": GENESIS_COINBASE,
     "difficulty": GENESIS_DIFFICULTY,
     "extra_data": GENESIS_EXTRA_DATA,
     "gas_limit": GENESIS_GAS_LIMIT,
-    "gas_used": 0,
     "mix_hash": GENESIS_MIX_HASH,
     "nonce": GENESIS_NONCE,
-    "block_number": GENESIS_BLOCK_NUMBER,
-    "parent_hash": GENESIS_PARENT_HASH,
     "receipt_root": BLANK_ROOT_HASH,
     "timestamp": int(time.time()),
     "transaction_root": BLANK_ROOT_HASH,
-    "uncles_hash": EMPTY_RLP_LIST_HASH
 }
 ```
 
@@ -862,7 +861,6 @@ to `PyEVM.generate_genesis_params`.
 #     "receipt_root": BLANK_ROOT_HASH,
 #     "timestamp": int(time.time()),
 #     "transaction_root": BLANK_ROOT_HASH,
-#     "base_fee_per_gas": 1000000000,
 # }
 ```
 

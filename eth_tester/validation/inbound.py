@@ -30,6 +30,7 @@ from eth_tester.exceptions import (
 
 from .common import (
     validate_positive_integer,
+    validate_transaction_type,
     validate_uint256,
     validate_uint8,
     validate_text,
@@ -147,8 +148,7 @@ def validate_private_key(value):
 
 
 TRANSACTION_KEYS = {
-    # note that the transaction 'type' is not included, though it is a valid param, because it will
-    # never be passed to the backend and thus is not necessary.
+    'type',
     'chain_id',
     'from',
     'to',
@@ -165,8 +165,8 @@ TRANSACTION_KEYS = {
 SIGNED_TRANSACTION_KEYS = {
     'r',
     's',
-    'v',
-    'y_parity',
+    'v',  # legacy transactions only
+    'y_parity',  # typed transactions only, instead of 'v'
 }
 
 TRANSACTION_INTERNAL_TYPE_INFO = {
@@ -177,6 +177,12 @@ TRANSACTION_INTERNAL_TYPE_INFO = {
 }
 
 ALLOWED_TRANSACTION_INTERNAL_TYPES = set(TRANSACTION_INTERNAL_TYPE_INFO.keys())
+
+
+def _is_typed_transaction(txn_dict: dict) -> bool:
+    return any(_ in txn_dict.keys() for _ in (
+        'max_fee_per_gas', 'max_priority_fee_per_gas', 'access_list'
+    ))
 
 
 def validate_transaction(value, txn_internal_type):
@@ -198,20 +204,16 @@ def validate_transaction(value, txn_internal_type):
 
     if txn_internal_type == 'send':
         required_keys = {'from', 'gas'}
-
     elif txn_internal_type == 'send_signed':
         signed_transaction_keys = SIGNED_TRANSACTION_KEYS.copy()
-        if any(_ in value.keys() for _ in (
-            'max_fee_per_gas', 'max_priority_fee_per_gas', 'access_list'
-        )):
-            signed_transaction_keys.remove('v')  # typed txn
+        if _is_typed_transaction(value):
+            signed_transaction_keys.remove('v')
         else:
-            signed_transaction_keys.remove('y_parity')  # legacy txn
+            # legacy transaction
+            signed_transaction_keys.remove('y_parity')
         required_keys = {'from', 'gas'} | signed_transaction_keys
-
     elif txn_internal_type in {'estimate', 'call'}:
         required_keys = {'from'}
-
     else:
         raise Exception("Invariant: code path should be unreachable")
 
@@ -219,8 +221,14 @@ def validate_transaction(value, txn_internal_type):
     if missing_required_keys:
         raise ValidationError(
             "Transaction is missing the required keys: '{}'".format(
-                "/".join(missing_required_keys),)
+                "/".join(missing_required_keys),
+            )
         )
+
+    if 'type' in value:
+        # type is validated but not required. If this value exists, it will be popped out of the
+        # dict and the type will instead be inferred from the transaction params.
+        validate_transaction_type(value['type'])
 
     if 'from' in value:
         validate_account(value['from'])
@@ -238,9 +246,13 @@ def validate_transaction(value, txn_internal_type):
 
     if 'max_fee_per_gas' in value:
         validate_uint256(value['max_fee_per_gas'])
+        if 'gas_price' in value:
+            raise ValidationError('Mixed legacy and dynamic fee transaction values')
 
     if 'max_priority_fee_per_gas' in value:
         validate_uint256(value['max_priority_fee_per_gas'])
+        if 'gas_price' in value:
+            raise ValidationError('Mixed legacy and dynamic fee transaction values')
 
     if 'value' in value:
         validate_uint256(value['value'])
@@ -250,7 +262,7 @@ def validate_transaction(value, txn_internal_type):
 
     if 'data' in value:
         bad_data_message = (
-            "Transaction \'data\' must be a hexadecimal encoded string.  Got: "
+            "Transaction 'data' must be a hexadecimal encoded string.  Got: "
             "{}".format(value['data'])
         )
         if not is_text(value['data']):
@@ -272,10 +284,11 @@ def validate_transaction(value, txn_internal_type):
     if txn_internal_type == 'send_signed':
         validate_uint256(value['r'])
         validate_uint256(value['s'])
-        try:
-            validate_uint8(value['v'])  # legacy transaction
-        except KeyError:
-            validate_uint8(value['y_parity'])  # typed transaction
+        if _is_typed_transaction(value):
+            validate_uint8(value['y_parity'])
+        else:
+            # legacy transaction
+            validate_uint8(value['v'])
 
 
 def _validate_inbound_access_list(access_list):

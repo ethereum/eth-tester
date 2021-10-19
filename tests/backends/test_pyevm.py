@@ -156,12 +156,10 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         # Test the underlying default parameter merging functionality
         genesis_params = get_default_genesis_params(overrides=param_overrides)
-        # assert genesis_params["block_number"] == 0
         assert genesis_params["gas_limit"] == param_overrides["gas_limit"]
 
         # Use the the staticmethod to generate custom genesis parameters
         genesis_params = PyEVMBackend._generate_genesis_params(param_overrides)
-        # assert genesis_params["block_number"] == 0
         assert genesis_params["gas_limit"] == param_overrides["gas_limit"]
 
         # Only existing default genesis parameter keys can be overridden

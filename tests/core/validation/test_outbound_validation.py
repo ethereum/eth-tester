@@ -67,6 +67,7 @@ def _make_legacy_txn(
     s=0
 ):
     return {
+        "type": '0x0',
         "hash": hash,
         "nonce": nonce,
         "block_hash": block_hash,
@@ -87,8 +88,9 @@ def _make_legacy_txn(
 def _make_access_list_txn(chain_id=131277322940537, access_list=[], y_parity=0, **kwargs,):
     legacy_kwargs = dissoc(dict(**kwargs), "chain_id", "access_list", "y_parity")
     return merge(
-        dissoc(_make_legacy_txn(**legacy_kwargs), "v", ),
+        dissoc(_make_legacy_txn(**legacy_kwargs), "v"),
         {
+            "type": "0x1",
             "chain_id": chain_id,
             "access_list": access_list,
             "y_parity": y_parity,
@@ -96,6 +98,11 @@ def _make_access_list_txn(chain_id=131277322940537, access_list=[], y_parity=0, 
     )
 
 
+# This is an outbound transaction so we still keep the gas_price for now since the gas_price is
+# the min(max_fee_per_gas, base_fee_per_gas + max_priority_fee_per_gas).
+# TODO: Sometime in 2022 the inclusion of gas_price may be removed from dynamic fee
+#  transactions and we can get rid of this behavior.
+#  https://github.com/ethereum/execution-specs/pull/251
 def _make_dynamic_fee_txn(
     chain_id=131277322940537,
     max_fee_per_gas=2000000000,
@@ -109,13 +116,13 @@ def _make_dynamic_fee_txn(
         "chain_id", "max_fee_per_gas", "max_priority_fee_per_gas", "access_list", "y_parity"
     )
     return merge(
-        dissoc(_make_legacy_txn(**legacy_kwargs), "v", "gas_price"),
+        _make_access_list_txn(
+            chain_id=chain_id, access_list=access_list, y_parity=y_parity, **legacy_kwargs
+        ),
         {
-            "chain_id": chain_id,
+            "type": "0x2",
             "max_fee_per_gas": max_fee_per_gas,
             "max_priority_fee_per_gas": max_priority_fee_per_gas,
-            "access_list": access_list,
-            "y_parity": y_parity,
         }
     )
 
@@ -236,10 +243,11 @@ def _make_receipt(transaction_hash=ZERO_32BYTES,
                   block_hash=ZERO_32BYTES,
                   cumulative_gas_used=0,
                   gas_used=21000,
+                  effective_gas_price=1000000000,
                   contract_address=None,
                   logs=None,
-                  state_root=b'\x00'
-                 ):
+                  state_root=b'\x00',
+                  _type='0x0'):
     return {
         "transaction_hash": transaction_hash,
         "transaction_index": transaction_index,
@@ -247,9 +255,11 @@ def _make_receipt(transaction_hash=ZERO_32BYTES,
         "block_hash": block_hash,
         "cumulative_gas_used": cumulative_gas_used,
         "gas_used": gas_used,
+        "effective_gas_price": effective_gas_price,
         "contract_address": contract_address,
         "logs": logs or [],
-        "state_root": state_root
+        "state_root": state_root,
+        "type": _type,
     }
 
 

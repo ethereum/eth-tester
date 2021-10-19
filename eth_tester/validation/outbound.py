@@ -3,7 +3,10 @@ from __future__ import unicode_literals
 from toolz import dissoc, merge
 
 from eth_utils import (
-    is_bytes, is_canonical_address, is_integer, is_list_like,
+    is_bytes,
+    is_canonical_address,
+    is_integer,
+    is_list_like,
 )
 
 from eth_utils.toolz import (
@@ -26,6 +29,7 @@ from .common import (
     validate_bytes,
     validate_positive_integer,
     validate_dict,
+    validate_transaction_type,
     validate_uint256,
 )
 
@@ -112,6 +116,7 @@ def _validate_outbound_access_list(access_list):
 
 
 LEGACY_TRANSACTION_VALIDATORS = {
+    "type": validate_transaction_type,
     "hash": validate_32_byte_string,
     "nonce": validate_uint256,
     "block_hash": if_not_null(validate_32_byte_string),
@@ -135,7 +140,7 @@ ACCESS_LIST_TRANSACTION_VALIDATORS = merge(
     {
         "chain_id": validate_uint256,
         "y_parity": validate_y_parity,
-        "access_list": if_not_null(_validate_outbound_access_list),
+        "access_list": _validate_outbound_access_list,
     }
 )
 validate_access_list_transaction = partial(
@@ -144,7 +149,7 @@ validate_access_list_transaction = partial(
 
 
 DYNAMIC_FEE_TRANSACTION_VALIDATORS = merge(
-    dissoc(ACCESS_LIST_TRANSACTION_VALIDATORS, 'gas_price'),  # max fees in place of gas_price
+    ACCESS_LIST_TRANSACTION_VALIDATORS,
     {
         "max_fee_per_gas": validate_uint256,
         "max_priority_fee_per_gas": validate_uint256,
@@ -171,10 +176,12 @@ RECEIPT_VALIDATORS = {
     "block_number": if_not_null(validate_positive_integer),
     "block_hash": if_not_null(validate_32_byte_string),
     "cumulative_gas_used": validate_positive_integer,
+    "effective_gas_price": if_not_null(validate_positive_integer),
     "gas_used": validate_positive_integer,
     "contract_address": if_not_null(validate_canonical_address),
     "logs": partial(validate_array, validator=validate_log_entry),
     "state_root": validate_bytes,
+    "type": validate_transaction_type,
 }
 validate_receipt = partial(validate_dict, key_validators=RECEIPT_VALIDATORS)
 

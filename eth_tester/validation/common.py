@@ -4,11 +4,9 @@ import math
 
 import functools
 
-from toolz import dissoc
-
 from eth_utils import (
-    is_boolean,
     is_bytes,
+    is_hexstr,
     is_text,
     is_dict,
     is_integer,
@@ -34,7 +32,7 @@ def validate_positive_integer(value):
     error_message = "Value must be positive integers.  Got: {}".format(
         value,
     )
-    if not is_integer(value) or is_boolean(value):
+    if not is_integer(value):
         raise ValidationError(error_message)
     elif value < 0:
         raise ValidationError(error_message)
@@ -113,27 +111,19 @@ def validate_no_extra_keys(value, allowed_keys):
 
 def validate_has_required_keys(value, required_keys):
     missing_keys = tuple(sorted(set(required_keys).difference(value.keys())))
-    missing_keys = dissoc(missing_keys, 'base_fee_per_gas')  # pre-london blocks won't have this
     if missing_keys:
         raise ValidationError(
-            "Blocks must contain all of the keys '{}'.  Missing the keys: '{}'".format(
+            "dict must contain all of the keys '{}'.  Missing the keys: '{}'".format(
                 "/".join(tuple(sorted(required_keys))),
                 "/".join(missing_keys),
             )
         )
 
 
-def validate_transaction_params(value):
-    if "gas_price" in value and any(_ in value for _ in (
-        "max_fee_per_gas", "max_priority_fee_per_gas"
-    )):
-        raise ValidationError("legacy gas price and dynamic fee transaction parameters present")
-
-
 @to_dict
 def _accumulate_dict_errors(value, validators):
     for key, validator_fn in validators.items():
-        item = value.get(key)
+        item = value[key]
         try:
             validator_fn(item)
         except ValidationError as err:
@@ -143,10 +133,8 @@ def _accumulate_dict_errors(value, validators):
 def validate_dict(value, key_validators):
     validate_is_dict(value)
     validate_no_extra_keys(value, key_validators.keys())
-    if "to" in key_validators:
-        validate_transaction_params(value)  # if transaction
-    else:
-        validate_has_required_keys(value, key_validators.keys())
+    validate_has_required_keys(value, key_validators.keys())
+
     key_errors = _accumulate_dict_errors(value, key_validators)
     if key_errors:
         key_messages = tuple(
@@ -189,6 +177,16 @@ def validate_array(value, validator):
             )
         )
         raise ValidationError(error_message)
+
+
+def validate_transaction_type(value):
+    if not (is_hexstr(value) or is_integer(value)):
+        raise ValidationError(f"Transaction type must be hexadecimal or integer. Got {value}")
+    if is_hexstr(value) and '0x' not in value:
+        raise ValidationError(f"Transaction type string must be hex string. Got: {value}")
+    type_int = int(value, 16) if is_hexstr(value) else int(value)
+    if type_int not in (0, 1, 2):
+        raise ValidationError(f"Transaction type '{value}' not recognized.")
 
 
 def if_not_null(validator_fn):

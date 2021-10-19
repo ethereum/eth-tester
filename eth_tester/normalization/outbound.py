@@ -1,9 +1,6 @@
 from __future__ import absolute_import
 
-from toolz import assoc, curry
-
 from eth_utils.curried import (
-    apply_formatters_to_dict,
     apply_one_of_formatters,
     to_checksum_address,
     encode_hex,
@@ -36,14 +33,6 @@ to_empty_or_checksum_address = apply_one_of_formatters((
 ))
 
 
-@curry
-def fill_gas_price_if_dynamic_fee_transaction(txn_dict):
-    if all(_ in txn_dict for _ in ('max_fee_per_gas', 'max_priority_fee_per_gas')):
-        return assoc(txn_dict, 'gas_price', txn_dict.get('max_fee_per_gas'))
-    else:
-        return txn_dict
-
-
 def _normalize_outbound_access_list(access_list):
     return tuple([
         {
@@ -57,6 +46,7 @@ def _normalize_outbound_access_list(access_list):
 
 
 TRANSACTION_NORMALIZERS = {
+    "type": identity,
     "chain_id": identity,
     "hash": encode_hex,
     "nonce": identity,
@@ -77,13 +67,7 @@ TRANSACTION_NORMALIZERS = {
     "v": identity,
     "y_parity": identity,
 }
-normalize_transaction = compose(
-    # TODO: At some point (the merge?), the inclusion of gas_price==max_fee_per_gas will be removed
-    #  from dynamic fee transactions and we can get rid of this behavior.
-    #  https://github.com/ethereum/execution-specs/pull/251
-    fill_gas_price_if_dynamic_fee_transaction,
-    apply_formatters_to_dict(TRANSACTION_NORMALIZERS),
-)
+normalize_transaction = partial(normalize_dict, normalizers=TRANSACTION_NORMALIZERS)
 
 
 def is_transaction_hash_list(value):
@@ -127,8 +111,6 @@ BLOCK_NORMALIZERS = {
     ),
     "uncles": partial(normalize_array, normalizer=encode_hex),
 }
-
-
 normalize_block = partial(normalize_dict, normalizers=BLOCK_NORMALIZERS)
 
 
@@ -151,8 +133,6 @@ LOG_ENTRY_NORMALIZERS = {
     "data": encode_hex,
     "topics": partial(normalize_array, normalizer=encode_hex),
 }
-
-
 normalize_log_entry = partial(normalize_dict, normalizers=LOG_ENTRY_NORMALIZERS)
 
 
@@ -166,6 +146,7 @@ RECEIPT_NORMALIZERS = {
         normalizer=encode_hex,
     ),
     "cumulative_gas_used": identity,
+    "effective_gas_price": identity,
     "gas_used": identity,
     "contract_address": partial(
         normalize_if,
@@ -174,7 +155,6 @@ RECEIPT_NORMALIZERS = {
     ),
     "logs": partial(normalize_array, normalizer=normalize_log_entry),
     "state_root": identity,
+    "type": identity,
 }
-
-
 normalize_receipt = partial(normalize_dict, normalizers=RECEIPT_NORMALIZERS)

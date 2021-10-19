@@ -182,6 +182,7 @@ def test_filter_params_input_validation(validator, filter_params, is_valid):
 @to_dict
 def _make_transaction(
         chain_id=None,
+        _type=None,
         _from=None,
         to=None,
         gas=None,
@@ -196,6 +197,7 @@ def _make_transaction(
         s=None,
         v=None,
         y_parity=None,):
+    yield from _yield_key_value_if_value_not_none('type', _type)
     yield from _yield_key_value_if_value_not_none('chain_id', chain_id)
     yield from _yield_key_value_if_value_not_none('from', _from)
     yield from _yield_key_value_if_value_not_none('to', to)
@@ -228,6 +230,15 @@ def _make_transaction(
         ('send', _make_transaction(_from=ADDRESS_A, to=b'', gas=21000), False),
         ('send', _make_transaction(_from=decode_hex(ADDRESS_A), to=ADDRESS_B, gas=21000), False),
         ('send', _make_transaction(_from=ADDRESS_A, to=decode_hex(ADDRESS_B), gas=21000), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type='0x0'), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type='0x1'), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type='0x01'), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type='0x2'), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type='0x02'), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type=1), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type='0x3'), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type='1'), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type='x1'), False),
         ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, value=0), True),
         ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, value=-1), False),
         ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, data=''), True),

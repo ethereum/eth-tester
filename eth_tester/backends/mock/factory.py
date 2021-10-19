@@ -1,6 +1,12 @@
 import functools
 import time
 
+from eth_tester.backends.mock.common import (
+    calculate_effective_gas_price,
+)
+from eth_tester.utils.transactions import (
+    extract_transaction_type,
+)
 from eth_utils import (
     apply_to_return_value,
     is_bytes,
@@ -20,6 +26,7 @@ from eth_utils.toolz import (
 )
 
 from eth_tester.backends.common import merge_genesis_overrides
+from eth_tester.constants import DYNAMIC_FEE_TRANSACTION_PARAMS
 from eth_tester.utils.address import (
     generate_contract_address,
 )
@@ -88,55 +95,53 @@ def create_transaction(transaction, block, transaction_index, is_pending, overri
 
 @to_dict
 def _fill_transaction(transaction, block, transaction_index, is_pending, overrides=None):
+    is_dynamic_fee_transaction = (
+        any(_ in transaction for _ in DYNAMIC_FEE_TRANSACTION_PARAMS)
+        or not any(_ in transaction for _ in DYNAMIC_FEE_TRANSACTION_PARAMS + ('gas_price',))
+    )
+
     if overrides is None:
         overrides = {}
 
-    is_dynamic_fee_transaction = (
-        'gas_price' not in transaction and any(
-            _ in transaction for _ in ('max_fee_per_gas', 'max_priority_fee_per_gas')
-        )
-    )
-
-    if 'hash' in overrides:
+    if 'hash' in overrides:  # else calculate hash after all fields are filled
         yield 'hash', overrides['hash']
-    else:
-        # calculate hash after all fields are filled
-        pass
 
-    # this pattern isn't the nicest to read but it keeps things clean. Here, we yield the overrides
-    # value if it exists, else either the transaction value if that exists, or a default value
+    # Here, we yield the key with the overrides value if it exists, else either the transaction
+    # value if it exists or a default value
     yield 'nonce', overrides.get('nonce', 0)
     yield 'from', overrides.get('from', transaction.get('from'))
     yield 'to', overrides.get('to', transaction.get('to', b''))
     yield 'data', overrides.get('data', transaction.get('data', b''))
     yield 'value', overrides.get('value', transaction.get('value', 0))
     yield 'gas', overrides.get('gas', transaction.get('gas'))
-
-    if 'gas_price' in transaction or 'gas_price' in overrides:
-        # gas price is 1 gwei in order to be at least the base fee at the (London) genesis block
-        yield 'gas_price', overrides.get('gas_price', transaction.get('gas_price', 1000000000))
-    else:
-        # if no gas_price specified, default to dynamic fee txn parameters
-        is_dynamic_fee_transaction = True
+    yield 'r', overrides.get('r', transaction.get('r', 12345))
+    yield 's', overrides.get('s', transaction.get('s', 67890))
 
     if is_dynamic_fee_transaction:
+        # dynamic fee transaction (type = 2)
         yield 'max_fee_per_gas', overrides.get(
             'max_fee_per_gas', transaction.get('max_fee_per_gas', 1000000000)
         )
         yield 'max_priority_fee_per_gas', overrides.get(
             'max_priority_fee_per_gas', transaction.get('max_priority_fee_per_gas', 1000000000)
         )
+        yield from _yield_typed_transaction_fields(overrides, transaction)
 
-    if is_dynamic_fee_transaction or 'access_list' in transaction:
-        # if is typed transaction (dynamic fee or access list transaction)
-        yield 'chain_id', overrides.get('chain_id', transaction.get('chain_id', 131277322940537))
-        yield 'access_list', overrides.get('access_list', transaction.get('access_list', []))
-        yield 'y_parity', overrides.get('y_parity', transaction.get('y_parity', 0))
     else:
-        yield 'v', overrides.get('v', transaction.get('v', 27))
+        yield 'gas_price', overrides.get('gas_price', transaction.get('gas_price'))
+        if 'access_list' in transaction:
+            # access list transaction (type = 1)
+            yield from _yield_typed_transaction_fields(overrides, transaction)
 
-    yield 'r', overrides.get('r', transaction.get('r', 12345))
-    yield 's', overrides.get('s', transaction.get('s', 67890))
+        else:
+            # legacy transaction
+            yield 'v', overrides.get('v', transaction.get('v', 27))
+
+
+def _yield_typed_transaction_fields(overrides, transaction):
+    yield 'chain_id', overrides.get('chain_id', transaction.get('chain_id', 131277322940537))
+    yield 'access_list', overrides.get('access_list', transaction.get('access_list', ()))
+    yield 'y_parity', overrides.get('y_parity', transaction.get('y_parity', 0))
 
 
 @to_dict
@@ -192,32 +197,29 @@ def make_receipt(transaction, block, _transaction_index, overrides=None):
     if overrides is None:
         overrides = {}
 
-    if 'gas_used' in overrides:
-        gas_used = overrides['gas_used']
-    else:
-        gas_used = 21000
+    gas_used = overrides.get('gas_used', 21000)
     yield 'gas_used', gas_used
-
-    if 'cumulative_gas_used' in overrides:
-        yield 'cumulative_gas_used', overrides['cumulative_gas_used']
-    else:
-        yield 'cumulative_gas_used', block['gas_used'] + gas_used
-
-    if 'contract_address' in overrides:
-        yield 'contract_address', overrides['contract_address']
-    else:
-        contract_address = generate_contract_address(transaction['from'], transaction['nonce'])
-        yield 'contract_address', contract_address
-
-    if 'logs' in overrides:
-        yield 'logs', overrides['logs']
-    else:
-        yield 'logs', []
-
-    if 'transaction_hash' in overrides:
-        yield 'transaction_hash', overrides['transaction_hash']
-    else:
-        yield 'transaction_hash', transaction['hash']
+    yield 'logs', overrides.get('logs', [])
+    yield 'transaction_hash', overrides.get('transaction_hash', transaction.get('hash'))
+    yield (
+        'cumulative_gas_used',
+        overrides.get('cumulative_gas_used', block.get('gas_used') + gas_used)
+    )
+    yield (
+        'effective_gas_price',
+        overrides.get('effective_gas_price', calculate_effective_gas_price(transaction, block))
+    )
+    yield (
+        'type',
+        overrides.get('type', transaction.get('type', extract_transaction_type(transaction)))
+    )
+    yield (
+        'contract_address',
+        overrides.get(
+            'contract_address',
+            generate_contract_address(transaction['from'], transaction['nonce'])
+        )
+    )
 
 
 GENESIS_NONCE = b'\x00\x00\x00\x00\x00\x00\x00*'  # 42 encoded as big-endian-integer

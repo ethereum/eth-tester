@@ -246,9 +246,10 @@ class MockBackend(BaseChainBackend):
             raise TransactionNotFound(
                 f"No transaction found for hash: {transaction_hash}"
             )
-        _, block, transaction_index = self._get_transaction_by_hash(transaction_hash)
+        transaction, block, transaction_index = self._get_transaction_by_hash(transaction_hash)
         return serialize_receipt(
             receipt,
+            transaction,
             block,
             transaction_index,
             is_pending=(block['number'] == self.block['number']),
@@ -284,6 +285,7 @@ class MockBackend(BaseChainBackend):
             'from': _generate_dummy_address(0),
             'hash': transaction_hash,
             'gas': 21000,
+            'gas_price': 1000000000,
         }
         return self.send_transaction(transaction)
 
