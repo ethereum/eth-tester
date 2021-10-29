@@ -817,7 +817,7 @@ Then pass the generated `custom_genesis_params` `dict` to the backend's `__init_
 >>> t = EthereumTester(backend=pyevm_backend)
 ```
 
-Overriding genesis state is similar to overriding genesis state, but requires the consideration of test accounts.
+Overriding genesis state is similar to overriding genesis parameters but requires the consideration of test accounts.
 To override the genesis state of accounts, pass a `state_overrides` `dict` to `PyEVM.generate_genesis_state`,
 and optionally, the number of accounts to create.  
 
