@@ -847,7 +847,7 @@ to `PyEVM.generate_genesis_params`.
 >>> from eth_tester import PyEVMBackend, EthereumTester
 
 >>> genesis_overrides = {'gas_limit': 4500000}
->>> custom_genesis_params = PyEVMBackend._generate_genesis_params(overrides=genesis_overrides)
+>>> custom_genesis_params = PyEVMBackend.generate_genesis_params(overrides=genesis_overrides)
 
 # Generates the following `dict`:
 
@@ -911,7 +911,7 @@ For Example, to create 3 test accounts, each with a balance of 100 ETH each:
 >>>  from eth_utils import to_wei
 
 >>> state_overrides = {'balance': to_wei(100, 'ether')}
->>> custom_genesis_state = PyEVMBackend._generate_genesis_state(overrides=state_overrides, num_accounts=3)
+>>> custom_genesis_state = PyEVMBackend.generate_genesis_state(overrides=state_overrides, num_accounts=3)
 
 # Then pass the generated `custom_genesis_state` `dict` to the backend's `__init__`
 
