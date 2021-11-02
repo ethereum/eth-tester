@@ -9,6 +9,8 @@ from eth_abi.exceptions import (
     DecodingError
 )
 
+from eth_account.hdaccount import HDPath, seed_from_mnemonic
+
 from eth_utils import (
     encode_hex,
     int_to_big_endian,
@@ -111,6 +113,17 @@ def get_default_account_keys(quantity=None):
         yield private_key
 
 
+@to_tuple
+def get_account_keys_from_mnemonic(mnemonic, quantity=None):
+    keys = KeyAPI()
+    seed = seed_from_mnemonic(mnemonic, "")
+    quantity = quantity or 10
+    for i in range(0, quantity):
+        hd_path = HDPath(f"m/44'/60'/0'/{i}")
+        private_key = keys.PrivateKey(hd_path.derive(seed))
+        yield private_key
+
+
 @to_dict
 def generate_genesis_state_for_keys(account_keys, overrides=None):
     for private_key in account_keys:
@@ -146,7 +159,8 @@ def setup_tester_chain(
         genesis_params=None,
         genesis_state=None,
         num_accounts=None,
-        vm_configuration=None):
+        vm_configuration=None,
+        mnemonic=None):
 
     from eth.chains.base import MiningChain
     from eth.consensus import (
@@ -178,7 +192,10 @@ def setup_tester_chain(
     if genesis_state:
         num_accounts = len(genesis_state)
 
-    account_keys = get_default_account_keys(quantity=num_accounts)
+    if mnemonic:
+        account_keys = get_account_keys_from_mnemonic(mnemonic, quantity=num_accounts)
+    else:
+        account_keys = get_default_account_keys(quantity=num_accounts)
 
     if genesis_state is None:
         genesis_state = generate_genesis_state_for_keys(account_keys)
@@ -259,11 +276,22 @@ def _get_vm_for_block_number(chain, block_number):
 class PyEVMBackend(BaseChainBackend):
     chain = None
 
-    def __init__(self, genesis_parameters=None, genesis_state=None, vm_configuration=None):
+    def __init__(
+        self,
+        genesis_parameters=None,
+        genesis_state=None,
+        vm_configuration=None,
+        mnemonic=None
+    ):
         """
+        :param genesis_parameters: A dict of chain parameters for overriding default values
+            when setting up the chain.
+        :param genesis_state: A dict (or list of tuples) matching accounts to state properties,
+            such as `balance`.
         :param vm_configuration: The tuple of virtual machines defining a chain schedule as
             used in py-evm's :attr:`eth.chains.base.Chain.vm_configuration`. (at author time, a
             series of block numbers and virtual machines)
+        :param mnemonic: A mnemonic str to use when generating accounts.
         """
         if not is_pyevm_available():
             raise BackendDistributionNotFound(
@@ -274,7 +302,35 @@ class PyEVMBackend(BaseChainBackend):
 
         self.account_keys = None  # set below
         accounts = len(genesis_state) if genesis_state else None
-        self.reset_to_genesis(genesis_parameters, genesis_state, accounts, vm_configuration)
+        self.reset_to_genesis(
+            genesis_parameters,
+            genesis_state,
+            accounts,
+            vm_configuration,
+            mnemonic
+        )
+
+    @classmethod
+    def from_mnemonic(
+        cls,
+        mnemonic,
+        genesis_state_overrides=None,
+        num_accounts=None,
+        genesis_parameters=None,
+        vm_configuration=None
+    ):
+        genesis_state = PyEVMBackend._generate_genesis_state(
+            mnemonic=mnemonic,
+            overrides=genesis_state_overrides or {},
+            num_accounts=num_accounts,
+        )
+
+        return cls(
+            genesis_parameters=genesis_parameters,
+            genesis_state=genesis_state,
+            vm_configuration=vm_configuration,
+            mnemonic=mnemonic
+        )
 
     #
     # Genesis
@@ -285,20 +341,26 @@ class PyEVMBackend(BaseChainBackend):
         return get_default_genesis_params(overrides=overrides)
 
     @staticmethod
-    def _generate_genesis_state(overrides=None, num_accounts=None):
-        account_keys = get_default_account_keys(quantity=num_accounts)
+    def _generate_genesis_state(overrides=None, num_accounts=None, mnemonic=None):
+        if mnemonic:
+            account_keys = get_account_keys_from_mnemonic(mnemonic, quantity=num_accounts)
+        else:
+            account_keys = get_default_account_keys(quantity=num_accounts)
+
         return generate_genesis_state_for_keys(account_keys=account_keys, overrides=overrides)
 
     def reset_to_genesis(self,
                          genesis_params=None,
                          genesis_state=None,
                          num_accounts=None,
-                         vm_configuration=None):
+                         vm_configuration=None,
+                         mnemonic=None):
         self.account_keys, self.chain = setup_tester_chain(
             genesis_params,
             genesis_state,
             num_accounts,
             vm_configuration,
+            mnemonic,
         )
 
     #

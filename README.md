@@ -817,9 +817,25 @@ Then pass the generated `custom_genesis_params` `dict` to the backend's `__init_
 >>> t = EthereumTester(backend=pyevm_backend)
 ```
 
-Overriding genesis state is similar to overriding genesis parameters but requires the consideration of test accounts.
-To override the genesis state of accounts, pass a `state_overrides` `dict` to `PyEVMBackend._generate_genesis_state`,
-and optionally, the number of accounts to create.  
+Similarly to `genesis_parameters`, override the genesis state by passing in an `overrides` `dict`
+to `PyEVMBackend._generate_genesis_state`. Optionally, provide `num_accounts` to set the number of accounts.
+
+For more control on which accounts the backend generates, use the `from_mnemonic()` classmethod. Give it
+a `mnemonic` (and optionally the number of accounts) and it will use that information to generate the accounts.
+Optionally, provide a `genesis_state_overrides` to adjust the `genesis_state`.
+```python
+>>> from eth_tester import PyEVMBackend, EthereumTester
+>>> from eth_utils import to_wei
+>>> from hexbytes import HexBytes
+>>>
+>>> pyevm_backend = PyEVMBackend.from_mnemonic(
+>>>    'test test test test test test test test test test test junk',
+>>>    genesis_state_overrides={'balance': to_wei(1000000, 'ether')}
+>>> )
+>>> t = EthereumTester(backend=pyevm_backend)
+>>> print(t.get_accounts()[0])  # Outputs 0x1e59ce931B4CFea3fe4B875411e280e173cB7A9C
+>>> print(t.get_balance('0x1e59ce931B4CFea3fe4B875411e280e173cB7A9C'))  # Outputs 1000000000000000000000000
+```
 
 *NOTE: The same state is applied to all generated test accounts.* 
 
