@@ -822,7 +822,7 @@ to `PyEVMBackend._generate_genesis_state`. Optionally, provide `num_accounts` to
 
 For more control on which accounts the backend generates, use the `from_mnemonic()` classmethod. Give it
 a `mnemonic` (and optionally the number of accounts) and it will use that information to generate the accounts.
-Optionally, provide a `genesis_state_overrides` to adjust the `genesis_state`.
+Optionally, provide a `genesis_state_overrides` `dict` to adjust the `genesis_state`.
 ```python
 >>> from eth_tester import PyEVMBackend, EthereumTester
 >>> from eth_utils import to_wei
