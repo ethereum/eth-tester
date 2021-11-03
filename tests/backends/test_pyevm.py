@@ -19,6 +19,7 @@ from eth_tester.utils.backend_testing import BaseTestBackendDirect, SIMPLE_TRANS
 
 
 ZERO_ADDRESS_HEX = "0x0000000000000000000000000000000000000000"
+MNEMONIC = "test test test test test test test test test test test junk"
 
 
 @pytest.fixture
@@ -119,6 +120,34 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
             account = private_key.public_key.to_checksum_address()
             balance = tester.get_balance(account=account)
             assert balance == state_overrides["balance"]
+
+    def test_from_mnemonic(self):
+        # Initialize PyEVM backend using MNEMONIC, num_accounts,
+        # and state overrides (balance)
+        num_accounts = 3
+        balance = to_wei(15, "ether")  # Give each account 15 Eth
+        pyevm_backend = PyEVMBackend.from_mnemonic(
+            MNEMONIC, num_accounts=num_accounts, genesis_state_overrides={"balance": balance}
+        )
+
+        # Each of these accounts stems from the MNEMONIC
+        expected_accounts = [
+            "0x1e59ce931b4cfea3fe4b875411e280e173cb7a9c",
+            "0xc89d42189f0450c2b2c3c61f58ec5d628176a1e7",
+            "0x318b469bba396aec2c60342f9441be36a1945174"
+        ]
+
+        # Test integration with EthereumTester
+        tester = EthereumTester(backend=pyevm_backend)
+
+        actual_accounts = tester.get_accounts()
+        assert len(actual_accounts) == num_accounts
+
+        for i in range(0, num_accounts):
+            actual = actual_accounts[i]
+            expected = expected_accounts[i]
+            assert actual.lower() == expected.lower()
+            assert tester.get_balance(account=actual) == balance
 
     def test_generate_custom_genesis_parameters(self):
 

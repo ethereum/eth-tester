@@ -1,9 +1,14 @@
 Unreleased
 -------------
 
+- Features
+
+  - Support for custom mnemonic when initializing the Backend for EthTester
+
 - Misc
 
   - Adjust wording in README regarding genesis parameters
+
 
 v0.5.0-beta.4
 -------------
