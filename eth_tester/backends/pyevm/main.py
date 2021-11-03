@@ -28,6 +28,7 @@ from eth_utils.toolz import (
 
 from eth_keys import KeyAPI
 
+from eth_tester.constants import DYNAMIC_FEE_TRANSACTION_PARAMS
 from eth_tester.exceptions import (
     BackendDistributionNotFound,
     BlockNotFound,
@@ -132,21 +133,22 @@ def generate_genesis_state_for_keys(account_keys, overrides=None):
 
 
 def get_default_genesis_params(overrides=None):
+    # commented out params became un-configurable in py-evm during London refactor
     default_genesis_params = {
-        "bloom": 0,
+        # "bloom": 0,
         "coinbase": GENESIS_COINBASE,
         "difficulty": GENESIS_DIFFICULTY,
         "extra_data": GENESIS_EXTRA_DATA,
         "gas_limit": GENESIS_GAS_LIMIT,
-        "gas_used": 0,
+        # "gas_used": 0,
         "mix_hash": GENESIS_MIX_HASH,
         "nonce": GENESIS_NONCE,
-        "block_number": GENESIS_BLOCK_NUMBER,
-        "parent_hash": GENESIS_PARENT_HASH,
+        # "block_number": GENESIS_BLOCK_NUMBER,
+        # "parent_hash": GENESIS_PARENT_HASH,
         "receipt_root": BLANK_ROOT_HASH,
         "timestamp": int(time.time()),
         "transaction_root": BLANK_ROOT_HASH,
-        "uncles_hash": EMPTY_RLP_LIST_HASH
+        # "uncles_hash": EMPTY_RLP_LIST_HASH,
     }
     if overrides is not None:
         genesis_params = merge_genesis_overrides(default_genesis_params, overrides=overrides)
@@ -170,13 +172,14 @@ def setup_tester_chain(
     from eth.db import get_db_backend
 
     if vm_configuration is None:
-        from eth.vm.forks import BerlinVM
-        no_proof_vms = ((0, BerlinVM.configure(consensus_class=NoProofConsensus)),)
+        from eth.vm.forks import LondonVM
+        no_proof_vms = ((0, LondonVM.configure(consensus_class=NoProofConsensus)),)
     else:
         consensus_applier = ConsensusApplier(NoProofConsensus)
         no_proof_vms = consensus_applier.amend_vm_configuration(vm_configuration)
 
     class MainnetTesterNoProofChain(MiningChain):
+        chain_id = 131277322940537
         vm_configuration = no_proof_vms
 
         def create_header_from_parent(self, parent_header, **header_params):
@@ -185,6 +188,9 @@ def setup_tester_chain(
                 parent_header,
                 **assoc(header_params, 'gas_limit', parent_header.gas_limit)
             )
+
+        def get_transaction_builder(self):
+            return super().get_vm().get_transaction_builder()
 
     if genesis_params is None:
         genesis_params = get_default_genesis_params()
@@ -483,29 +489,55 @@ class PyEVMBackend(BaseChainBackend):
         vm = _get_vm_for_block_number(self.chain, block_number)
         return vm.state.get_code(account)
 
+    def get_base_fee(self, block_number='latest'):
+        vm = _get_vm_for_block_number(self.chain, block_number)
+        return vm.state.base_fee
+
     #
     # Transactions
     #
     @to_dict
     def _normalize_transaction(self, transaction, block_number='latest'):
+        is_dynamic_fee_transaction = (
+            any(_ in transaction for _ in DYNAMIC_FEE_TRANSACTION_PARAMS) or
+            # if no fee params exist, default to dynamic fee transaction:
+            not any(_ in transaction for _ in DYNAMIC_FEE_TRANSACTION_PARAMS + ('gas_price',))
+        )
+
         for key in transaction:
-            if key == 'from':
+            if key in ('from', 'type'):
                 continue
             yield key, transaction[key]
+
         if 'nonce' not in transaction:
             yield 'nonce', self.get_nonce(transaction['from'], block_number)
         if 'data' not in transaction:
             yield 'data', b''
-        if 'gas_price' not in transaction:
-            yield 'gas_price', 1
         if 'value' not in transaction:
             yield 'value', 0
         if 'to' not in transaction:
             yield 'to', b''
 
+        if is_dynamic_fee_transaction:
+            if not any(_ in transaction for _ in DYNAMIC_FEE_TRANSACTION_PARAMS):
+                yield 'max_fee_per_gas', 1 * 10**9
+                yield 'max_priority_fee_per_gas', 1 * 10**9
+            elif 'max_priority_fee_per_gas' in transaction and 'max_fee_per_gas' not in transaction:
+                yield (
+                    'max_fee_per_gas',
+                    transaction['max_priority_fee_per_gas'] + 2 * self.get_base_fee(block_number)
+                )
+
+        if is_dynamic_fee_transaction or 'access_list' in transaction:
+            # typed transaction
+            if 'access_list' not in transaction:
+                yield 'access_list', ()
+            if 'chain_id' not in transaction:
+                yield 'chain_id', self.chain.chain_id
+
     def _get_normalized_and_unsigned_evm_transaction(self, transaction, block_number='latest'):
         normalized_transaction = self._normalize_transaction(transaction, block_number)
-        evm_transaction = self.chain.create_unsigned_transaction(**normalized_transaction)
+        evm_transaction = self._create_type_aware_unsigned_transaction(normalized_transaction)
         return evm_transaction
 
     def _get_normalized_and_signed_evm_transaction(self, transaction, block_number='latest'):
@@ -516,8 +548,19 @@ class PyEVMBackend(BaseChainBackend):
             )
         signing_key = self._key_lookup[transaction['from']]
         normalized_transaction = self._normalize_transaction(transaction, block_number)
-        evm_transaction = self.chain.create_unsigned_transaction(**normalized_transaction)
+        evm_transaction = self._create_type_aware_unsigned_transaction(normalized_transaction)
         return evm_transaction.as_signed_transaction(signing_key)
+
+    def _create_type_aware_unsigned_transaction(self, normalized_txn):
+        if all(_ in normalized_txn for _ in ("access_list", "gas_price")):
+            return self.chain.get_transaction_builder().new_unsigned_access_list_transaction(
+                **normalized_txn
+            )
+        elif all(_ in normalized_txn for _ in DYNAMIC_FEE_TRANSACTION_PARAMS):
+            return self.chain.get_transaction_builder().new_unsigned_dynamic_fee_transaction(
+                **normalized_txn
+            )
+        return self.chain.create_unsigned_transaction(**normalized_txn)
 
     def send_raw_transaction(self, raw_transaction):
         vm = _get_vm_for_block_number(self.chain, "latest")
@@ -527,9 +570,20 @@ class PyEVMBackend(BaseChainBackend):
 
     def send_signed_transaction(self, signed_transaction, block_number='latest'):
         normalized_transaction = self._normalize_transaction(signed_transaction, block_number)
-        signed_evm_transaction = self.chain.create_transaction(**normalized_transaction)
+        signed_evm_transaction = self._create_type_aware_signed_transaction(normalized_transaction)
         self.chain.apply_transaction(signed_evm_transaction)
         return signed_evm_transaction.hash
+
+    def _create_type_aware_signed_transaction(self, normalized_txn):
+        if all(_ in normalized_txn for _ in ("access_list", "gas_price")):
+            return self.chain.get_transaction_builder().new_access_list_transaction(
+                **normalized_txn
+            )
+        elif all(_ in normalized_txn for _ in DYNAMIC_FEE_TRANSACTION_PARAMS):
+            return self.chain.get_transaction_builder().new_dynamic_fee_transaction(
+                **normalized_txn
+            )
+        return self.chain.create_transaction(**normalized_txn)
 
     def send_transaction(self, transaction):
         signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(

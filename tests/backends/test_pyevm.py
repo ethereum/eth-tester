@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import pytest
 from eth.vm.forks import (
     FrontierVM,
-    BerlinVM,
+    LondonVM,
 )
 from eth_utils import to_wei
 
@@ -36,17 +36,17 @@ def test_custom_virtual_machines():
 
     backend = PyEVMBackend(vm_configuration=(
         (0, FrontierVM),
-        (3, BerlinVM),
+        (3, LondonVM),
     ))
 
     # This should be a FrontierVM block
     VM_at_2 = backend.chain.get_vm_class_for_block_number(2)
-    # This should be a BerlinVM block
+    # This should be a LondonVM block
     VM_at_3 = backend.chain.get_vm_class_for_block_number(3)
 
     assert issubclass(VM_at_2, FrontierVM)
-    assert not issubclass(VM_at_2, BerlinVM)
-    assert issubclass(VM_at_3, BerlinVM)
+    assert not issubclass(VM_at_2, LondonVM)
+    assert issubclass(VM_at_3, LondonVM)
 
     # Right now, just test that EthereumTester doesn't crash
     # Maybe some more sophisticated test to make sure the VMs are set correctly?
@@ -156,12 +156,10 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         # Test the underlying default parameter merging functionality
         genesis_params = get_default_genesis_params(overrides=param_overrides)
-        assert genesis_params["block_number"] == 0
         assert genesis_params["gas_limit"] == param_overrides["gas_limit"]
 
         # Use the the staticmethod to generate custom genesis parameters
         genesis_params = PyEVMBackend._generate_genesis_params(param_overrides)
-        assert genesis_params["block_number"] == 0
         assert genesis_params["gas_limit"] == param_overrides["gas_limit"]
 
         # Only existing default genesis parameter keys can be overridden

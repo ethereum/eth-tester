@@ -45,6 +45,7 @@ from eth_tester.utils.filters import (
     check_if_log_matches,
 )
 from eth_tester.utils.transactions import (
+    extract_transaction_type,
     extract_valid_transaction_params,
     remove_matching_transaction_from_list,
 )
@@ -71,6 +72,7 @@ def handle_auto_mining(func):
             try:
                 transaction_hash = func(self, *args, **kwargs)
                 pending_transaction = self.get_transaction_by_hash(transaction_hash)
+                pending_transaction = _clean_pending_transaction(pending_transaction)
                 # Remove any pending transactions with the same nonce
                 self._pending_transactions = remove_matching_transaction_from_list(
                     self._pending_transactions, pending_transaction)
@@ -78,6 +80,18 @@ def handle_auto_mining(func):
             finally:
                 self.revert_to_snapshot(snapshot)
         return transaction_hash
+
+    def _clean_pending_transaction(pending_transaction):
+        cleaned_transaction = dissoc(pending_transaction, 'type')
+
+        # TODO: Sometime in early 2022 (the merge?), the inclusion of gas_price will be removed
+        #  from dynamic fee transactions and we can get rid of this behavior.
+        #  https://github.com/ethereum/execution-specs/pull/251
+        # remove gas_price for dynamic fee transactions
+        if 'gas_price' and 'max_fee_per_gas' in pending_transaction:
+            cleaned_transaction = dissoc(cleaned_transaction, 'gas_price')
+
+        return cleaned_transaction
     return func_wrapper
 
 
@@ -251,6 +265,27 @@ class EthereumTester:
     # Blocks, Transactions, Receipts
     #
 
+    @staticmethod
+    def _normalize_pending_transaction(pending_transaction):
+        """
+        Add the transaction type and, if a dynamic fee transaction, add gas_price =
+        max_fee_per_gas as highlighted in the execution-specs link below.
+        """
+        _type = extract_transaction_type(pending_transaction)
+        pending_transaction = assoc(pending_transaction, 'type', _type)
+
+        # TODO: Sometime in 2022 the inclusion of gas_price may be removed from dynamic fee
+        #  transactions and we can get rid of this behavior.
+        #  https://github.com/ethereum/execution-specs/pull/251
+        # add gas_price = max_fee_per_gas to pending dynamic fee transactions
+        if _type == '0x2':
+            pending_transaction = assoc(
+                pending_transaction,
+                'gas_price',
+                pending_transaction['max_fee_per_gas']
+            )
+        return pending_transaction
+
     def _get_pending_transaction_by_hash(self, transaction_hash):
         for transaction in self._pending_transactions:
             if transaction['hash'] == transaction_hash:
@@ -262,7 +297,8 @@ class EthereumTester:
     def get_transaction_by_hash(self, transaction_hash):
         self.validator.validate_inbound_transaction_hash(transaction_hash)
         try:
-            return self._get_pending_transaction_by_hash(transaction_hash)
+            pending_transaction = self._get_pending_transaction_by_hash(transaction_hash)
+            return self._normalize_pending_transaction(pending_transaction)
         except TransactionNotFound:
             raw_transaction_hash = self.normalizer.normalize_inbound_transaction_hash(
                 transaction_hash,
@@ -382,7 +418,7 @@ class EthereumTester:
     def _add_all_to_pending_block(self, pending_transactions):
         for pending in pending_transactions:
             txn = extract_valid_transaction_params(pending)
-            yield self._add_transaction_to_pending_block(txn, txn_type='send_signed')
+            yield self._add_transaction_to_pending_block(txn, txn_internal_type='send_signed')
 
     #
     # Transaction Sending
@@ -419,7 +455,7 @@ class EthereumTester:
         return self._add_transaction_to_pending_block(transaction)
 
     def call(self, transaction, block_number="latest"):
-        self.validator.validate_inbound_transaction(transaction, txn_type='call')
+        self.validator.validate_inbound_transaction(transaction, txn_internal_type='call')
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
         self.validator.validate_inbound_block_number(block_number)
         raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
@@ -429,7 +465,7 @@ class EthereumTester:
         return result
 
     def estimate_gas(self, transaction, block_number="latest"):
-        self.validator.validate_inbound_transaction(transaction, txn_type='estimate')
+        self.validator.validate_inbound_transaction(transaction, txn_internal_type='estimate')
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
         self.validator.validate_inbound_block_number(block_number)
         raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
@@ -441,8 +477,11 @@ class EthereumTester:
     #
     # Private Transaction API
     #
-    def _add_transaction_to_pending_block(self, transaction, txn_type='send'):
-        self.validator.validate_inbound_transaction(transaction, txn_type=txn_type)
+    def _add_transaction_to_pending_block(self, transaction, txn_internal_type='send'):
+        self.validator.validate_inbound_transaction(
+            transaction,
+            txn_internal_type=txn_internal_type
+        )
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
 
         if raw_transaction['from'] in self._account_passwords:
@@ -454,11 +493,14 @@ class EthereumTester:
             if is_locked:
                 raise AccountLocked("The account is currently locked")
 
-        if {'r', 's', 'v'}.issubset(transaction.keys()):
+        if (
+            {'r', 's', 'v'}.issubset(transaction.keys())
+            or {'r', 's', 'y_parity'}.issubset(transaction.keys())
+        ):
             try:
                 raw_transaction_hash = self.backend.send_signed_transaction(raw_transaction)
             except NotImplementedError:
-                unsigned_transaction = dissoc(raw_transaction, 'r', 's', 'v')
+                unsigned_transaction = dissoc(raw_transaction, 'r', 's', 'v', 'y_parity')
                 raw_transaction_hash = self.backend.send_transaction(unsigned_transaction)
         else:
             raw_transaction_hash = self.backend.send_transaction(raw_transaction)

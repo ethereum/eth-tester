@@ -1,6 +1,12 @@
 import functools
 import time
 
+from eth_tester.backends.mock.common import (
+    calculate_effective_gas_price,
+)
+from eth_tester.utils.transactions import (
+    extract_transaction_type,
+)
 from eth_utils import (
     apply_to_return_value,
     is_bytes,
@@ -20,6 +26,7 @@ from eth_utils.toolz import (
 )
 
 from eth_tester.backends.common import merge_genesis_overrides
+from eth_tester.constants import DYNAMIC_FEE_TRANSACTION_PARAMS
 from eth_tester.utils.address import (
     generate_contract_address,
 )
@@ -28,6 +35,8 @@ from eth_tester.utils.address import (
 ZERO_32BYTES = b'\x00' * 32
 ZERO_8BYTES = b'\x00' * 8
 ZERO_ADDRESS = b'\x00' * 20
+BLOCK_ELASTICITY_MULTIPLIER = 2
+BASE_FEE_MAX_CHANGE_DENOMINATOR = 8
 
 
 @apply_to_return_value(b'|'.join)
@@ -86,69 +95,53 @@ def create_transaction(transaction, block, transaction_index, is_pending, overri
 
 @to_dict
 def _fill_transaction(transaction, block, transaction_index, is_pending, overrides=None):
+    is_dynamic_fee_transaction = (
+        any(_ in transaction for _ in DYNAMIC_FEE_TRANSACTION_PARAMS)
+        or not any(_ in transaction for _ in DYNAMIC_FEE_TRANSACTION_PARAMS + ('gas_price',))
+    )
+
     if overrides is None:
         overrides = {}
 
-    if 'nonce' in overrides:
-        yield 'nonce', overrides['nonce']
-    else:
-        yield 'nonce', 0
-
-    if 'hash' in overrides:
+    if 'hash' in overrides:  # else calculate hash after all fields are filled
         yield 'hash', overrides['hash']
-    else:
-        # calculate hash after all fields are filled
-        pass
 
-    if 'from' in overrides:
-        yield 'from', overrides['from']
-    else:
-        yield 'from', transaction['from']
+    # Here, we yield the key with the overrides value if it exists, else either the transaction
+    # value if it exists or a default value
+    yield 'nonce', overrides.get('nonce', 0)
+    yield 'from', overrides.get('from', transaction.get('from'))
+    yield 'to', overrides.get('to', transaction.get('to', b''))
+    yield 'data', overrides.get('data', transaction.get('data', b''))
+    yield 'value', overrides.get('value', transaction.get('value', 0))
+    yield 'gas', overrides.get('gas', transaction.get('gas'))
+    yield 'r', overrides.get('r', transaction.get('r', 12345))
+    yield 's', overrides.get('s', transaction.get('s', 67890))
 
-    if 'gas' in overrides:
-        yield 'gas', overrides['gas']
-    else:
-        yield 'gas', transaction['gas']
+    if is_dynamic_fee_transaction:
+        # dynamic fee transaction (type = 2)
+        yield 'max_fee_per_gas', overrides.get(
+            'max_fee_per_gas', transaction.get('max_fee_per_gas', 1000000000)
+        )
+        yield 'max_priority_fee_per_gas', overrides.get(
+            'max_priority_fee_per_gas', transaction.get('max_priority_fee_per_gas', 1000000000)
+        )
+        yield from _yield_typed_transaction_fields(overrides, transaction)
 
-    if 'gas_price' in overrides:
-        yield 'gas_price', overrides['gas_price']
     else:
-        yield 'gas_price', transaction.get('gas_price', 1)  # TODO: make configurable
+        yield 'gas_price', overrides.get('gas_price', transaction.get('gas_price'))
+        if 'access_list' in transaction:
+            # access list transaction (type = 1)
+            yield from _yield_typed_transaction_fields(overrides, transaction)
 
-    if 'to' in overrides:
-        yield 'to', overrides['to']
-    else:
-        yield 'to', transaction.get('to', b'')
+        else:
+            # legacy transaction
+            yield 'v', overrides.get('v', transaction.get('v', 27))
 
-    if 'data' in overrides:
-        yield 'data', overrides['data']
-    else:
-        yield 'data', transaction.get('data', b'')
 
-    if 'value' in overrides:
-        yield 'value', overrides['value']
-    else:
-        yield 'value', transaction.get('value', 0)
-
-    if 'nonce' in overrides:
-        yield 'nonce', overrides['nonce']
-    else:
-        yield 'nonce', transaction.get('nonce', 0)
-
-    if 'v' in overrides:
-        yield 'v', overrides['v']
-    else:
-        yield 'v', transaction.get('v', 27)
-
-    if 'r' in overrides:
-        yield 'r', overrides['r']
-    else:
-        yield 'r', transaction.get('r', 12345)
-
-    if 's' in overrides:
-        yield 's', overrides['s']
-    else:
-        yield 's', transaction.get('s', 67890)
+def _yield_typed_transaction_fields(overrides, transaction):
+    yield 'chain_id', overrides.get('chain_id', transaction.get('chain_id', 131277322940537))
+    yield 'access_list', overrides.get('access_list', transaction.get('access_list', ()))
+    yield 'y_parity', overrides.get('y_parity', transaction.get('y_parity', 0))
 
 
 @to_dict
@@ -200,36 +193,33 @@ def make_log(transaction, block, transaction_index, log_index, overrides=None):
 
 
 @to_dict
-def make_receipt(transaction, block, transaction_index, overrides=None):
+def make_receipt(transaction, block, _transaction_index, overrides=None):
     if overrides is None:
         overrides = {}
 
-    if 'gas_used' in overrides:
-        gas_used = overrides['gas_used']
-    else:
-        gas_used = 21000
+    gas_used = overrides.get('gas_used', 21000)
     yield 'gas_used', gas_used
-
-    if 'cumulative_gas_used' in overrides:
-        yield 'cumulative_gas_used', overrides['cumulative_gas_used']
-    else:
-        yield 'cumulative_gas_used', block['gas_used'] + gas_used
-
-    if 'contract_address' in overrides:
-        yield 'contract_address', overrides['contract_address']
-    else:
-        contract_address = generate_contract_address(transaction['from'], transaction['nonce'])
-        yield 'contract_address', contract_address
-
-    if 'logs' in overrides:
-        yield 'logs', overrides['logs']
-    else:
-        yield 'logs', []
-
-    if 'transaction_hash' in overrides:
-        yield 'transaction_hash', overrides['transaction_hash']
-    else:
-        yield 'transaction_hash', transaction['hash']
+    yield 'logs', overrides.get('logs', [])
+    yield 'transaction_hash', overrides.get('transaction_hash', transaction.get('hash'))
+    yield (
+        'cumulative_gas_used',
+        overrides.get('cumulative_gas_used', block.get('gas_used') + gas_used)
+    )
+    yield (
+        'effective_gas_price',
+        overrides.get('effective_gas_price', calculate_effective_gas_price(transaction, block))
+    )
+    yield (
+        'type',
+        overrides.get('type', transaction.get('type', extract_transaction_type(transaction)))
+    )
+    yield (
+        'contract_address',
+        overrides.get(
+            'contract_address',
+            generate_contract_address(transaction['from'], transaction['nonce'])
+        )
+    )
 
 
 GENESIS_NONCE = b'\x00\x00\x00\x00\x00\x00\x00*'  # 42 encoded as big-endian-integer
@@ -253,11 +243,12 @@ def make_genesis_block(overrides=None):
         "total_difficulty": 131072,
         "size": 0,
         "extra_data": ZERO_32BYTES,
-        "gas_limit": 3141592,
+        "gas_limit": 30029122,  # gas limit at London fork block 12965000 on mainnet
         "gas_used": 0,
         "timestamp": int(time.time()),
         "transactions": [],
         "uncles": [],
+        "base_fee_per_gas": 1000000000,  # base fee at London fork block 12965000 on mainnet
     }
     if overrides is not None:
         genesis_block = merge_genesis_overrides(defaults=default_genesis_block,
@@ -368,3 +359,38 @@ def make_block_from_parent(parent_block, overrides=None):
         yield 'uncles', overrides['uncles']
     else:
         yield 'uncles', []
+
+    if 'base_fee_per_gas' in overrides:
+        yield 'base_fee_per_gas', overrides['base_fee_per_gas']
+    else:
+        yield 'base_fee_per_gas', _calculate_expected_base_fee_per_gas(parent_block)
+
+
+def _calculate_expected_base_fee_per_gas(parent_block) -> int:
+    """py-evm logic for calculating the base fee from parent header"""
+    parent_base_fee_per_gas = parent_block['base_fee_per_gas']
+
+    parent_gas_target = parent_block['gas_limit'] // BLOCK_ELASTICITY_MULTIPLIER
+    parent_gas_used = parent_block['gas_used']
+
+    if parent_gas_used == parent_gas_target:
+        return parent_base_fee_per_gas
+
+    elif parent_gas_used > parent_gas_target:
+        gas_used_delta = parent_gas_used - parent_gas_target
+        overburnt_wei = parent_base_fee_per_gas * gas_used_delta
+        base_fee_per_gas_delta = max(
+            overburnt_wei // parent_gas_target // BASE_FEE_MAX_CHANGE_DENOMINATOR,
+            1,
+        )
+        return parent_base_fee_per_gas + base_fee_per_gas_delta
+
+    else:
+        gas_used_delta = parent_gas_target - parent_gas_used
+        underburnt_wei = parent_base_fee_per_gas * gas_used_delta
+        base_fee_per_gas_delta = (
+            underburnt_wei
+            // parent_gas_target
+            // BASE_FEE_MAX_CHANGE_DENOMINATOR
+        )
+        return max(parent_base_fee_per_gas - base_fee_per_gas_delta, 0)

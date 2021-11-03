@@ -21,6 +21,7 @@ from .common import (
     normalize_dict,
     normalize_array,
 )
+from ..utils.encoding import int_to_32byte_big_endian
 
 
 normalize_account = to_checksum_address
@@ -31,7 +32,22 @@ to_empty_or_checksum_address = apply_one_of_formatters((
     (is_canonical_address, to_checksum_address),
 ))
 
+
+def _normalize_outbound_access_list(access_list):
+    return tuple([
+        {
+            'address': to_checksum_address(entry[0]),
+            'storage_keys': tuple(
+                [encode_hex(int_to_32byte_big_endian(k)) for k in entry[1]]
+            )
+        }
+        for entry in access_list
+    ])
+
+
 TRANSACTION_NORMALIZERS = {
+    "type": identity,
+    "chain_id": identity,
     "hash": encode_hex,
     "nonce": identity,
     "block_hash": partial(normalize_if, conditional_fn=is_bytes, normalizer=encode_hex),
@@ -42,13 +58,15 @@ TRANSACTION_NORMALIZERS = {
     "value": identity,
     "gas": identity,
     "gas_price": identity,
+    "max_fee_per_gas": identity,
+    "max_priority_fee_per_gas": identity,
     "data": encode_hex,
-    "v": identity,
+    "access_list": _normalize_outbound_access_list,
     "r": identity,
     "s": identity,
+    "v": identity,
+    "y_parity": identity,
 }
-
-
 normalize_transaction = partial(normalize_dict, normalizers=TRANSACTION_NORMALIZERS)
 
 
@@ -65,6 +83,7 @@ BLOCK_NORMALIZERS = {
     "hash": encode_hex,
     "parent_hash": encode_hex,
     "nonce": encode_hex,
+    "base_fee_per_gas": identity,
     "sha3_uncles": encode_hex,
     "logs_bloom": identity,
     "transactions_root": encode_hex,
@@ -92,8 +111,6 @@ BLOCK_NORMALIZERS = {
     ),
     "uncles": partial(normalize_array, normalizer=encode_hex),
 }
-
-
 normalize_block = partial(normalize_dict, normalizers=BLOCK_NORMALIZERS)
 
 
@@ -116,8 +133,6 @@ LOG_ENTRY_NORMALIZERS = {
     "data": encode_hex,
     "topics": partial(normalize_array, normalizer=encode_hex),
 }
-
-
 normalize_log_entry = partial(normalize_dict, normalizers=LOG_ENTRY_NORMALIZERS)
 
 
@@ -131,6 +146,7 @@ RECEIPT_NORMALIZERS = {
         normalizer=encode_hex,
     ),
     "cumulative_gas_used": identity,
+    "effective_gas_price": identity,
     "gas_used": identity,
     "contract_address": partial(
         normalize_if,
@@ -139,7 +155,6 @@ RECEIPT_NORMALIZERS = {
     ),
     "logs": partial(normalize_array, normalizer=normalize_log_entry),
     "state_root": identity,
+    "type": identity,
 }
-
-
 normalize_receipt = partial(normalize_dict, normalizers=RECEIPT_NORMALIZERS)

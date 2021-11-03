@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-import time
-
 import pytest
 
 try:
@@ -65,7 +63,7 @@ def test_time_travel_input_timestamp_validation(validator, timestamp, is_valid):
         (b"earliest", False),
     ),
 )
-def test_block_number_intput_validation(validator, block_number, is_valid):
+def test_block_number_input_validation(validator, block_number, is_valid):
     if is_valid:
         validator.validate_inbound_block_number(block_number)
     else:
@@ -137,6 +135,11 @@ TOPIC_A = encode_hex(b'\x00' * 31 + b'\x01')
 TOPIC_B = encode_hex(b'\x00' * 31 + b'\x02')
 
 
+def _yield_key_value_if_value_not_none(key, value):
+    if value is not None:
+        yield key, value
+
+
 @pytest.mark.parametrize(
     "filter_params,is_valid",
     (
@@ -178,40 +181,44 @@ def test_filter_params_input_validation(validator, filter_params, is_valid):
 
 @to_dict
 def _make_transaction(
+        chain_id=None,
+        _type=None,
         _from=None,
         to=None,
         gas=None,
         gas_price=None,
+        max_fee_per_gas=None,
+        max_priority_fee_per_gas=None,
         value=None,
         data=None,
         nonce=None,
+        access_list=None,
         r=None,
         s=None,
-        v=None):
-    if _from is not None:
-        yield 'from', _from
-    if to is not None:
-        yield 'to', to
-    if gas is not None:
-        yield 'gas', gas
-    if gas_price is not None:
-        yield 'gas_price', gas_price
-    if value is not None:
-        yield 'value', value
-    if data is not None:
-        yield 'data', data
-    if nonce is not None:
-        yield 'nonce', nonce
-    if r is not None:
-        yield 'r', r
-    if s is not None:
-        yield 's', s
-    if v is not None:
-        yield 'v', v
+        v=None,
+        y_parity=None,):
+    yield from _yield_key_value_if_value_not_none('type', _type)
+    yield from _yield_key_value_if_value_not_none('chain_id', chain_id)
+    yield from _yield_key_value_if_value_not_none('from', _from)
+    yield from _yield_key_value_if_value_not_none('to', to)
+    yield from _yield_key_value_if_value_not_none('gas', gas)
+    yield from _yield_key_value_if_value_not_none('gas_price', gas_price)
+    yield from _yield_key_value_if_value_not_none('max_fee_per_gas', max_fee_per_gas)
+    yield from _yield_key_value_if_value_not_none(
+        'max_priority_fee_per_gas', max_priority_fee_per_gas
+    )
+    yield from _yield_key_value_if_value_not_none('value', value)
+    yield from _yield_key_value_if_value_not_none('data', data)
+    yield from _yield_key_value_if_value_not_none('nonce', nonce)
+    yield from _yield_key_value_if_value_not_none('access_list', access_list)
+    yield from _yield_key_value_if_value_not_none('r', r)
+    yield from _yield_key_value_if_value_not_none('s', s)
+    yield from _yield_key_value_if_value_not_none('v', v)
+    yield from _yield_key_value_if_value_not_none('y_parity', y_parity)
 
 
 @pytest.mark.parametrize(
-    "txn_type, transaction, is_valid",
+    "txn_internal_type, transaction, is_valid",
     (
         ('send', {}, False),
         ('send', _make_transaction(to=ADDRESS_B, gas=21000), False),
@@ -223,6 +230,15 @@ def _make_transaction(
         ('send', _make_transaction(_from=ADDRESS_A, to=b'', gas=21000), False),
         ('send', _make_transaction(_from=decode_hex(ADDRESS_A), to=ADDRESS_B, gas=21000), False),
         ('send', _make_transaction(_from=ADDRESS_A, to=decode_hex(ADDRESS_B), gas=21000), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type='0x0'), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type='0x1'), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type='0x01'), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type='0x2'), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type='0x02'), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type=1), True),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type='0x3'), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type='1'), False),
+        ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, _type='x1'), False),
         ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, value=0), True),
         ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, value=-1), False),
         ('send', _make_transaction(_from=ADDRESS_A, to='', gas=21000, data=''), True),
@@ -239,14 +255,107 @@ def _make_transaction(
         ('send_signed', _make_transaction(_from=ADDRESS_A, gas=21000), False),
         ('send_signed', _make_transaction(_from=ADDRESS_A, gas=21000, r=1, s=1, v=1), True),
         ('send_signed', _make_transaction(_from=ADDRESS_A, gas=21000, r=1, s=1, v=256), False),
+        ('send_signed', _make_transaction(
+            _from=ADDRESS_A, gas=21000,
+            max_fee_per_gas=1000000000,
+            max_priority_fee_per_gas=1000000000,
+            r=1, s=1, y_parity=1), True),
+        (  # access list txn
+            'send', _make_transaction(
+                _from=ADDRESS_A,
+                to='',
+                gas=21000,
+                gas_price=10000,
+                # properly formatted access list
+                access_list=(
+                    {
+                        'address': '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+                        'storage_keys': (
+                            '0x0000000000000000000000000000000000000000000000000000000000000003',
+                            '0x0000000000000000000000000000000000000000000000000000000000000007',
+                        )
+                    },
+                    {
+                        'address': '0xbb9bc244d798123fde783fcc1c72d3bb8c189413',
+                        'storage_keys': ()
+                    },
+                ),
+            ), True
+        ),
+        (
+            'send', _make_transaction(
+                _from=ADDRESS_A,
+                to='',
+                gas=21000,
+                gas_price=10000,
+                # improperly formatted access list storage key
+                access_list=(
+                    {
+                        'address': '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+                        'storage_keys': (
+                            '3',
+                            '0x0000000000000000000000000000000000000000000000000000000000000007',
+                        )
+                    },
+                    {
+                        'address': '0xbb9bc244d798123fde783fcc1c72d3bb8c189413',
+                        'storage_keys': ()
+                    },
+                ),
+            ), False
+        ),
+        (
+            'send', _make_transaction(
+                _from=ADDRESS_A,
+                to='',
+                gas=21000,
+                # improperly formatted access list address
+                access_list=(
+                    {
+                        'address': '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+                        'storage_keys': (
+                            '0x0000000000000000000000000000000000000000000000000000000000000003',
+                            '0x0000000000000000000000000000000000000000000000000000000000000007',
+                        )
+                    },
+                    {
+                        'address': b'',
+                        'storage_keys': ()
+                    },
+                ),
+            ), False
+        ),
+        (  # dynamic fee txn
+            'send', _make_transaction(
+                _from=ADDRESS_A,
+                to='',
+                gas=21000,
+                max_fee_per_gas=1000000000,
+                max_priority_fee_per_gas=1000000000,
+                # properly formatted access list
+                access_list=(
+                    {
+                        'address': '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+                        'storage_keys': (
+                            '0x0000000000000000000000000000000000000000000000000000000000000003',
+                            '0x0000000000000000000000000000000000000000000000000000000000000007',
+                        )
+                    },
+                    {
+                        'address': '0xbb9bc244d798123fde783fcc1c72d3bb8c189413',
+                        'storage_keys': ()
+                    },
+                ),
+            ), True
+        ),
     ),
 )
-def test_transaction_input_validation(validator, txn_type, transaction, is_valid):
+def test_transaction_input_validation(validator, txn_internal_type, transaction, is_valid):
     if is_valid:
-        validator.validate_inbound_transaction(transaction, txn_type)
+        validator.validate_inbound_transaction(transaction, txn_internal_type)
     else:
         with pytest.raises(ValidationError):
-            validator.validate_inbound_transaction(transaction, txn_type)
+            validator.validate_inbound_transaction(transaction, txn_internal_type)
 
 
 @pytest.mark.parametrize(
@@ -288,9 +397,9 @@ def test_transaction_input_validation(validator, txn_type, transaction, is_valid
 )
 def test_transaction_call_and_estimate_gas_input_validation(validator, transaction, is_valid):
     if is_valid:
-        validator.validate_inbound_transaction(transaction, txn_type='call')
-        validator.validate_inbound_transaction(transaction, txn_type='estimate')
+        validator.validate_inbound_transaction(transaction, txn_internal_type='call')
+        validator.validate_inbound_transaction(transaction, txn_internal_type='estimate')
     else:
         with pytest.raises(ValidationError):
-            validator.validate_inbound_transaction(transaction, txn_type='call')
-            validator.validate_inbound_transaction(transaction, txn_type='estimate')
+            validator.validate_inbound_transaction(transaction, txn_internal_type='call')
+            validator.validate_inbound_transaction(transaction, txn_internal_type='estimate')

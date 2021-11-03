@@ -52,11 +52,10 @@ from .throws_contract import (
     _decode_throws_result,
 )
 
-
 PK_A = '0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d'
 PK_A_ADDRESS = '0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd'
 
-NON_DEFAULT_GAS_PRICE = 504
+NON_DEFAULT_GAS_PRICE = 1000000000
 
 SIMPLE_TRANSACTION = {
     "to": BURN_ADDRESS,
@@ -64,7 +63,6 @@ SIMPLE_TRANSACTION = {
     "value": 0,
     "gas": 21000,
 }
-
 
 TRANSACTION_WTH_NONCE = assoc(SIMPLE_TRANSACTION, 'nonce', 0)
 
@@ -96,6 +94,7 @@ BLOCK_KEYS = {
     "timestamp",
     "transactions",
     "uncles",
+    "base_fee_per_gas",
 }
 
 
@@ -119,15 +118,25 @@ class BaseTestBackendDirect:
         txn = eth_tester.get_transaction_by_hash(txn_hash)
         self._check_transactions(transaction, txn)
 
-    def _check_transactions(self, expected_transaction, actual_transaction):
-        assert is_same_address(actual_transaction['from'], expected_transaction['from'])
-        if 'to' not in expected_transaction or expected_transaction['to'] == '':
+    @staticmethod
+    def _check_transactions(sent_transaction, actual_transaction):
+        assert is_same_address(actual_transaction['from'], sent_transaction['from'])
+        if 'to' not in sent_transaction or sent_transaction['to'] == '':
             assert actual_transaction['to'] == ''
         else:
-            assert is_same_address(actual_transaction['to'], expected_transaction['to'])
-        assert actual_transaction['gas_price'] == expected_transaction['gas_price']
-        assert actual_transaction['gas'] == expected_transaction['gas']
-        assert actual_transaction['value'] == expected_transaction['value']
+            assert is_same_address(actual_transaction['to'], sent_transaction['to'])
+
+        assert actual_transaction['gas'] == sent_transaction['gas']
+        assert actual_transaction['value'] == sent_transaction['value']
+
+        if sent_transaction.get('gas_price') is not None:
+            assert actual_transaction['gas_price'] == sent_transaction['gas_price']
+        else:
+            assert actual_transaction['max_fee_per_gas'] == sent_transaction['max_fee_per_gas']
+            assert (
+                actual_transaction['max_priority_fee_per_gas'] ==
+                sent_transaction['max_priority_fee_per_gas']
+            )
 
     #
     # Testing Flags
@@ -265,10 +274,12 @@ class BaseTestBackendDirect:
             "gas": 21000,
             "value": 1 * denoms.ether,
         })
-        # transaction: nonce=0, gas_price=1, gas=21000, to=BURN_ADDRESS, value=50000, data=b'',
-        #     and signed with `test_key`
-        transaction_hex = "0xf861800182520894dead00000000000000000000000000000000000082c350801ba073128146b850e2d38a4742d1afa48544e0ac6bc4b4dcb562583cd2224ad9a082a0680086a2801d02b12431cc3c79ec6c6a0cb846a0b3a8ec970f6e1b76d55ee7e2"  # noqa: E501
 
+        # transaction: 'to': '0x19E7E376E7C213B7E7e7e46cc70A5dD086DAff2A', 'from':
+        # '0x19E7E376E7C213B7E7e7e46cc70A5dD086DAff2A',  'value': 1337, 'nonce': 0
+        # 'gas': 21000, 'gas_price': 1000000000, and signed with `test_key`
+
+        transaction_hex = "0xf86580843b9aca008252089419e7e376e7c213b7e7e7e46cc70a5dd086daff2a820539801ba0b101c1f9dc0c588c0194a1093f06e6b30d1fd16d31014ef5851311b7bfbf419ea01cfa8757b7863a630ef7491c62b03d9cd9dff395f61b5df500cc665f0fa5b027"  # noqa: E501
         if is_pending:
             eth_tester.disable_auto_mine_transactions()
 
@@ -317,6 +328,116 @@ class BaseTestBackendDirect:
         assert accounts, "No accounts available for transaction sending"
 
         self._send_and_check_transaction(eth_tester, test_transaction, accounts[0])
+
+    def test_send_transaction_raises_with_legacy_and_dynamic_fee_fields(
+        self, eth_tester
+    ):
+        accounts = eth_tester.get_accounts()
+        assert accounts, "No accounts available for transaction sending"
+
+        test_transaction = {
+            "to": accounts[0],
+            "from": accounts[0],
+            "value": 1,
+            "gas": 21000,
+            "gas_price": 1234567890,
+            "max_fee_per_gas": 1000000000,
+            "max_priority_fee_per_gas": 1000000000,
+        }
+        with pytest.raises(ValidationError, match="legacy and dynamic fee transaction values"):
+            self._send_and_check_transaction(eth_tester, test_transaction, accounts[0])
+
+    def test_send_transaction_no_gas_price_or_dynamic_fees(self, eth_tester):
+        # test that we default to a dynamic fee transaction which, while pending, will include the
+        # gas_price as equal to the effective gas price paid.
+        accounts = eth_tester.get_accounts()
+        assert accounts, "No accounts available for transaction sending"
+
+        test_transaction = dissoc(SIMPLE_TRANSACTION, 'gas_price')
+        test_transaction = assoc(test_transaction, 'from', accounts[0])
+
+        txn_hash = eth_tester.send_transaction(test_transaction)
+        sent_transaction = eth_tester.get_transaction_by_hash(txn_hash)
+
+        assert sent_transaction.get('type') == '0x2'
+        assert sent_transaction.get('max_fee_per_gas') == 1000000000
+        assert sent_transaction.get('max_priority_fee_per_gas') == 1000000000
+        assert sent_transaction.get('access_list') == ()
+        assert sent_transaction.get('gas_price') == 1000000000
+
+    def test_send_access_list_transaction(self, eth_tester):
+        accounts = eth_tester.get_accounts()
+        assert accounts, "No accounts available for transaction sending"
+
+        access_list_transaction = {
+            'chain_id': 131277322940537,
+            'from': accounts[0],
+            'to': accounts[0],
+            'value': 1,
+            'gas': 40000,
+            'gas_price': 1000000000,
+            'access_list': [],
+        }
+        txn_hash = eth_tester.send_transaction(access_list_transaction)
+        txn = eth_tester.get_transaction_by_hash(txn_hash)
+        assert txn.get('type') == '0x1'
+        self._check_transactions(access_list_transaction, txn)
+
+        # with non-empty access list
+        access_list_transaction['access_list'] = (
+            {
+                'address': '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+                'storage_keys': (
+                    '0x0000000000000000000000000000000000000000000000000000000000000003',
+                    '0x0000000000000000000000000000000000000000000000000000000000000007',
+                )
+            },
+            {
+                'address': '0xbb9bc244d798123fde783fcc1c72d3bb8c189413',
+                'storage_keys': ()
+            },
+        )
+        txn_hash = eth_tester.send_transaction(access_list_transaction)
+        txn = eth_tester.get_transaction_by_hash(txn_hash)
+        assert txn.get('type') == '0x1'
+        self._check_transactions(access_list_transaction, txn)
+
+    def test_send_dynamic_fee_transaction(self, eth_tester):
+        accounts = eth_tester.get_accounts()
+        assert accounts, "No accounts available for transaction sending"
+
+        dynamic_fee_transaction = {
+            'chain_id': 131277322940537,
+            'from': accounts[0],
+            'to': accounts[0],
+            'value': 1,
+            'gas': 40000,
+            'max_fee_per_gas': 2000000000,
+            'max_priority_fee_per_gas': 1000000000,
+        }
+        txn_hash = eth_tester.send_transaction(dynamic_fee_transaction)
+        txn = eth_tester.get_transaction_by_hash(txn_hash)
+        assert txn.get('type') == '0x2'
+        self._check_transactions(dynamic_fee_transaction, txn)
+
+        # with non-empty access list
+        dynamic_fee_transaction['access_list'] = (
+            {
+                'address': '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
+                'storage_keys': (
+                    '0x0000000000000000000000000000000000000000000000000000000000000003',
+                    '0x0000000000000000000000000000000000000000000000000000000000000007',
+                )
+            },
+            {
+                'address': '0xbb9bc244d798123fde783fcc1c72d3bb8c189413',
+                'storage_keys': ()
+            },
+        )
+        txn_hash = eth_tester.send_transaction(dynamic_fee_transaction)
+        txn = eth_tester.get_transaction_by_hash(txn_hash)
+        assert txn.get('type') == '0x2'
+        self._check_transactions(dynamic_fee_transaction, txn)
 
     def test_block_number_auto_mine_transactions_enabled(self, eth_tester):
         eth_tester.mine_blocks()
@@ -421,7 +542,6 @@ class BaseTestBackendDirect:
             "gas": 21000,
             "nonce": 0,
         })
-
         sent_transactions = eth_tester.enable_auto_mine_transactions()
         assert sent_transactions == [tx1, tx2_replacement]
 
@@ -613,8 +733,118 @@ class BaseTestBackendDirect:
             "to": BURN_ADDRESS,
             "gas": 21000,
         })
+
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
         assert receipt['transaction_hash'] == transaction_hash
+        assert receipt['type'] == '0x2'
+        assert receipt['effective_gas_price'] == 1000000000
+
+    @pytest.mark.parametrize(
+        'type_specific_params,_type',
+        (
+            (
+                {'gas_price': 1234567890},
+                '0x0'  # legacy transactions being '0x0' taken from current geth version v1.10.10
+            ),
+            (
+                {
+                    'gas_price': 1234567890,
+                    'access_list': ({'address': '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe', 'storage_keys': ()},),  # noqa: E501
+                },
+                '0x1'  # access list transaction
+            ),
+            (
+                {
+                    'max_fee_per_gas': 1000000000,
+                    'max_priority_fee_per_gas': 1000000000,
+                    'access_list': (
+                        {
+                            'address': '0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe',
+                            'storage_keys': ()
+                        },
+                    ),
+                },
+                '0x2'  # dynamic fee transaction
+            ),
+        )
+    )
+    def test_receipt_transaction_type_for_mined_transaction(
+        self, eth_tester, type_specific_params, _type
+    ):
+        transaction_hash = eth_tester.send_transaction(
+            merge(
+                {
+                    "from": eth_tester.get_accounts()[0],
+                    "to": BURN_ADDRESS,
+                    "gas": 25000,
+                },
+                type_specific_params
+            )
+        )
+        receipt = eth_tester.get_transaction_receipt(transaction_hash)
+        assert receipt['transaction_hash'] == transaction_hash
+        assert receipt['type'] == _type
+
+    def test_receipt_effective_gas_price_for_mined_transaction_legacy(self, eth_tester):
+        gas_price = 1234567890
+
+        transaction_hash = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+            "gas_price": gas_price,
+        })
+        receipt = eth_tester.get_transaction_receipt(transaction_hash)
+        assert receipt['transaction_hash'] == transaction_hash
+        assert receipt['type'] == '0x0'
+        assert receipt['effective_gas_price'] == gas_price
+
+    def test_receipt_effective_gas_price_for_mined_transaction_base_fee_minimum(self, eth_tester):
+        priority_fee = 1500000000
+
+        transaction_hash = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+            "max_priority_fee_per_gas": priority_fee,
+            "max_fee_per_gas": priority_fee * 2
+        })
+        receipt = eth_tester.get_transaction_receipt(transaction_hash)
+
+        base_fee = eth_tester.get_block_by_number(receipt['block_number'])['base_fee_per_gas']
+
+        # base fee should be 875000000 since genesis was 1000000000
+        assert base_fee == 875000000
+
+        assert receipt['transaction_hash'] == transaction_hash
+        assert receipt['type'] == '0x2'
+        # the max fee is higher than (base fee + priority fee) so the latter should be the
+        # effective gas price
+        assert receipt['effective_gas_price'] == base_fee + priority_fee
+
+    def test_receipt_effective_gas_price_for_mined_transaction_max_fee_minimum(self, eth_tester):
+        priority_fee = 1500000000
+        max_fee = priority_fee + 1  # arbitrary, to differentiate from the priority fee
+
+        transaction_hash = eth_tester.send_transaction({
+            "from": eth_tester.get_accounts()[0],
+            "to": BURN_ADDRESS,
+            "gas": 21000,
+            "max_priority_fee_per_gas": priority_fee,
+            "max_fee_per_gas": max_fee
+        })
+        receipt = eth_tester.get_transaction_receipt(transaction_hash)
+
+        base_fee = eth_tester.get_block_by_number(receipt['block_number'])['base_fee_per_gas']
+
+        # base fee should be 875000000 since genesis was 1000000000
+        assert base_fee == 875000000
+
+        assert receipt['transaction_hash'] == transaction_hash
+        assert receipt['type'] == '0x2'
+        # the max fee is lower than (base fee + priority fee) so the former should be the
+        # effective gas price
+        assert receipt['effective_gas_price'] == max_fee
 
     def test_get_transaction_receipt_for_unmined_transaction_raises(self, eth_tester):
         eth_tester.disable_auto_mine_transactions()

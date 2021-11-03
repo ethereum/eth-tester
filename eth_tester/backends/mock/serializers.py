@@ -1,3 +1,9 @@
+from eth_tester.backends.mock.common import (
+    calculate_effective_gas_price,
+)
+from eth_tester.utils.transactions import (
+    extract_transaction_type,
+)
 from eth_utils.toolz import (
     assoc,
     partial,
@@ -27,15 +33,28 @@ def serialize_full_transaction(transaction, block, transaction_index, is_pending
         block_number = block['number']
         block_hash = block['hash']
 
-    return pipe(
+    serialized_transaction = pipe(
         transaction,
         partial(assoc, key='block_number', value=block_number),
         partial(assoc, key='block_hash', value=block_hash),
         partial(assoc, key='transaction_index', value=transaction_index),
+        partial(assoc, key='type', value=extract_transaction_type(transaction))
     )
 
+    if 'gas_price' in transaction:
+        return serialized_transaction
+    else:
+        # TODO: Sometime in 2022 the inclusion of gas_price may be removed from dynamic fee
+        #  transactions and we can get rid of this behavior.
+        #  https://github.com/ethereum/execution-specs/pull/251
+        gas_price = (
+            transaction['max_fee_per_gas'] if is_pending
+            else calculate_effective_gas_price(transaction, block)
+        )
+        return assoc(serialized_transaction, 'gas_price', gas_price)
 
-def serialize_receipt(transaction, block, transaction_index, is_pending):
+
+def serialize_receipt(receipt, transaction, block, transaction_index, is_pending):
     if is_pending:
         block_number = None
         block_hash = None
@@ -45,9 +64,13 @@ def serialize_receipt(transaction, block, transaction_index, is_pending):
         block_hash = block['hash']
 
     return pipe(
-        transaction,
+        receipt,
         partial(assoc, key='block_number', value=block_number),
         partial(assoc, key='block_hash', value=block_hash),
         partial(assoc, key='transaction_index', value=transaction_index),
         partial(assoc, key='state_root', value=b'\x00'),
+        partial(assoc, key='effective_gas_price', value=(
+            calculate_effective_gas_price(transaction, block)
+        )),
+        partial(assoc, key='type', value=extract_transaction_type(transaction))
     )

@@ -5,8 +5,8 @@ import math
 import functools
 
 from eth_utils import (
-    is_boolean,
     is_bytes,
+    is_hexstr,
     is_text,
     is_dict,
     is_integer,
@@ -32,7 +32,7 @@ def validate_positive_integer(value):
     error_message = "Value must be positive integers.  Got: {}".format(
         value,
     )
-    if not is_integer(value) or is_boolean(value):
+    if not is_integer(value):
         raise ValidationError(error_message)
     elif value < 0:
         raise ValidationError(error_message)
@@ -113,7 +113,7 @@ def validate_has_required_keys(value, required_keys):
     missing_keys = tuple(sorted(set(required_keys).difference(value.keys())))
     if missing_keys:
         raise ValidationError(
-            "Blocks must contain all of the keys '{}'.  Missing the keys: '{}'".format(
+            "dict must contain all of the keys '{}'.  Missing the keys: '{}'".format(
                 "/".join(tuple(sorted(required_keys))),
                 "/".join(missing_keys),
             )
@@ -177,6 +177,16 @@ def validate_array(value, validator):
             )
         )
         raise ValidationError(error_message)
+
+
+def validate_transaction_type(value):
+    if not (is_hexstr(value) or is_integer(value)):
+        raise ValidationError(f"Transaction type must be hexadecimal or integer. Got {value}")
+    if is_hexstr(value) and '0x' not in value:
+        raise ValidationError(f"Transaction type string must be hex string. Got: {value}")
+    type_int = int(value, 16) if is_hexstr(value) else int(value)
+    if type_int not in (0, 1, 2):
+        raise ValidationError(f"Transaction type '{value}' not recognized.")
 
 
 def if_not_null(validator_fn):
