@@ -301,9 +301,9 @@ class PyEVMBackend(BaseChainBackend):
         """
         if not is_pyevm_available():
             raise BackendDistributionNotFound(
-                "The `py-evm` package is not available.  The "
-                "`PyEVMBackend` requires py-evm to be installed and importable. "
-                "Please install the `py-evm` library."
+                "The `py-evm` package is not available or not up to date. "
+                "The `PyEVMBackend` requires py-evm to be installed and importable. "
+                "Please install or update the `py-evm` library."
             )
 
         self.account_keys = None  # set below

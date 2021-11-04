@@ -32,7 +32,8 @@ def get_chain_backend_class(backend_import_path=None):
                 "backends were available.  Falling back to the `MockBackend` "
                 "which does not support all EVM functionality.  Please refer to "
                 "the `eth-tester` documentation for information on what "
-                "backends are available and how to set them."
+                "backends are available and how to set them.  Your py-evm "
+                "package may need to be updated."
             ))
             backend_import_path = get_import_path(MockBackend)
     return import_string(backend_import_path)
