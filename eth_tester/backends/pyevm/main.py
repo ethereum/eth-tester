@@ -351,8 +351,10 @@ class PyEVMBackend(BaseChainBackend):
         return get_default_genesis_params(overrides=overrides)
 
     @classmethod
-    def generate_genesis_state(cls, overrides=None, num_accounts=None):
-        return cls._generate_genesis_state(overrides=overrides, num_accounts=num_accounts)
+    def generate_genesis_state(cls, overrides=None, num_accounts=None, mnemonic=None):
+        return cls._generate_genesis_state(
+            overrides=overrides, num_accounts=num_accounts, mnemonic=mnemonic
+        )
 
     @staticmethod
     def _generate_genesis_state(overrides=None, num_accounts=None, mnemonic=None):
