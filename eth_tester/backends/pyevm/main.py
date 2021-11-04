@@ -325,7 +325,7 @@ class PyEVMBackend(BaseChainBackend):
         genesis_parameters=None,
         vm_configuration=None
     ):
-        genesis_state = PyEVMBackend._generate_genesis_state(
+        genesis_state = PyEVMBackend.generate_genesis_state(
             mnemonic=mnemonic,
             overrides=genesis_state_overrides or {},
             num_accounts=num_accounts,

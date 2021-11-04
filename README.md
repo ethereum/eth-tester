@@ -872,7 +872,7 @@ Then pass the generated `custom_genesis_params` `dict` to the backend's `__init_
 ```
 
 Similarly to `genesis_parameters`, override the genesis state by passing in an `overrides` `dict`
-to `PyEVMBackend._generate_genesis_state`. Optionally, provide `num_accounts` to set the number of accounts.
+to `PyEVMBackend.generate_genesis_state`. Optionally, provide `num_accounts` to set the number of accounts.
 
 For more control on which accounts the backend generates, use the `from_mnemonic()` classmethod. Give it
 a `mnemonic` (and optionally the number of accounts) and it will use that information to generate the accounts.
