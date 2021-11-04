@@ -19,8 +19,4 @@ def get_pyevm_version():
 
 def is_pyevm_available():
     version = get_pyevm_version()
-    if not version:
-        return False
-
-    minimum_supported_version = Version("0.5.0")
-    return version >= minimum_supported_version
+    return version and version >= Version("0.5.0")
