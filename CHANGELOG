@@ -1,10 +1,16 @@
-v0.6.0-beta.1 (Unreleased)
+v0.6.0-beta.1
 -------------
 
-- Features
+Released 2021-11-04
+
+- Breaking Changes
   - London support (https://github.com/ethereum/eth-tester/pull/206)
     - Upgrade py-evm to v0.5.0-alpha.1 for London support
     - Default to London
+
+- Features
+
+  - London support (https://github.com/ethereum/eth-tester/pull/206)
     - Support access list transactions and dynamic fee transactions
     - Transaction param support for `access_list`, `type`, `max_fee_per_gas`, `max_priority_fee_per_gas`
     - Transaction receipt param support for `type` and `effective_gas_price`
