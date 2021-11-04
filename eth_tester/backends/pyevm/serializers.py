@@ -4,10 +4,10 @@ from toolz import (
     merge,
 )
 
-from .utils import is_pyevm_available
+from .utils import is_supported_pyevm_version_available
 
 
-if is_pyevm_available():
+if is_supported_pyevm_version_available():
     from eth.rlp.transactions import BaseTransaction
     from eth.vm.forks.berlin.transactions import TypedTransaction
 else:

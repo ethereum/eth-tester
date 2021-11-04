@@ -45,9 +45,9 @@ from .serializers import (
     serialize_transaction,
     serialize_transaction_receipt,
 )
-from .utils import is_pyevm_available
+from .utils import is_supported_pyevm_version_available
 
-if is_pyevm_available():
+if is_supported_pyevm_version_available():
     from eth.constants import (
         GENESIS_PARENT_HASH,
     )
@@ -299,7 +299,7 @@ class PyEVMBackend(BaseChainBackend):
             series of block numbers and virtual machines)
         :param mnemonic: A mnemonic str to use when generating accounts.
         """
-        if not is_pyevm_available():
+        if not is_supported_pyevm_version_available():
             raise BackendDistributionNotFound(
                 "The `py-evm` package is not available or not up to date. "
                 "The `PyEVMBackend` requires py-evm to be installed and importable. "
