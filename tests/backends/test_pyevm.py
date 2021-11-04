@@ -83,7 +83,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
             )
 
         # Use staticmethod state overriding
-        genesis_state = PyEVMBackend._generate_genesis_state(
+        genesis_state = PyEVMBackend.generate_genesis_state(
             overrides=state_overrides, num_accounts=3
         )
         assert len(genesis_state) == 3
@@ -93,7 +93,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         # Only existing default genesis state keys can be overridden
         with pytest.raises(ValueError):
-            _invalid_genesis_state = PyEVMBackend._generate_genesis_state(
+            _invalid_genesis_state = PyEVMBackend.generate_genesis_state(
                 overrides=invalid_overrides
             )
 
@@ -102,7 +102,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         test_accounts = 3
 
         # Initialize PyEVM backend with custom genesis state
-        genesis_state = PyEVMBackend._generate_genesis_state(
+        genesis_state = PyEVMBackend.generate_genesis_state(
             overrides=state_overrides, num_accounts=test_accounts
         )
 
@@ -159,13 +159,13 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         assert genesis_params["gas_limit"] == param_overrides["gas_limit"]
 
         # Use the the staticmethod to generate custom genesis parameters
-        genesis_params = PyEVMBackend._generate_genesis_params(param_overrides)
+        genesis_params = PyEVMBackend.generate_genesis_params(param_overrides)
         assert genesis_params["gas_limit"] == param_overrides["gas_limit"]
 
         # Only existing default genesis parameter keys can be overridden
         invalid_overrides = {"gato": "con botas"}
         with pytest.raises(ValueError):
-            _invalid_genesis_params = PyEVMBackend._generate_genesis_params(
+            _invalid_genesis_params = PyEVMBackend.generate_genesis_params(
                 overrides=invalid_overrides
             )
 
@@ -176,7 +176,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         block_one_gas_limit = param_overrides['gas_limit']
 
         # Initialize PyEVM backend with custom genesis parameters
-        genesis_params = PyEVMBackend._generate_genesis_params(
+        genesis_params = PyEVMBackend.generate_genesis_params(
             overrides=param_overrides
         )
         pyevm_backend = PyEVMBackend(genesis_parameters=genesis_params)

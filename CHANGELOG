@@ -1,10 +1,7 @@
-v0.6.0-beta.1
+v0.6.0-beta.1 (Unreleased)
 -------------
 
-Unreleased
-
 - Features
-
   - London support (https://github.com/ethereum/eth-tester/pull/206)
     - Upgrade py-evm to v0.5.0-alpha.1 for London support
     - Default to London
@@ -13,6 +10,8 @@ Unreleased
     - Transaction receipt param support for `type` and `effective_gas_price`
     - Block param support for `base_fee_per_gas`
   - Support for custom mnemonic when initializing the Backend for EthTester
+  - New public, pass-through methods PyEVMBackend.generate_genesis_params and
+    PyEVMBackend.generate_genesis_state
 
 - Misc
 
