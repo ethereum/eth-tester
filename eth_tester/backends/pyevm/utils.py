@@ -19,8 +19,4 @@ def get_pyevm_version():
 
 def is_pyevm_available():
     pyevm_version = get_pyevm_version()
-
-    if pyevm_version is None:
-        return False
-    else:
-        return True
+    return pyevm_version is not None
