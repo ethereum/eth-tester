@@ -1,10 +1,14 @@
-Unreleased
+v0.6.0-beta.2
 -------------
 
+Unreleased
+
 - Features
-  
-  - Handle when older pre-london-fork py-evm versions are installed
-    by not recognizing it as installed.
+
+    - Handle when older pre-london-fork py-evm versions are installed
+      by not recognizing it as installed.
+
+    - Allow `nonce` parameter for inbound transactions to `eth_call` and `eth_estimateGas`
 
 v0.6.0-beta.1
 -------------
