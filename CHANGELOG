@@ -1,5 +1,10 @@
-Unreleased
+v0.6.0-beta.2
 -------------
+
+Unreleased
+
+- Features
+    - Allow `nonce` parameter for inbound transactions to `eth_call` and `eth_estimateGas`
 
 - Misc
   
