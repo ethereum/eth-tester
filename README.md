@@ -1,8 +1,7 @@
 # Ethereum Tester
 
 [![Join the chat at https://gitter.im/ethereum/eth-tester](https://badges.gitter.im/ethereum/eth-tester.svg)](https://gitter.im/ethereum/eth-tester)
-
-[![Build Status](https://travis-ci.org/ethereum/eth-tester.png)](https://travis-ci.org/ethereum/eth-tester)
+[![Build Status](https://circleci.com/gh/ethereum/eth-tester.svg?style=shield)](https://app.circleci.com/pipelines/github/ethereum/eth-tester)
 
 
 Tools for testing ethereum based applications.
