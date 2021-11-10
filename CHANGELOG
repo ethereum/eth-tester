@@ -1,7 +1,7 @@
 v0.6.0-beta.2
 -------------
 
-Unreleased
+Released 2021-11-10
 
 - Features
 
@@ -13,10 +13,7 @@ Unreleased
   - Reference new public method generate_genesis_state instead of
     protected version in README
 	- Created better test for gas estimate with block identifiers
-
-
-- Misc
-    - Update README.md with the link to the Circle CI build status
+  - Update README.md with the link to the Circle CI build status
 
 v0.6.0-beta.1
 -------------
