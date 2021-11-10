@@ -6,6 +6,11 @@ Unreleased
 - Features
     - Allow `nonce` parameter for inbound transactions to `eth_call` and `eth_estimateGas`
 
+- Misc
+  
+  - Reference new public method generate_genesis_state instead of 
+    protected version in README
+
 v0.6.0-beta.1
 -------------
 
