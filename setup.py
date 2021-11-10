@@ -27,13 +27,17 @@ extras_require = {
         "eth-hash[pysha3]>=0.1.4,<1.0.0;implementation_name=='cpython'",
         "eth-hash[pycryptodome]>=0.1.4,<1.0.0;implementation_name=='pypy'",
     ],
+    'docs': [
+        'towncrier==21.3.0',
+    ]
 }
 
 extras_require['dev'] = (
     extras_require['dev'] +
     extras_require['test'] +
     extras_require['py-evm'] +
-    extras_require['lint']
+    extras_require['lint'] +
+    extras_require['docs']
 )
 # convenience in case someone leaves out the `-`
 extras_require['pyevm'] = extras_require['py-evm']
