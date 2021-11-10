@@ -10,6 +10,7 @@ from .utils import is_pyevm_available
 if is_pyevm_available():
     from eth.rlp.transactions import BaseTransaction
     from eth.vm.forks.berlin.transactions import TypedTransaction
+    from eth.vm.forks.london.blocks import LondonBlock
 else:
     BaseTransaction = None
     TypedTransaction = None
@@ -42,7 +43,7 @@ def serialize_block(block, full_transaction, is_pending):
     if block.uncles:
         raise NotImplementedError("Uncle serialization has not been implemented")
 
-    return {
+    block_info = {
         "number": block.header.block_number,
         "hash": block.header.hash,
         "parent_hash": block.header.parent_hash,
@@ -62,8 +63,15 @@ def serialize_block(block, full_transaction, is_pending):
         "timestamp": block.header.timestamp,
         "transactions": transactions,
         "uncles": [uncle.hash for uncle in block.uncles],
-        "base_fee_per_gas": block.header.base_fee_per_gas,
     }
+
+    # blocks after London should inherit from LondonBlock,
+    # so this should also work for future hard forks
+    if isinstance(block, LondonBlock):
+        base_fee = block.header.base_fee_per_gas
+        block_info.update({"base_fee_per_gas": base_fee})
+
+    return block_info
 
 
 def serialize_transaction_hash(block, transaction, transaction_index, is_pending):
