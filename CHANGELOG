@@ -12,6 +12,7 @@ Unreleased
 
   - Reference new public method generate_genesis_state instead of
     protected version in README
+	- Created better test for gas estimate with block identifiers
 
 
 v0.6.0-beta.1
