@@ -3,17 +3,16 @@ v0.6.0-beta.2
 
 Unreleased
 
-- Breaking changes
-
-  - Increase default block gas limit to two pi
-
 - Features
-    - Allow `nonce` parameter for inbound transactions to `eth_call` and `eth_estimateGas`
+
+  - Allow `nonce` parameter for inbound transactions to `eth_call` and `eth_estimateGas`
+  - Increase default block gas limit to gas limit at London hard fork (30029122)
 
 - Misc
 
   - Reference new public method generate_genesis_state instead of
     protected version in README
+
 
 v0.6.0-beta.1
 -------------
