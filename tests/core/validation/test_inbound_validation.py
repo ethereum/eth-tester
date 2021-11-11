@@ -196,7 +196,7 @@ def _make_transaction(
         r=None,
         s=None,
         v=None,
-        y_parity=None,):
+):
     yield from _yield_key_value_if_value_not_none('type', _type)
     yield from _yield_key_value_if_value_not_none('chain_id', chain_id)
     yield from _yield_key_value_if_value_not_none('from', _from)
@@ -214,7 +214,6 @@ def _make_transaction(
     yield from _yield_key_value_if_value_not_none('r', r)
     yield from _yield_key_value_if_value_not_none('s', s)
     yield from _yield_key_value_if_value_not_none('v', v)
-    yield from _yield_key_value_if_value_not_none('y_parity', y_parity)
 
 
 @pytest.mark.parametrize(
@@ -259,7 +258,7 @@ def _make_transaction(
             _from=ADDRESS_A, gas=21000,
             max_fee_per_gas=1000000000,
             max_priority_fee_per_gas=1000000000,
-            r=1, s=1, y_parity=1), True),
+            r=1, s=1, v=1), True),
         (  # access list txn
             'send', _make_transaction(
                 _from=ADDRESS_A,

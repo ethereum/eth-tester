@@ -380,11 +380,13 @@ class BaseTestBackendDirect:
             'value': 1,
             'gas': 40000,
             'gas_price': 1000000000,
-            'access_list': [],
+            'access_list': (),
         }
         txn_hash = eth_tester.send_transaction(access_list_transaction)
         txn = eth_tester.get_transaction_by_hash(txn_hash)
+
         assert txn.get('type') == '0x1'
+        assert txn.get('access_list') == ()
         self._check_transactions(access_list_transaction, txn)
 
         # with non-empty access list
@@ -403,7 +405,9 @@ class BaseTestBackendDirect:
         )
         txn_hash = eth_tester.send_transaction(access_list_transaction)
         txn = eth_tester.get_transaction_by_hash(txn_hash)
+
         assert txn.get('type') == '0x1'
+        assert txn.get('access_list') != ()
         self._check_transactions(access_list_transaction, txn)
 
     def test_send_dynamic_fee_transaction(self, eth_tester):
@@ -421,7 +425,9 @@ class BaseTestBackendDirect:
         }
         txn_hash = eth_tester.send_transaction(dynamic_fee_transaction)
         txn = eth_tester.get_transaction_by_hash(txn_hash)
+
         assert txn.get('type') == '0x2'
+        assert txn.get('access_list') == ()
         self._check_transactions(dynamic_fee_transaction, txn)
 
         # with non-empty access list
@@ -440,7 +446,9 @@ class BaseTestBackendDirect:
         )
         txn_hash = eth_tester.send_transaction(dynamic_fee_transaction)
         txn = eth_tester.get_transaction_by_hash(txn_hash)
+
         assert txn.get('type') == '0x2'
+        assert txn.get('access_list') != ()
         self._check_transactions(dynamic_fee_transaction, txn)
 
     def test_block_number_auto_mine_transactions_enabled(self, eth_tester):

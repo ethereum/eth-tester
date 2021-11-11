@@ -20,7 +20,6 @@ VALID_TRANSACTION_PARAMS = [
     'r',
     's',
     'v',
-    'y_parity',
 ]
 
 

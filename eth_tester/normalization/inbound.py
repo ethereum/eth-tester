@@ -112,7 +112,6 @@ TRANSACTION_NORMALIZERS = {
     'r': identity,
     's': identity,
     'v': identity,
-    'y_parity': identity,
 }
 normalize_transaction = partial(normalize_dict, normalizers=TRANSACTION_NORMALIZERS)
 
