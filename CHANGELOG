@@ -1,12 +1,3 @@
-Unreleased
-----------
-
-- Bugfixes
-
-	- Only add `base_fee_per_gas` to block serializer after London
-	- Return a `v` field with `y_parity` value, rather than a `y_parity` field, for typed transactions.
-
-
 v0.6.0-beta.2
 -------------
 
