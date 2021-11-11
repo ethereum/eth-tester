@@ -165,8 +165,7 @@ TRANSACTION_KEYS = {
 SIGNED_TRANSACTION_KEYS = {
     'r',
     's',
-    'v',  # legacy transactions only
-    'y_parity',  # typed transactions only, instead of 'v'
+    'v',
 }
 
 TRANSACTION_INTERNAL_TYPE_INFO = {
@@ -177,12 +176,6 @@ TRANSACTION_INTERNAL_TYPE_INFO = {
 }
 
 ALLOWED_TRANSACTION_INTERNAL_TYPES = set(TRANSACTION_INTERNAL_TYPE_INFO.keys())
-
-
-def _is_typed_transaction(txn_dict: dict) -> bool:
-    return any(_ in txn_dict.keys() for _ in (
-        'max_fee_per_gas', 'max_priority_fee_per_gas', 'access_list'
-    ))
 
 
 def validate_transaction(value, txn_internal_type):
@@ -205,13 +198,7 @@ def validate_transaction(value, txn_internal_type):
     if txn_internal_type == 'send':
         required_keys = {'from', 'gas'}
     elif txn_internal_type == 'send_signed':
-        signed_transaction_keys = SIGNED_TRANSACTION_KEYS.copy()
-        if _is_typed_transaction(value):
-            signed_transaction_keys.remove('v')
-        else:
-            # legacy transaction
-            signed_transaction_keys.remove('y_parity')
-        required_keys = {'from', 'gas'} | signed_transaction_keys
+        required_keys = {'from', 'gas'} | SIGNED_TRANSACTION_KEYS
     elif txn_internal_type in {'estimate', 'call'}:
         required_keys = {'from'}
     else:
@@ -284,11 +271,7 @@ def validate_transaction(value, txn_internal_type):
     if txn_internal_type == 'send_signed':
         validate_uint256(value['r'])
         validate_uint256(value['s'])
-        if _is_typed_transaction(value):
-            validate_uint8(value['y_parity'])
-        else:
-            # legacy transaction
-            validate_uint8(value['v'])
+        validate_uint8(value['v'])
 
 
 def _validate_inbound_access_list(access_list):

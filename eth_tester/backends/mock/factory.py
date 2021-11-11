@@ -116,6 +116,7 @@ def _fill_transaction(transaction, block, transaction_index, is_pending, overrid
     yield 'gas', overrides.get('gas', transaction.get('gas'))
     yield 'r', overrides.get('r', transaction.get('r', 12345))
     yield 's', overrides.get('s', transaction.get('s', 67890))
+    yield 'v', overrides.get('v', transaction.get('v', 0))
 
     if is_dynamic_fee_transaction:
         # dynamic fee transaction (type = 2)
@@ -133,15 +134,10 @@ def _fill_transaction(transaction, block, transaction_index, is_pending, overrid
             # access list transaction (type = 1)
             yield from _yield_typed_transaction_fields(overrides, transaction)
 
-        else:
-            # legacy transaction
-            yield 'v', overrides.get('v', transaction.get('v', 27))
-
 
 def _yield_typed_transaction_fields(overrides, transaction):
     yield 'chain_id', overrides.get('chain_id', transaction.get('chain_id', 131277322940537))
     yield 'access_list', overrides.get('access_list', transaction.get('access_list', ()))
-    yield 'y_parity', overrides.get('y_parity', transaction.get('y_parity', 0))
 
 
 @to_dict

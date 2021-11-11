@@ -513,9 +513,13 @@ class PyEVMBackend(BaseChainBackend):
             # if no fee params exist, default to dynamic fee transaction:
             not any(_ in transaction for _ in DYNAMIC_FEE_TRANSACTION_PARAMS + ('gas_price',))
         )
+        is_typed_transaction = is_dynamic_fee_transaction or 'access_list' in transaction
 
         for key in transaction:
             if key in ('from', 'type'):
+                continue
+            if key == 'v' and is_typed_transaction:
+                yield 'y_parity', transaction['v']  # use y_parity for typed txns, internally
                 continue
             yield key, transaction[key]
 
@@ -538,7 +542,7 @@ class PyEVMBackend(BaseChainBackend):
                     transaction['max_priority_fee_per_gas'] + 2 * self.get_base_fee(block_number)
                 )
 
-        if is_dynamic_fee_transaction or 'access_list' in transaction:
+        if is_typed_transaction:
             # typed transaction
             if 'access_list' not in transaction:
                 yield 'access_list', ()
