@@ -28,7 +28,7 @@ extras_require = {
         "eth-hash[pycryptodome]>=0.1.4,<1.0.0;implementation_name=='pypy'",
     ],
     'docs': [
-        'towncrier==21.3.0',
+        'towncrier==18.5.0',
     ]
 }
 
