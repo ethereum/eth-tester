@@ -1,0 +1,7 @@
+[tool.towncrier]
+    package="eth_tester"
+    filename = "CHANGELOG"
+    directory = "newsfragments"
+    underlines = ["-", "~", "^"]
+    issue_format = "https://github.com/ethereum/eth-tester/issues/{issue}"
+    title_format = "v{version} ({project_date})"
