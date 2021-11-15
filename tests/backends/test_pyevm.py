@@ -58,7 +58,7 @@ def test_custom_virtual_machines():
 
 
 def test_berlin_configuration():
-    if not is_pyevm_available():
+    if not is_supported_pyevm_version_available():
         pytest.skip("PyEVM is not available")
 
     mnemonic = "test test test test test test test test test test test junk"
@@ -76,7 +76,7 @@ def test_berlin_configuration():
 
 
 def test_london_configuration():
-    if not is_pyevm_available():
+    if not is_supported_pyevm_version_available():
         pytest.skip("PyEVM is not available")
 
     backend = PyEVMBackend(vm_configuration=(
