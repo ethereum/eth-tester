@@ -76,7 +76,7 @@ BLANK_ROOT_HASH = b'V\xe8\x1f\x17\x1b\xccU\xa6\xff\x83E\xe6\x92\xc0\xf8n\x5bH\xe
 
 GENESIS_BLOCK_NUMBER = 0
 GENESIS_DIFFICULTY = 131072
-GENESIS_GAS_LIMIT = 3141592
+GENESIS_GAS_LIMIT = 30029122  # gas limit at London fork block 12965000 on mainnet
 GENESIS_COINBASE = ZERO_ADDRESS
 GENESIS_NONCE = b'\x00\x00\x00\x00\x00\x00\x00*'  # 42 encoded as big-endian-integer
 GENESIS_MIX_HASH = ZERO_HASH32
@@ -325,7 +325,7 @@ class PyEVMBackend(BaseChainBackend):
         genesis_parameters=None,
         vm_configuration=None
     ):
-        genesis_state = PyEVMBackend._generate_genesis_state(
+        genesis_state = PyEVMBackend.generate_genesis_state(
             mnemonic=mnemonic,
             overrides=genesis_state_overrides or {},
             num_accounts=num_accounts,
@@ -351,8 +351,10 @@ class PyEVMBackend(BaseChainBackend):
         return get_default_genesis_params(overrides=overrides)
 
     @classmethod
-    def generate_genesis_state(cls, overrides=None, num_accounts=None):
-        return cls._generate_genesis_state(overrides=overrides, num_accounts=num_accounts)
+    def generate_genesis_state(cls, overrides=None, num_accounts=None, mnemonic=None):
+        return cls._generate_genesis_state(
+            overrides=overrides, num_accounts=num_accounts, mnemonic=mnemonic
+        )
 
     @staticmethod
     def _generate_genesis_state(overrides=None, num_accounts=None, mnemonic=None):
@@ -511,9 +513,13 @@ class PyEVMBackend(BaseChainBackend):
             # if no fee params exist, default to dynamic fee transaction:
             not any(_ in transaction for _ in DYNAMIC_FEE_TRANSACTION_PARAMS + ('gas_price',))
         )
+        is_typed_transaction = is_dynamic_fee_transaction or 'access_list' in transaction
 
         for key in transaction:
             if key in ('from', 'type'):
+                continue
+            if key == 'v' and is_typed_transaction:
+                yield 'y_parity', transaction['v']  # use y_parity for typed txns, internally
                 continue
             yield key, transaction[key]
 
@@ -536,7 +542,7 @@ class PyEVMBackend(BaseChainBackend):
                     transaction['max_priority_fee_per_gas'] + 2 * self.get_base_fee(block_number)
                 )
 
-        if is_dynamic_fee_transaction or 'access_list' in transaction:
+        if is_typed_transaction:
             # typed transaction
             if 'access_list' not in transaction:
                 yield 'access_list', ()

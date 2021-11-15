@@ -85,15 +85,14 @@ def _make_legacy_txn(
     }
 
 
-def _make_access_list_txn(chain_id=131277322940537, access_list=[], y_parity=0, **kwargs,):
-    legacy_kwargs = dissoc(dict(**kwargs), "chain_id", "access_list", "y_parity")
+def _make_access_list_txn(chain_id=131277322940537, access_list=[], **kwargs,):
+    legacy_kwargs = dissoc(dict(**kwargs), "chain_id", "access_list")
     return merge(
-        dissoc(_make_legacy_txn(**legacy_kwargs), "v"),
+        _make_legacy_txn(**legacy_kwargs),
         {
             "type": "0x1",
             "chain_id": chain_id,
             "access_list": access_list,
-            "y_parity": y_parity,
         }
     )
 
@@ -108,16 +107,15 @@ def _make_dynamic_fee_txn(
     max_fee_per_gas=2000000000,
     max_priority_fee_per_gas=1000000000,
     access_list=[],
-    y_parity=0,
     **kwargs,
 ):
     legacy_kwargs = dissoc(
         dict(**kwargs),
-        "chain_id", "max_fee_per_gas", "max_priority_fee_per_gas", "access_list", "y_parity"
+        "chain_id", "max_fee_per_gas", "max_priority_fee_per_gas", "access_list"
     )
     return merge(
         _make_access_list_txn(
-            chain_id=chain_id, access_list=access_list, y_parity=y_parity, **legacy_kwargs
+            chain_id=chain_id, access_list=access_list, **legacy_kwargs
         ),
         {
             "type": "0x2",
@@ -163,6 +161,15 @@ def _make_dynamic_fee_txn(
         (_make_dynamic_fee_txn(chain_id=-1), False),
         (_make_access_list_txn(chain_id=None), False),
         (_make_dynamic_fee_txn(chain_id=None), False),
+        (_make_legacy_txn(v=0), True),
+        (_make_dynamic_fee_txn(v=0), True),
+        (_make_access_list_txn(v=0), True),
+        (_make_legacy_txn(v=1), True),
+        (_make_dynamic_fee_txn(v=1), True),
+        (_make_access_list_txn(v=1), True),
+        (_make_legacy_txn(v=27), True),
+        (_make_access_list_txn(v=27), False),
+        (_make_dynamic_fee_txn(v=27), False),
         (_make_dynamic_fee_txn(max_fee_per_gas=1.0), False),
         (_make_dynamic_fee_txn(max_priority_fee_per_gas=1.0), False),
         (_make_dynamic_fee_txn(max_fee_per_gas='1'), False),
@@ -311,7 +318,7 @@ def _make_block(number=0,
                 total_difficulty=0,
                 size=0,
                 extra_data=ZERO_32BYTES,
-                gas_limit=3141592,
+                gas_limit=30029122,  # gas limit at London fork block 12965000 on mainnet
                 gas_used=21000,
                 timestamp=4000000,
                 transactions=None,

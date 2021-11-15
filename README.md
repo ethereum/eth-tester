@@ -1,8 +1,7 @@
 # Ethereum Tester
 
 [![Join the chat at https://gitter.im/ethereum/eth-tester](https://badges.gitter.im/ethereum/eth-tester.svg)](https://gitter.im/ethereum/eth-tester)
-
-[![Build Status](https://travis-ci.org/ethereum/eth-tester.png)](https://travis-ci.org/ethereum/eth-tester)
+[![Build Status](https://circleci.com/gh/ethereum/eth-tester.svg?style=shield)](https://app.circleci.com/pipelines/github/ethereum/eth-tester)
 
 
 Tools for testing ethereum based applications.
@@ -73,6 +72,7 @@ pip install eth-tester
  'data': '0x',
  'r': 60071646517429056848243893841817235885102606421189844318110381014348740252962,
  's': 55731679314783756278323646144996847004593793888590884914350251538533006990589,
+ 'v': 0,
  'chain_id': 131277322940537,
  'max_fee_per_gas': 1000000000,
  'max_priority_fee_per_gas': 1000000000,
@@ -81,7 +81,6 @@ pip install eth-tester
     '0x0000000000000000000000000000000000000000000000000000000000000007')},
   {'address': '0xBB9bc244D798123fDe783fCc1C72d3Bb8C189413',
    'storage_keys': ()}),
- 'y_parity': 0,
  'gas_price': 1000000000}
 
 
@@ -413,11 +412,11 @@ transaction cannot be found.
  'data': '0x',
  'r': 1713666669454033023988006960017431058214051587080823768269189498559514600280,
  's': 32003859822305799628524852194521134173285969678963273753063458725692016415033,
+ 'v': 0,
  'chain_id': 131277322940537,
  'max_fee_per_gas': 2000000000,
  'max_priority_fee_per_gas': 500000000,
  'access_list': (),
- 'y_parity': 0,
  'gas_price': 1375000000}
 ```
 
@@ -872,7 +871,7 @@ Then pass the generated `custom_genesis_params` `dict` to the backend's `__init_
 ```
 
 Similarly to `genesis_parameters`, override the genesis state by passing in an `overrides` `dict`
-to `PyEVMBackend._generate_genesis_state`. Optionally, provide `num_accounts` to set the number of accounts.
+to `PyEVMBackend.generate_genesis_state`. Optionally, provide `num_accounts` to set the number of accounts.
 
 For more control on which accounts the backend generates, use the `from_mnemonic()` classmethod. Give it
 a `mnemonic` (and optionally the number of accounts) and it will use that information to generate the accounts.

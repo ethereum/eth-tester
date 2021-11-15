@@ -1,14 +1,24 @@
+Eth Tester Changelog
+====================
+
+.. towncrier release notes start
+
 v0.6.0-beta.2
 -------------
 
-Unreleased
+Released 2021-11-10
 
 - Features
 
-    - Handle when older pre-london-fork py-evm versions are installed
-      by not recognizing it as installed.
+  - Allow `nonce` parameter for inbound transactions to `eth_call` and `eth_estimateGas`
+  - Increase default block gas limit to gas limit at London hard fork (30029122)
 
-    - Allow `nonce` parameter for inbound transactions to `eth_call` and `eth_estimateGas`
+- Misc
+
+  - Reference new public method generate_genesis_state instead of
+    protected version in README
+	- Created better test for gas estimate with block identifiers
+  - Update README.md with the link to the Circle CI build status
 
 v0.6.0-beta.1
 -------------
@@ -71,7 +81,6 @@ Released 2020-08-31
     https://github.com/ethereum/eth-tester/pull/195
   - Upgrade to pyevm v0.3.0-alpha.19
     https://github.com/ethereum/eth-tester/pull/196
-
 
 v0.5.0-beta.1
 -------------

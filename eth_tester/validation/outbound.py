@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from toolz import dissoc, merge
+from toolz import merge
 
 from eth_utils import (
     is_bytes,
@@ -94,7 +94,10 @@ def validate_signature_v(value):
 def validate_y_parity(value):
     validate_positive_integer(value)
     if value not in (0, 1):
-        raise ValidationError('y_parity must be either 0 or 1')
+        raise ValidationError(
+            "The 'v' portion (y_parity) of the signature must be either 0 or 1 for "
+            "typed transactions."
+        )
 
 
 def _validate_outbound_access_list(access_list):
@@ -136,10 +139,10 @@ validate_legacy_transaction = partial(validate_dict, key_validators=LEGACY_TRANS
 
 
 ACCESS_LIST_TRANSACTION_VALIDATORS = merge(
-    dissoc(LEGACY_TRANSACTION_VALIDATORS, 'v'),  # y_parity in place of v for typed transactions
+    LEGACY_TRANSACTION_VALIDATORS,
     {
+        "v": validate_y_parity,
         "chain_id": validate_uint256,
-        "y_parity": validate_y_parity,
         "access_list": _validate_outbound_access_list,
     }
 )

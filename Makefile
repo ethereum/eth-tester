@@ -30,7 +30,21 @@ test:
 test-all:
 	tox
 
+validate-docs:
+	python newsfragments/validate_files.py
+	towncrier --draft
+
+notes:
+	# Let UPCOMING_VERSION be the version that is used for the current bump
+	$(eval UPCOMING_VERSION=$(shell bumpversion $(bump) --dry-run --list | grep new_version= | sed 's/new_version=//g'))
+	# Now generate the release notes to have them included in the release commit
+	towncrier --yes --version $(UPCOMING_VERSION)
+	git commit -m "Compile release notes"
+
 release: clean
+	# require that you be on a branch that's linked to upstream/master
+	git status -s -b | head -1 | grep "\.\.upstream/master"
+	python ./newsfragments/validate_files.py is-empty
 	CURRENT_SIGN_SETTING=$(git config commit.gpgSign)
 	git config commit.gpgSign true
 	bumpversion $(bump)
