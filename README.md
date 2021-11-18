@@ -348,7 +348,7 @@ seconds.
 
 #### `EthereumTester.lock_account(account)`
 
-Locks the provide account.
+Locks the provided account.
 
 Raises a `ValidationError` if:
 
