@@ -14,7 +14,7 @@ from eth_tester.backends.pyevm.main import (
     get_default_account_keys,
     get_default_genesis_params,
 )
-from eth_tester.backends.pyevm.utils import is_pyevm_available
+from eth_tester.backends.pyevm.utils import is_supported_pyevm_version_available
 from eth_tester.exceptions import ValidationError
 from eth_tester.utils.backend_testing import BaseTestBackendDirect, SIMPLE_TRANSACTION
 
@@ -25,14 +25,14 @@ MNEMONIC = "test test test test test test test test test test test junk"
 
 @pytest.fixture
 def eth_tester():
-    if not is_pyevm_available():
+    if not is_supported_pyevm_version_available():
         pytest.skip("PyEVM is not available")
     backend = PyEVMBackend()
     return EthereumTester(backend=backend)
 
 
 def test_custom_virtual_machines():
-    if not is_pyevm_available():
+    if not is_supported_pyevm_version_available():
         pytest.skip("PyEVM is not available")
 
     backend = PyEVMBackend(vm_configuration=(
@@ -58,7 +58,7 @@ def test_custom_virtual_machines():
 
 
 def test_berlin_configuration():
-    if not is_pyevm_available():
+    if not is_supported_pyevm_version_available():
         pytest.skip("PyEVM is not available")
 
     mnemonic = "test test test test test test test test test test test junk"
@@ -76,7 +76,7 @@ def test_berlin_configuration():
 
 
 def test_london_configuration():
-    if not is_pyevm_available():
+    if not is_supported_pyevm_version_available():
         pytest.skip("PyEVM is not available")
 
     backend = PyEVMBackend(vm_configuration=(

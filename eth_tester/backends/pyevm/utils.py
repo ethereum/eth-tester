@@ -17,10 +17,6 @@ def get_pyevm_version():
         return None
 
 
-def is_pyevm_available():
-    pyevm_version = get_pyevm_version()
-
-    if pyevm_version is None:
-        return False
-    else:
-        return True
+def is_supported_pyevm_version_available():
+    version = get_pyevm_version()
+    return version and version >= Version("0.5.0")
