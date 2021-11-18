@@ -1,1 +1,0 @@
-Only add `base_fee_per_gas` to block serializer after London
