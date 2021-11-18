@@ -136,12 +136,16 @@ brew install pandoc
 
 To release a new version:
 
+First, compile and commit the release notes:
 ```sh
-bumpversion $$VERSION_PART_TO_BUMP$$
-git push && git push --tags
-make release
+make notes bump={one of: major, minor, patch, devnum}
 ```
 
+Then, do the actual release:
+
+```sh
+make release bump={one of: major, minor, patch, devnum}
+```
 
 #### How to bumpversion
 
@@ -229,7 +233,7 @@ The chain can only time travel forward in time.
 #### `EthereumTester.time_travel(timestamp)`
 
 The `timestamp` must be an integer, strictly greater than the current timestamp
-of the latest block.  
+of the latest block.
 
 > Note: Time traveling will result in a new block being mined.
 
@@ -344,7 +348,7 @@ seconds.
 
 #### `EthereumTester.lock_account(account)`
 
-Locks the provide account.  
+Locks the provide account.
 
 Raises a `ValidationError` if:
 
@@ -526,7 +530,7 @@ found for the given hash.
  'transaction_index': 0}
 ```
 
-- Receipts for unmined transactions will have all of `block_hash`, `block_number` and `transaction_index` set to `None`.  
+- Receipts for unmined transactions will have all of `block_hash`, `block_number` and `transaction_index` set to `None`.
 - Receipts for transactions which create a contract will have the created contract address in the `contract_address` field.
 
 
@@ -550,13 +554,13 @@ In addition to the above, the following parameters are added based on the type o
 
 #### Access list transactions (EIP-2930)
 * `gas_price`: Sets the price per unit of gas in wei that will be paid for transaction execution (integer).
-* `access_list` (optional): Specifies accounts and storage slots expected to be accessed, based on the transaction, in order to 
+* `access_list` (optional): Specifies accounts and storage slots expected to be accessed, based on the transaction, in order to
 gain a discount on the gas for those executions (see quickstart example for usage).
 
 #### Dynamic fee transactions (EIP-1559)
 * `max_fee_per_gas`: Sets the maximum fee per unit of gas in wei that will be paid for transaction execution (integer).
 * `max_priority_fee_per_gas`: Sets the fee per unit of gas in wei that is sent to the miner as an incentive for mining the transaction (integer).
-* `access_list` (optional): Specifies accounts and storage slots expected to be accessed, based on the transaction, in order to 
+* `access_list` (optional): Specifies accounts and storage slots expected to be accessed, based on the transaction, in order to
 gain a discount on the gas for those executions (see quickstart example for usage).
 
 
@@ -647,7 +651,7 @@ can be used to retrieve the transaction hashes for the pending transactions.
 #### `EthereumTester.create_log_filter(from_block=None, to_block=None, address=None, topics=None) -> integer`
 
 Creates a new filter for logs produced by transactions.  The parameters for
-this function can be used to filter the log entries.  
+this function can be used to filter the log entries.
 
 ```python
 >>> filter_id = t.create_log_filter()
@@ -890,7 +894,7 @@ Optionally, provide a `genesis_state_overrides` `dict` to adjust the `genesis_st
 >>> print(t.get_balance('0x1e59ce931B4CFea3fe4B875411e280e173cB7A9C'))  # Outputs 1000000000000000000000000
 ```
 
-*NOTE: The same state is applied to all generated test accounts.* 
+*NOTE: The same state is applied to all generated test accounts.*
 
 ```
 # Default Account Genesis State
@@ -903,7 +907,7 @@ default_account_state = {
 }
 ```
 
-For Example, to create 3 test accounts, each with a balance of 100 ETH each: 
+For Example, to create 3 test accounts, each with a balance of 100 ETH each:
 
 ```python
 >>> from eth_tester import EthereumTester, PyEVMBackend
@@ -922,14 +926,14 @@ For Example, to create 3 test accounts, each with a balance of 100 ETH each:
 ### Implementing Custom Backends
 
 The base class `eth_tester.backends.base.BaseChainBackend` is the recommended
-base class to begin with if you wish to write your own backend.  
+base class to begin with if you wish to write your own backend.
 
 Details on implementation are beyond the scope of this document.
 
 
 ## Data Formats
 
-Ethereum tester uses two formats for data.  
+Ethereum tester uses two formats for data.
 
 * The *normal* format is the data format the is expected as input arguments to all `EthereumTester` methods as well as the return types from all method calls.
 * The *canonical* format is the data format that is used internally by the backend class.
