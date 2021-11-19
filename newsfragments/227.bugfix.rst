@@ -1,1 +1,0 @@
-Support pre-London blocks with missing base fee by setting the ``base_fee_per_gas`` value to ``None`` during block validation and popping it back out during block normalization

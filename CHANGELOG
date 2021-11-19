@@ -3,6 +3,25 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
+v0.6.0-beta.4 (2021-11-19)
+--------------------------
+
+Bugfixes
+~~~~~~~~
+
+- Support pre-London blocks with missing base fee by setting the
+  ``base_fee_per_gas`` value to ``None`` during block validation and popping it
+  back out during block normalization
+  (https://github.com/ethereum/eth-tester/issues/227)
+
+
+Improved Documentation
+~~~~~~~~~~~~~~~~~~~~~~
+
+- Update README to include current release note instructions.
+  (https://github.com/ethereum/eth-tester/issues/226)
+
+
 v0.6.0-beta.3 (2021-11-18)
 --------------------------
 
