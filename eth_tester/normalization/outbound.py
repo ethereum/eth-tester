@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+from toolz import dissoc
+
 from eth_utils.curried import (
     apply_one_of_formatters,
     to_checksum_address,
@@ -77,6 +79,14 @@ def is_transaction_object_list(value):
     return all(is_dict(item) for item in value)
 
 
+def _remove_base_fee_if_none(block):
+    """
+    A `None` value is set for `base_fee_per_gas` during validation for blocks that do not have a
+    base fee (pre-London blocks). Pop this value out here to normalize pre-London blocks.
+    """
+    return block if block['base_fee_per_gas'] else dissoc(block, 'base_fee_per_gas')
+
+
 BLOCK_NORMALIZERS = {
     "number": identity,
     "hash": encode_hex,
@@ -110,7 +120,10 @@ BLOCK_NORMALIZERS = {
     ),
     "uncles": partial(normalize_array, normalizer=encode_hex),
 }
-normalize_block = partial(normalize_dict, normalizers=BLOCK_NORMALIZERS)
+normalize_block = compose(
+    _remove_base_fee_if_none,
+    partial(normalize_dict, normalizers=BLOCK_NORMALIZERS)
+)
 
 
 LOG_ENTRY_NORMALIZERS = {
