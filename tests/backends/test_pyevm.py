@@ -72,7 +72,14 @@ def test_berlin_configuration():
     with pytest.raises(KeyError):
         backend.get_block_by_number(0)['base_fee_per_gas']
 
-    EthereumTester(backend=backend)
+    tester = EthereumTester(backend=backend)
+
+    # Test that outbound block validation doesn't break by getting a block.
+    berlin_block = tester.get_block_by_number(0)
+
+    # Test that outbound block normalization removes `base_fee_per_gas`.
+    with pytest.raises(KeyError):
+        berlin_block['base_fee_per_gas']
 
 
 def test_london_configuration():

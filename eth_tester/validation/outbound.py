@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-from toolz import merge
-
 from eth_utils import (
     is_bytes,
     is_canonical_address,
@@ -10,6 +8,8 @@ from eth_utils import (
 )
 
 from eth_utils.toolz import (
+    compose,
+    merge,
     partial,
 )
 
@@ -191,7 +191,7 @@ validate_receipt = partial(validate_dict, key_validators=RECEIPT_VALIDATORS)
 
 BLOCK_VALIDATORS = {
     "number": validate_positive_integer,
-    'base_fee_per_gas': validate_positive_integer,
+    "base_fee_per_gas": lambda x: x,  # validated separately via _validate_base_fee()
     "hash": validate_block_hash,
     "parent_hash": validate_block_hash,
     "nonce": validate_nonce,
@@ -219,7 +219,25 @@ BLOCK_VALIDATORS = {
     ),
     "uncles": partial(validate_array, validator=validate_32_byte_string),
 }
-validate_block = partial(validate_dict, key_validators=BLOCK_VALIDATORS)
+
+
+def _validate_base_fee(block):
+    """
+    If `base_fee_per_gas` is present (post-London blocks), validate that the value is a
+    positive integer. For pre-London blocks, set to `None` during validation and pop it back out
+    during normalization.
+    """
+    if 'base_fee_per_gas' not in block:
+        block['base_fee_per_gas'] = None
+    else:
+        validate_positive_integer(block['base_fee_per_gas'])
+    return block
+
+
+validate_block = compose(
+    partial(validate_dict, key_validators=BLOCK_VALIDATORS),
+    _validate_base_fee,
+)
 
 
 validate_accounts = partial(validate_array, validator=validate_canonical_address)
