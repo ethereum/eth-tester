@@ -159,6 +159,7 @@ RECEIPT_NORMALIZERS = {
     ),
     "cumulative_gas_used": identity,
     "effective_gas_price": identity,
+    "from": to_checksum_address,
     "gas_used": identity,
     "contract_address": partial(
         normalize_if,
@@ -167,6 +168,8 @@ RECEIPT_NORMALIZERS = {
     ),
     "logs": partial(normalize_array, normalizer=normalize_log_entry),
     "state_root": identity,
+    "status": identity,
+    "to": to_empty_or_checksum_address,
     "type": identity,
 }
 normalize_receipt = partial(normalize_dict, normalizers=RECEIPT_NORMALIZERS)

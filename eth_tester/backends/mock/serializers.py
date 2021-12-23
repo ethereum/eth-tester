@@ -1,3 +1,5 @@
+from eth_utils import to_bytes
+
 from eth_tester.backends.mock.common import (
     calculate_effective_gas_price,
 )
@@ -67,10 +69,13 @@ def serialize_receipt(receipt, transaction, block, transaction_index, is_pending
         receipt,
         partial(assoc, key='block_number', value=block_number),
         partial(assoc, key='block_hash', value=block_hash),
-        partial(assoc, key='transaction_index', value=transaction_index),
-        partial(assoc, key='state_root', value=b'\x00'),
         partial(assoc, key='effective_gas_price', value=(
             calculate_effective_gas_price(transaction, block)
         )),
+        partial(assoc, key='from', value=to_bytes(transaction['from'])),
+        partial(assoc, key='state_root', value=b'\x00'),
+        partial(assoc, key='status', value=0),
+        partial(assoc, key='to', value=transaction['to']),
+        partial(assoc, key='transaction_index', value=transaction_index),
         partial(assoc, key='type', value=extract_transaction_type(transaction))
     )

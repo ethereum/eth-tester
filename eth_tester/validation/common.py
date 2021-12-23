@@ -29,7 +29,7 @@ from eth_tester.exceptions import (
 
 
 def validate_positive_integer(value):
-    error_message = "Value must be positive integers.  Got: {}".format(
+    error_message = "Value must be a positive integer.  Got: {}".format(
         value,
     )
     if not is_integer(value):
