@@ -1,3 +1,5 @@
+from eth_utils import to_int
+
 import rlp
 
 from toolz import (
@@ -158,6 +160,7 @@ def serialize_transaction_receipt(
 ):
     receipt = receipts[transaction_index]
     _txn_type = _extract_transaction_type(transaction)
+    state_root = receipt.state_root
 
     if transaction.to == b'':
         contract_addr = generate_contract_address(
@@ -173,19 +176,22 @@ def serialize_transaction_receipt(
         origin_gas = receipts[transaction_index - 1].gas_used
 
     return {
-        "transaction_hash": transaction.hash,
-        "transaction_index": None if is_pending else transaction_index,
-        "block_number": None if is_pending else block.number,
         "block_hash": None if is_pending else block.hash,
-        "cumulative_gas_used": receipt.gas_used,
-        "gas_used": receipt.gas_used - origin_gas,
-        "effective_gas_price": _calculate_effective_gas_price(transaction, block, _txn_type),
+        "block_number": None if is_pending else block.number,
         "contract_address": contract_addr,
+        "cumulative_gas_used": receipt.gas_used,
+        "effective_gas_price": _calculate_effective_gas_price(transaction, block, _txn_type),
+        "from": transaction.sender,
+        "gas_used": receipt.gas_used - origin_gas,
         "logs": [
             serialize_log(block, transaction, transaction_index, log, log_index, is_pending)
             for log_index, log in enumerate(receipt.logs)
         ],
-        'state_root': receipt.state_root,
+        'state_root': state_root,
+        "status": to_int(state_root),
+        "to": transaction.to,
+        "transaction_hash": transaction.hash,
+        "transaction_index": None if is_pending else transaction_index,
         'type': _txn_type,
     }
 

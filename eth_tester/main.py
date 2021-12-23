@@ -11,7 +11,6 @@ from eth_utils import (
     is_same_address,
     to_list,
     to_tuple,
-    to_int
 )
 
 from eth_utils.toolz import (
@@ -332,12 +331,7 @@ class EthereumTester:
         raw_receipt = self.backend.get_transaction_receipt(raw_transaction_hash)
         self.validator.validate_outbound_receipt(raw_receipt)
         receipt = self.normalizer.normalize_outbound_receipt(raw_receipt)
-
-        # Assume backend supports Byzantium
-        status = to_int(receipt.pop('state_root'))
-        if status > 1:
-            raise ValidationError('Invalid status value: only 0 or 1 are valid')
-        return assoc(receipt, 'status', status)
+        return receipt
 
     #
     # Mining
