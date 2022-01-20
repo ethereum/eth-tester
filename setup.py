@@ -11,8 +11,8 @@ extras_require = {
         'flake8>=3.5.0,<4.0.0',
     ],
     'test': [
-        'pytest>=4.4.0,<5.0.0',
-        'pytest-xdist>=1.22.2,<2',
+        'pytest>=6.2.5,<7',
+        'pytest-xdist>=2.0.0,<3',
         'eth-hash[pycryptodome]>=0.1.4,<1.0.0',
     ],
     'dev': [
@@ -77,9 +77,9 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
 )
