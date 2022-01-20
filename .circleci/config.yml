@@ -70,6 +70,12 @@ jobs:
       - image: circleci/python:3.9
         environment:
           TOXENV: py39-core
+  py310-core:
+    <<: *common
+    docker:
+      - image: circleci/python:3.10
+        environment:
+          TOXENV: py310-core
   py37-pyevm:
     <<: *common
     docker:
@@ -88,6 +94,12 @@ jobs:
       - image: circleci/python:3.9
         environment:
           TOXENV: py39-pyevm
+  py310-pyevm:
+    <<: *common
+    docker:
+      - image: circleci/python:3.10
+        environment:
+          TOXENV: py310-pyevm
 
 workflows:
   version: 2
@@ -97,7 +109,9 @@ workflows:
       - py37-core
       - py38-core
       - py39-core
+      - py310-core
       - py37-pyevm
       - py38-pyevm
       - py39-pyevm
+      - py310-pyevm
       - docs
