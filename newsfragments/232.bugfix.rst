@@ -1,0 +1,1 @@
+Revert upstream dependency requirements so they can be pulled into the current web3.py (v5)
