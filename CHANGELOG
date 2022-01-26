@@ -3,6 +3,16 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
+v0.6.0-beta.6 (2022-01-26)
+--------------------------
+
+Bugfixes
+~~~~~~~~
+
+- Revert upstream dependency requirements so they can be pulled into the
+  current web3.py (v5) (https://github.com/ethereum/eth-tester/issues/232)
+
+
 v0.6.0-beta.5 (2022-01-20)
 --------------------------
 
