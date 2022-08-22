@@ -35,10 +35,12 @@ def test_custom_virtual_machines():
     if not is_supported_pyevm_version_available():
         pytest.skip("PyEVM is not available")
 
-    backend = PyEVMBackend(vm_configuration=(
-        (0, FrontierVM),
-        (3, LondonVM),
-    ))
+    backend = PyEVMBackend(
+        vm_configuration=(
+            (0, FrontierVM),
+            (3, LondonVM),
+        )
+    )
 
     # This should be a FrontierVM block
     VM_at_2 = backend.chain.get_vm_class_for_block_number(2)
@@ -63,14 +65,12 @@ def test_berlin_configuration():
 
     mnemonic = "test test test test test test test test test test test junk"
     vm_configuration = ((0, BerlinVM),)
-    backend = PyEVMBackend.from_mnemonic(
-                mnemonic, vm_configuration=vm_configuration
-            )
+    backend = PyEVMBackend.from_mnemonic(mnemonic, vm_configuration=vm_configuration)
 
     # Berlin blocks shouldn't have base_fee_per_gas,
     # since London was the fork that introduced base_fee_per_gas
     with pytest.raises(KeyError):
-        backend.get_block_by_number(0)['base_fee_per_gas']
+        backend.get_block_by_number(0)["base_fee_per_gas"]
 
     tester = EthereumTester(backend=backend)
 
@@ -79,18 +79,16 @@ def test_berlin_configuration():
 
     # Test that outbound block normalization removes `base_fee_per_gas`.
     with pytest.raises(KeyError):
-        berlin_block['base_fee_per_gas']
+        berlin_block["base_fee_per_gas"]
 
 
 def test_london_configuration():
     if not is_supported_pyevm_version_available():
         pytest.skip("PyEVM is not available")
 
-    backend = PyEVMBackend(vm_configuration=(
-        (0, LondonVM),
-    ))
+    backend = PyEVMBackend(vm_configuration=((0, LondonVM),))
 
-    assert backend.get_block_by_number(0)['base_fee_per_gas'] == 1000000000
+    assert backend.get_block_by_number(0)["base_fee_per_gas"] == 1000000000
 
     EthereumTester(backend=backend)
 
@@ -166,14 +164,16 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         num_accounts = 3
         balance = to_wei(15, "ether")  # Give each account 15 Eth
         pyevm_backend = PyEVMBackend.from_mnemonic(
-            MNEMONIC, num_accounts=num_accounts, genesis_state_overrides={"balance": balance}
+            MNEMONIC,
+            num_accounts=num_accounts,
+            genesis_state_overrides={"balance": balance},
         )
 
         # Each of these accounts stems from the MNEMONIC
         expected_accounts = [
             "0x1e59ce931b4cfea3fe4b875411e280e173cb7a9c",
             "0xc89d42189f0450c2b2c3c61f58ec5d628176a1e7",
-            "0x318b469bba396aec2c60342f9441be36a1945174"
+            "0x318b469bba396aec2c60342f9441be36a1945174",
         ]
 
         # Test integration with EthereumTester
@@ -212,12 +212,10 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         # Establish a custom gas limit
         param_overrides = {"gas_limit": 4750000}
-        block_one_gas_limit = param_overrides['gas_limit']
+        block_one_gas_limit = param_overrides["gas_limit"]
 
         # Initialize PyEVM backend with custom genesis parameters
-        genesis_params = PyEVMBackend.generate_genesis_params(
-            overrides=param_overrides
-        )
+        genesis_params = PyEVMBackend.generate_genesis_params(overrides=param_overrides)
         pyevm_backend = PyEVMBackend(genesis_parameters=genesis_params)
         genesis_block = pyevm_backend.get_block_by_number(0)
         assert genesis_block["gas_limit"] == param_overrides["gas_limit"]
