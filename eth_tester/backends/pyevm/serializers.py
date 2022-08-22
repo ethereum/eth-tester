@@ -27,7 +27,7 @@ from eth_tester.utils.encoding import (
 
 
 def pad32(value):
-    return value.rjust(32, b'\x00')
+    return value.rjust(32, b"\x00")
 
 
 def serialize_block(block, full_transaction, is_pending):
@@ -38,8 +38,7 @@ def serialize_block(block, full_transaction, is_pending):
 
     transactions = [
         transaction_serializer(block, transaction, index, is_pending)
-        for index, transaction
-        in enumerate(block.transactions)
+        for index, transaction in enumerate(block.transactions)
     ]
 
     if block.uncles:
@@ -97,40 +96,43 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
         "data": transaction.data,
         "r": transaction.r,
         "s": transaction.s,
-        "v": transaction.v if _field_in_transaction(transaction, 'v') else transaction.y_parity,
+        "v": transaction.v
+        if _field_in_transaction(transaction, "v")
+        else transaction.y_parity,
     }
-    if _field_in_transaction(transaction, 'gas_price'):
-        type_specific_params = {'gas_price': transaction.gas_price}
+    if _field_in_transaction(transaction, "gas_price"):
+        type_specific_params = {"gas_price": transaction.gas_price}
 
-        if _field_in_transaction(transaction, 'access_list'):
+        if _field_in_transaction(transaction, "access_list"):
             # access list transaction
             type_specific_params = merge(
                 type_specific_params,
                 {
-                    'chain_id': transaction.chain_id,
-                    'access_list': transaction.access_list or (),
-                }
+                    "chain_id": transaction.chain_id,
+                    "access_list": transaction.access_list or (),
+                },
             )
-    elif any(_field_in_transaction(transaction, _) for _ in (
-        'max_fee_per_gas' and 'max_priority_fee_per_gas'
-    )):
+    elif any(
+        _field_in_transaction(transaction, _)
+        for _ in ("max_fee_per_gas" and "max_priority_fee_per_gas")
+    ):
         # dynamic fee transaction
         type_specific_params = {
-            'chain_id': transaction.chain_id,
-            'max_fee_per_gas': transaction.max_fee_per_gas,
-            'max_priority_fee_per_gas': transaction.max_priority_fee_per_gas,
-            'access_list': transaction.access_list or (),
-
+            "chain_id": transaction.chain_id,
+            "max_fee_per_gas": transaction.max_fee_per_gas,
+            "max_priority_fee_per_gas": transaction.max_priority_fee_per_gas,
+            "access_list": transaction.access_list or (),
             # TODO: Sometime in 2022 the inclusion of gas_price may be removed from dynamic fee
             #  transactions and we can get rid of this behavior.
             #  https://github.com/ethereum/execution-specs/pull/251
-            'gas_price': (
-                transaction.max_fee_per_gas if is_pending
+            "gas_price": (
+                transaction.max_fee_per_gas
+                if is_pending
                 else _calculate_effective_gas_price(transaction, block, txn_type)
             ),
         }
     else:
-        raise ValidationError('Invariant: code path should be unreachable')
+        raise ValidationError("Invariant: code path should be unreachable")
 
     return merge(common_transaction_params, type_specific_params)
 
@@ -152,17 +154,13 @@ def _field_in_transaction(transaction, field):
 
 
 def serialize_transaction_receipt(
-    block,
-    receipts,
-    transaction,
-    transaction_index,
-    is_pending
+    block, receipts, transaction, transaction_index, is_pending
 ):
     receipt = receipts[transaction_index]
     _txn_type = _extract_transaction_type(transaction)
     state_root = receipt.state_root
 
-    if transaction.to == b'':
+    if transaction.to == b"":
         contract_addr = generate_contract_address(
             transaction.sender,
             transaction.nonce,
@@ -180,19 +178,23 @@ def serialize_transaction_receipt(
         "block_number": None if is_pending else block.number,
         "contract_address": contract_addr,
         "cumulative_gas_used": receipt.gas_used,
-        "effective_gas_price": _calculate_effective_gas_price(transaction, block, _txn_type),
+        "effective_gas_price": _calculate_effective_gas_price(
+            transaction, block, _txn_type
+        ),
         "from": transaction.sender,
         "gas_used": receipt.gas_used - origin_gas,
         "logs": [
-            serialize_log(block, transaction, transaction_index, log, log_index, is_pending)
+            serialize_log(
+                block, transaction, transaction_index, log, log_index, is_pending
+            )
             for log_index, log in enumerate(receipt.logs)
         ],
-        'state_root': state_root,
+        "state_root": state_root,
         "status": to_int(state_root),
         "to": transaction.to,
         "transaction_hash": transaction.hash,
         "transaction_index": None if is_pending else transaction_index,
-        'type': _txn_type,
+        "type": _txn_type,
     }
 
 
@@ -214,18 +216,18 @@ def _extract_transaction_type(transaction):
     if isinstance(transaction, TypedTransaction):
         try:
             transaction.gas_price  # noqa: 201
-            return '0x1'
+            return "0x1"
         except AttributeError:
-            return '0x2'
-    return '0x0'  # legacy transactions being '0x0' taken from current geth version v1.10.10
+            return "0x2"
+    return "0x0"  # legacy transactions being '0x0' taken from current geth version v1.10.10
 
 
 def _calculate_effective_gas_price(transaction, block, transaction_type):
     return (
         min(
             transaction.max_fee_per_gas,
-            transaction.max_priority_fee_per_gas + block.header.base_fee_per_gas
+            transaction.max_priority_fee_per_gas + block.header.base_fee_per_gas,
         )
-        if transaction_type == '0x2'
+        if transaction_type == "0x2"
         else transaction.gas_price
     )

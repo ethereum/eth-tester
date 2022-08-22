@@ -50,16 +50,16 @@ from .serializers import (
 
 def _generate_dummy_address(idx):
     return to_canonical_address(
-        decode_hex('0xabbacadaba') + zpad(int_to_big_endian(idx), 15)
+        decode_hex("0xabbacadaba") + zpad(int_to_big_endian(idx), 15)
     )
 
 
 def _get_default_account_data():
     return {
-        'balance': 1000000 * denoms.ether,
-        'code': b'',
-        'nonce': 0,
-        'storage': {},
+        "balance": 1000000 * denoms.ether,
+        "code": b"",
+        "nonce": 0,
+        "storage": {},
     }
 
 
@@ -95,18 +95,20 @@ class MockBackend(BaseChainBackend):
     # Snapshot API
     #
     def take_snapshot(self):
-        return copy.deepcopy({
-            'alloc': self.alloc,
-            'blocks': self.blocks,
-            'block': self.block,
-            'receipts': self.receipts,
-        })
+        return copy.deepcopy(
+            {
+                "alloc": self.alloc,
+                "blocks": self.blocks,
+                "block": self.block,
+                "receipts": self.receipts,
+            }
+        )
 
     def revert_to_snapshot(self, snapshot):
-        self.alloc = snapshot['alloc']
-        self.blocks = snapshot['blocks']
-        self.block = snapshot['block']
-        self.receipts = snapshot['receipts']
+        self.alloc = snapshot["alloc"]
+        self.blocks = snapshot["blocks"]
+        self.block = snapshot["block"]
+        self.receipts = snapshot["receipts"]
 
     def reset_to_genesis(self):
         self.alloc = self.genesis_alloc
@@ -125,7 +127,7 @@ class MockBackend(BaseChainBackend):
     #
     def time_travel(self, timestamp):
         # timestamp adjusted by 1 b/c a second is added in mine_blocks
-        self.block['timestamp'] = (timestamp - 1)
+        self.block["timestamp"] = timestamp - 1
         self.mine_blocks()
 
     #
@@ -134,17 +136,16 @@ class MockBackend(BaseChainBackend):
     @to_tuple
     def mine_blocks(self, num_blocks=1, coinbase=None):
         for _ in range(num_blocks):
-            block_to_mine = dissoc(self.block, 'hash')
+            block_to_mine = dissoc(self.block, "hash")
             block_hash = fake_rlp_hash(block_to_mine)
-            mined_block = assoc(block_to_mine, 'hash', block_hash)
+            mined_block = assoc(block_to_mine, "hash", block_hash)
             assign_block_info = compose(
-                partial(assoc, key='block_number', value=mined_block['number']),
-                partial(assoc, key='block_hash', value=mined_block['hash']),
+                partial(assoc, key="block_number", value=mined_block["number"]),
+                partial(assoc, key="block_hash", value=mined_block["hash"]),
             )
-            mined_block['transactions'] = tuple(
+            mined_block["transactions"] = tuple(
                 assign_block_info(transaction)
-                for transaction
-                in mined_block['transactions']
+                for transaction in mined_block["transactions"]
             )
             self.blocks.append(mined_block)
             self.block = make_block_from_parent(mined_block)
@@ -158,9 +159,7 @@ class MockBackend(BaseChainBackend):
 
     def add_account(self, private_key):
         account = private_key_to_address(private_key)
-        self.alloc = self.alloc + (
-            (account, _get_default_account_data()),
-        )
+        self.alloc = self.alloc + ((account, _get_default_account_data()),)
 
     #
     # Chain data
@@ -171,7 +170,7 @@ class MockBackend(BaseChainBackend):
         else:
             transaction_serializer = serialize_transaction_as_hash
 
-        if block_number == self.block['number']:
+        if block_number == self.block["number"]:
             block = self.block
         elif block_number == "latest":
             try:
@@ -198,7 +197,7 @@ class MockBackend(BaseChainBackend):
         return serialize_block(
             block,
             transaction_serializer=transaction_serializer,
-            is_pending=(block['number'] == self.block['number']),
+            is_pending=(block["number"] == self.block["number"]),
         )
 
     def get_block_by_hash(self, block_hash, full_transactions=False):
@@ -208,7 +207,7 @@ class MockBackend(BaseChainBackend):
             transaction_serializer = serialize_transaction_as_hash
 
         for block in itertools.chain([self.block], reversed(self.blocks)):
-            if block['hash'] == block_hash:
+            if block["hash"] == block_hash:
                 block = block
                 break
         else:
@@ -217,13 +216,15 @@ class MockBackend(BaseChainBackend):
         return serialize_block(
             block,
             transaction_serializer=transaction_serializer,
-            is_pending=(block['number'] == self.block['number']),
+            is_pending=(block["number"] == self.block["number"]),
         )
 
     def _get_transaction_by_hash(self, transaction_hash):
         for block in itertools.chain([self.block], reversed(self.blocks)):
-            for transaction_index, transaction in enumerate(reversed(block['transactions'])):
-                if transaction['hash'] == transaction_hash:
+            for transaction_index, transaction in enumerate(
+                reversed(block["transactions"])
+            ):
+                if transaction["hash"] == transaction_hash:
                     return transaction, block, transaction_index
         else:
             raise TransactionNotFound(
@@ -231,12 +232,14 @@ class MockBackend(BaseChainBackend):
             )
 
     def get_transaction_by_hash(self, transaction_hash):
-        transaction, block, transaction_index = self._get_transaction_by_hash(transaction_hash)
+        transaction, block, transaction_index = self._get_transaction_by_hash(
+            transaction_hash
+        )
         return serialize_full_transaction(
             transaction,
             block,
             transaction_index,
-            is_pending=(block['number'] == self.block['number']),
+            is_pending=(block["number"] == self.block["number"]),
         )
 
     def get_transaction_receipt(self, transaction_hash):
@@ -246,13 +249,15 @@ class MockBackend(BaseChainBackend):
             raise TransactionNotFound(
                 f"No transaction found for hash: {transaction_hash}"
             )
-        transaction, block, transaction_index = self._get_transaction_by_hash(transaction_hash)
+        transaction, block, transaction_index = self._get_transaction_by_hash(
+            transaction_hash
+        )
         return serialize_receipt(
             receipt,
             transaction,
             block,
             transaction_index,
-            is_pending=(block['number'] == self.block['number']),
+            is_pending=(block["number"] == self.block["number"]),
         )
 
     #
@@ -260,21 +265,21 @@ class MockBackend(BaseChainBackend):
     #
     def get_nonce(self, account, block_number=None):
         try:
-            return self.account_state_lookup[account]['nonce']
+            return self.account_state_lookup[account]["nonce"]
         except KeyError:
             return 0
 
     def get_balance(self, account, block_number=None):
         try:
-            return self.account_state_lookup[account]['balance']
+            return self.account_state_lookup[account]["balance"]
         except KeyError:
             return 0
 
     def get_code(self, account, block_number=None):
         try:
-            return self.account_state_lookup[account]['code']
+            return self.account_state_lookup[account]["code"]
         except KeyError:
-            return b''
+            return b""
 
     #
     # Transactions
@@ -282,10 +287,10 @@ class MockBackend(BaseChainBackend):
     def send_raw_transaction(self, raw_transaction):
         transaction_hash = keccak(raw_transaction)
         transaction = {
-            'from': _generate_dummy_address(0),
-            'hash': transaction_hash,
-            'gas': 21000,
-            'gas_price': 1000000000,
+            "from": _generate_dummy_address(0),
+            "hash": transaction_hash,
+            "gas": 21000,
+            "gas_price": 1000000000,
         }
         return self.send_transaction(transaction)
 
@@ -293,20 +298,20 @@ class MockBackend(BaseChainBackend):
         full_transaction = create_transaction(
             transaction,
             self.block,
-            len(self.block['transactions']) + 1,
+            len(self.block["transactions"]) + 1,
             is_pending=True,
         )
-        self.receipts[full_transaction['hash']] = make_receipt(
+        self.receipts[full_transaction["hash"]] = make_receipt(
             full_transaction,
             self.block,
-            len(self.block['transactions']),
+            len(self.block["transactions"]),
         )
-        self.block['transactions'].append(full_transaction)
-        self.block['gas_used'] += self.receipts[full_transaction['hash']]['gas_used']
-        return full_transaction['hash']
+        self.block["transactions"].append(full_transaction)
+        self.block["gas_used"] += self.receipts[full_transaction["hash"]]["gas_used"]
+        return full_transaction["hash"]
 
     def send_signed_transaction(self, signed_transaction):
-        transaction = dissoc(signed_transaction, 'r', 's', 'v')
+        transaction = dissoc(signed_transaction, "r", "s", "v")
         return self.send_transaction(transaction)
 
     def estimate_gas(self, transaction):

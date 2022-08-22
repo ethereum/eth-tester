@@ -103,7 +103,8 @@ def is_valid_topic_array(value):
         return False
     return all(
         is_valid_topic_array(item) if is_list_like(item) else is_topic(item)
-        for item in value)
+        for item in value
+    )
 
 
 def validate_filter_params(from_block, to_block, address, topics):
@@ -143,36 +144,40 @@ def validate_filter_params(from_block, to_block, address, topics):
 
 
 def validate_private_key(value):
-    if not is_text(value) or not is_hex(value) or not len(remove_0x_prefix(value)) == 64:
+    if (
+        not is_text(value)
+        or not is_hex(value)
+        or not len(remove_0x_prefix(value)) == 64
+    ):
         raise ValidationError("Private keys must be 32 bytes encoded as hexadecimal")
 
 
 TRANSACTION_KEYS = {
-    'type',
-    'chain_id',
-    'from',
-    'to',
-    'gas',
-    'gas_price',
-    'max_fee_per_gas',
-    'max_priority_fee_per_gas',
-    'value',
-    'data',
-    'access_list',
-    'nonce',
+    "type",
+    "chain_id",
+    "from",
+    "to",
+    "gas",
+    "gas_price",
+    "max_fee_per_gas",
+    "max_priority_fee_per_gas",
+    "value",
+    "data",
+    "access_list",
+    "nonce",
 }
 
 SIGNED_TRANSACTION_KEYS = {
-    'r',
-    's',
-    'v',
+    "r",
+    "s",
+    "v",
 }
 
 TRANSACTION_INTERNAL_TYPE_INFO = {
-    'send': TRANSACTION_KEYS,
-    'send_signed': TRANSACTION_KEYS.union(SIGNED_TRANSACTION_KEYS),
-    'call': TRANSACTION_KEYS,
-    'estimate': TRANSACTION_KEYS,
+    "send": TRANSACTION_KEYS,
+    "send_signed": TRANSACTION_KEYS.union(SIGNED_TRANSACTION_KEYS),
+    "call": TRANSACTION_KEYS,
+    "estimate": TRANSACTION_KEYS,
 }
 
 ALLOWED_TRANSACTION_INTERNAL_TYPES = set(TRANSACTION_INTERNAL_TYPE_INFO.keys())
@@ -180,27 +185,37 @@ ALLOWED_TRANSACTION_INTERNAL_TYPES = set(TRANSACTION_INTERNAL_TYPE_INFO.keys())
 
 def validate_transaction(value, txn_internal_type):
     if txn_internal_type not in ALLOWED_TRANSACTION_INTERNAL_TYPES:
-        raise TypeError("the `txn_internal_type` parameter must be one of send/call/estimate")
+        raise TypeError(
+            "the `txn_internal_type` parameter must be one of send/call/estimate"
+        )
     if not is_dict(value):
-        raise ValidationError("Transaction must be a dictionary. Got: {}".format(type(value)))
+        raise ValidationError(
+            "Transaction must be a dictionary. Got: {}".format(type(value))
+        )
 
-    unknown_keys = tuple(sorted(set(value.keys()).difference(
-        TRANSACTION_INTERNAL_TYPE_INFO[txn_internal_type],
-    )))
+    unknown_keys = tuple(
+        sorted(
+            set(value.keys()).difference(
+                TRANSACTION_INTERNAL_TYPE_INFO[txn_internal_type],
+            )
+        )
+    )
     if unknown_keys:
         raise ValidationError(
             "Only the keys '{}' are allowed.  Got extra keys: '{}'".format(
-                "/".join(tuple(sorted(TRANSACTION_INTERNAL_TYPE_INFO[txn_internal_type]))),
+                "/".join(
+                    tuple(sorted(TRANSACTION_INTERNAL_TYPE_INFO[txn_internal_type]))
+                ),
                 "/".join(unknown_keys),
             )
         )
 
-    if txn_internal_type == 'send':
-        required_keys = {'from', 'gas'}
-    elif txn_internal_type == 'send_signed':
-        required_keys = {'from', 'gas'} | SIGNED_TRANSACTION_KEYS
-    elif txn_internal_type in {'estimate', 'call'}:
-        required_keys = {'from'}
+    if txn_internal_type == "send":
+        required_keys = {"from", "gas"}
+    elif txn_internal_type == "send_signed":
+        required_keys = {"from", "gas"} | SIGNED_TRANSACTION_KEYS
+    elif txn_internal_type in {"estimate", "call"}:
+        required_keys = {"from"}
     else:
         raise Exception("Invariant: code path should be unreachable")
 
@@ -212,66 +227,66 @@ def validate_transaction(value, txn_internal_type):
             )
         )
 
-    if 'type' in value:
+    if "type" in value:
         # type is validated but not required. If this value exists, it will be popped out of the
         # dict and the type will instead be inferred from the transaction params.
-        validate_transaction_type(value['type'])
+        validate_transaction_type(value["type"])
 
-    if 'from' in value:
-        validate_account(value['from'])
+    if "from" in value:
+        validate_account(value["from"])
 
-    if 'to' in value and value['to'] != '':
-        validate_account(value['to'])
-    elif 'to' in value and value['to'] == '':
-        validate_text(value['to'])
+    if "to" in value and value["to"] != "":
+        validate_account(value["to"])
+    elif "to" in value and value["to"] == "":
+        validate_text(value["to"])
 
-    if 'gas' in value:
-        validate_uint256(value['gas'])
+    if "gas" in value:
+        validate_uint256(value["gas"])
 
-    if 'gas_price' in value:
-        validate_uint256(value['gas_price'])
+    if "gas_price" in value:
+        validate_uint256(value["gas_price"])
 
-    if 'max_fee_per_gas' in value:
-        validate_uint256(value['max_fee_per_gas'])
-        if 'gas_price' in value:
-            raise ValidationError('Mixed legacy and dynamic fee transaction values')
+    if "max_fee_per_gas" in value:
+        validate_uint256(value["max_fee_per_gas"])
+        if "gas_price" in value:
+            raise ValidationError("Mixed legacy and dynamic fee transaction values")
 
-    if 'max_priority_fee_per_gas' in value:
-        validate_uint256(value['max_priority_fee_per_gas'])
-        if 'gas_price' in value:
-            raise ValidationError('Mixed legacy and dynamic fee transaction values')
+    if "max_priority_fee_per_gas" in value:
+        validate_uint256(value["max_priority_fee_per_gas"])
+        if "gas_price" in value:
+            raise ValidationError("Mixed legacy and dynamic fee transaction values")
 
-    if 'value' in value:
-        validate_uint256(value['value'])
+    if "value" in value:
+        validate_uint256(value["value"])
 
-    if 'nonce' in value:
-        validate_uint256(value['nonce'])
+    if "nonce" in value:
+        validate_uint256(value["nonce"])
 
-    if 'data' in value:
+    if "data" in value:
         bad_data_message = (
             "Transaction 'data' must be a hexadecimal encoded string.  Got: "
-            "{}".format(value['data'])
+            "{}".format(value["data"])
         )
-        if not is_text(value['data']):
+        if not is_text(value["data"]):
             raise ValidationError(bad_data_message)
-        elif not remove_0x_prefix(value['data']):
+        elif not remove_0x_prefix(value["data"]):
             pass
-        elif not is_hex(value['data']):
+        elif not is_hex(value["data"]):
             raise ValidationError(bad_data_message)
         try:
-            decode_hex(value['data'])
+            decode_hex(value["data"])
         except (binascii.Error, TypeError):
             # TypeError is for python2
             # binascii.Error is for python3
             raise ValidationError(bad_data_message)
 
-    if 'access_list' in value:
-        _validate_inbound_access_list(value['access_list'])
+    if "access_list" in value:
+        _validate_inbound_access_list(value["access_list"])
 
-    if txn_internal_type == 'send_signed':
-        validate_uint256(value['r'])
-        validate_uint256(value['s'])
-        validate_uint8(value['v'])
+    if txn_internal_type == "send_signed":
+        validate_uint256(value["r"])
+        validate_uint256(value["s"])
+        validate_uint8(value["v"])
 
 
 def _validate_inbound_access_list(access_list):
@@ -294,19 +309,25 @@ def _validate_inbound_access_list(access_list):
     ... )
     """
     if not is_list_like(access_list):
-        raise ValidationError('access_list is not list-like')
+        raise ValidationError("access_list is not list-like")
     for entry in access_list:
         if not is_dict(entry) and len(entry) != 2:
-            raise ValidationError(f'access_list entry not properly formatted: {entry}')
-        address = entry.get('address')
-        storage_keys = entry.get('storage_keys')
+            raise ValidationError(f"access_list entry not properly formatted: {entry}")
+        address = entry.get("address")
+        storage_keys = entry.get("storage_keys")
         if not is_hex_address(address):
-            raise ValidationError(f'access_list address must be a hexadecimal address: {address}')
-        if not is_list_like(storage_keys):
-            raise ValidationError(f'access_list storage keys are not list-like: {storage_keys}')
-        if len(storage_keys) > 0 and not all(is_32byte_hex_string(k) for k in storage_keys):
             raise ValidationError(
-                f'one or more access list storage keys not formatted properly: {storage_keys}'
+                f"access_list address must be a hexadecimal address: {address}"
+            )
+        if not is_list_like(storage_keys):
+            raise ValidationError(
+                f"access_list storage keys are not list-like: {storage_keys}"
+            )
+        if len(storage_keys) > 0 and not all(
+            is_32byte_hex_string(k) for k in storage_keys
+        ):
+            raise ValidationError(
+                f"one or more access list storage keys not formatted properly: {storage_keys}"
             )
 
 

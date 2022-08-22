@@ -224,29 +224,31 @@ EMITTER_ABI = {
 
 
 EMITTER_ENUM = {
-    'LogAnonymous': 0,
-    'LogNoArguments': 1,
-    'LogSingleArg': 2,
-    'LogDoubleArg': 3,
-    'LogTripleArg': 4,
-    'LogQuadrupleArg': 5,
-    'LogSingleAnonymous': 6,
-    'LogSingleWithIndex': 7,
-    'LogDoubleAnonymous': 8,
-    'LogDoubleWithIndex': 9,
-    'LogTripleWithIndex': 10,
-    'LogQuadrupleWithInde': 11,
+    "LogAnonymous": 0,
+    "LogNoArguments": 1,
+    "LogSingleArg": 2,
+    "LogDoubleArg": 3,
+    "LogTripleArg": 4,
+    "LogQuadrupleArg": 5,
+    "LogSingleAnonymous": 6,
+    "LogSingleWithIndex": 7,
+    "LogDoubleAnonymous": 8,
+    "LogDoubleWithIndex": 9,
+    "LogTripleWithIndex": 10,
+    "LogQuadrupleWithInde": 11,
 }
 
 
 def _deploy_emitter(eth_tester):
-    deploy_hash = eth_tester.send_transaction({
-        "from": eth_tester.get_accounts()[0],
-        "gas": 500000,
-        "data": EMITTER_BYTECODE,
-    })
+    deploy_hash = eth_tester.send_transaction(
+        {
+            "from": eth_tester.get_accounts()[0],
+            "gas": 500000,
+            "data": EMITTER_BYTECODE,
+        }
+    )
     deploy_receipt = eth_tester.get_transaction_receipt(deploy_hash)
-    emitter_address = deploy_receipt['contract_address']
+    emitter_address = deploy_receipt["contract_address"]
     assert emitter_address
     return emitter_address
 
@@ -255,16 +257,14 @@ def _call_emitter(eth_tester, contract_address, fn_name, fn_args):
     from eth_abi import encode_abi
 
     fn_abi = EMITTER_ABI[fn_name]
-    arg_types = [
-        arg_abi['type']
-        for arg_abi
-        in fn_abi['inputs']
-    ]
+    arg_types = [arg_abi["type"] for arg_abi in fn_abi["inputs"]]
     fn_selector = function_abi_to_4byte_selector(fn_abi)
-    emit_a_hash = eth_tester.send_transaction({
-        "from": eth_tester.get_accounts()[0],
-        "to": contract_address,
-        "gas": 500000,
-        "data": encode_hex(fn_selector + encode_abi(arg_types, fn_args)),
-    })
+    emit_a_hash = eth_tester.send_transaction(
+        {
+            "from": eth_tester.get_accounts()[0],
+            "to": contract_address,
+            "gas": 500000,
+            "data": encode_hex(fn_selector + encode_abi(arg_types, fn_args)),
+        }
+    )
     return emit_a_hash

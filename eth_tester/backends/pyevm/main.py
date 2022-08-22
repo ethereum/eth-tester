@@ -2,12 +2,8 @@ from __future__ import absolute_import
 
 import time
 
-from eth_abi import (
-    decode_single
-)
-from eth_abi.exceptions import (
-    DecodingError
-)
+from eth_abi import decode_single
+from eth_abi.exceptions import DecodingError
 
 from eth_account.hdaccount import HDPath, seed_from_mnemonic
 
@@ -56,9 +52,7 @@ if is_supported_pyevm_version_available():
         InvalidInstruction as EVMInvalidInstruction,
         Revert as EVMRevert,
     )
-    from eth.vm.spoof import (
-        SpoofTransaction as EVMSpoofTransaction
-    )
+    from eth.vm.spoof import SpoofTransaction as EVMSpoofTransaction
 else:
     EVMHeaderNotFound = None
     EVMInvalidInstruction = None
@@ -66,21 +60,21 @@ else:
     GENESIS_PARENT_HASH = None
 
 
-ZERO_ADDRESS = 20 * b'\x00'
-ZERO_HASH32 = 32 * b'\x00'
-EIP838_SIG = b'\x08\xc3y\xa0'
+ZERO_ADDRESS = 20 * b"\x00"
+ZERO_HASH32 = 32 * b"\x00"
+EIP838_SIG = b"\x08\xc3y\xa0"
 
-EMPTY_RLP_LIST_HASH = b'\x1d\xccM\xe8\xde\xc7]z\xab\x85\xb5g\xb6\xcc\xd4\x1a\xd3\x12E\x1b\x94\x8at\x13\xf0\xa1B\xfd@\xd4\x93G'  # noqa: E501
-BLANK_ROOT_HASH = b'V\xe8\x1f\x17\x1b\xccU\xa6\xff\x83E\xe6\x92\xc0\xf8n\x5bH\xe0\x1b\x99l\xad\xc0\x01b/\xb5\xe3c\xb4!'  # noqa: E501
+EMPTY_RLP_LIST_HASH = b"\x1d\xccM\xe8\xde\xc7]z\xab\x85\xb5g\xb6\xcc\xd4\x1a\xd3\x12E\x1b\x94\x8at\x13\xf0\xa1B\xfd@\xd4\x93G"  # noqa: E501
+BLANK_ROOT_HASH = b"V\xe8\x1f\x17\x1b\xccU\xa6\xff\x83E\xe6\x92\xc0\xf8n\x5bH\xe0\x1b\x99l\xad\xc0\x01b/\xb5\xe3c\xb4!"  # noqa: E501
 
 
 GENESIS_BLOCK_NUMBER = 0
 GENESIS_DIFFICULTY = 131072
 GENESIS_GAS_LIMIT = 30029122  # gas limit at London fork block 12965000 on mainnet
 GENESIS_COINBASE = ZERO_ADDRESS
-GENESIS_NONCE = b'\x00\x00\x00\x00\x00\x00\x00*'  # 42 encoded as big-endian-integer
+GENESIS_NONCE = b"\x00\x00\x00\x00\x00\x00\x00*"  # 42 encoded as big-endian-integer
 GENESIS_MIX_HASH = ZERO_HASH32
-GENESIS_EXTRA_DATA = b''
+GENESIS_EXTRA_DATA = b""
 GENESIS_INITIAL_ALLOC = {}
 
 
@@ -91,14 +85,15 @@ GAS_ESTIMATE_BUFFER = 1.5
 
 def get_default_account_state(overrides=None):
     default_account_state = {
-        'balance': to_wei(1000000, 'ether'),
-        'storage': {},
-        'code': b'',
-        'nonce': 0,
+        "balance": to_wei(1000000, "ether"),
+        "storage": {},
+        "code": b"",
+        "nonce": 0,
     }
     if overrides is not None:
-        account_state = merge_genesis_overrides(defaults=default_account_state,
-                                                overrides=overrides)
+        account_state = merge_genesis_overrides(
+            defaults=default_account_state, overrides=overrides
+        )
     else:
         account_state = default_account_state
     return account_state
@@ -109,7 +104,7 @@ def get_default_account_keys(quantity=None):
     keys = KeyAPI()
     quantity = quantity or 10
     for i in range(1, quantity + 1):
-        pk_bytes = int_to_big_endian(i).rjust(32, b'\x00')
+        pk_bytes = int_to_big_endian(i).rjust(32, b"\x00")
         private_key = keys.PrivateKey(pk_bytes)
         yield private_key
 
@@ -151,18 +146,21 @@ def get_default_genesis_params(overrides=None):
         # "uncles_hash": EMPTY_RLP_LIST_HASH,
     }
     if overrides is not None:
-        genesis_params = merge_genesis_overrides(default_genesis_params, overrides=overrides)
+        genesis_params = merge_genesis_overrides(
+            default_genesis_params, overrides=overrides
+        )
     else:
         genesis_params = default_genesis_params
     return genesis_params
 
 
 def setup_tester_chain(
-        genesis_params=None,
-        genesis_state=None,
-        num_accounts=None,
-        vm_configuration=None,
-        mnemonic=None):
+    genesis_params=None,
+    genesis_state=None,
+    num_accounts=None,
+    vm_configuration=None,
+    mnemonic=None,
+):
 
     from eth.chains.base import MiningChain
     from eth.consensus import (
@@ -173,6 +171,7 @@ def setup_tester_chain(
 
     if vm_configuration is None:
         from eth.vm.forks import LondonVM
+
         no_proof_vms = ((0, LondonVM.configure(consensus_class=NoProofConsensus)),)
     else:
         consensus_applier = ConsensusApplier(NoProofConsensus)
@@ -186,7 +185,7 @@ def setup_tester_chain(
             # Keep the gas limit constant
             return super().create_header_from_parent(
                 parent_header,
-                **assoc(header_params, 'gas_limit', parent_header.gas_limit)
+                **assoc(header_params, "gas_limit", parent_header.gas_limit),
             )
 
         def get_transaction_builder(self):
@@ -208,7 +207,9 @@ def setup_tester_chain(
 
     base_db = get_db_backend()
 
-    chain = MainnetTesterNoProofChain.from_genesis(base_db, genesis_params, genesis_state)
+    chain = MainnetTesterNoProofChain.from_genesis(
+        base_db, genesis_params, genesis_state
+    )
     return account_keys, chain
 
 
@@ -287,7 +288,7 @@ class PyEVMBackend(BaseChainBackend):
         genesis_parameters=None,
         genesis_state=None,
         vm_configuration=None,
-        mnemonic=None
+        mnemonic=None,
     ):
         """
         :param genesis_parameters: A dict of chain parameters for overriding default values
@@ -309,11 +310,7 @@ class PyEVMBackend(BaseChainBackend):
         self.account_keys = None  # set below
         accounts = len(genesis_state) if genesis_state else None
         self.reset_to_genesis(
-            genesis_parameters,
-            genesis_state,
-            accounts,
-            vm_configuration,
-            mnemonic
+            genesis_parameters, genesis_state, accounts, vm_configuration, mnemonic
         )
 
     @classmethod
@@ -323,7 +320,7 @@ class PyEVMBackend(BaseChainBackend):
         genesis_state_overrides=None,
         num_accounts=None,
         genesis_parameters=None,
-        vm_configuration=None
+        vm_configuration=None,
     ):
         genesis_state = PyEVMBackend.generate_genesis_state(
             mnemonic=mnemonic,
@@ -335,7 +332,7 @@ class PyEVMBackend(BaseChainBackend):
             genesis_parameters=genesis_parameters,
             genesis_state=genesis_state,
             vm_configuration=vm_configuration,
-            mnemonic=mnemonic
+            mnemonic=mnemonic,
         )
 
     #
@@ -359,18 +356,24 @@ class PyEVMBackend(BaseChainBackend):
     @staticmethod
     def _generate_genesis_state(overrides=None, num_accounts=None, mnemonic=None):
         if mnemonic:
-            account_keys = get_account_keys_from_mnemonic(mnemonic, quantity=num_accounts)
+            account_keys = get_account_keys_from_mnemonic(
+                mnemonic, quantity=num_accounts
+            )
         else:
             account_keys = get_default_account_keys(quantity=num_accounts)
 
-        return generate_genesis_state_for_keys(account_keys=account_keys, overrides=overrides)
+        return generate_genesis_state_for_keys(
+            account_keys=account_keys, overrides=overrides
+        )
 
-    def reset_to_genesis(self,
-                         genesis_params=None,
-                         genesis_state=None,
-                         num_accounts=None,
-                         vm_configuration=None,
-                         mnemonic=None):
+    def reset_to_genesis(
+        self,
+        genesis_params=None,
+        genesis_state=None,
+        num_accounts=None,
+        vm_configuration=None,
+        mnemonic=None,
+    ):
         self.account_keys, self.chain = setup_tester_chain(
             genesis_params,
             genesis_state,
@@ -384,24 +387,22 @@ class PyEVMBackend(BaseChainBackend):
     #
     @property
     def _key_lookup(self):
-        return {
-            key.public_key.to_canonical_address(): key
-            for key
-            in self.account_keys
-        }
+        return {key.public_key.to_canonical_address(): key for key in self.account_keys}
 
     #
     # Snapshot API
     #
     def take_snapshot(self):
-        block = _get_block_by_number(self.chain, 'latest')
+        block = _get_block_by_number(self.chain, "latest")
         return block.hash
 
     def revert_to_snapshot(self, snapshot):
         block = self.chain.get_block_by_hash(snapshot)
         chaindb = self.chain.chaindb
 
-        chaindb._set_as_canonical_chain_head(chaindb.db, block.header, GENESIS_PARENT_HASH)
+        chaindb._set_as_canonical_chain_head(
+            chaindb.db, block.header, GENESIS_PARENT_HASH
+        )
         if block.number > 0:
             self.chain.import_block(block)
         else:
@@ -422,7 +423,7 @@ class PyEVMBackend(BaseChainBackend):
     @to_tuple
     def mine_blocks(self, num_blocks=1, coinbase=None):
         if coinbase is not None:
-            mine_kwargs = {'coinbase': coinbase}
+            mine_kwargs = {"coinbase": coinbase}
         else:
             mine_kwargs = {}
         for _ in range(num_blocks):
@@ -444,17 +445,21 @@ class PyEVMBackend(BaseChainBackend):
     #
     # Chain data
     #
-    @replace_exceptions({
-        EVMHeaderNotFound: BlockNotFound,
-    })
+    @replace_exceptions(
+        {
+            EVMHeaderNotFound: BlockNotFound,
+        }
+    )
     def get_block_by_number(self, block_number, full_transaction=True):
         block = _get_block_by_number(self.chain, block_number)
         is_pending = block.number == self.chain.get_block().number
         return serialize_block(block, full_transaction, is_pending)
 
-    @replace_exceptions({
-        EVMHeaderNotFound: BlockNotFound,
-    })
+    @replace_exceptions(
+        {
+            EVMHeaderNotFound: BlockNotFound,
+        }
+    )
     def get_block_by_hash(self, block_hash, full_transaction=True):
         block = _get_block_by_hash(self.chain, block_hash)
         is_pending = block.number == self.chain.get_block().number
@@ -499,7 +504,7 @@ class PyEVMBackend(BaseChainBackend):
         vm = _get_vm_for_block_number(self.chain, block_number)
         return vm.state.get_code(account)
 
-    def get_base_fee(self, block_number='latest'):
+    def get_base_fee(self, block_number="latest"):
         vm = _get_vm_for_block_number(self.chain, block_number)
         return vm.state.base_fee
 
@@ -507,62 +512,82 @@ class PyEVMBackend(BaseChainBackend):
     # Transactions
     #
     @to_dict
-    def _normalize_transaction(self, transaction, block_number='latest'):
+    def _normalize_transaction(self, transaction, block_number="latest"):
         is_dynamic_fee_transaction = (
-            any(_ in transaction for _ in DYNAMIC_FEE_TRANSACTION_PARAMS) or
+            any(_ in transaction for _ in DYNAMIC_FEE_TRANSACTION_PARAMS)
+            or
             # if no fee params exist, default to dynamic fee transaction:
-            not any(_ in transaction for _ in DYNAMIC_FEE_TRANSACTION_PARAMS + ('gas_price',))
+            not any(
+                _ in transaction
+                for _ in DYNAMIC_FEE_TRANSACTION_PARAMS + ("gas_price",)
+            )
         )
-        is_typed_transaction = is_dynamic_fee_transaction or 'access_list' in transaction
+        is_typed_transaction = (
+            is_dynamic_fee_transaction or "access_list" in transaction
+        )
 
         for key in transaction:
-            if key in ('from', 'type'):
+            if key in ("from", "type"):
                 continue
-            if key == 'v' and is_typed_transaction:
-                yield 'y_parity', transaction['v']  # use y_parity for typed txns, internally
+            if key == "v" and is_typed_transaction:
+                yield "y_parity", transaction[
+                    "v"
+                ]  # use y_parity for typed txns, internally
                 continue
             yield key, transaction[key]
 
-        if 'nonce' not in transaction:
-            yield 'nonce', self.get_nonce(transaction['from'], block_number)
-        if 'data' not in transaction:
-            yield 'data', b''
-        if 'value' not in transaction:
-            yield 'value', 0
-        if 'to' not in transaction:
-            yield 'to', b''
+        if "nonce" not in transaction:
+            yield "nonce", self.get_nonce(transaction["from"], block_number)
+        if "data" not in transaction:
+            yield "data", b""
+        if "value" not in transaction:
+            yield "value", 0
+        if "to" not in transaction:
+            yield "to", b""
 
         if is_dynamic_fee_transaction:
             if not any(_ in transaction for _ in DYNAMIC_FEE_TRANSACTION_PARAMS):
-                yield 'max_fee_per_gas', 1 * 10**9
-                yield 'max_priority_fee_per_gas', 1 * 10**9
-            elif 'max_priority_fee_per_gas' in transaction and 'max_fee_per_gas' not in transaction:
+                yield "max_fee_per_gas", 1 * 10**9
+                yield "max_priority_fee_per_gas", 1 * 10**9
+            elif (
+                "max_priority_fee_per_gas" in transaction
+                and "max_fee_per_gas" not in transaction
+            ):
                 yield (
-                    'max_fee_per_gas',
-                    transaction['max_priority_fee_per_gas'] + 2 * self.get_base_fee(block_number)
+                    "max_fee_per_gas",
+                    transaction["max_priority_fee_per_gas"]
+                    + 2 * self.get_base_fee(block_number),
                 )
 
         if is_typed_transaction:
             # typed transaction
-            if 'access_list' not in transaction:
-                yield 'access_list', ()
-            if 'chain_id' not in transaction:
-                yield 'chain_id', self.chain.chain_id
+            if "access_list" not in transaction:
+                yield "access_list", ()
+            if "chain_id" not in transaction:
+                yield "chain_id", self.chain.chain_id
 
-    def _get_normalized_and_unsigned_evm_transaction(self, transaction, block_number='latest'):
+    def _get_normalized_and_unsigned_evm_transaction(
+        self, transaction, block_number="latest"
+    ):
         normalized_transaction = self._normalize_transaction(transaction, block_number)
-        evm_transaction = self._create_type_aware_unsigned_transaction(normalized_transaction)
+        evm_transaction = self._create_type_aware_unsigned_transaction(
+            normalized_transaction
+        )
         return evm_transaction
 
-    def _get_normalized_and_signed_evm_transaction(self, transaction, block_number='latest'):
-        if transaction['from'] not in self._key_lookup:
+    def _get_normalized_and_signed_evm_transaction(
+        self, transaction, block_number="latest"
+    ):
+        if transaction["from"] not in self._key_lookup:
             raise ValidationError(
                 'No valid "from" key was provided in the transaction '
-                'which is required for transaction signing.'
+                "which is required for transaction signing."
             )
-        signing_key = self._key_lookup[transaction['from']]
+        signing_key = self._key_lookup[transaction["from"]]
         normalized_transaction = self._normalize_transaction(transaction, block_number)
-        evm_transaction = self._create_type_aware_unsigned_transaction(normalized_transaction)
+        evm_transaction = self._create_type_aware_unsigned_transaction(
+            normalized_transaction
+        )
         return evm_transaction.as_signed_transaction(signing_key)
 
     def _create_type_aware_unsigned_transaction(self, normalized_txn):
@@ -582,9 +607,13 @@ class PyEVMBackend(BaseChainBackend):
         self.chain.apply_transaction(evm_transaction)
         return evm_transaction.hash
 
-    def send_signed_transaction(self, signed_transaction, block_number='latest'):
-        normalized_transaction = self._normalize_transaction(signed_transaction, block_number)
-        signed_evm_transaction = self._create_type_aware_signed_transaction(normalized_transaction)
+    def send_signed_transaction(self, signed_transaction, block_number="latest"):
+        normalized_transaction = self._normalize_transaction(
+            signed_transaction, block_number
+        )
+        signed_evm_transaction = self._create_type_aware_signed_transaction(
+            normalized_transaction
+        )
         self.chain.apply_transaction(signed_evm_transaction)
         return signed_evm_transaction.hash
 
@@ -610,15 +639,16 @@ class PyEVMBackend(BaseChainBackend):
         header = self.chain.get_block().header
         return header.gas_limit - header.gas_used
 
-    @replace_exceptions({
-        EVMInvalidInstruction: TransactionFailed,
-        EVMRevert: TransactionFailed})
+    @replace_exceptions(
+        {EVMInvalidInstruction: TransactionFailed, EVMRevert: TransactionFailed}
+    )
     def estimate_gas(self, transaction, block_number="latest"):
         evm_transaction = self._get_normalized_and_unsigned_evm_transaction(
-            assoc(transaction, 'gas', 21000),
-            block_number
+            assoc(transaction, "gas", 21000), block_number
         )
-        spoofed_transaction = EVMSpoofTransaction(evm_transaction, from_=transaction['from'])
+        spoofed_transaction = EVMSpoofTransaction(
+            evm_transaction, from_=transaction["from"]
+        )
 
         if block_number == "latest":
             return self.chain.estimate_gas(spoofed_transaction)
@@ -627,7 +657,9 @@ class PyEVMBackend(BaseChainBackend):
                 spoofed_transaction, self.chain.get_canonical_block_header_by_number(0)
             )
         elif block_number == "pending":
-            raise NotImplementedError('"pending" block identifier is unsupported in eth-tester')
+            raise NotImplementedError(
+                '"pending" block identifier is unsupported in eth-tester'
+            )
         else:
             return self.chain.estimate_gas(
                 spoofed_transaction,
@@ -648,8 +680,8 @@ class PyEVMBackend(BaseChainBackend):
     def call(self, transaction, block_number="latest"):
         # TODO: move this to the VM level.
         defaulted_transaction = transaction.copy()
-        if 'gas' not in defaulted_transaction:
-            defaulted_transaction['gas'] = self._max_available_gas()
+        if "gas" not in defaulted_transaction:
+            defaulted_transaction["gas"] = self._max_available_gas()
 
         signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
             defaulted_transaction,
@@ -669,7 +701,7 @@ class PyEVMBackend(BaseChainBackend):
             if self.is_eip838_error(computation._error):
                 error_str = computation._error.args[0][36:]
                 try:
-                    msg = decode_single('string', error_str)
+                    msg = decode_single("string", error_str)
                 except DecodingError:
                     # Invalid encoded bytes, leave msg as computation._error
                     # byte string.

@@ -36,32 +36,32 @@ GAS_BURNER_ABI = {
         "name": "burnBlockNumberDependentGas",
         "outputs": [],
         "stateMutability": "nonpayable",
-        "type": "function"
+        "type": "function",
     }
 }
 
 
 def _deploy_gas_burner(eth_tester):
-    deploy_hash = eth_tester.send_transaction({
-        "from": eth_tester.get_accounts()[0],
-        "gas": 500000,
-        "data": GAS_BURNER_BYTECODE,
-    })
+    deploy_hash = eth_tester.send_transaction(
+        {
+            "from": eth_tester.get_accounts()[0],
+            "gas": 500000,
+            "data": GAS_BURNER_BYTECODE,
+        }
+    )
     deploy_receipt = eth_tester.get_transaction_receipt(deploy_hash)
-    gas_burner_address = deploy_receipt['contract_address']
+    gas_burner_address = deploy_receipt["contract_address"]
     assert gas_burner_address
     gas_burner_code = eth_tester.get_code(gas_burner_address)
     assert len(gas_burner_code) > 2
     return gas_burner_address
 
 
-def _make_call_gas_burner_transaction(eth_tester, contract_address, fn_name, fn_args=tuple()):
+def _make_call_gas_burner_transaction(
+    eth_tester, contract_address, fn_name, fn_args=tuple()
+):
     fn_abi = GAS_BURNER_ABI[fn_name]
-    arg_types = [
-        arg_abi['type']
-        for arg_abi
-        in fn_abi['inputs']
-    ]
+    arg_types = [arg_abi["type"] for arg_abi in fn_abi["inputs"]]
     fn_selector = function_abi_to_4byte_selector(fn_abi)
     transaction = {
         "from": eth_tester.get_accounts()[0],

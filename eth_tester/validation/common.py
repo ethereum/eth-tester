@@ -54,22 +54,30 @@ validate_uint8 = validate_uint(UINT8_MAX)
 
 def validate_bytes(value):
     if not is_bytes(value):
-        raise ValidationError("Value must be a byte string.  Got type: {}".format(type(value)))
+        raise ValidationError(
+            "Value must be a byte string.  Got type: {}".format(type(value))
+        )
 
 
 def validate_text(value):
     if not is_text(value):
-        raise ValidationError("Value must be a text string.  Got type: {}".format(type(value)))
+        raise ValidationError(
+            "Value must be a text string.  Got type: {}".format(type(value))
+        )
 
 
 def validate_is_dict(value):
     if not is_dict(value):
-        raise ValidationError("Value must be a dictionary.  Got: {}".format(type(value)))
+        raise ValidationError(
+            "Value must be a dictionary.  Got: {}".format(type(value))
+        )
 
 
 def validate_is_list_like(value):
     if not is_list_like(value):
-        raise ValidationError("Value must be a sequence type.  Got: {}".format(type(value)))
+        raise ValidationError(
+            "Value must be a sequence type.  Got: {}".format(type(value))
+        )
 
 
 @to_tuple
@@ -85,15 +93,11 @@ def validate_any(value, validators):
     errors = _accumulate_errors(value, validators)
     if len(errors) == len(validators):
         item_error_messages = tuple(
-            " - [{}]: {}".format(idx, str(err))
-            for idx, err
-            in errors
+            " - [{}]: {}".format(idx, str(err)) for idx, err in errors
         )
         error_message = (
             "Value did not pass any of the provided validators:\n"
-            "{}".format(
-                "\n".join(item_error_messages)
-            )
+            "{}".format("\n".join(item_error_messages))
         )
         raise ValidationError(error_message)
 
@@ -138,15 +142,10 @@ def validate_dict(value, key_validators):
     key_errors = _accumulate_dict_errors(value, key_validators)
     if key_errors:
         key_messages = tuple(
-            "{}: {}".format(key, str(err))
-            for key, err
-            in sorted(key_errors.items())
+            "{}: {}".format(key, str(err)) for key, err in sorted(key_errors.items())
         )
-        error_message = (
-            "The following keys failed to validate\n"
-            "- {}".format(
-                "\n - ".join(key_messages)
-            )
+        error_message = "The following keys failed to validate\n" "- {}".format(
+            "\n - ".join(key_messages)
         )
         raise ValidationError(error_message)
 
@@ -166,24 +165,23 @@ def validate_array(value, validator):
     item_errors = _accumulate_array_errors(value, validator)
     if item_errors:
         item_messages = tuple(
-            "[{}]: {}".format(index, str(err))
-            for index, err
-            in sorted(item_errors)
+            "[{}]: {}".format(index, str(err)) for index, err in sorted(item_errors)
         )
-        error_message = (
-            "The following items failed to validate\n"
-            "- {}".format(
-                "\n - ".join(item_messages)
-            )
+        error_message = "The following items failed to validate\n" "- {}".format(
+            "\n - ".join(item_messages)
         )
         raise ValidationError(error_message)
 
 
 def validate_transaction_type(value):
     if not (is_hexstr(value) or is_integer(value)):
-        raise ValidationError(f"Transaction type must be hexadecimal or integer. Got {value}")
-    if is_hexstr(value) and '0x' not in value:
-        raise ValidationError(f"Transaction type string must be hex string. Got: {value}")
+        raise ValidationError(
+            f"Transaction type must be hexadecimal or integer. Got {value}"
+        )
+    if is_hexstr(value) and "0x" not in value:
+        raise ValidationError(
+            f"Transaction type string must be hex string. Got: {value}"
+        )
     type_int = int(value, 16) if is_hexstr(value) else int(value)
     if type_int not in (0, 1, 2):
         raise ValidationError(f"Transaction type '{value}' not recognized.")
@@ -194,12 +192,14 @@ def if_not_null(validator_fn):
     def inner(value):
         if value is not None:
             validator_fn(value)
+
     return inner
 
 
 def if_not_create_address(validator_fn):
     @functools.wraps(validator_fn)
     def inner(value):
-        if value != b'':
+        if value != b"":
             validator_fn(value)
+
     return inner

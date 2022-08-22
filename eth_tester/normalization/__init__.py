@@ -18,7 +18,7 @@ DEFAULT_NORMALIZER_CLASS = get_import_path(DefaultNormalizer)
 def get_normalizer_backend_class(backend_import_path=None):
     if backend_import_path is None:
         backend_import_path = os.environ.get(
-            'ETHEREUM_TESTER_NORMALIZER_BACKEND',
+            "ETHEREUM_TESTER_NORMALIZER_BACKEND",
             DEFAULT_NORMALIZER_CLASS,
         )
     return import_string(backend_import_path)
