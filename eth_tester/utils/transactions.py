@@ -37,7 +37,8 @@ def extract_transaction_type(transaction):
         if "max_fee_per_gas" in transaction
         else "0x1"
         if "max_fee_per_gas" not in transaction and "access_list" in transaction
-        else "0x0"  # legacy transactions being '0x0' taken from current geth version v1.10.10
+        # legacy transactions being '0x0' taken from current geth version v1.10.10
+        else "0x0"
     )
 
 

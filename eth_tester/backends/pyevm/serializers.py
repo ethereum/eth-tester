@@ -122,8 +122,8 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
             "max_fee_per_gas": transaction.max_fee_per_gas,
             "max_priority_fee_per_gas": transaction.max_priority_fee_per_gas,
             "access_list": transaction.access_list or (),
-            # TODO: Sometime in 2022 the inclusion of gas_price may be removed from dynamic fee
-            #  transactions and we can get rid of this behavior.
+            # TODO: Sometime in 2022 the inclusion of gas_price may be removed from
+            #  dynamic fee transactions and we can get rid of this behavior.
             #  https://github.com/ethereum/execution-specs/pull/251
             "gas_price": (
                 transaction.max_fee_per_gas
@@ -140,8 +140,8 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
 def _field_in_transaction(transaction, field):
     """
     There are many different classes of transactions, we have to be able to search for a
-    particular field depending on the type of transaction - from dict, to legacy transaction
-    classes, to *TypedTransaction classes.
+    particular field depending on the type of transaction - from dict, to legacy
+    transaction classes, to *TypedTransaction classes.
     """
     if isinstance(transaction, dict):
         return field in transaction
@@ -219,7 +219,8 @@ def _extract_transaction_type(transaction):
             return "0x1"
         except AttributeError:
             return "0x2"
-    return "0x0"  # legacy transactions being '0x0' taken from current geth version v1.10.10
+    # legacy transactions being '0x0' taken from current geth version v1.10.10
+    return "0x0"
 
 
 def _calculate_effective_gas_price(transaction, block, transaction_type):

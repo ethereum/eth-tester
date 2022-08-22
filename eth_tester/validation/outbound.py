@@ -120,7 +120,8 @@ def _validate_outbound_access_list(access_list):
             )
         if len(storage_keys) > 0 and (not all(is_integer(k) for k in storage_keys)):
             raise ValidationError(
-                f"one or more access list storage keys not formatted properly: {storage_keys}"
+                "one or more access list storage keys not formatted "
+                f"properly: {storage_keys}"
             )
 
 
@@ -241,8 +242,8 @@ BLOCK_VALIDATORS = {
 def _validate_base_fee(block):
     """
     If `base_fee_per_gas` is present (post-London blocks), validate that the value is a
-    positive integer. For pre-London blocks, set to `None` during validation and pop it back out
-    during normalization.
+    positive integer. For pre-London blocks, set to `None` during validation and pop it
+    back out during normalization.
     """
     if "base_fee_per_gas" not in block:
         block["base_fee_per_gas"] = None

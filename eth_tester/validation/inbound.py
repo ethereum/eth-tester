@@ -228,8 +228,9 @@ def validate_transaction(value, txn_internal_type):
         )
 
     if "type" in value:
-        # type is validated but not required. If this value exists, it will be popped out of the
-        # dict and the type will instead be inferred from the transaction params.
+        # type is validated but not required. If this value exists, it will be popped
+        # out of the dict and the type will instead be inferred from the
+        # transaction params.
         validate_transaction_type(value["type"])
 
     if "from" in value:
@@ -291,15 +292,15 @@ def validate_transaction(value, txn_internal_type):
 
 def _validate_inbound_access_list(access_list):
     """
-    Validates the structure of an inbound access list. This is similar to the JSON-RPC structure
-    for an access list only with `under_score` keys rather than `camelCase`.
+    Validates the structure of an inbound access list. This is similar to the JSON-RPC
+    structure for an access list only with `under_score` keys rather than `camelCase`.
 
     >>> _access_list = (
     ...     {
     ...         'address': '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae',
     ...         'storage_keys': (
-    ...             '0x0000000000000000000000000000000000000000000000000000000000000003',
-    ...             '0x0000000000000000000000000000000000000000000000000000000000000007',
+    ...             '0x0000000000000000000000000000000000000000000000000000000000000003',  # noqa: E501
+    ...             '0x0000000000000000000000000000000000000000000000000000000000000007',  # noqa: E501
     ...         )
     ...     },
     ...     {
@@ -327,7 +328,8 @@ def _validate_inbound_access_list(access_list):
             is_32byte_hex_string(k) for k in storage_keys
         ):
             raise ValidationError(
-                f"one or more access list storage keys not formatted properly: {storage_keys}"
+                "one or more access list storage keys not formatted "
+                f"properly: {storage_keys}"
             )
 
 

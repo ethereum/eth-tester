@@ -47,8 +47,8 @@ def serialize_full_transaction(transaction, block, transaction_index, is_pending
     if "gas_price" in transaction:
         return serialized_transaction
     else:
-        # TODO: Sometime in 2022 the inclusion of gas_price may be removed from dynamic fee
-        #  transactions and we can get rid of this behavior.
+        # TODO: Sometime in 2022 the inclusion of gas_price may be removed from
+        #  dynamic fee transactions and we can get rid of this behavior.
         #  https://github.com/ethereum/execution-specs/pull/251
         gas_price = (
             transaction["max_fee_per_gas"]

@@ -291,13 +291,13 @@ class PyEVMBackend(BaseChainBackend):
         mnemonic=None,
     ):
         """
-        :param genesis_parameters: A dict of chain parameters for overriding default values
-            when setting up the chain.
-        :param genesis_state: A dict (or list of tuples) matching accounts to state properties,
-            such as `balance`.
-        :param vm_configuration: The tuple of virtual machines defining a chain schedule as
-            used in py-evm's :attr:`eth.chains.base.Chain.vm_configuration`. (at author time, a
-            series of block numbers and virtual machines)
+        :param genesis_parameters: A dict of chain parameters for overriding default
+             values when setting up the chain.
+        :param genesis_state: A dict (or list of tuples) matching accounts to state
+             properties, such as `balance`.
+        :param vm_configuration: The tuple of virtual machines defining a chain
+            schedule as used in py-evm's :attr:`eth.chains.base.Chain.vm_configuration`.
+            (at author time, a series of block numbers and virtual machines)
         :param mnemonic: A mnemonic str to use when generating accounts.
         """
         if not is_supported_pyevm_version_available():
@@ -592,11 +592,11 @@ class PyEVMBackend(BaseChainBackend):
 
     def _create_type_aware_unsigned_transaction(self, normalized_txn):
         if all(_ in normalized_txn for _ in ("access_list", "gas_price")):
-            return self.chain.get_transaction_builder().new_unsigned_access_list_transaction(
+            return self.chain.get_transaction_builder().new_unsigned_access_list_transaction(  # noqa: E501
                 **normalized_txn
             )
         elif all(_ in normalized_txn for _ in DYNAMIC_FEE_TRANSACTION_PARAMS):
-            return self.chain.get_transaction_builder().new_unsigned_dynamic_fee_transaction(
+            return self.chain.get_transaction_builder().new_unsigned_dynamic_fee_transaction(  # noqa: E501
                 **normalized_txn
             )
         return self.chain.create_unsigned_transaction(**normalized_txn)

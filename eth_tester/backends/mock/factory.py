@@ -119,8 +119,8 @@ def _fill_transaction(
     if "hash" in overrides:  # else calculate hash after all fields are filled
         yield "hash", overrides["hash"]
 
-    # Here, we yield the key with the overrides value if it exists, else either the transaction
-    # value if it exists or a default value
+    # Here, we yield the key with the overrides value if it exists, else either
+    # the transaction value if it exists or a default value
     yield "nonce", overrides.get("nonce", 0)
     yield "from", overrides.get("from", transaction.get("from"))
     yield "to", overrides.get("to", transaction.get("to", b""))
@@ -261,12 +261,14 @@ def make_genesis_block(overrides=None):
         "total_difficulty": 131072,
         "size": 0,
         "extra_data": ZERO_32BYTES,
-        "gas_limit": 30029122,  # gas limit at London fork block 12965000 on mainnet
+        # gas limit at London fork block 12965000 on mainnet
+        "gas_limit": 30029122,
         "gas_used": 0,
         "timestamp": int(time.time()),
         "transactions": [],
         "uncles": [],
-        "base_fee_per_gas": 1000000000,  # base fee at London fork block 12965000 on mainnet
+        # base fee at London fork block 12965000 on mainnet
+        "base_fee_per_gas": 1000000000,
     }
     if overrides is not None:
         genesis_block = merge_genesis_overrides(

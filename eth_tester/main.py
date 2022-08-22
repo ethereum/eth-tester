@@ -85,8 +85,8 @@ def handle_auto_mining(func):
     def _clean_pending_transaction(pending_transaction):
         cleaned_transaction = dissoc(pending_transaction, "type")
 
-        # TODO: Sometime in 2022 the inclusion of gas_price may be removed from dynamic fee
-        #  transactions and we can get rid of this behavior.
+        # TODO: Sometime in 2022 the inclusion of gas_price may be removed from
+        #  dynamic fee transactions and we can get rid of this behavior.
         #  https://github.com/ethereum/execution-specs/pull/251
         # remove gas_price for dynamic fee transactions
         if "gas_price" and "max_fee_per_gas" in pending_transaction:
@@ -274,9 +274,9 @@ class EthereumTester:
         _type = extract_transaction_type(pending_transaction)
         pending_transaction = assoc(pending_transaction, "type", _type)
 
-        # TODO: Sometime in 2022 the inclusion of gas_price may be removed from dynamic fee
-        #  transactions and we can get rid of this behavior.
-        #  https://github.com/ethereum/execution-specs/pull/251
+        # TODO: Sometime in 2022 the inclusion of gas_price may be removed from
+        # dynamic fee transactions and we can get rid of this behavior.
+        # https://github.com/ethereum/execution-specs/pull/251
         # add gas_price = max_fee_per_gas to pending dynamic fee transactions
         if _type == "0x2":
             pending_transaction = assoc(
@@ -364,10 +364,8 @@ class EthereumTester:
 
         if len(raw_block_hashes) != num_blocks:
             raise ValidationError(
-                "Invariant: tried to mine {} blocks.  Got {} mined block hashes.".format(
-                    num_blocks,
-                    len(raw_block_hashes),
-                )
+                f"Invariant: tried to mine {num_blocks} blocks.  Got "
+                f"{len(raw_block_hashes)} mined block hashes."
             )
 
         for raw_block_hash in raw_block_hashes:

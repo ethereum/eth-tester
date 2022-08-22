@@ -85,8 +85,9 @@ def is_transaction_object_list(value):
 
 def _remove_base_fee_if_none(block):
     """
-    A `None` value is set for `base_fee_per_gas` during validation for blocks that do not have a
-    base fee (pre-London blocks). Pop this value out here to normalize pre-London blocks.
+    A `None` value is set for `base_fee_per_gas` during validation for blocks that do
+    not have a base fee (pre-London blocks). Pop this value out here to normalize
+    pre-London blocks.
     """
     return block if block["base_fee_per_gas"] else dissoc(block, "base_fee_per_gas")
 
