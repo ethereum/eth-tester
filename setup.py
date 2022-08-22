@@ -58,7 +58,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "eth-abi>=3.0.0,<4.0.0",
-        "eth-account>=0.6.0,<0.7.0",
+        "eth-account>=0.6.0,<0.8.0",
         "eth-keys>=0.4.0,<0.5.0",
         "eth-utils>=2.0.0,<3.0.0",
         "rlp>=3.0.0,<4",
