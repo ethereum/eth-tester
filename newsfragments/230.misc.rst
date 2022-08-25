@@ -1,1 +1,0 @@
-Updated dependency requirements for py-evm, eth-abi, eth-account, eth-keys, eth-utils, and pyrlp
