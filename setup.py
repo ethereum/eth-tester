@@ -23,7 +23,7 @@ extras_require = {
     'py-evm': [
         # Pin py-evm to exact version, until it leaves alpha.
         # EVM is very high velocity and might change API at each alpha.
-        "py-evm==0.5.0a3",
+        "py-evm==0.6.0a1",
         "eth-hash[pysha3]>=0.1.4,<1.0.0;implementation_name=='cpython'",
         "eth-hash[pycryptodome]>=0.1.4,<1.0.0;implementation_name=='pypy'",
     ],
@@ -57,11 +57,11 @@ setup(
     url='https://github.com/ethereum/eth-tester',
     include_package_data=True,
     install_requires=[
-        "eth-abi>=2.0.0b4,<3.0.0",
-        "eth-account>=0.5.6,<0.6.0",
-        "eth-keys>=0.3.4,<0.4.0",
-        "eth-utils>=1.4.1,<2.0.0",
-        "rlp>=1.1.0,<3",
+        "eth-abi>=3.0.0,<4.0.0",
+        "eth-account>=0.6.0,<0.8.0",
+        "eth-keys>=0.4.0,<0.5.0",
+        "eth-utils>=2.0.0,<3.0.0",
+        "rlp>=3.0.0,<4.0.0",
         "semantic_version>=2.6.0,<3.0.0",
     ],
     extras_require=extras_require,
