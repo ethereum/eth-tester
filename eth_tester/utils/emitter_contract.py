@@ -254,7 +254,7 @@ def _deploy_emitter(eth_tester):
 
 
 def _call_emitter(eth_tester, contract_address, fn_name, fn_args):
-    from eth_abi import encode_abi
+    from eth_abi import encode
 
     fn_abi = EMITTER_ABI[fn_name]
     arg_types = [arg_abi["type"] for arg_abi in fn_abi["inputs"]]
@@ -264,7 +264,7 @@ def _call_emitter(eth_tester, contract_address, fn_name, fn_args):
             "from": eth_tester.get_accounts()[0],
             "to": contract_address,
             "gas": 500000,
-            "data": encode_hex(fn_selector + encode_abi(arg_types, fn_args)),
+            "data": encode_hex(fn_selector + encode(arg_types, fn_args)),
         }
     )
     return emit_a_hash

@@ -5,7 +5,7 @@ from eth_utils import (
     function_abi_to_4byte_selector,
 )
 
-from eth_abi import encode_abi
+from eth_abi import encode
 
 # The following contract burns gas relative to the current block number. The
 # higher the block number, the more gas is burned. It is used to test
@@ -67,6 +67,6 @@ def _make_call_gas_burner_transaction(
         "from": eth_tester.get_accounts()[0],
         "to": contract_address,
         "gas": 500000,
-        "data": encode_hex(fn_selector + encode_abi(arg_types, fn_args)),
+        "data": encode_hex(fn_selector + encode(arg_types, fn_args)),
     }
     return transaction
