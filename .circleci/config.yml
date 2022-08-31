@@ -30,7 +30,7 @@ common: &common
         command: pip install --user tox
     - run:
         name: run tox
-        command: ~/.local/bin/tox
+        command: python -m tox
     - save_cache:
         paths:
           - .tox
@@ -43,61 +43,61 @@ jobs:
   lint:
     <<: *common
     docker:
-      - image: circleci/python:3.9
+      - image: cimg/python:3.9
         environment:
           TOXENV: lint
   docs:
     <<: *common
     docker:
-      - image: circleci/python:3.9
+      - image: cimg/python:3.9
         environment:
           TOXENV: docs
   py37-core:
     <<: *common
     docker:
-      - image: circleci/python:3.7
+      - image: cimg/python:3.7
         environment:
           TOXENV: py37-core
   py38-core:
     <<: *common
     docker:
-      - image: circleci/python:3.8
+      - image: cimg/python:3.8
         environment:
           TOXENV: py38-core
   py39-core:
     <<: *common
     docker:
-      - image: circleci/python:3.9
+      - image: cimg/python:3.9
         environment:
           TOXENV: py39-core
   py310-core:
     <<: *common
     docker:
-      - image: circleci/python:3.10
+      - image: cimg/python:3.10
         environment:
           TOXENV: py310-core
   py37-pyevm:
     <<: *common
     docker:
-      - image: circleci/python:3.7
+      - image: cimg/python:3.7
         environment:
           TOXENV: py37-pyevm
   py38-pyevm:
     <<: *common
     docker:
-      - image: circleci/python:3.8
+      - image: cimg/python:3.8
         environment:
           TOXENV: py38-pyevm
   py39-pyevm:
     <<: *common
     docker:
-      - image: circleci/python:3.9
+      - image: cimg/python:3.9
         environment:
           TOXENV: py39-pyevm
   py310-pyevm:
     <<: *common
     docker:
-      - image: circleci/python:3.10
+      - image: cimg/python:3.10
         environment:
           TOXENV: py310-pyevm
 

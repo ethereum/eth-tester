@@ -88,7 +88,9 @@ def validate_signature_v(value):
     validate_positive_integer(value)
 
     if value not in [0, 1, 27, 28] and value not in range(35, UINT256_MAX + 1):
-        raise ValidationError("The `v` portion of the signature must be 0, 1, 27, 28 or >= 35")
+        raise ValidationError(
+            "The `v` portion of the signature must be 0, 1, 27, 28 or >= 35"
+        )
 
 
 def validate_y_parity(value):
@@ -102,19 +104,24 @@ def validate_y_parity(value):
 
 def _validate_outbound_access_list(access_list):
     if not is_list_like(access_list):
-        raise ValidationError('access_list is not list-like.')
+        raise ValidationError("access_list is not list-like.")
     for entry in access_list:
         if not is_list_like(entry) and len(entry) != 2:
-            raise ValidationError(f'access_list entry not properly formatted: {entry}')
+            raise ValidationError(f"access_list entry not properly formatted: {entry}")
         address = entry[0]
         storage_keys = entry[1]
         if not (is_bytes(address) and len(address) == 20):
-            raise ValidationError(f'access_list address not properly formatted: {address}')
+            raise ValidationError(
+                f"access_list address not properly formatted: {address}"
+            )
         if not is_list_like(storage_keys):
-            raise ValidationError(f'access_list storage keys are not list-like: {storage_keys}')
+            raise ValidationError(
+                f"access_list storage keys are not list-like: {storage_keys}"
+            )
         if len(storage_keys) > 0 and (not all(is_integer(k) for k in storage_keys)):
             raise ValidationError(
-                f'one or more access list storage keys not formatted properly: {storage_keys}'
+                "one or more access list storage keys not formatted "
+                f"properly: {storage_keys}"
             )
 
 
@@ -135,7 +142,9 @@ LEGACY_TRANSACTION_VALIDATORS = {
     "r": validate_uint256,
     "s": validate_uint256,
 }
-validate_legacy_transaction = partial(validate_dict, key_validators=LEGACY_TRANSACTION_VALIDATORS)
+validate_legacy_transaction = partial(
+    validate_dict, key_validators=LEGACY_TRANSACTION_VALIDATORS
+)
 
 
 ACCESS_LIST_TRANSACTION_VALIDATORS = merge(
@@ -144,7 +153,7 @@ ACCESS_LIST_TRANSACTION_VALIDATORS = merge(
         "v": validate_y_parity,
         "chain_id": validate_uint256,
         "access_list": _validate_outbound_access_list,
-    }
+    },
 )
 validate_access_list_transaction = partial(
     validate_dict, key_validators=ACCESS_LIST_TRANSACTION_VALIDATORS
@@ -156,7 +165,7 @@ DYNAMIC_FEE_TRANSACTION_VALIDATORS = merge(
     {
         "max_fee_per_gas": validate_uint256,
         "max_priority_fee_per_gas": validate_uint256,
-    }
+    },
 )
 validate_dynamic_fee_transaction = partial(
     validate_dict, key_validators=DYNAMIC_FEE_TRANSACTION_VALIDATORS
@@ -233,13 +242,13 @@ BLOCK_VALIDATORS = {
 def _validate_base_fee(block):
     """
     If `base_fee_per_gas` is present (post-London blocks), validate that the value is a
-    positive integer. For pre-London blocks, set to `None` during validation and pop it back out
-    during normalization.
+    positive integer. For pre-London blocks, set to `None` during validation and pop it
+    back out during normalization.
     """
-    if 'base_fee_per_gas' not in block:
-        block['base_fee_per_gas'] = None
+    if "base_fee_per_gas" not in block:
+        block["base_fee_per_gas"] = None
     else:
-        validate_positive_integer(block['base_fee_per_gas'])
+        validate_positive_integer(block["base_fee_per_gas"])
     return block
 
 

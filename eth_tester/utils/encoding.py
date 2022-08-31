@@ -12,7 +12,7 @@ from eth_utils.toolz import (
 
 @curry
 def zpad(value, length):
-    return value.rjust(length, b'\x00')
+    return value.rjust(length, b"\x00")
 
 
 zpad32 = zpad(length=32)

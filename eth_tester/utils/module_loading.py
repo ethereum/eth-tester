@@ -11,7 +11,7 @@ def import_string(dotted_path):
     last name in the path. Raise ImportError if the import failed.
     """
     try:
-        module_path, class_name = dotted_path.rsplit('.', 1)
+        module_path, class_name = dotted_path.rsplit(".", 1)
     except ValueError:
         msg = "%s doesn't look like a module path" % dotted_path
         raise ImportError(msg)
@@ -22,12 +22,15 @@ def import_string(dotted_path):
         return getattr(module, class_name)
     except AttributeError:
         msg = 'Module "{}" does not define a "{}" attribute/class'.format(
-            module_path, class_name)
+            module_path, class_name
+        )
         raise ImportError(msg)
 
 
 def get_import_path(obj):
-    return '.'.join((
-        obj.__module__,
-        obj.__name__,
-    ))
+    return ".".join(
+        (
+            obj.__module__,
+            obj.__name__,
+        )
+    )

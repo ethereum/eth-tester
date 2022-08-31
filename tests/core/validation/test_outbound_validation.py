@@ -24,10 +24,10 @@ def validator():
     (
         (1, False),
         (True, False),
-        (b'\x00' * 32, True),
-        (b'\xff' * 32, True),
-        ('\x00' * 32, False),
-        (encode_hex(b'\x00' * 32), False),
+        (b"\x00" * 32, True),
+        (b"\xff" * 32, True),
+        ("\x00" * 32, False),
+        (encode_hex(b"\x00" * 32), False),
     ),
 )
 def test_block_hash_output_validation(validator, block_hash, is_valid):
@@ -38,16 +38,16 @@ def test_block_hash_output_validation(validator, block_hash, is_valid):
             validator.validate_outbound_block_hash(block_hash)
 
 
-ZERO_32BYTES = b'\x00' * 32
-ZERO_8BYTES = b'\x00' * 8
-ZERO_ADDRESS = b'\x00' * 20
+ZERO_32BYTES = b"\x00" * 32
+ZERO_8BYTES = b"\x00" * 8
+ZERO_ADDRESS = b"\x00" * 20
 
 
-ADDRESS_A = b'\x00' * 19 + b'\x01'
-TOPIC_A = b'\x00' * 31 + b'\x01'
-TOPIC_B = b'\x00' * 31 + b'\x02'
-HASH32_AS_TEXT = '\x00' * 32
-HASH31 = b'\x00' * 31
+ADDRESS_A = b"\x00" * 19 + b"\x01"
+TOPIC_A = b"\x00" * 31 + b"\x01"
+TOPIC_B = b"\x00" * 31 + b"\x02"
+HASH32_AS_TEXT = "\x00" * 32
+HASH31 = b"\x00" * 31
 
 
 def _make_legacy_txn(
@@ -61,13 +61,13 @@ def _make_legacy_txn(
     value=0,
     gas=21000,
     gas_price=1,
-    data=b'',
+    data=b"",
     v=0,
     r=0,
-    s=0
+    s=0,
 ):
     return {
-        "type": '0x0',
+        "type": "0x0",
         "hash": hash,
         "nonce": nonce,
         "block_hash": block_hash,
@@ -85,7 +85,11 @@ def _make_legacy_txn(
     }
 
 
-def _make_access_list_txn(chain_id=131277322940537, access_list=[], **kwargs,):
+def _make_access_list_txn(
+    chain_id=131277322940537,
+    access_list=[],
+    **kwargs,
+):
     legacy_kwargs = dissoc(dict(**kwargs), "chain_id", "access_list")
     return merge(
         _make_legacy_txn(**legacy_kwargs),
@@ -93,7 +97,7 @@ def _make_access_list_txn(chain_id=131277322940537, access_list=[], **kwargs,):
             "type": "0x1",
             "chain_id": chain_id,
             "access_list": access_list,
-        }
+        },
     )
 
 
@@ -111,7 +115,10 @@ def _make_dynamic_fee_txn(
 ):
     legacy_kwargs = dissoc(
         dict(**kwargs),
-        "chain_id", "max_fee_per_gas", "max_priority_fee_per_gas", "access_list"
+        "chain_id",
+        "max_fee_per_gas",
+        "max_priority_fee_per_gas",
+        "access_list",
     )
     return merge(
         _make_access_list_txn(
@@ -121,42 +128,61 @@ def _make_dynamic_fee_txn(
             "type": "0x2",
             "max_fee_per_gas": max_fee_per_gas,
             "max_priority_fee_per_gas": max_priority_fee_per_gas,
-        }
+        },
     )
 
 
 @pytest.mark.parametrize(
     "transaction,is_valid",
     (
-        (_make_legacy_txn(),  True),
-        (_make_access_list_txn(),  True),
-        (_make_dynamic_fee_txn(),  True),
-        (_make_legacy_txn(hash=HASH32_AS_TEXT),  False),
-        (_make_legacy_txn(hash=HASH31),  False),
-        (_make_legacy_txn(nonce=-1),  False),
-        (_make_legacy_txn(nonce=1.0),  False),
-        (_make_legacy_txn(nonce=True),  False),
-        (_make_legacy_txn(value=-1),  False),
-        (_make_legacy_txn(value=1.0),  False),
-        (_make_legacy_txn(value=True),  False),
-        (_make_legacy_txn(block_number=-1),  False),
-        (_make_legacy_txn(block_number=1.0),  False),
-        (_make_legacy_txn(block_number=True),  False),
-        (_make_legacy_txn(gas=-1),  False),
-        (_make_legacy_txn(gas=1.0),  False),
-        (_make_legacy_txn(gas=True),  False),
-        (_make_legacy_txn(gas_price=-1),  False),
-        (_make_legacy_txn(gas_price=1.0),  False),
-        (_make_legacy_txn(gas_price=True),  False),
-        (_make_legacy_txn(data=''),  False),
-        (_make_legacy_txn(data='0x'),  False),
-        (_make_legacy_txn(block_hash=HASH32_AS_TEXT),  False),
-        (_make_legacy_txn(block_hash=HASH31),  False),
-        (_make_legacy_txn(transaction_index=None, block_hash=None, block_number=None), True),
-        (_make_access_list_txn(transaction_index=None, block_hash=None, block_number=None,), True),
-        (_make_dynamic_fee_txn(transaction_index=None, block_hash=None, block_number=None,), True),
-        (_make_access_list_txn(chain_id='1'), False),
-        (_make_dynamic_fee_txn(chain_id='1'), False),
+        (_make_legacy_txn(), True),
+        (_make_access_list_txn(), True),
+        (_make_dynamic_fee_txn(), True),
+        (_make_legacy_txn(hash=HASH32_AS_TEXT), False),
+        (_make_legacy_txn(hash=HASH31), False),
+        (_make_legacy_txn(nonce=-1), False),
+        (_make_legacy_txn(nonce=1.0), False),
+        (_make_legacy_txn(nonce=True), False),
+        (_make_legacy_txn(value=-1), False),
+        (_make_legacy_txn(value=1.0), False),
+        (_make_legacy_txn(value=True), False),
+        (_make_legacy_txn(block_number=-1), False),
+        (_make_legacy_txn(block_number=1.0), False),
+        (_make_legacy_txn(block_number=True), False),
+        (_make_legacy_txn(gas=-1), False),
+        (_make_legacy_txn(gas=1.0), False),
+        (_make_legacy_txn(gas=True), False),
+        (_make_legacy_txn(gas_price=-1), False),
+        (_make_legacy_txn(gas_price=1.0), False),
+        (_make_legacy_txn(gas_price=True), False),
+        (_make_legacy_txn(data=""), False),
+        (_make_legacy_txn(data="0x"), False),
+        (_make_legacy_txn(block_hash=HASH32_AS_TEXT), False),
+        (_make_legacy_txn(block_hash=HASH31), False),
+        (
+            _make_legacy_txn(
+                transaction_index=None, block_hash=None, block_number=None
+            ),
+            True,
+        ),
+        (
+            _make_access_list_txn(
+                transaction_index=None,
+                block_hash=None,
+                block_number=None,
+            ),
+            True,
+        ),
+        (
+            _make_dynamic_fee_txn(
+                transaction_index=None,
+                block_hash=None,
+                block_number=None,
+            ),
+            True,
+        ),
+        (_make_access_list_txn(chain_id="1"), False),
+        (_make_dynamic_fee_txn(chain_id="1"), False),
         (_make_access_list_txn(chain_id=-1), False),
         (_make_dynamic_fee_txn(chain_id=-1), False),
         (_make_access_list_txn(chain_id=None), False),
@@ -172,18 +198,53 @@ def _make_dynamic_fee_txn(
         (_make_dynamic_fee_txn(v=27), False),
         (_make_dynamic_fee_txn(max_fee_per_gas=1.0), False),
         (_make_dynamic_fee_txn(max_priority_fee_per_gas=1.0), False),
-        (_make_dynamic_fee_txn(max_fee_per_gas='1'), False),
-        (_make_dynamic_fee_txn(max_priority_fee_per_gas='1'), False),
-        (_make_access_list_txn(access_list=((b'\xf0' * 20, (0, 2)),),), True),
-        (_make_dynamic_fee_txn(access_list=((b'\xef' * 20, (1, 2, 3, 4)),),), True),
+        (_make_dynamic_fee_txn(max_fee_per_gas="1"), False),
+        (_make_dynamic_fee_txn(max_priority_fee_per_gas="1"), False),
+        (
+            _make_access_list_txn(
+                access_list=((b"\xf0" * 20, (0, 2)),),
+            ),
+            True,
+        ),
+        (
+            _make_dynamic_fee_txn(
+                access_list=((b"\xef" * 20, (1, 2, 3, 4)),),
+            ),
+            True,
+        ),
         (_make_access_list_txn(access_list=()), True),
         (_make_dynamic_fee_txn(access_list=()), True),
-        (_make_access_list_txn(access_list=((b'\xf0' * 19, (0, 2)),),), False),
-        (_make_dynamic_fee_txn(access_list=((b'\xf0' * 19, ()),),), False),
-        (_make_access_list_txn(access_list=((b'\xf0' * 20, ('0', 2)),),), False),
-        (_make_dynamic_fee_txn(access_list=((b'\xf0' * 20, (b'', 1)),),), False),
-        (_make_dynamic_fee_txn(access_list=(('', (1, 2)),),), False),
-    )
+        (
+            _make_access_list_txn(
+                access_list=((b"\xf0" * 19, (0, 2)),),
+            ),
+            False,
+        ),
+        (
+            _make_dynamic_fee_txn(
+                access_list=((b"\xf0" * 19, ()),),
+            ),
+            False,
+        ),
+        (
+            _make_access_list_txn(
+                access_list=((b"\xf0" * 20, ("0", 2)),),
+            ),
+            False,
+        ),
+        (
+            _make_dynamic_fee_txn(
+                access_list=((b"\xf0" * 20, (b"", 1)),),
+            ),
+            False,
+        ),
+        (
+            _make_dynamic_fee_txn(
+                access_list=(("", (1, 2)),),
+            ),
+            False,
+        ),
+    ),
 )
 def test_transaction_output_validation(validator, transaction, is_valid):
     if is_valid:
@@ -193,15 +254,17 @@ def test_transaction_output_validation(validator, transaction, is_valid):
             validator.validate_outbound_transaction(transaction)
 
 
-def _make_log(_type="mined",
-              log_index=0,
-              transaction_index=0,
-              transaction_hash=ZERO_32BYTES,
-              block_hash=ZERO_32BYTES,
-              block_number=0,
-              address=ZERO_ADDRESS,
-              data=b'',
-              topics=None):
+def _make_log(
+    _type="mined",
+    log_index=0,
+    transaction_index=0,
+    transaction_hash=ZERO_32BYTES,
+    block_hash=ZERO_32BYTES,
+    block_number=0,
+    address=ZERO_ADDRESS,
+    data=b"",
+    topics=None,
+):
     return {
         "type": _type,
         "log_index": log_index,
@@ -219,7 +282,15 @@ def _make_log(_type="mined",
     "log_entry,is_valid",
     (
         (_make_log(), True),
-        (_make_log(_type="pending", transaction_index=None, block_hash=None, block_number=None), True),
+        (
+            _make_log(
+                _type="pending",
+                transaction_index=None,
+                block_hash=None,
+                block_number=None,
+            ),
+            True,
+        ),
         (_make_log(_type="invalid-type"), False),
         (_make_log(transaction_index=-1), False),
         (_make_log(block_number=-1), False),
@@ -228,7 +299,7 @@ def _make_log(_type="mined",
         (_make_log(block_hash=HASH31), False),
         (_make_log(block_hash=HASH32_AS_TEXT), False),
         (_make_log(address=encode_hex(ADDRESS_A)), False),
-        (_make_log(data=''), False),
+        (_make_log(data=""), False),
         (_make_log(data=None), False),
         (_make_log(topics=[HASH32_AS_TEXT]), False),
         (_make_log(topics=[HASH31]), False),
@@ -244,20 +315,22 @@ def test_log_entry_output_validation(validator, log_entry, is_valid):
             validator.validate_outbound_log_entry(log_entry)
 
 
-def _make_receipt(transaction_hash=ZERO_32BYTES,
-                  transaction_index=0,
-                  block_number=0,
-                  block_hash=ZERO_32BYTES,
-                  cumulative_gas_used=0,
-                  _from=ZERO_ADDRESS,
-                  gas_used=21000,
-                  effective_gas_price=1000000000,
-                  contract_address=None,
-                  logs=None,
-                  state_root=b'\x00',
-                  status=0,
-                  to=ZERO_ADDRESS,
-                  _type='0x0'):
+def _make_receipt(
+    transaction_hash=ZERO_32BYTES,
+    transaction_index=0,
+    block_number=0,
+    block_hash=ZERO_32BYTES,
+    cumulative_gas_used=0,
+    _from=ZERO_ADDRESS,
+    gas_used=21000,
+    effective_gas_price=1000000000,
+    contract_address=None,
+    logs=None,
+    state_root=b"\x00",
+    status=0,
+    to=ZERO_ADDRESS,
+    _type="0x0",
+):
     return {
         "transaction_hash": transaction_hash,
         "transaction_index": transaction_index,
@@ -318,26 +391,28 @@ def test_receipt_output_validation(validator, receipt, is_valid):
             validator.validate_outbound_receipt(receipt)
 
 
-def _make_block(number=0,
-                hash=ZERO_32BYTES,
-                parent_hash=ZERO_32BYTES,
-                nonce=ZERO_8BYTES,
-                sha3_uncles=ZERO_32BYTES,
-                logs_bloom=0,
-                transactions_root=ZERO_32BYTES,
-                receipts_root=ZERO_32BYTES,
-                state_root=ZERO_32BYTES,
-                miner=ZERO_ADDRESS,
-                difficulty=0,
-                total_difficulty=0,
-                size=0,
-                extra_data=ZERO_32BYTES,
-                gas_limit=30029122,  # gas limit at London fork block 12965000 on mainnet
-                gas_used=21000,
-                timestamp=4000000,
-                transactions=None,
-                uncles=None,
-                base_fee_per_gas=1000000000):
+def _make_block(
+    number=0,
+    hash=ZERO_32BYTES,
+    parent_hash=ZERO_32BYTES,
+    nonce=ZERO_8BYTES,
+    sha3_uncles=ZERO_32BYTES,
+    logs_bloom=0,
+    transactions_root=ZERO_32BYTES,
+    receipts_root=ZERO_32BYTES,
+    state_root=ZERO_32BYTES,
+    miner=ZERO_ADDRESS,
+    difficulty=0,
+    total_difficulty=0,
+    size=0,
+    extra_data=ZERO_32BYTES,
+    gas_limit=30029122,  # gas limit at London fork block 12965000 on mainnet
+    gas_used=21000,
+    timestamp=4000000,
+    transactions=None,
+    uncles=None,
+    base_fee_per_gas=1000000000,
+):
     block = {
         "number": number,
         "hash": hash,
@@ -366,63 +441,63 @@ def _make_block(number=0,
 @pytest.mark.parametrize(
     "block,is_valid",
     (
-        (_make_block(),  True),
-        (_make_block(number=-1),  False),
-        (_make_block(number=1.0),  False),
-        (_make_block(number=True),  False),
-        (_make_block(hash=HASH32_AS_TEXT),  False),
-        (_make_block(hash=HASH31),  False),
-        (_make_block(parent_hash=HASH32_AS_TEXT),  False),
-        (_make_block(parent_hash=HASH31),  False),
-        (_make_block(nonce=-1),  False),
-        (_make_block(nonce=1.0),  False),
-        (_make_block(nonce=True),  False),
-        (_make_block(sha3_uncles=HASH32_AS_TEXT),  False),
-        (_make_block(logs_bloom=-1),  False),
-        (_make_block(logs_bloom=1.0),  False),
-        (_make_block(logs_bloom=True),  False),
-        (_make_block(transactions_root=HASH32_AS_TEXT),  False),
-        (_make_block(transactions_root=HASH31),  False),
-        (_make_block(receipts_root=HASH32_AS_TEXT),  False),
-        (_make_block(receipts_root=HASH31),  False),
-        (_make_block(state_root=HASH32_AS_TEXT),  False),
-        (_make_block(state_root=HASH31),  False),
-        (_make_block(miner=encode_hex(ADDRESS_A)),  False),
-        (_make_block(difficulty=-1),  False),
-        (_make_block(difficulty=1.0),  False),
-        (_make_block(difficulty=True),  False),
-        (_make_block(total_difficulty=-1),  False),
-        (_make_block(total_difficulty=1.0),  False),
-        (_make_block(total_difficulty=True),  False),
-        (_make_block(size=-1),  False),
-        (_make_block(size=1.0),  False),
-        (_make_block(size=True),  False),
-        (_make_block(extra_data=HASH32_AS_TEXT),  False),
-        (_make_block(extra_data=HASH31),  False),
-        (_make_block(gas_limit=-1),  False),
-        (_make_block(gas_limit=1.0),  False),
-        (_make_block(gas_limit=True),  False),
-        (_make_block(gas_used=-1),  False),
-        (_make_block(gas_used=1.0),  False),
-        (_make_block(gas_used=True),  False),
-        (_make_block(timestamp=-1),  False),
-        (_make_block(timestamp=1.0),  False),
-        (_make_block(timestamp=True),  False),
-        (_make_block(base_fee_per_gas=1000000000),  True),
-        (_make_block(base_fee_per_gas=-1000000000),  False),
-        (_make_block(base_fee_per_gas=1000000000.0),  False),
-        (_make_block(base_fee_per_gas='1000000000'),  False),
-        (_make_block(uncles=[ZERO_32BYTES]),  True),
-        (_make_block(uncles=[ZERO_32BYTES, HASH32_AS_TEXT]),  False),
-        (_make_block(transactions=[ZERO_32BYTES]),  True),
-        (_make_block(transactions=[_make_legacy_txn()]),  True),
+        (_make_block(), True),
+        (_make_block(number=-1), False),
+        (_make_block(number=1.0), False),
+        (_make_block(number=True), False),
+        (_make_block(hash=HASH32_AS_TEXT), False),
+        (_make_block(hash=HASH31), False),
+        (_make_block(parent_hash=HASH32_AS_TEXT), False),
+        (_make_block(parent_hash=HASH31), False),
+        (_make_block(nonce=-1), False),
+        (_make_block(nonce=1.0), False),
+        (_make_block(nonce=True), False),
+        (_make_block(sha3_uncles=HASH32_AS_TEXT), False),
+        (_make_block(logs_bloom=-1), False),
+        (_make_block(logs_bloom=1.0), False),
+        (_make_block(logs_bloom=True), False),
+        (_make_block(transactions_root=HASH32_AS_TEXT), False),
+        (_make_block(transactions_root=HASH31), False),
+        (_make_block(receipts_root=HASH32_AS_TEXT), False),
+        (_make_block(receipts_root=HASH31), False),
+        (_make_block(state_root=HASH32_AS_TEXT), False),
+        (_make_block(state_root=HASH31), False),
+        (_make_block(miner=encode_hex(ADDRESS_A)), False),
+        (_make_block(difficulty=-1), False),
+        (_make_block(difficulty=1.0), False),
+        (_make_block(difficulty=True), False),
+        (_make_block(total_difficulty=-1), False),
+        (_make_block(total_difficulty=1.0), False),
+        (_make_block(total_difficulty=True), False),
+        (_make_block(size=-1), False),
+        (_make_block(size=1.0), False),
+        (_make_block(size=True), False),
+        (_make_block(extra_data=HASH32_AS_TEXT), False),
+        (_make_block(extra_data=HASH31), False),
+        (_make_block(gas_limit=-1), False),
+        (_make_block(gas_limit=1.0), False),
+        (_make_block(gas_limit=True), False),
+        (_make_block(gas_used=-1), False),
+        (_make_block(gas_used=1.0), False),
+        (_make_block(gas_used=True), False),
+        (_make_block(timestamp=-1), False),
+        (_make_block(timestamp=1.0), False),
+        (_make_block(timestamp=True), False),
+        (_make_block(base_fee_per_gas=1000000000), True),
+        (_make_block(base_fee_per_gas=-1000000000), False),
+        (_make_block(base_fee_per_gas=1000000000.0), False),
+        (_make_block(base_fee_per_gas="1000000000"), False),
+        (_make_block(uncles=[ZERO_32BYTES]), True),
+        (_make_block(uncles=[ZERO_32BYTES, HASH32_AS_TEXT]), False),
+        (_make_block(transactions=[ZERO_32BYTES]), True),
+        (_make_block(transactions=[_make_legacy_txn()]), True),
         (_make_block(transactions=[ZERO_32BYTES, _make_legacy_txn()]), False),
         (_make_block(transactions=[_make_access_list_txn()]), True),
         (_make_block(transactions=[ZERO_32BYTES, _make_access_list_txn()]), False),
         (_make_block(transactions=[_make_dynamic_fee_txn()]), True),
         (_make_block(transactions=[ZERO_32BYTES, _make_dynamic_fee_txn()]), False),
-        (_make_block(transactions=[ZERO_32BYTES, HASH32_AS_TEXT]),  False),
-    )
+        (_make_block(transactions=[ZERO_32BYTES, HASH32_AS_TEXT]), False),
+    ),
 )
 def test_block_output_validation(validator, block, is_valid):
     if is_valid:

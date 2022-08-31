@@ -27,7 +27,7 @@ MATH_BYTECODE = (
 
 
 MATH_ABI = {
-    'return13': {
+    "return13": {
         "constant": False,
         "inputs": [],
         "name": "return13",
@@ -56,7 +56,7 @@ MATH_ABI = {
         ],
         "type": "function",
     },
-    'add': {
+    "add": {
         "constant": False,
         "inputs": [
             {"name": "a", "type": "int256"},
@@ -68,16 +68,16 @@ MATH_ABI = {
         ],
         "type": "function",
     },
-    'increment': {
+    "increment": {
         "constant": False,
         "inputs": [],
         "name": "increment",
         "outputs": [
             {"name": "", "type": "uint256"},
         ],
-        "type": "function"
+        "type": "function",
     },
-    'multiply7': {
+    "multiply7": {
         "constant": False,
         "inputs": [
             {"name": "a", "type": "int256"},
@@ -88,7 +88,7 @@ MATH_ABI = {
         ],
         "type": "function",
     },
-    'Increased': {
+    "Increased": {
         "anonymous": False,
         "inputs": [
             {"indexed": False, "name": "value", "type": "uint256"},
@@ -100,13 +100,15 @@ MATH_ABI = {
 
 
 def _deploy_math(eth_tester):
-    deploy_hash = eth_tester.send_transaction({
-        "from": eth_tester.get_accounts()[0],
-        "gas": 500000,
-        "data": MATH_BYTECODE,
-    })
+    deploy_hash = eth_tester.send_transaction(
+        {
+            "from": eth_tester.get_accounts()[0],
+            "gas": 500000,
+            "data": MATH_BYTECODE,
+        }
+    )
     deploy_receipt = eth_tester.get_transaction_receipt(deploy_hash)
-    math_address = deploy_receipt['contract_address']
+    math_address = deploy_receipt["contract_address"]
     assert math_address
     math_code = eth_tester.get_code(math_address)
     assert len(math_code) > 2
@@ -120,11 +122,7 @@ def _make_call_math_transaction(eth_tester, contract_address, fn_name, fn_args=N
         fn_args = tuple()
 
     fn_abi = MATH_ABI[fn_name]
-    arg_types = [
-        arg_abi['type']
-        for arg_abi
-        in fn_abi['inputs']
-    ]
+    arg_types = [arg_abi["type"] for arg_abi in fn_abi["inputs"]]
     fn_selector = function_abi_to_4byte_selector(fn_abi)
     transaction = {
         "from": eth_tester.get_accounts()[0],
@@ -139,10 +137,6 @@ def _decode_math_result(fn_name, result):
     from eth_abi import decode_abi
 
     fn_abi = MATH_ABI[fn_name]
-    output_types = [
-        output_abi['type']
-        for output_abi
-        in fn_abi['outputs']
-    ]
+    output_types = [output_abi["type"] for output_abi in fn_abi["outputs"]]
 
     return decode_abi(output_types, decode_hex(result))

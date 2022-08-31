@@ -21,9 +21,9 @@ from eth_tester.utils.filters import (
 )
 
 
-TOPIC_A = b'\x00' * 32
-TOPIC_B = b'\x00' * 31 + b'\x01'
-TOPIC_C = b'\x00' * 31 + b'\x02'
+TOPIC_A = b"\x00" * 32
+TOPIC_B = b"\x00" * 31 + b"\x01"
+TOPIC_C = b"\x00" * 31 + b"\x02"
 
 
 def topic_to_name(param):
@@ -41,25 +41,25 @@ def topic_id(param):
 
 
 @pytest.mark.parametrize(
-    'value,expected',
+    "value,expected",
     (
         # bad values
-        ('', False),
-        ('a', False),
+        ("", False),
+        ("a", False),
         (1, False),
         (True, False),
-        ({'a': 1, 'b': 2}, False),
+        ({"a": 1, "b": 2}, False),
         (tuple(), False),
         (list(), False),
-        (('a', 'b'), False),
-        (['a', 'b'], False),
-        (b'', False),
-        (b'arst', False),
+        (("a", "b"), False),
+        (["a", "b"], False),
+        (b"", False),
+        (b"arst", False),
         # good values
         (None, True),
         (TOPIC_A, True),
         (TOPIC_B, True),
-    )
+    ),
 )
 def test_is_topic(value, expected):
     actual = is_topic(value)
@@ -73,34 +73,34 @@ TOPICS_MANY_WITH_NULL = (TOPIC_A, None, TOPIC_B)
 
 
 @pytest.mark.parametrize(
-    'value,expected',
+    "value,expected",
     (
         # bad values
-        ('', False),
-        ('a', False),
+        ("", False),
+        ("a", False),
         (1, False),
         (True, False),
-        ({'a': 1, 'b': 2}, False),
+        ({"a": 1, "b": 2}, False),
         (None, False),
-        (b'', False),
-        (b'arst', False),
-        (('a', 'b'), False),
-        (['a', 'b'], False),
-        ([b'a', b'b'], False),
-        ([b'a', None, b'b'], False),
+        (b"", False),
+        (b"arst", False),
+        (("a", "b"), False),
+        (["a", "b"], False),
+        ([b"a", b"b"], False),
+        ([b"a", None, b"b"], False),
         (list(), False),
         ([None], False),
-        ((None, b'a'), False),
-        ((TOPIC_A, b'a'), False),
-        ((b'a', None), False),
-        ((b'a', TOPIC_A), False),
-        ((TOPIC_A, b'a', TOPIC_B), False),
+        ((None, b"a"), False),
+        ((TOPIC_A, b"a"), False),
+        ((b"a", None), False),
+        ((b"a", TOPIC_A), False),
+        ((TOPIC_A, b"a", TOPIC_B), False),
         # good values
         (TOPICS_EMPTY, True),
         (TOPICS_SINGLE_NULL, True),
         (TOPICS_MANY, True),
         (TOPICS_MANY_WITH_NULL, True),
-    )
+    ),
 )
 def test_is_valid_topic_array_with_flat_topic_arrays(value, expected):
     actual = is_flat_topic_array(value)
@@ -115,28 +115,28 @@ NESTED_TOPICS_E = (TOPIC_A, TOPICS_MANY, TOPICS_EMPTY)
 
 
 @pytest.mark.parametrize(
-    'value,expected',
+    "value,expected",
     (
         # bad values
-        ('', False),
-        ('a', False),
+        ("", False),
+        ("a", False),
         (1, False),
         (True, False),
-        ({'a': 1, 'b': 2}, False),
+        ({"a": 1, "b": 2}, False),
         (None, False),
-        (b'', False),
-        (b'arst', False),
-        (('a', 'b'), False),
-        (['a', 'b'], False),
-        ([b'a', b'b'], False),
-        ([b'a', None, b'b'], False),
+        (b"", False),
+        (b"arst", False),
+        (("a", "b"), False),
+        (["a", "b"], False),
+        ([b"a", b"b"], False),
+        ([b"a", None, b"b"], False),
         (list(), False),
         ([None], False),
         (([],), False),
         (([tuple()],), False),
         ([tuple()], False),
         ((tuple(), []), False),
-        ((TOPICS_EMPTY, (b'arst',)), False),
+        ((TOPICS_EMPTY, (b"arst",)), False),
         (TOPIC_A, False),
         (TOPICS_EMPTY, False),
         # good values
@@ -148,7 +148,7 @@ NESTED_TOPICS_E = (TOPIC_A, TOPICS_MANY, TOPICS_EMPTY)
         (NESTED_TOPICS_C, True),
         (NESTED_TOPICS_D, True),
         (NESTED_TOPICS_E, True),
-    )
+    ),
 )
 def test_is_valid_with_nested_topic_array(value, expected):
     actual = is_valid_with_nested_topic_array(value)
@@ -156,28 +156,28 @@ def test_is_valid_with_nested_topic_array(value, expected):
 
 
 @pytest.mark.parametrize(
-    'value,expected',
+    "value,expected",
     (
         # bad values
-        ('', False),
-        ('a', False),
+        ("", False),
+        ("a", False),
         (1, False),
         (True, False),
-        ({'a': 1, 'b': 2}, False),
+        ({"a": 1, "b": 2}, False),
         (None, False),
-        (b'', False),
-        (b'arst', False),
-        (('a', 'b'), False),
-        (['a', 'b'], False),
-        ([b'a', b'b'], False),
-        ([b'a', None, b'b'], False),
+        (b"", False),
+        (b"arst", False),
+        (("a", "b"), False),
+        (["a", "b"], False),
+        ([b"a", b"b"], False),
+        ([b"a", None, b"b"], False),
         (list(), False),
         ([None], False),
         (([],), False),
         (([tuple()],), False),
         ([tuple()], False),
         ((tuple(), []), False),
-        ((TOPICS_EMPTY, (b'arst',)), False),
+        ((TOPICS_EMPTY, (b"arst",)), False),
         # good values
         (TOPICS_EMPTY, True),
         (TOPICS_SINGLE_NULL, True),
@@ -187,22 +187,22 @@ def test_is_valid_with_nested_topic_array(value, expected):
         (NESTED_TOPICS_B, True),
         (NESTED_TOPICS_C, True),
         (NESTED_TOPICS_D, True),
-    )
+    ),
 )
 def test_is_topic_array(value, expected):
     actual = is_topic_array(value)
     assert actual is expected
 
 
-TOPIC_A_AS_TEXT = '\x00' * 32
-TOPIC_B_AS_TEXT = '\x00' * 31 + '\x01'
+TOPIC_A_AS_TEXT = "\x00" * 32
+TOPIC_B_AS_TEXT = "\x00" * 31 + "\x01"
 
 
 @pytest.mark.parametrize(
-    'value,topic,expected',
+    "value,topic,expected",
     (
         # bad values
-        ('mismatch', TOPIC_A, False),
+        ("mismatch", TOPIC_A, False),
         (TOPIC_A_AS_TEXT, TOPIC_A, False),
         (TOPIC_B, TOPIC_A, False),
         # good values
@@ -210,7 +210,7 @@ TOPIC_B_AS_TEXT = '\x00' * 31 + '\x01'
         (TOPIC_B, TOPIC_B, True),
         (TOPIC_A, None, True),
         (TOPIC_B, None, True),
-    )
+    ),
 )
 def test_check_single_topic_match(value, topic, expected):
     actual = check_single_topic_match(value, topic)
@@ -218,41 +218,41 @@ def test_check_single_topic_match(value, topic, expected):
 
 
 @pytest.mark.parametrize(
-    'block_number,_type,from_block,expected',
+    "block_number,_type,from_block,expected",
     (
         # bad values
-        (10, 'mined', 11, False),
-        (10, 'mined', 'pending', False),
-        (10, 'mined', 'earliest', False),
+        (10, "mined", 11, False),
+        (10, "mined", "pending", False),
+        (10, "mined", "earliest", False),
         # good values
-        (10, 'mined', None, True),
-        (10, 'mined', 10, True),
-        (20, 'mined', 10, True),
-        (10, 'mined', 'latest', True),
-        (10, 'pending', 'pending', True),
-        (10, 'pending', 'earliest', True),
-    )
+        (10, "mined", None, True),
+        (10, "mined", 10, True),
+        (20, "mined", 10, True),
+        (10, "mined", "latest", True),
+        (10, "pending", "pending", True),
+        (10, "pending", "earliest", True),
+    ),
 )
 def test_check_if_from_block_match(block_number, _type, from_block, expected):
-    actual =  check_if_from_block_match(block_number, _type, from_block)
+    actual = check_if_from_block_match(block_number, _type, from_block)
     assert actual is expected
 
 
 @pytest.mark.parametrize(
-    'block_number,_type,to_block,expected',
+    "block_number,_type,to_block,expected",
     (
         # bad values
-        (11, 'mined', 10, False),
-        (10, 'mined', 'pending', False),
-        (10, 'mined', 'earliest', False),
+        (11, "mined", 10, False),
+        (10, "mined", "pending", False),
+        (10, "mined", "earliest", False),
         # good values
-        (10, 'mined', None, True),
-        (10, 'mined', 10, True),
-        (9, 'mined', 10, True),
-        (10, 'mined', 'latest', True),
-        (10, 'pending', 'pending', True),
-        (10, 'pending', 'earliest', True),
-    )
+        (10, "mined", None, True),
+        (10, "mined", 10, True),
+        (9, "mined", 10, True),
+        (10, "mined", "latest", True),
+        (10, "pending", "pending", True),
+        (10, "pending", "earliest", True),
+    ),
 )
 def test_check_if_to_block_match(block_number, _type, to_block, expected):
     actual = check_if_to_block_match(block_number, _type, to_block)
@@ -294,7 +294,7 @@ FILTER_MATCH_A_C_B = (TOPIC_A, TOPIC_C, TOPIC_B)
 
 
 @pytest.mark.parametrize(
-    'log_topics,filter_topics,expected',
+    "log_topics,filter_topics,expected",
     (
         # match all values
         (TOPICS_EMPTY, FILTER_MATCH_ALL, True),
@@ -402,14 +402,14 @@ def test_check_if_topics_match(log_topics, filter_topics, expected):
     assert actual is expected
 
 
-ADDRESS_A = b'\x00' * 20
-ADDRESS_B = b'\x00' * 19 + b'\x01'
-ADDRESS_C = b'\x00' * 19 + b'\x02'
-ADDRESS_D = b'\x00' * 19 + b'\x03'
+ADDRESS_A = b"\x00" * 20
+ADDRESS_B = b"\x00" * 19 + b"\x01"
+ADDRESS_C = b"\x00" * 19 + b"\x02"
+ADDRESS_D = b"\x00" * 19 + b"\x03"
 
 
 @pytest.mark.parametrize(
-    'address,addresses,expected',
+    "address,addresses,expected",
     (
         (ADDRESS_A, None, True),
         (ADDRESS_B, None, True),
@@ -438,7 +438,7 @@ def test_check_if_address_match(address, addresses, expected):
     assert actual is expected
 
 
-def _make_log(block_number=10, topics=None, address=ADDRESS_A, _type='mined', **kwargs):
+def _make_log(block_number=10, topics=None, address=ADDRESS_A, _type="mined", **kwargs):
     return dict(
         block_number=block_number,
         topics=topics or tuple(),
@@ -450,15 +450,15 @@ def _make_log(block_number=10, topics=None, address=ADDRESS_A, _type='mined', **
 
 def _make_filter(from_block=None, to_block=None, topics=None, addresses=None):
     return {
-        'from_block': from_block,
-        'to_block': to_block,
-        'topics': topics,
-        'addresses': addresses,
+        "from_block": from_block,
+        "to_block": to_block,
+        "topics": topics,
+        "addresses": addresses,
     }
 
 
 @pytest.mark.parametrize(
-    'log_entry,filter_params,expected',
+    "log_entry,filter_params,expected",
     (
         # block numbers
         (_make_log(), _make_filter(), True),
@@ -469,12 +469,28 @@ def _make_filter(from_block=None, to_block=None, topics=None, addresses=None):
         (_make_log(block_number=20), _make_filter(to_block=20), True),
         # topics
         (_make_log(topics=(TOPIC_A,)), _make_filter(topics=FILTER_MATCH_ALL), True),
-        (_make_log(topics=(TOPIC_A, TOPIC_B)), _make_filter(topics=FILTER_MATCH_ALL), True),
+        (
+            _make_log(topics=(TOPIC_A, TOPIC_B)),
+            _make_filter(topics=FILTER_MATCH_ALL),
+            True,
+        ),
         (_make_log(topics=(TOPIC_A,)), _make_filter(topics=FILTER_MATCH_A), True),
         (_make_log(topics=(TOPIC_B,)), _make_filter(topics=FILTER_MATCH_A), False),
-        (_make_log(topics=(TOPIC_A, TOPIC_A)), _make_filter(topics=FILTER_MATCH_A_ANY), True),
-        (_make_log(topics=(TOPIC_A, TOPIC_B)), _make_filter(topics=FILTER_MATCH_A_ANY), True),
-        (_make_log(topics=(TOPIC_B, TOPIC_A)), _make_filter(topics=FILTER_MATCH_A_ANY), False),
+        (
+            _make_log(topics=(TOPIC_A, TOPIC_A)),
+            _make_filter(topics=FILTER_MATCH_A_ANY),
+            True,
+        ),
+        (
+            _make_log(topics=(TOPIC_A, TOPIC_B)),
+            _make_filter(topics=FILTER_MATCH_A_ANY),
+            True,
+        ),
+        (
+            _make_log(topics=(TOPIC_B, TOPIC_A)),
+            _make_filter(topics=FILTER_MATCH_A_ANY),
+            False,
+        ),
         (_make_log(topics=TOPICS_A_B), _make_filter(topics=FILTER_MATCH_A_ANY), True),
         (_make_log(topics=TOPICS_B_A), _make_filter(topics=FILTER_MATCH_A_ANY), False),
         (
@@ -500,28 +516,27 @@ def test_check_if_log_matches(log_entry, filter_params, expected):
 
 
 @pytest.mark.parametrize(
-    'topic_list_input,expected_flat_topics',
+    "topic_list_input,expected_flat_topics",
     (
         (
-            ('A', ('A','B'), 'A'),
-            (
-                ('A', 'A', 'A'),
-                ('A', 'B', 'A')
-            ),
+            ("A", ("A", "B"), "A"),
+            (("A", "A", "A"), ("A", "B", "A")),
         ),
         (
-            ('A', ('A','B', 'C'), ('A', 'B')),
+            ("A", ("A", "B", "C"), ("A", "B")),
             (
-                ('A', 'A', 'A'),
-                ('A', 'A', 'B'),
-                ('A', 'B', 'A'),
-                ('A', 'B', 'B'),
-                ('A', 'C', 'A'),
-                ('A', 'C', 'B')
+                ("A", "A", "A"),
+                ("A", "A", "B"),
+                ("A", "B", "A"),
+                ("A", "B", "B"),
+                ("A", "C", "A"),
+                ("A", "C", "B"),
             ),
-        )
-    )
+        ),
+    ),
 )
 def test_extrapolate_flat_topic_from_topic_list(topic_list_input, expected_flat_topics):
-    assert tuple(extrapolate_flat_topic_from_topic_list(topic_list_input)) == expected_flat_topics
-
+    assert (
+        tuple(extrapolate_flat_topic_from_topic_list(topic_list_input))
+        == expected_flat_topics
+    )

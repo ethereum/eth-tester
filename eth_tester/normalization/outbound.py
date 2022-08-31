@@ -29,22 +29,26 @@ from ..utils.encoding import int_to_32byte_big_endian
 normalize_account = to_checksum_address
 normalize_account_list = partial(normalize_array, normalizer=normalize_account)
 
-to_empty_or_checksum_address = apply_one_of_formatters((
-    (lambda addr: addr == b'', lambda addr: ''),
-    (is_canonical_address, to_checksum_address),
-))
+to_empty_or_checksum_address = apply_one_of_formatters(
+    (
+        (lambda addr: addr == b"", lambda addr: ""),
+        (is_canonical_address, to_checksum_address),
+    )
+)
 
 
 def _normalize_outbound_access_list(access_list):
-    return tuple([
-        {
-            'address': to_checksum_address(entry[0]),
-            'storage_keys': tuple(
-                [encode_hex(int_to_32byte_big_endian(k)) for k in entry[1]]
-            )
-        }
-        for entry in access_list
-    ])
+    return tuple(
+        [
+            {
+                "address": to_checksum_address(entry[0]),
+                "storage_keys": tuple(
+                    [encode_hex(int_to_32byte_big_endian(k)) for k in entry[1]]
+                ),
+            }
+            for entry in access_list
+        ]
+    )
 
 
 TRANSACTION_NORMALIZERS = {
@@ -81,10 +85,11 @@ def is_transaction_object_list(value):
 
 def _remove_base_fee_if_none(block):
     """
-    A `None` value is set for `base_fee_per_gas` during validation for blocks that do not have a
-    base fee (pre-London blocks). Pop this value out here to normalize pre-London blocks.
+    A `None` value is set for `base_fee_per_gas` during validation for blocks that do
+    not have a base fee (pre-London blocks). Pop this value out here to normalize
+    pre-London blocks.
     """
-    return block if block['base_fee_per_gas'] else dissoc(block, 'base_fee_per_gas')
+    return block if block["base_fee_per_gas"] else dissoc(block, "base_fee_per_gas")
 
 
 BLOCK_NORMALIZERS = {
@@ -121,8 +126,7 @@ BLOCK_NORMALIZERS = {
     "uncles": partial(normalize_array, normalizer=encode_hex),
 }
 normalize_block = compose(
-    _remove_base_fee_if_none,
-    partial(normalize_dict, normalizers=BLOCK_NORMALIZERS)
+    _remove_base_fee_if_none, partial(normalize_dict, normalizers=BLOCK_NORMALIZERS)
 )
 
 

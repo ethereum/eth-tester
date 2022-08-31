@@ -57,10 +57,7 @@ class Filter:
 
         queued_values = self.get_changes()
         self.values = [
-            value
-            for value
-            in self.get_all()
-            if value not in values_to_remove
+            value for value in self.get_all() if value not in values_to_remove
         ]
         for value in queued_values:
             if value in values_to_remove:
@@ -85,8 +82,14 @@ def is_flat_topic_array(value):
 
 
 def is_valid_with_nested_topic_array(value):
-    return bool(value) and is_tuple(value) and all(
-         is_flat_topic_array(item) if is_tuple(item) else is_topic(item) for item in value)
+    return (
+        bool(value)
+        and is_tuple(value)
+        and all(
+            is_flat_topic_array(item) if is_tuple(item) else is_topic(item)
+            for item in value
+        )
+    )
 
 
 def is_topic_array(value):
@@ -130,8 +133,7 @@ def check_if_log_matches_flat_topics(log_topics, filter_topics):
     else:
         return all(
             check_single_topic_match(left, right)
-            for left, right
-            in zip(log_topics, filter_topics)
+            for left, right in zip(log_topics, filter_topics)
         )
 
 
@@ -148,7 +150,9 @@ def check_if_topics_match(log_topics, filter_topics):
     elif is_valid_with_nested_topic_array(filter_topics):
         return any(
             check_if_log_matches_flat_topics(log_topics, topic_combination)
-            for topic_combination in extrapolate_flat_topic_from_topic_list(filter_topics)
+            for topic_combination in extrapolate_flat_topic_from_topic_list(
+                filter_topics
+            )
         )
     else:
         raise ValueError(f"Unrecognized topics format: {filter_topics}")
@@ -158,29 +162,25 @@ def check_if_address_match(address, addresses):
     if addresses is None:
         return True
     if is_tuple(addresses):
-        return any(
-            is_same_address(address, item)
-            for item
-            in addresses
-        )
+        return any(is_same_address(address, item) for item in addresses)
     elif is_address(addresses):
         return is_same_address(addresses, address)
     else:
         raise ValueError(f"Unrecognized address format: {addresses}")
 
 
-def check_if_log_matches(log_entry,
-                         from_block,
-                         to_block,
-                         addresses,
-                         topics):
-    if not check_if_from_block_match(log_entry['block_number'], log_entry['type'], from_block):
+def check_if_log_matches(log_entry, from_block, to_block, addresses, topics):
+    if not check_if_from_block_match(
+        log_entry["block_number"], log_entry["type"], from_block
+    ):
         return False
-    elif not check_if_to_block_match(log_entry['block_number'], log_entry['type'], to_block):
+    elif not check_if_to_block_match(
+        log_entry["block_number"], log_entry["type"], to_block
+    ):
         return False
-    elif not check_if_address_match(log_entry['address'], addresses):
+    elif not check_if_address_match(log_entry["address"], addresses):
         return False
-    elif not check_if_topics_match(log_entry['topics'], topics):
+    elif not check_if_topics_match(log_entry["topics"], topics):
         return False
     else:
         return True
