@@ -114,7 +114,7 @@ def _deploy_math(eth_tester):
 
 
 def _make_call_math_transaction(eth_tester, contract_address, fn_name, fn_args=None):
-    from eth_abi import encode_abi
+    from eth_abi import encode
 
     if fn_args is None:
         fn_args = tuple()
@@ -130,7 +130,7 @@ def _make_call_math_transaction(eth_tester, contract_address, fn_name, fn_args=N
         "from": eth_tester.get_accounts()[0],
         "to": contract_address,
         "gas": 500000,
-        "data": encode_hex(fn_selector + encode_abi(arg_types, fn_args)),
+        "data": encode_hex(fn_selector + encode(arg_types, fn_args)),
     }
     return transaction
 
