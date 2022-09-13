@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import time
 
-from eth_abi import decode_single
+from eth_abi import decode
 from eth_abi.exceptions import DecodingError
 
 from eth_account.hdaccount import HDPath, seed_from_mnemonic
@@ -701,7 +701,7 @@ class PyEVMBackend(BaseChainBackend):
             if self.is_eip838_error(computation._error):
                 error_str = computation._error.args[0][36:]
                 try:
-                    msg = decode_single("string", error_str)
+                    msg = decode("string", error_str)
                 except DecodingError:
                     # Invalid encoded bytes, leave msg as computation._error
                     # byte string.

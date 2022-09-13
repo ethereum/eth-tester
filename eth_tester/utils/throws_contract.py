@@ -139,9 +139,9 @@ def _make_call_throws_transaction(
 
 
 def _decode_throws_result(contract_name, fn_name, result):
-    from eth_abi import decode_abi
+    from eth_abi import decode
 
     fn_abi = THROWS_ABI[contract_name][fn_name]
     output_types = [output_abi["type"] for output_abi in fn_abi["outputs"]]
 
-    return decode_abi(output_types, decode_hex(result))
+    return decode(output_types, decode_hex(result))
