@@ -97,6 +97,12 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
+# VS Code
+.vscode/
+
+# DS Store files
+*.DS_Store
+
 # virtualenv directories
 venv*
 
