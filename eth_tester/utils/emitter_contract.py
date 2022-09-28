@@ -1,5 +1,8 @@
 from __future__ import unicode_literals
 
+from eth_abi import (
+    abi,
+)
 from eth_utils import (
     encode_hex,
     function_abi_to_4byte_selector,
@@ -235,7 +238,7 @@ EMITTER_ENUM = {
     "LogDoubleAnonymous": 8,
     "LogDoubleWithIndex": 9,
     "LogTripleWithIndex": 10,
-    "LogQuadrupleWithInde": 11,
+    "LogQuadrupleWithIndex": 11,
 }
 
 
@@ -254,8 +257,6 @@ def _deploy_emitter(eth_tester):
 
 
 def _call_emitter(eth_tester, contract_address, fn_name, fn_args):
-    from eth_abi import encode
-
     fn_abi = EMITTER_ABI[fn_name]
     arg_types = [arg_abi["type"] for arg_abi in fn_abi["inputs"]]
     fn_selector = function_abi_to_4byte_selector(fn_abi)
@@ -264,7 +265,7 @@ def _call_emitter(eth_tester, contract_address, fn_name, fn_args):
             "from": eth_tester.get_accounts()[0],
             "to": contract_address,
             "gas": 500000,
-            "data": encode_hex(fn_selector + encode(arg_types, fn_args)),
+            "data": encode_hex(fn_selector + abi.encode(arg_types, fn_args)),
         }
     )
     return emit_a_hash
