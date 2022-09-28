@@ -1,5 +1,8 @@
 from __future__ import unicode_literals
 
+from eth_abi import (
+    abi,
+)
 from eth_utils import (
     decode_hex,
     encode_hex,
@@ -116,8 +119,6 @@ def _deploy_math(eth_tester):
 
 
 def _make_call_math_transaction(eth_tester, contract_address, fn_name, fn_args=None):
-    from eth_abi import encode
-
     if fn_args is None:
         fn_args = tuple()
 
@@ -128,15 +129,13 @@ def _make_call_math_transaction(eth_tester, contract_address, fn_name, fn_args=N
         "from": eth_tester.get_accounts()[0],
         "to": contract_address,
         "gas": 500000,
-        "data": encode_hex(fn_selector + encode(arg_types, fn_args)),
+        "data": encode_hex(fn_selector + abi.encode(arg_types, fn_args)),
     }
     return transaction
 
 
 def _decode_math_result(fn_name, result):
-    from eth_abi import decode_abi
-
     fn_abi = MATH_ABI[fn_name]
     output_types = [output_abi["type"] for output_abi in fn_abi["outputs"]]
 
-    return decode_abi(output_types, decode_hex(result))
+    return abi.decode(output_types, decode_hex(result))
