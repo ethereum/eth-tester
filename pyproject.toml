@@ -3,5 +3,45 @@
     filename = "CHANGELOG"
     directory = "newsfragments"
     underlines = ["-", "~", "^"]
-    issue_format = "https://github.com/ethereum/eth-tester/issues/{issue}"
-    title_format = "v{version} ({project_date})"
+    title_format = "eth-tester v{version} ({project_date})"
+    issue_format = "#{issue} https://github.com/ethereum/eth-tester/issues/{issue}"
+
+[[tool.towncrier.type]]
+directory = "feature"
+name = "Features"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "bugfix"
+name = "Bugfixes"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "performance"
+name = "Performance improvements"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "doc"
+name = "Improved Documentation"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "removal"
+name = "Deprecations and Removals"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "internal"
+name = "Internal Changes - for eth-tester Contributors"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "misc"
+name = "Miscellaneous changes"
+showcontent = false
+
+[[tool.towncrier.type]]
+directory = "breaking"
+name = "Breaking changes"
+showcontent = true

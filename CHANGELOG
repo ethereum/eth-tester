@@ -3,8 +3,8 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
-v0.7.0-beta.1 (2022-08-25)
---------------------------
+eth-tester v0.7.0-beta.1 (2022-08-25)
+-------------------------------------
 
 Misc
 ~~~~
@@ -12,8 +12,8 @@ Misc
 - https://github.com/ethereum/eth-tester/issues/230
 
 
-v0.6.0-beta.6 (2022-01-26)
---------------------------
+eth-tester v0.6.0-beta.6 (2022-01-26)
+-------------------------------------
 
 Bugfixes
 ~~~~~~~~
@@ -22,8 +22,8 @@ Bugfixes
   current web3.py (v5) (https://github.com/ethereum/eth-tester/issues/232)
 
 
-v0.6.0-beta.5 (2022-01-20)
---------------------------
+eth-tester v0.6.0-beta.5 (2022-01-20)
+-------------------------------------
 
 Features
 ~~~~~~~~
@@ -47,8 +47,8 @@ Misc
 - https://github.com/ethereum/eth-tester/issues/230
 
 
-v0.6.0-beta.4 (2021-11-19)
---------------------------
+eth-tester v0.6.0-beta.4 (2021-11-19)
+-------------------------------------
 
 Bugfixes
 ~~~~~~~~
@@ -66,8 +66,8 @@ Improved Documentation
   (https://github.com/ethereum/eth-tester/issues/226)
 
 
-v0.6.0-beta.3 (2021-11-18)
---------------------------
+eth-tester v0.6.0-beta.3 (2021-11-18)
+-------------------------------------
 
 Bugfixes
 ~~~~~~~~
@@ -84,8 +84,8 @@ Misc
 - https://github.com/ethereum/eth-tester/issues/213
 
 
-v0.6.0-beta.2
--------------
+eth-tester v0.6.0-beta.2
+------------------------
 
 Released 2021-11-10
 
@@ -101,8 +101,8 @@ Released 2021-11-10
 	- Created better test for gas estimate with block identifiers
   - Update README.md with the link to the Circle CI build status
 
-v0.6.0-beta.1
--------------
+eth-tester v0.6.0-beta.1
+------------------------
 
 Released 2021-11-04
 
@@ -126,8 +126,8 @@ Released 2021-11-04
 
   - Adjust wording in README regarding genesis parameters
 
-v0.5.0-beta.4
--------------
+eth-tester v0.5.0-beta.4
+------------------------
 
 Released 2021-04-12
 
@@ -140,8 +140,8 @@ Released 2021-04-12
     https://github.com/ethereum/eth-tester/pull/204
 
 
-v0.5.0-beta.2
--------------
+eth-tester v0.5.0-beta.2
+------------------------
 
 Released 2020-08-31
 
@@ -163,8 +163,8 @@ Released 2020-08-31
   - Upgrade to pyevm v0.3.0-alpha.19
     https://github.com/ethereum/eth-tester/pull/196
 
-v0.5.0-beta.1
--------------
+eth-tester v0.5.0-beta.1
+------------------------
 
 Released 2020-06-01
 
@@ -181,8 +181,8 @@ Released 2020-06-01
     https://github.com/ethereum/eth-tester/pull/191
 
 
-v0.4.0-beta.2
--------------
+eth-tester v0.4.0-beta.2
+------------------------
 
 - Misc
 
@@ -190,8 +190,8 @@ v0.4.0-beta.2
   - Upgrate py-evm to v0.3.0-alpha.15, which allows the eth-keys upgrade
 
 
-v0.4.0-beta.1
--------------
+eth-tester v0.4.0-beta.1
+------------------------
 
 - Misc
 
@@ -199,8 +199,8 @@ v0.4.0-beta.1
     https://github.com/ethereum/eth-tester/pull/172
 
 
-v0.3.0-beta.1
--------------
+eth-tester v0.3.0-beta.1
+------------------------
 
 - Breaking changes
 
@@ -214,8 +214,8 @@ v0.3.0-beta.1
   - Upgrade to py-evm v0.3.0-b8
     https://github.com/ethereum/eth-tester/pull/171
 
-v0.2.0-beta.2
-------------
+eth-tester v0.2.0-beta.2
+------------------------
 
 Released June 19, 2019
 
@@ -224,8 +224,8 @@ Released June 19, 2019
   - Upgrade to py-evm v0.3.0-b1
     https://github.com/ethereum/eth-tester/pull/164
 
-0.2.0-beta.1
-------------
+eth-tester v0.2.0-beta.1
+------------------------
 
 Released June 13, 2019
 
@@ -237,8 +237,8 @@ Released June 13, 2019
     https://github.com/ethereum/eth-tester/pull/162
 
 
-0.1.0-beta.39
--------------
+eth-tester v0.1.0-beta.39
+-------------------------
 
 Released April 12, 2019
 
@@ -247,8 +247,8 @@ Released April 12, 2019
   - Update default VM rules to Constantinople
     https://github.com/ethereum/eth-tester/pull/153
 
-0.1.0-beta.38
--------------
+eth-tester v0.1.0-beta.38
+-------------------------
 
 Released April 10, 2019
 
@@ -257,8 +257,8 @@ Released April 10, 2019
   - Update PyEVM and Pytest Dependencies
     https://github.com/ethereum/eth-tester/pull/152
 
-0.1.0-beta.37
--------------
+eth-tester 0.1.0-beta.37
+------------------------
 
 Released Jan 22, 2019
 
@@ -267,8 +267,8 @@ Released Jan 22, 2019
   - Make PyEVMBackend subclass of BaseChainBackend
     https://github.com/ethereum/eth-tester/pull/150
 
-0.1.0-beta.36
--------------
+eth-tester v0.1.0-beta.36
+-------------------------
 
 Released Jan 10, 2019
 
@@ -277,8 +277,8 @@ Released Jan 10, 2019
   - Upgrade eth-keys and rlp
     https://github.com/ethereum/eth-tester/pull/146
 
-0.1.0-beta.35
--------------
+eth-tester v0.1.0-beta.35
+-------------------------
 
 Released Jan 9, 2019
 
@@ -291,8 +291,8 @@ Released Jan 9, 2019
   - Remove dead `formatting` module, replace with `eth-utils` utilities
     https://github.com/ethereum/eth-tester/pull/145
 
-0.1.0-beta.34
--------------
+eth-tester v0.1.0-beta.34
+-------------------------
 
 Released Dec 20, 2018
 
@@ -314,8 +314,8 @@ Released Dec 20, 2018
   - Upgrade eth-utils (and eth-abi)
     https://github.com/ethereum/eth-tester/pull/141
 
-0.1.0-beta.33
--------------
+eth-tester v0.1.0-beta.33
+-------------------------
 
 Released Oct 4, 2018
 
@@ -324,7 +324,7 @@ Released Oct 4, 2018
 - Upgrade py-evm to alpha 33 https://github.com/ethereum/eth-tester/pull/134
 - Misc testing & dependency fixes https://github.com/ethereum/eth-tester/pull/127
 
-0.1.0
------
+eth-tester v0.1.0
+-----------------
 
 Initial release
