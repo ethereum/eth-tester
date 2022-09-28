@@ -2,9 +2,8 @@ from __future__ import absolute_import
 
 import time
 
-from eth_abi import (
-    decode_single
-)
+from eth_abi import abi
+from eth_abi.exceptions import DecodingError
 from eth_abi.exceptions import (
     DecodingError
 )
@@ -667,9 +666,10 @@ class PyEVMBackend(BaseChainBackend):
             # Check to see if it's a EIP838 standard error, with ABI signature
             # of Error(string). If so - extract the message/reason.
             if self.is_eip838_error(computation._error):
-                error_str = computation._error.args[0][36:]
+                error_str = computation._error.args[0][4:]
                 try:
-                    msg = decode_single('string', error_str)
+                    decoded_args = abi.decode(["string"], error_str)
+                    msg = decoded_args[0]
                 except DecodingError:
                     # Invalid encoded bytes, leave msg as computation._error
                     # byte string.

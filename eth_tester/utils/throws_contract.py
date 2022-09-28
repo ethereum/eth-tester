@@ -1,5 +1,8 @@
 from __future__ import unicode_literals
 
+from eth_abi import (
+    abi,
+)
 from eth_utils import (
     decode_hex,
     encode_hex,
@@ -147,8 +150,6 @@ def _make_call_throws_transaction(eth_tester, contract_address, contract_name,
 
 
 def _decode_throws_result(contract_name, fn_name, result):
-    from eth_abi import decode
-
     fn_abi = THROWS_ABI[contract_name][fn_name]
     output_types = [
         output_abi['type']
@@ -156,4 +157,4 @@ def _decode_throws_result(contract_name, fn_name, result):
         in fn_abi['outputs']
     ]
 
-    return decode(output_types, decode_hex(result))
+    return abi.decode(output_types, decode_hex(result))
