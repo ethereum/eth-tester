@@ -25,6 +25,9 @@ from eth_utils.toolz import (
 from eth_tester.backends import (
     get_chain_backend,
 )
+from eth_tester.constants import (
+    ZERO_ADDRESS_HEX,
+)
 from eth_tester.exceptions import (
     AccountLocked,
     BlockNotFound,
@@ -350,17 +353,14 @@ class EthereumTester:
     def disable_auto_mine_transactions(self):
         self.auto_mine_transactions = False
 
-    def mine_blocks(self, num_blocks=1, coinbase=None):
-        if coinbase is None:
-            raw_coinbase = None
-        else:
-            self.validator.validate_inbound_account(coinbase)
-            raw_coinbase = self.normalizer.normalize_inbound_account(coinbase)
+    def mine_blocks(self, num_blocks=1, coinbase=ZERO_ADDRESS_HEX):
+        self.validator.validate_inbound_account(coinbase)
+        normalized_coinbase = self.normalizer.normalize_inbound_account(coinbase)
 
         if not self.auto_mine_transactions:
             self._pop_pending_transactions_to_pending_block()
 
-        raw_block_hashes = self.backend.mine_blocks(num_blocks, raw_coinbase)
+        raw_block_hashes = self.backend.mine_blocks(num_blocks, normalized_coinbase)
 
         if len(raw_block_hashes) != num_blocks:
             raise ValidationError(
@@ -389,7 +389,8 @@ class EthereumTester:
 
         return block_hashes
 
-    def mine_block(self, coinbase=None):
+    def mine_block(self, coinbase=ZERO_ADDRESS_HEX):
+        self.validator.validate_inbound_account(coinbase)
         block_hash = self.mine_blocks(1, coinbase=coinbase)[0]
         return block_hash
 

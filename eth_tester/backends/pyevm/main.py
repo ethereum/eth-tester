@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import os
 import time
 
 from eth_abi import abi
@@ -128,16 +129,24 @@ def generate_genesis_state_for_keys(account_keys, overrides=None):
 
 
 def get_default_genesis_params(overrides=None):
-    # commented out params became un-configurable in py-evm during London refactor
+    # Commented out params became un-configurable in py-evm during London refactor.
+    # Post-merge now. Set genesis params to expect post-merge validation. If PoS field
+    # value defaults are not desired, use the overrides option.
+    from eth.constants import (
+        POST_MERGE_DIFFICULTY,
+        POST_MERGE_MIX_HASH,
+        POST_MERGE_NONCE,
+    )
+
     default_genesis_params = {
         # "bloom": 0,
         "coinbase": GENESIS_COINBASE,
-        "difficulty": GENESIS_DIFFICULTY,
+        "difficulty": POST_MERGE_DIFFICULTY,
         "extra_data": GENESIS_EXTRA_DATA,
         "gas_limit": GENESIS_GAS_LIMIT,
         # "gas_used": 0,
-        "mix_hash": GENESIS_MIX_HASH,
-        "nonce": GENESIS_NONCE,
+        "mix_hash": POST_MERGE_MIX_HASH,
+        "nonce": POST_MERGE_NONCE,
         # "block_number": GENESIS_BLOCK_NUMBER,
         # "parent_hash": GENESIS_PARENT_HASH,
         "receipt_root": BLANK_ROOT_HASH,
@@ -160,26 +169,32 @@ def setup_tester_chain(
     num_accounts=None,
     vm_configuration=None,
     mnemonic=None,
+    genesis_is_post_merge=True,
 ):
-
     from eth.chains.base import MiningChain
     from eth.consensus import (
         NoProofConsensus,
         ConsensusApplier,
     )
+    from eth.vm.forks import ParisVM
     from eth.db import get_db_backend
 
     if vm_configuration is None:
-        from eth.vm.forks import LondonVM
-
-        no_proof_vms = ((0, LondonVM.configure(consensus_class=NoProofConsensus)),)
+        vm_config = ((0, ParisVM),)
     else:
+        if len(vm_configuration) > 0:
+            _genesis_block_num, genesis_vm = vm_configuration[0]
+            if not issubclass(genesis_vm, ParisVM):
+                genesis_is_post_merge = False
         consensus_applier = ConsensusApplier(NoProofConsensus)
-        no_proof_vms = consensus_applier.amend_vm_configuration(vm_configuration)
+        vm_config = consensus_applier.amend_vm_configuration(vm_configuration)
 
-    class MainnetTesterNoProofChain(MiningChain):
+    class MainnetTesterPosChain(MiningChain):
+        # TODO: Once the logic within `MiningChain` is refactored more generally in
+        #  py-evm, change this class inheritance to reflect that since a `PosConsensus`
+        #  chain does not mine.
         chain_id = 131277322940537
-        vm_configuration = no_proof_vms
+        vm_configuration = vm_config
 
         def create_header_from_parent(self, parent_header, **header_params):
             # Keep the gas limit constant
@@ -192,7 +207,12 @@ def setup_tester_chain(
             return super().get_vm().get_transaction_builder()
 
     if genesis_params is None:
-        genesis_params = get_default_genesis_params()
+        overrides = {}
+        if not genesis_is_post_merge:
+            overrides["difficulty"] = GENESIS_DIFFICULTY
+            overrides["nonce"] = GENESIS_NONCE
+            overrides["mix_hash"] = GENESIS_MIX_HASH
+        genesis_params = get_default_genesis_params(overrides=overrides)
 
     if genesis_state:
         num_accounts = len(genesis_state)
@@ -207,14 +227,12 @@ def setup_tester_chain(
 
     base_db = get_db_backend()
 
-    chain = MainnetTesterNoProofChain.from_genesis(
-        base_db, genesis_params, genesis_state
-    )
+    chain = MainnetTesterPosChain.from_genesis(base_db, genesis_params, genesis_state)
     return account_keys, chain
 
 
 def _get_block_by_number(chain, block_number):
-    if block_number == "latest":
+    if block_number in ("latest", "safe", "finalized"):
         head_block = chain.get_block()
         return chain.get_canonical_block_by_number(max(0, head_block.number - 1))
     elif block_number == "earliest":
@@ -419,15 +437,20 @@ class PyEVMBackend(BaseChainBackend):
         return to_timestamp
 
     #
-    # Mining
+    # Importing blocks
     #
     @to_tuple
-    def mine_blocks(self, num_blocks=1, coinbase=None):
-        if coinbase is not None:
-            mine_kwargs = {"coinbase": coinbase}
-        else:
-            mine_kwargs = {}
+    def mine_blocks(self, num_blocks=1, coinbase=ZERO_ADDRESS):
+        from eth.vm.forks.paris import ParisVM
+
+        mine_kwargs = {"coinbase": coinbase}
+
         for _ in range(num_blocks):
+            if isinstance(self.chain.get_vm(), ParisVM):
+                # post-merge, generate a random `mix_hash` to simulate the
+                # `prevrandao` value.
+                mine_kwargs["mix_hash"] = os.urandom(32)
+
             block = self.chain.mine_block(**mine_kwargs)
             yield block.hash
 
@@ -651,7 +674,7 @@ class PyEVMBackend(BaseChainBackend):
             evm_transaction, from_=transaction["from"]
         )
 
-        if block_number == "latest":
+        if block_number in ("latest", "safe", "finalized"):
             return self.chain.estimate_gas(spoofed_transaction)
         elif block_number == "earliest":
             return self.chain.estimate_gas(

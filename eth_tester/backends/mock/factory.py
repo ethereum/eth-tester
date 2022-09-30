@@ -7,6 +7,9 @@ from eth_tester.backends.mock.common import (
 from eth_tester.utils.transactions import (
     extract_transaction_type,
 )
+from eth_typing import (
+    Hash32,
+)
 from eth_utils import (
     apply_to_return_value,
     is_bytes,
@@ -243,6 +246,9 @@ def make_receipt(transaction, block, _transaction_index, overrides=None):
 GENESIS_NONCE = b"\x00\x00\x00\x00\x00\x00\x00*"  # 42 encoded as big-endian-integer
 BLANK_ROOT_HASH = b"V\xe8\x1f\x17\x1b\xccU\xa6\xff\x83E\xe6\x92\xc0\xf8n\x5bH\xe0\x1b\x99l\xad\xc0\x01b/\xb5\xe3c\xb4!"  # noqa: E501
 EMPTY_UNCLE_HASH = b"\x1d\xccM\xe8\xde\xc7]z\xab\x85\xb5g\xb6\xcc\xd4\x1a\xd3\x12E\x1b\x94\x8at\x13\xf0\xa1B\xfd@\xd4\x93G"  # noqa: E501
+POST_MERGE_DIFFICULTY = 0
+POST_MERGE_MIX_HASH = Hash32(32 * b"\x00")
+POST_MERGE_NONCE = b"\x00\x00\x00\x00\x00\x00\x00\x00"
 
 
 def make_genesis_block(overrides=None):
@@ -250,14 +256,15 @@ def make_genesis_block(overrides=None):
         "number": 0,
         "hash": ZERO_32BYTES,
         "parent_hash": ZERO_32BYTES,
-        "nonce": GENESIS_NONCE,
+        "nonce": POST_MERGE_NONCE,
         "sha3_uncles": EMPTY_UNCLE_HASH,
         "logs_bloom": 0,
         "transactions_root": BLANK_ROOT_HASH,
         "receipts_root": BLANK_ROOT_HASH,
         "state_root": BLANK_ROOT_HASH,
-        "miner": ZERO_ADDRESS,
-        "difficulty": 131072,
+        "coinbase": ZERO_ADDRESS,
+        "difficulty": POST_MERGE_DIFFICULTY,
+        "mix_hash": POST_MERGE_MIX_HASH,
         "total_difficulty": 131072,
         "size": 0,
         "extra_data": ZERO_32BYTES,
@@ -330,16 +337,21 @@ def make_block_from_parent(parent_block, overrides=None):
     else:
         yield "state_root", BLANK_ROOT_HASH
 
-    if "miner" in overrides:
-        yield "miner", overrides["miner"]
+    if "coinbase" in overrides:
+        yield "coinbase", overrides["coinbase"]
     else:
-        yield "miner", ZERO_ADDRESS
+        yield "coinbase", ZERO_ADDRESS
 
     if "difficulty" in overrides:
         difficulty = overrides["difficulty"]
     else:
-        difficulty = 131072
+        difficulty = POST_MERGE_DIFFICULTY
     yield "difficulty", difficulty
+
+    if "mix_hash" in overrides:
+        yield "mix_hash", overrides["mix_hash"]
+    else:
+        yield "mix_hash", POST_MERGE_MIX_HASH
 
     if "total_difficulty" in overrides:
         yield "total_difficulty", overrides["total_difficulty"]

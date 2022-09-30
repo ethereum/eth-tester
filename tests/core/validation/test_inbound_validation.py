@@ -57,10 +57,14 @@ def test_time_travel_input_timestamp_validation(validator, timestamp, is_valid):
         ("latest", True),
         ("pending", True),
         ("earliest", True),
+        ("safe", True),
+        ("finalized", True),
         (2**256, True),
         (b"latest", False),
         (b"pending", False),
         (b"earliest", False),
+        (b"safe", False),
+        (b"finalized", False),
     ),
 )
 def test_block_number_input_validation(validator, block_number, is_valid):
