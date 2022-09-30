@@ -3,6 +3,8 @@ from abc import (
     abstractmethod,
 )
 
+ZERO_ADDRESS = 20 * b"\x00"
+
 
 class BaseChainBackend(metaclass=ABCMeta):
     #
@@ -31,7 +33,7 @@ class BaseChainBackend(metaclass=ABCMeta):
     # Mining
     #
     @abstractmethod
-    def mine_blocks(self, num_blocks=1, coinbase=None):
+    def mine_blocks(self, num_blocks=1, coinbase=ZERO_ADDRESS):
         raise NotImplementedError("Must be implemented by subclasses")
 
     #

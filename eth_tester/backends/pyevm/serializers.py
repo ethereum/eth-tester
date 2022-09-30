@@ -54,9 +54,10 @@ def serialize_block(block, full_transaction, is_pending):
         "transactions_root": block.header.transaction_root,
         "receipts_root": block.header.receipt_root,
         "state_root": block.header.state_root,
-        "miner": block.header.coinbase,
+        "coinbase": block.header.coinbase,
         "difficulty": block.header.difficulty,
         "total_difficulty": block.header.difficulty,  # TODO: actual total difficulty
+        "mix_hash": block.header.mix_hash,
         "size": len(rlp.encode(block)),
         "extra_data": pad32(block.header.extra_data),
         "gas_limit": block.header.gas_limit,

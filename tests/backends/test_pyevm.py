@@ -1,18 +1,30 @@
 from __future__ import unicode_literals
 
 import pytest
+
+from eth.constants import (
+    POST_MERGE_DIFFICULTY,
+    POST_MERGE_MIX_HASH,
+    POST_MERGE_NONCE,
+)
 from eth.vm.forks import (
     BerlinVM,
     FrontierVM,
+    GrayGlacierVM,
     LondonVM,
+    ParisVM,
 )
-from eth_utils import to_wei
+from eth_utils import encode_hex, is_hexstr, to_wei
 
 from eth_tester import EthereumTester, PyEVMBackend
 from eth_tester.backends.pyevm.main import (
+    GENESIS_DIFFICULTY,
+    GENESIS_MIX_HASH,
+    GENESIS_NONCE,
     generate_genesis_state_for_keys,
     get_default_account_keys,
     get_default_genesis_params,
+    setup_tester_chain,
 )
 from eth_tester.backends.pyevm.utils import is_supported_pyevm_version_available
 from eth_tester.exceptions import BlockNotFound, ValidationError
@@ -38,18 +50,20 @@ def test_custom_virtual_machines():
     backend = PyEVMBackend(
         vm_configuration=(
             (0, FrontierVM),
-            (3, LondonVM),
+            (3, ParisVM),
         )
     )
 
     # This should be a FrontierVM block
     VM_at_2 = backend.chain.get_vm_class_for_block_number(2)
-    # This should be a LondonVM block
+    # This should be a ParisVM block
     VM_at_3 = backend.chain.get_vm_class_for_block_number(3)
 
-    assert issubclass(VM_at_2, FrontierVM)
-    assert not issubclass(VM_at_2, LondonVM)
-    assert issubclass(VM_at_3, LondonVM)
+    assert FrontierVM.__name__ == "FrontierVM"
+    assert VM_at_2.__name__ == FrontierVM.__name__
+
+    assert ParisVM.__name__ == "ParisVM"
+    assert VM_at_3.__name__ == ParisVM.__name__
 
     # Right now, just test that EthereumTester doesn't crash
     # Maybe some more sophisticated test to make sure the VMs are set correctly?
@@ -211,7 +225,9 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
     def test_override_genesis_parameters(self):
 
         # Establish a custom gas limit
-        param_overrides = {"gas_limit": 4750000}
+        param_overrides = {
+            "gas_limit": 4750000,
+        }
         block_one_gas_limit = param_overrides["gas_limit"]
 
         # Initialize PyEVM backend with custom genesis parameters
@@ -251,3 +267,42 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         with pytest.raises(BlockNotFound):
             eth_tester.get_block_by_number(pending_block_num)
+
+    def test_pyevm_backend_with_custom_vm_configuration_pow_to_pos(self):
+        vm_config = (
+            (0, GrayGlacierVM),
+            (3, ParisVM),
+        )
+
+        pyevm_backend = PyEVMBackend(vm_configuration=vm_config)
+        tester = EthereumTester(backend=pyevm_backend)
+
+        # assert genesis block was created with pre-merge, PoW genesis values
+        genesis_block = tester.get_block_by_number(0)
+
+        assert genesis_block["difficulty"] == GENESIS_DIFFICULTY
+        assert genesis_block["nonce"] == encode_hex(GENESIS_NONCE)
+        assert genesis_block["mix_hash"] == encode_hex(GENESIS_MIX_HASH)
+
+        tester.mine_blocks(3)
+
+        # assert smooth transition to PoS with expected values
+        third_block = tester.get_block_by_number(3)
+        assert third_block["difficulty"] == POST_MERGE_DIFFICULTY
+        assert third_block["nonce"] == encode_hex(POST_MERGE_NONCE)
+
+        # assert not empty mix_hash
+        third_block_mix_hash = third_block["mix_hash"]
+        assert is_hexstr(third_block_mix_hash)
+        assert third_block_mix_hash != encode_hex(POST_MERGE_MIX_HASH)
+
+    def test_pyevm_backend_with_custom_vm_configuration_post_merge(self):
+        vm_config = ((0, ParisVM),)
+
+        _acct_keys, chain = setup_tester_chain(vm_configuration=vm_config)
+
+        # assert genesis block was created with post-merge, PoS genesis values
+        genesis_block = chain.get_canonical_block_by_number(0)
+        assert genesis_block.header.difficulty == POST_MERGE_DIFFICULTY
+        assert genesis_block.header.nonce == POST_MERGE_NONCE
+        assert genesis_block.header.mix_hash == POST_MERGE_MIX_HASH

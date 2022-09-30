@@ -1,5 +1,6 @@
 import itertools
 import copy
+import os
 
 from eth_utils import (
     decode_hex,
@@ -46,6 +47,7 @@ from .serializers import (
     serialize_transaction_as_hash,
     serialize_receipt,
 )
+from ..pyevm.main import ZERO_ADDRESS
 
 
 def _generate_dummy_address(idx):
@@ -134,7 +136,7 @@ class MockBackend(BaseChainBackend):
     # Mining
     #
     @to_tuple
-    def mine_blocks(self, num_blocks=1, coinbase=None):
+    def mine_blocks(self, num_blocks=1, coinbase=ZERO_ADDRESS):
         for _ in range(num_blocks):
             block_to_mine = dissoc(self.block, "hash")
             block_hash = fake_rlp_hash(block_to_mine)
@@ -147,6 +149,7 @@ class MockBackend(BaseChainBackend):
                 assign_block_info(transaction)
                 for transaction in mined_block["transactions"]
             )
+            mined_block["mix_hash"] = os.urandom(32)
             self.blocks.append(mined_block)
             self.block = make_block_from_parent(mined_block)
             yield block_hash
@@ -172,7 +175,7 @@ class MockBackend(BaseChainBackend):
 
         if block_number == self.block["number"]:
             block = self.block
-        elif block_number == "latest":
+        elif block_number in ("latest", "safe", "finalized"):
             try:
                 block = self.blocks[-1]
             except IndexError:

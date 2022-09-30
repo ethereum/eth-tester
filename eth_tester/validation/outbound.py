@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from toolz import identity
+
 from eth_utils import (
     is_bytes,
     is_canonical_address,
@@ -209,7 +211,7 @@ validate_receipt = partial(validate_dict, key_validators=RECEIPT_VALIDATORS)
 
 BLOCK_VALIDATORS = {
     "number": validate_positive_integer,
-    "base_fee_per_gas": lambda x: x,  # validated separately via _validate_base_fee()
+    "base_fee_per_gas": identity,  # validated separately via _validate_base_fee()
     "hash": validate_block_hash,
     "parent_hash": validate_block_hash,
     "nonce": validate_nonce,
@@ -218,8 +220,9 @@ BLOCK_VALIDATORS = {
     "transactions_root": validate_32_byte_string,
     "receipts_root": validate_32_byte_string,
     "state_root": validate_32_byte_string,
-    "miner": validate_canonical_address,
+    "coinbase": validate_canonical_address,
     "difficulty": validate_positive_integer,
+    "mix_hash": validate_32_byte_string,
     "total_difficulty": validate_positive_integer,
     "size": validate_positive_integer,
     "extra_data": validate_32_byte_string,

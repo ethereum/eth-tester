@@ -188,6 +188,8 @@ Any `block_number` parameter will accept the following string values.
 * `'latest'`: for the latest mined block.
 * `'pending'`: for the current un-mined block.
 * `'earliest'`: for the genesis block.
+* `'safe'`: for the last block that has passed 2/3 of attestations post-merge.
+* `'finalized'`: for the last finalized block post-merge.
 
 > Note: These **must** be text strings (not byte stringS)
 
@@ -221,7 +223,7 @@ object accepts the following parameters.
 ### Fork Rules
 <a id="fork-rules"></a>
 
-Ethereum tester uses the London fork rules, starting at block 0.
+Ethereum tester uses the Paris (PoS) fork rules, starting at block 0.
 
 ### Time Travel
 <a id="time-travel"></a>
@@ -245,14 +247,14 @@ parameter of these methods **must** be a hexadecimal encoded address.
 
 <a id="api-mine_blocks"></a>
 
-#### `EthereumTester.mine_blocks(num_blocks=1, coinbase=None)`
+#### `EthereumTester.mine_blocks(num_blocks=1, coinbase=ZERO_ADDRESS)`
 
 Mines `num_blocks` new blocks, returning an iterable of the newly mined block hashes.
 
 
 <a id="api-mine_block"></a>
 
-#### `EthereumTester.mine_block(coinbase=None)`
+#### `EthereumTester.mine_block(coinbase=ZERO_ADDRESS)`
 
 Mines a single new block, returning the mined block's hash.
 
@@ -444,15 +446,16 @@ cannot be found.
 {'number': 1,
  'hash': '0xd481955268d1f3db58ee61685a899a35e33e8fd35b9cc0812f85b9f06757140e',
  'parent_hash': '0x5be984ab842071903ee443a5dee92603bef42de35b4e10928e753f7e88a7163a',
- 'nonce': '0x0000000000000042',
+ 'nonce': '0x0000000000000000',
  'sha3_uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347',
  'logs_bloom': 0,
  'transactions_root': '0xef1e11d99f7db22fd93c6a10d44753d4a93e9f6ecb2f1e5030a0a91f1d3b07ac',
  'receipts_root': '0x611e48488cf80b4c31f01ad45b6ebea533a68255a6d0240d434d9366a3582010',
  'state_root': '0x9ce568dcaa6f130d733b333304f2c26a19334ed328a7eb9bb31707306381ba65',
- 'miner': '0x0000000000000000000000000000000000000000',
- 'difficulty': 131072,
- 'total_difficulty': 131072,
+ 'coinbase': '0x0000000000000000000000000000000000000000',
+ 'difficulty': 0,
+ 'total_difficulty': 0,
+ 'mix_hash': '0x0000000000000000000000000000000000000000000000000000000000000000',
  'size': 751,
  'extra_data': '0x0000000000000000000000000000000000000000000000000000000000000000',
  'gas_limit': 3141592,
@@ -480,15 +483,16 @@ cannot be found.
 {'number': 1,
  'hash': '0xd481955268d1f3db58ee61685a899a35e33e8fd35b9cc0812f85b9f06757140e',
  'parent_hash': '0x5be984ab842071903ee443a5dee92603bef42de35b4e10928e753f7e88a7163a',
- 'nonce': '0x0000000000000042',
+ 'nonce': '0x0000000000000000',
  'sha3_uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347',
  'logs_bloom': 0,
  'transactions_root': '0xef1e11d99f7db22fd93c6a10d44753d4a93e9f6ecb2f1e5030a0a91f1d3b07ac',
  'receipts_root': '0x611e48488cf80b4c31f01ad45b6ebea533a68255a6d0240d434d9366a3582010',
  'state_root': '0x9ce568dcaa6f130d733b333304f2c26a19334ed328a7eb9bb31707306381ba65',
- 'miner': '0x0000000000000000000000000000000000000000',
- 'difficulty': 131072,
- 'total_difficulty': 131072,
+ 'coinbase': '0x0000000000000000000000000000000000000000',
+ 'difficulty': 0,
+ 'total_difficulty': 0,
+ 'mix_hash': '0x0000000000000000000000000000000000000000000000000000000000000000',
  'size': 751,
  'extra_data': '0x0000000000000000000000000000000000000000000000000000000000000000',
  'gas_limit': 3141592,
@@ -559,7 +563,7 @@ gain a discount on the gas for those executions (see quickstart example for usag
 
 #### Dynamic fee transactions (EIP-1559)
 * `max_fee_per_gas`: Sets the maximum fee per unit of gas in wei that will be paid for transaction execution (integer).
-* `max_priority_fee_per_gas`: Sets the fee per unit of gas in wei that is sent to the miner as an incentive for mining the transaction (integer).
+* `max_priority_fee_per_gas`: Sets the fee per unit of gas in wei that is sent to the coinbase address as an incentive for including the transaction (integer).
 * `access_list` (optional): Specifies accounts and storage slots expected to be accessed, based on the transaction, in order to
 gain a discount on the gas for those executions (see quickstart example for usage).
 
