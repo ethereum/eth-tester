@@ -222,10 +222,11 @@ def _get_block_by_number(chain, block_number):
     elif block_number == "pending":
         return chain.get_block()
     elif is_integer(block_number):
+        # Note: The head block is the pending block. If a block number is passed
+        # explicitly here, return the block only if it is already part of the chain
+        # (i.e. not pending).
         head_block = chain.get_block()
-        if block_number == head_block.number:
-            return head_block
-        elif block_number < head_block.number:
+        if block_number < head_block.number:
             return chain.get_canonical_block_by_number(block_number)
 
     # fallback

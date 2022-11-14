@@ -219,15 +219,15 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         pyevm_backend = PyEVMBackend(genesis_parameters=genesis_params)
         genesis_block = pyevm_backend.get_block_by_number(0)
         assert genesis_block["gas_limit"] == param_overrides["gas_limit"]
-        genesis_block = pyevm_backend.get_block_by_number(1)
-        assert genesis_block["gas_limit"] == block_one_gas_limit
+        pending_block_one = pyevm_backend.get_block_by_number("pending")
+        assert pending_block_one["gas_limit"] == block_one_gas_limit
 
         # Integrate with EthereumTester
         tester = EthereumTester(backend=pyevm_backend)
         genesis_block = tester.get_block_by_number(0)
         assert genesis_block["gas_limit"] == param_overrides["gas_limit"]
-        genesis_block = tester.get_block_by_number(1)
-        assert genesis_block["gas_limit"] == block_one_gas_limit
+        pending_block_one = tester.get_block_by_number("pending")
+        assert pending_block_one["gas_limit"] == block_one_gas_limit
 
     def test_send_transaction_invalid_from(self, eth_tester):
         accounts = eth_tester.get_accounts()
