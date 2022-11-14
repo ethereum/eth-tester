@@ -15,7 +15,7 @@ from eth_tester.backends.pyevm.main import (
     get_default_genesis_params,
 )
 from eth_tester.backends.pyevm.utils import is_supported_pyevm_version_available
-from eth_tester.exceptions import ValidationError
+from eth_tester.exceptions import BlockNotFound, ValidationError
 from eth_tester.utils.backend_testing import BaseTestBackendDirect, SIMPLE_TRANSACTION
 
 
@@ -237,3 +237,17 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
             self._send_and_check_transaction(
                 eth_tester, SIMPLE_TRANSACTION, ZERO_ADDRESS_HEX
             )
+
+    def test_pending_block_not_found_when_fetched_by_number(self, eth_tester):
+        # assert `latest` block can be fetched by number
+        latest_block_num = eth_tester.get_block_by_number("latest")["number"]
+        assert isinstance(latest_block_num, int)
+        eth_tester.get_block_by_number(latest_block_num)
+
+        # assert `pending` block cannot be fetched by number
+        pending_block_num = eth_tester.get_block_by_number("pending")["number"]
+        assert isinstance(pending_block_num, int)
+        assert pending_block_num == latest_block_num + 1
+
+        with pytest.raises(BlockNotFound):
+            eth_tester.get_block_by_number(pending_block_num)
