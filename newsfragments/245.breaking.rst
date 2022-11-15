@@ -1,0 +1,1 @@
+Support for py-evm ``paris`` hard fork. Refactor the coinbase account ``miner`` -> ``coinbase``. Support for ``safe`` and ``finalized`` block identifiers.
