@@ -47,18 +47,26 @@ from .utils import is_supported_pyevm_version_available
 if is_supported_pyevm_version_available():
     from eth.constants import (
         GENESIS_PARENT_HASH,
+        POST_MERGE_DIFFICULTY,
+        POST_MERGE_MIX_HASH,
+        POST_MERGE_NONCE,
     )
     from eth.exceptions import (
         HeaderNotFound as EVMHeaderNotFound,
         InvalidInstruction as EVMInvalidInstruction,
         Revert as EVMRevert,
     )
+    from eth.vm.forks import ParisVM
     from eth.vm.spoof import SpoofTransaction as EVMSpoofTransaction
 else:
     EVMHeaderNotFound = None
     EVMInvalidInstruction = None
     EVMRevert = None
     GENESIS_PARENT_HASH = None
+    ParisVM = None
+    POST_MERGE_DIFFICULTY = None
+    POST_MERGE_MIX_HASH = None
+    POST_MERGE_NONCE = None
 
 
 ZERO_ADDRESS = 20 * b"\x00"
@@ -132,12 +140,6 @@ def get_default_genesis_params(overrides=None):
     # Commented out params became un-configurable in py-evm during London refactor.
     # Post-merge now. Set genesis params to expect post-merge validation. If PoS field
     # value defaults are not desired, use the overrides option.
-    from eth.constants import (
-        POST_MERGE_DIFFICULTY,
-        POST_MERGE_MIX_HASH,
-        POST_MERGE_NONCE,
-    )
-
     default_genesis_params = {
         # "bloom": 0,
         "coinbase": GENESIS_COINBASE,
@@ -176,7 +178,6 @@ def setup_tester_chain(
         NoProofConsensus,
         ConsensusApplier,
     )
-    from eth.vm.forks import ParisVM
     from eth.db import get_db_backend
 
     if vm_configuration is None:
@@ -441,8 +442,6 @@ class PyEVMBackend(BaseChainBackend):
     #
     @to_tuple
     def mine_blocks(self, num_blocks=1, coinbase=ZERO_ADDRESS):
-        from eth.vm.forks.paris import ParisVM
-
         mine_kwargs = {"coinbase": coinbase}
 
         for _ in range(num_blocks):
