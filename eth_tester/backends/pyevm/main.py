@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import time
 
 from eth_abi import abi
-from eth_abi.exceptions import DecodingError
 from eth_abi.exceptions import (
     DecodingError
 )
