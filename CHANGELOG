@@ -3,6 +3,29 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
+eth-tester v0.8.0-beta.1 (2022-11-21)
+-------------------------------------
+
+Internal Changes - for eth-tester Contributors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Update all references for deprecated ``eth_abi.encode_abi`` to ``eth_abi.encode``. (#242 https://github.com/ethereum/eth-tester/issues/242)
+- Update instances of ``decode_abi()`` and ``decode_single()`` to ``abi.decode()`` in preparation for the relevant ``eth-abi`` changes. (#244 https://github.com/ethereum/eth-tester/issues/244)
+
+
+Miscellaneous changes
+~~~~~~~~~~~~~~~~~~~~~
+
+- #239 https://github.com/ethereum/eth-tester/issues/239
+
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+
+- Support for py-evm ``paris`` hard fork. Refactor the coinbase account ``miner`` -> ``coinbase``. Support for ``safe`` and ``finalized`` block identifiers. (#245 https://github.com/ethereum/eth-tester/issues/245)
+- Pending block may only be retrieved via ``"pending"`` block identifier and not directly by number since it has not yet been "mined" / added to the chain. (#249 https://github.com/ethereum/eth-tester/issues/249)
+
+
 eth-tester v0.7.0-beta.1 (2022-08-25)
 -------------------------------------
 

@@ -1,1 +1,0 @@
-Pending block may only be retrieved via ``"pending"`` block identifier and not directly by number since it has not yet been "mined" / added to the chain.

@@ -1,1 +1,0 @@
-Update instances of ``decode_abi()`` and ``decode_single()`` to ``abi.decode()`` in preparation for the relevant ``eth-abi`` changes.
