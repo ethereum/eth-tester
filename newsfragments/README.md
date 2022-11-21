@@ -10,16 +10,19 @@ relevant to people working on the code itself.)
 
 * `feature`
 * `bugfix`
+* `performance`
 * `doc`
-* `misc`
+* `internal`
 * `removal`
+* `misc`
+* `breaking`
 
- So for example: `123.feature.rst`, `456.bugfix.rst`
+So for example: `123.feature.rst`, `456.bugfix.rst`
 
  If the PR fixes an issue, use that number here. If there is no issue,
 then open up the PR first and use the PR number for the newsfragment.
 
  Note that the `towncrier` tool will automatically
 reflow your text, so don't try to do any fancy formatting. Run
- `towncrier --draft` to get a preview of what the release notes entry
+`towncrier --draft` to get a preview of what the release notes entry
  will look like in the final release notes.

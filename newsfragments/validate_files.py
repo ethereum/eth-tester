@@ -7,11 +7,14 @@ import os
 import pathlib
 
 ALLOWED_EXTENSIONS = {
-    '.feature.rst',
+    '.breaking.rst',
     '.bugfix.rst',
     '.doc.rst',
-    '.removal.rst',
+    '.feature.rst',
+    '.internal.rst',
     '.misc.rst',
+    '.performance.rst',
+    '.removal.rst',
 }
 
 ALLOWED_FILES = {
