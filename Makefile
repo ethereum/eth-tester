@@ -34,7 +34,7 @@ validate-docs:
 	python newsfragments/validate_files.py
 	towncrier --draft
 
-notes:
+notes: validate-docs
 	# Let UPCOMING_VERSION be the version that is used for the current bump
 	$(eval UPCOMING_VERSION=$(shell bumpversion $(bump) --dry-run --list | grep new_version= | sed 's/new_version=//g'))
 	# Now generate the release notes to have them included in the release commit
