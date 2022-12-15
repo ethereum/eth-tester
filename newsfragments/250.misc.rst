@@ -1,0 +1,1 @@
+Remove upper pin on eth-account dependency
