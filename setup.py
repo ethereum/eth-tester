@@ -49,7 +49,7 @@ with open("./README.md") as readme:
 setup(
     name="eth-tester",
     # *IMPORTANT*: Don't manually change the version here. Use the 'bumpversion' utility.
-    version="0.8.0-beta.2",
+    version="0.8.0-beta.3",
     description="""Tools for testing Ethereum applications.""",
     long_description=long_description,
     long_description_content_type="text/markdown",
