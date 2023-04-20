@@ -140,7 +140,7 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
 
 def _field_in_transaction(transaction, field):
     """
-    There are many different classes of transactions, we have to be able to search for a
+    There are many classes of transactions, we have to be able to search for a
     particular field depending on the type of transaction - from dict, to legacy
     transaction classes, to *TypedTransaction classes.
     """

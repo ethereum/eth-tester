@@ -20,7 +20,7 @@ def normalize_dict(value, normalizers):
 @to_tuple
 def normalize_array(value, normalizer):
     """
-    This is just `map` but it's nice to have it return a consisten type
+    This is just `map` but it's nice to have it return a consistent type
     (tuple).
     """
     for item in value:

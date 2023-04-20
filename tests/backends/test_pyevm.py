@@ -211,7 +211,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         genesis_params = get_default_genesis_params(overrides=param_overrides)
         assert genesis_params["gas_limit"] == param_overrides["gas_limit"]
 
-        # Use the the staticmethod to generate custom genesis parameters
+        # Use the staticmethod to generate custom genesis parameters
         genesis_params = PyEVMBackend.generate_genesis_params(param_overrides)
         assert genesis_params["gas_limit"] == param_overrides["gas_limit"]
 
