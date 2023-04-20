@@ -168,7 +168,7 @@ new version explicitly, like `bumpversion --new-version 4.0.0-alpha.1 devnum`
 The ethereum tester library strictly enforces the following input formats and
 types.
 
-* Hexidecimal values **must** be text (not byte) strings.  The `0x` prefix is optional.
+* Hexadecimal values **must** be text (not byte) strings.  The `0x` prefix is optional.
 * Any address which contains mixed-case alpha characters will be validated as a checksummed address as specified by [EIP-55](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-55.md)
 * 32-byte hashes **must** be hexadecimal encoded.
 * Numeric values **must** be in their integer representation.
@@ -692,7 +692,7 @@ See [the filtering guide](#guide-filtering) for detailed information on how to u
 
 #### `EthereumTester.delete_filter(filter_id)`
 
-Removes the filter for the provide `filter_id`.  If no filter is found for the
+Removes the filter for the provided `filter_id`.  If no filter is found for the
 given `filter_id`, raises [`FilterNotFound`](#errors-FilterNotFound).
 
 
@@ -728,7 +728,7 @@ Takes a snapshot of the current chain state and returns the snapshot id.
 #### `EthereumTester.revert_to_snapshot(snapshot_id)`
 
 Reverts the chain to the chain state associated with the given `snapshot_id`.
-Raises [`SnapshotNotFound`](#errors-SnapshotNotFound) if no snapshot is know
+Raises [`SnapshotNotFound`](#errors-SnapshotNotFound) if no snapshot is known
 for the given id.
 
 ### Errors and Exceptions
@@ -862,7 +862,7 @@ to `PyEVM.generate_genesis_params`.
 #     "coinbase": GENESIS_COINBASE,
 #     "difficulty": GENESIS_DIFFICULTY,
 #     "extra_data": GENESIS_EXTRA_DATA,
-#     "gas_limit": 4500000    # <<< Overidden Value <<<
+#     "gas_limit": 4500000    # <<< Overridden Value <<<
 #     "mix_hash": GENESIS_MIX_HASH,
 #     "nonce": GENESIS_NONCE,
 #     "receipt_root": BLANK_ROOT_HASH,
@@ -972,7 +972,7 @@ The normal format is intended for use by end users.
 
 The ethereum tester provides strong guarantees that backends can be swapped out
 seamlessly without effecting the data formats of both the input arguments and
-return values.  This is accomplished using a two step process of strict
+return values.  This is accomplished using a two-step process of strict
 *normalization* and *validation*.
 
 All inputs to the methods of the `EthereumTester` are first validated then
