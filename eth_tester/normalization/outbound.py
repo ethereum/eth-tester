@@ -75,6 +75,15 @@ TRANSACTION_NORMALIZERS = {
 normalize_transaction = partial(normalize_dict, normalizers=TRANSACTION_NORMALIZERS)
 
 
+WITHDRAWAL_NORMALIZERS = {
+    "index": identity,
+    "validator_index": identity,
+    "address": to_checksum_address,
+    "amount": identity,
+}
+normalize_withdrawal = partial(normalize_dict, normalizers=WITHDRAWAL_NORMALIZERS)
+
+
 def is_transaction_hash_list(value):
     return all(is_bytes(item) for item in value)
 
@@ -125,9 +134,12 @@ BLOCK_NORMALIZERS = {
         ),
     ),
     "uncles": partial(normalize_array, normalizer=encode_hex),
+    "withdrawals": partial(normalize_array, normalizer=normalize_withdrawal),
+    "withdrawals_root": encode_hex,
 }
 normalize_block = compose(
-    _remove_base_fee_if_none, partial(normalize_dict, normalizers=BLOCK_NORMALIZERS)
+    _remove_base_fee_if_none,
+    partial(normalize_dict, normalizers=BLOCK_NORMALIZERS),
 )
 
 

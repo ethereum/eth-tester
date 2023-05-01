@@ -33,6 +33,7 @@ from .common import (
     validate_dict,
     validate_transaction_type,
     validate_uint256,
+    validate_uint64,
 )
 
 
@@ -184,6 +185,15 @@ validate_transaction = partial(
 )
 
 
+WITHDRAWAL_VALIDATORS = {
+    "index": validate_uint64,
+    "validator_index": validate_uint64,
+    "address": validate_canonical_address,
+    "amount": validate_uint64,
+}
+validate_withdrawal = partial(validate_dict, key_validators=WITHDRAWAL_VALIDATORS)
+
+
 def validate_status(value):
     validate_positive_integer(value)
     if value > 1:
@@ -239,6 +249,8 @@ BLOCK_VALIDATORS = {
         ),
     ),
     "uncles": partial(validate_array, validator=validate_32_byte_string),
+    "withdrawals": partial(validate_array, validator=validate_withdrawal),
+    "withdrawals_root": validate_32_byte_string,
 }
 
 

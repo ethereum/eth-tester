@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 UINT256_MIN = 0
 UINT256_MAX = 2**256 - 1
+UINT64_MAX = 2**64 - 1
 UINT8_MAX = 2**8 - 1
 UINT2048_MAX = 2**2048 - 1
 
