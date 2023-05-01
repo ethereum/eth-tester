@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import os
 import time
+from typing import Dict, List, Union
 
 from eth_abi import abi
 from eth_abi.exceptions import DecodingError
@@ -11,6 +12,8 @@ from eth_account.hdaccount import HDPath, seed_from_mnemonic
 from eth_utils import (
     encode_hex,
     int_to_big_endian,
+    to_bytes,
+    to_checksum_address,
     to_dict,
     to_tuple,
     to_wei,
@@ -43,6 +46,8 @@ from .serializers import (
     serialize_transaction_receipt,
 )
 from .utils import is_supported_pyevm_version_available
+from ...validation.inbound import validate_withdrawal_dict
+
 
 if is_supported_pyevm_version_available():
     from eth.constants import (
@@ -56,8 +61,12 @@ if is_supported_pyevm_version_available():
         InvalidInstruction as EVMInvalidInstruction,
         Revert as EVMRevert,
     )
-    from eth.vm.forks import ParisVM
+    from eth.vm.forks import (
+        ParisVM,
+        ShanghaiVM,
+    )
     from eth.vm.spoof import SpoofTransaction as EVMSpoofTransaction
+    from eth.vm.forks.shanghai.withdrawals import Withdrawal
 else:
     EVMHeaderNotFound = None
     EVMInvalidInstruction = None
@@ -67,6 +76,8 @@ else:
     POST_MERGE_DIFFICULTY = None
     POST_MERGE_MIX_HASH = None
     POST_MERGE_NONCE = None
+    ShanghaiVM = None
+    Withdrawal = None
 
 
 ZERO_ADDRESS = 20 * b"\x00"
@@ -181,7 +192,7 @@ def setup_tester_chain(
     from eth.db import get_db_backend
 
     if vm_configuration is None:
-        vm_config = ((0, ParisVM),)
+        vm_config = ((0, ShanghaiVM),)
     else:
         if len(vm_configuration) > 0:
             _genesis_block_num, genesis_vm = vm_configuration[0]
@@ -657,6 +668,36 @@ class PyEVMBackend(BaseChainBackend):
         )
         self.chain.apply_transaction(signed_evm_transaction)
         return signed_evm_transaction.hash
+
+    def apply_withdrawals(
+        self,
+        withdrawal_dicts: List[Dict[str, Union[int, str]]],
+    ) -> None:
+        """
+        Apply a withdrawal to the state and mine the block that includes the
+        withdrawal information.
+        """
+        for withdrawal_dict in withdrawal_dicts:
+            validate_withdrawal_dict(withdrawal_dict)
+
+        vm = _get_vm_for_block_number(self.chain, "latest")
+        if not isinstance(vm, ShanghaiVM):
+            raise ValidationError(
+                "Withdrawals are only supported after the Shanghai fork"
+            )
+
+        withdrawals = [
+            Withdrawal(
+                index=withdrawal_dict["index"],
+                validator_index=withdrawal_dict["validator_index"],
+                address=to_bytes(
+                    hexstr=to_checksum_address(withdrawal_dict["address"])
+                ),
+                amount=withdrawal_dict["amount"],
+            )
+            for withdrawal_dict in withdrawal_dicts
+        ]
+        self.chain.mine_all(transactions=[], withdrawals=withdrawals)
 
     def _max_available_gas(self):
         header = self.chain.get_block().header

@@ -276,6 +276,8 @@ def make_genesis_block(overrides=None):
         "uncles": [],
         # base fee at London fork block 12965000 on mainnet
         "base_fee_per_gas": 1000000000,
+        "withdrawals": [],
+        "withdrawals_root": BLANK_ROOT_HASH,
     }
     if overrides is not None:
         genesis_block = merge_genesis_overrides(
@@ -397,6 +399,16 @@ def make_block_from_parent(parent_block, overrides=None):
         yield "base_fee_per_gas", overrides["base_fee_per_gas"]
     else:
         yield "base_fee_per_gas", _calculate_expected_base_fee_per_gas(parent_block)
+
+    if "withdrawals" in overrides:
+        yield "withdrawals", overrides["withdrawals"]
+    else:
+        yield "withdrawals", []
+
+    if "withdrawals_root" in overrides:
+        yield "withdrawals_root", overrides["withdrawals_root"]
+    else:
+        yield "withdrawals_root", BLANK_ROOT_HASH
 
 
 def _calculate_expected_base_fee_per_gas(parent_block) -> int:

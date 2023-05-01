@@ -20,7 +20,13 @@ def serialize_block(block, transaction_serializer, is_pending):
         )
         for transaction_index, transaction in enumerate(block["transactions"])
     )
-    return assoc(block, "transactions", serialized_transactions)
+    block_with_transactions = assoc(block, "transactions", serialized_transactions)
+    block_with_withdrawals = assoc(
+        block_with_transactions,
+        "withdrawals",
+        block["withdrawals"],
+    )
+    return block_with_withdrawals
 
 
 def serialize_transaction_as_hash(transaction, block, transaction_index, is_pending):

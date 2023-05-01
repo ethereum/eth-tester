@@ -13,9 +13,12 @@ if is_supported_pyevm_version_available():
     from eth.rlp.transactions import BaseTransaction
     from eth.vm.forks.berlin.transactions import TypedTransaction
     from eth.vm.forks.london.blocks import LondonBlock
+    from eth.vm.forks.shanghai import ShanghaiBlock
 else:
     BaseTransaction = None
     TypedTransaction = None
+    LondonBlock = None
+    ShanghaiBlock = None
 
 from eth_tester.exceptions import ValidationError
 from eth_tester.utils.address import (
@@ -72,6 +75,10 @@ def serialize_block(block, full_transaction, is_pending):
     if isinstance(block, LondonBlock):
         base_fee = block.header.base_fee_per_gas
         block_info.update({"base_fee_per_gas": base_fee})
+
+    if isinstance(block, ShanghaiBlock):
+        block_info.update({"withdrawals": serialize_block_withdrawals(block)})
+        block_info.update({"withdrawals_root": block.header.withdrawals_root})
 
     return block_info
 
@@ -233,3 +240,15 @@ def _calculate_effective_gas_price(transaction, block, transaction_type):
         if transaction_type == "0x2"
         else transaction.gas_price
     )
+
+
+def serialize_block_withdrawals(block):
+    return [
+        {
+            "index": withdrawal.index,
+            "validator_index": withdrawal.validator_index,
+            "address": withdrawal.address,
+            "amount": withdrawal.amount,
+        }
+        for withdrawal in block.withdrawals
+    ]

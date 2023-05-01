@@ -413,6 +413,8 @@ def _make_block(
     transactions=None,
     uncles=None,
     base_fee_per_gas=1000000000,
+    withdrawals=None,
+    withdrawals_root=ZERO_32BYTES,
 ):
     block = {
         "number": number,
@@ -436,8 +438,24 @@ def _make_block(
         "transactions": transactions or [],
         "uncles": uncles or [],
         "base_fee_per_gas": base_fee_per_gas,
+        "withdrawals": withdrawals or [],
+        "withdrawals_root": withdrawals_root,
     }
     return block
+
+
+def _make_withdrawal(
+    index: int = 2**64 - 1,
+    validator_index: int = 2**64 - 1,
+    address: bytes = ZERO_ADDRESS,
+    amount: int = 2**64 - 1,
+):
+    return {
+        "index": index,
+        "validator_index": validator_index,
+        "address": address,
+        "amount": amount,
+    }
 
 
 @pytest.mark.parametrize(
@@ -501,6 +519,21 @@ def _make_block(
         (_make_block(transactions=[_make_dynamic_fee_txn()]), True),
         (_make_block(transactions=[ZERO_32BYTES, _make_dynamic_fee_txn()]), False),
         (_make_block(transactions=[ZERO_32BYTES, HASH32_AS_TEXT]), False),
+        (_make_block(withdrawals=[_make_withdrawal()]), True),
+        (_make_block(withdrawals=[_make_withdrawal(address=ADDRESS_A)]), True),
+        (_make_block(withdrawals=[_make_withdrawal(index=-1)]), False),
+        (_make_block(withdrawals=[_make_withdrawal(index=2**64)]), False),
+        (_make_block(withdrawals=[_make_withdrawal(validator_index=-1)]), False),
+        (_make_block(withdrawals=[_make_withdrawal(validator_index=2**64)]), False),
+        (_make_block(withdrawals=[_make_withdrawal(amount=-1)]), False),
+        (_make_block(withdrawals=[_make_withdrawal(amount=2**64)]), False),
+        (_make_block(withdrawals=[_make_withdrawal(address="1")]), False),
+        (
+            _make_block(
+                withdrawals=[_make_withdrawal(address=encode_hex(ZERO_ADDRESS))]
+            ),
+            False,
+        ),
     ),
 )
 def test_block_output_validation(validator, block, is_valid):

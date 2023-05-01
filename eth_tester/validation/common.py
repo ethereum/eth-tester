@@ -21,6 +21,7 @@ from eth_utils.toolz import (
 
 from eth_tester.constants import (
     UINT256_MAX,
+    UINT64_MAX,
     UINT8_MAX,
 )
 from eth_tester.exceptions import (
@@ -49,6 +50,7 @@ def validate_uint(max_val, value):
 
 
 validate_uint256 = validate_uint(UINT256_MAX)
+validate_uint64 = validate_uint(UINT64_MAX)
 validate_uint8 = validate_uint(UINT8_MAX)
 
 

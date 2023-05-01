@@ -1,8 +1,11 @@
 from __future__ import unicode_literals
 
 import binascii
+from typing import Dict, Union
 
+from eth_typing import HexStr
 from eth_utils import (
+    is_address,
     is_boolean,
     is_checksum_address,
     is_checksum_formatted_address,
@@ -338,4 +341,29 @@ def validate_raw_transaction(raw_transaction):
         raise ValidationError(
             "Raw Transaction must be a hexadecimal encoded string.  Got: "
             "{}".format(raw_transaction)
+        )
+
+
+def validate_withdrawal_dict(
+    withdrawal_dict: Dict[str, Union[int, str, HexStr, bytes]],
+):
+    all_keys_in_dict = all(
+        _key in withdrawal_dict
+        for _key in ("index", "validator_index", "address", "amount")
+    )
+    all_ints_valid = all(
+        is_integer(_value)
+        for _value in (
+            withdrawal_dict["index"],
+            withdrawal_dict["validator_index"],
+            withdrawal_dict["amount"],
+        )
+    )
+    address_valid = is_address(withdrawal_dict["address"])
+
+    if not all((all_keys_in_dict, all_ints_valid, address_valid)):
+        raise ValidationError(
+            "Withdrawal needs to be formatted as a dict with keys "
+            "'index', 'validator_index', and 'amount' mapping to integer values "
+            "and 'address' with valid address value as a hex string or bytes."
         )
