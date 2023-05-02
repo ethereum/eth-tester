@@ -221,7 +221,6 @@ validate_receipt = partial(validate_dict, key_validators=RECEIPT_VALIDATORS)
 
 BLOCK_VALIDATORS = {
     "number": validate_positive_integer,
-    "base_fee_per_gas": identity,  # validated separately via _validate_base_fee()
     "hash": validate_block_hash,
     "parent_hash": validate_block_hash,
     "nonce": validate_nonce,
@@ -249,27 +248,39 @@ BLOCK_VALIDATORS = {
         ),
     ),
     "uncles": partial(validate_array, validator=validate_32_byte_string),
-    "withdrawals": partial(validate_array, validator=validate_withdrawal),
-    "withdrawals_root": validate_32_byte_string,
+    # fork-specific fields, validated separately in `_validate_fork_specific_fields()`
+    "base_fee_per_gas": identity,
+    "withdrawals": identity,
+    "withdrawals_root": identity,
 }
 
 
-def _validate_base_fee(block):
+def _validate_fork_specific_fields(block):
     """
-    If `base_fee_per_gas` is present (post-London blocks), validate that the value is a
-    positive integer. For pre-London blocks, set to `None` during validation and pop it
-    back out during normalization.
+    If a fork-specific key is present, validate the value appropriately. For
+    blocks that are missing this key (before it was introduced via a fork), set the
+    value to `None` during validation and pop it back out during normalization.
     """
+    # London fork
     if "base_fee_per_gas" not in block:
         block["base_fee_per_gas"] = None
     else:
         validate_positive_integer(block["base_fee_per_gas"])
+
+    # Shanghai fork
+    if all(_ not in block for _ in ("withdrawals", "withdrawals_root")):
+        block["withdrawals"] = None
+        block["withdrawals_root"] = None
+    else:
+        partial(validate_array, validator=validate_withdrawal)(block["withdrawals"])
+        validate_32_byte_string(block["withdrawals_root"])
+
     return block
 
 
 validate_block = compose(
     partial(validate_dict, key_validators=BLOCK_VALIDATORS),
-    _validate_base_fee,
+    _validate_fork_specific_fields,
 )
 
 
