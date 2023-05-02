@@ -99,7 +99,6 @@ BLOCK_KEYS = {
     "timestamp",
     "transactions",
     "uncles",
-    "base_fee_per_gas",
 }
 
 

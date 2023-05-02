@@ -13,6 +13,7 @@ from eth.vm.forks import (
     GrayGlacierVM,
     LondonVM,
     ParisVM,
+    ShanghaiVM,
 )
 from eth_utils import encode_hex, is_hexstr, to_wei
 
@@ -73,27 +74,42 @@ def test_custom_virtual_machines():
     EthereumTester(backend=backend)
 
 
-def test_berlin_configuration():
+@pytest.mark.parametrize(
+    "vm_class_missing_the_field,vm_class_with_new_field,new_field",
+    (
+        (BerlinVM, LondonVM, "base_fee_per_gas"),
+        (ParisVM, ShanghaiVM, "withdrawals"),
+        (ParisVM, ShanghaiVM, "withdrawals_root"),
+    ),
+)
+def test_newly_introduced_block_fields_at_fork_transition(
+    vm_class_missing_the_field,
+    vm_class_with_new_field,
+    new_field,
+):
     if not is_supported_pyevm_version_available():
         pytest.skip("PyEVM is not available")
 
-    mnemonic = "test test test test test test test test test test test junk"
-    vm_configuration = ((0, BerlinVM),)
-    backend = PyEVMBackend.from_mnemonic(mnemonic, vm_configuration=vm_configuration)
+    vm_configuration = ((0, vm_class_missing_the_field), (1, vm_class_with_new_field))
+    backend = PyEVMBackend(vm_configuration=vm_configuration)
 
-    # Berlin blocks shouldn't have base_fee_per_gas,
-    # since London was the fork that introduced base_fee_per_gas
+    # test that the field / key does not exist pre-fork
     with pytest.raises(KeyError):
-        backend.get_block_by_number(0)["base_fee_per_gas"]
+        backend.get_block_by_number(0)[new_field]
 
     tester = EthereumTester(backend=backend)
 
     # Test that outbound block validation doesn't break by getting a block.
-    berlin_block = tester.get_block_by_number(0)
+    pre_fork_block = tester.get_block_by_number(0)
 
-    # Test that outbound block normalization removes `base_fee_per_gas`.
+    # Test that outbound block normalization removes fork-specific field.
     with pytest.raises(KeyError):
-        berlin_block["base_fee_per_gas"]
+        pre_fork_block[new_field]
+
+    # test that the field exists at fork transition
+    backend.get_block_by_number("pending")[new_field]
+    post_fork_block = tester.get_block_by_number("pending")
+    assert post_fork_block[new_field] is not None
 
 
 def test_london_configuration():

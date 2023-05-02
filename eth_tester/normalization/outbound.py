@@ -92,13 +92,17 @@ def is_transaction_object_list(value):
     return all(is_dict(item) for item in value)
 
 
-def _remove_base_fee_if_none(block):
+def _remove_fork_specific_fields_if_none(block):
     """
-    A `None` value is set for `base_fee_per_gas` during validation for blocks that do
-    not have a base fee (pre-London blocks). Pop this value out here to normalize
-    pre-London blocks.
+    A `None` value is set for keys if they are not present during outbound block
+    validation. This means we are in a VM that has not yet been exposed to this new
+    field. Pop this value out here to normalize these older VM blocks.
     """
-    return block if block["base_fee_per_gas"] else dissoc(block, "base_fee_per_gas")
+    for key, value in list(block.items()):
+        if value is None:
+            print(key, value)
+            block = dissoc(block, key)
+    return block
 
 
 BLOCK_NORMALIZERS = {
@@ -138,8 +142,8 @@ BLOCK_NORMALIZERS = {
     "withdrawals_root": encode_hex,
 }
 normalize_block = compose(
-    _remove_base_fee_if_none,
     partial(normalize_dict, normalizers=BLOCK_NORMALIZERS),
+    _remove_fork_specific_fields_if_none,
 )
 
 
@@ -188,5 +192,6 @@ RECEIPT_NORMALIZERS = {
     "status": identity,
     "to": to_empty_or_checksum_address,
     "type": identity,
+    "base_fee_per_gas": identity,
 }
 normalize_receipt = partial(normalize_dict, normalizers=RECEIPT_NORMALIZERS)
