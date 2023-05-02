@@ -3,8 +3,15 @@ from __future__ import unicode_literals
 import math
 
 import functools
+from typing import (
+    Union,
+)
 
+from eth_typing import (
+    HexStr,
+)
 from eth_utils import (
+    is_address,
     is_bytes,
     is_hexstr,
     is_text,
@@ -205,3 +212,8 @@ def if_not_create_address(validator_fn):
             validator_fn(value)
 
     return inner
+
+
+def validate_address(value: Union[str, HexStr, bytes]):
+    if not is_address(value):
+        raise ValidationError(f"Value must be a valid address. Got: {value}")

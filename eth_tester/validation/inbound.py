@@ -1,11 +1,14 @@
 from __future__ import unicode_literals
 
 import binascii
-from typing import Dict, Union
+from typing import (
+    Dict,
+    List,
+    Union,
+)
 
 from eth_typing import HexStr
 from eth_utils import (
-    is_address,
     is_boolean,
     is_checksum_address,
     is_checksum_formatted_address,
@@ -32,9 +35,12 @@ from eth_tester.exceptions import (
 )
 
 from .common import (
+    validate_address,
+    validate_dict,
     validate_positive_integer,
     validate_transaction_type,
     validate_uint256,
+    validate_uint64,
     validate_uint8,
     validate_text,
 )
@@ -344,26 +350,19 @@ def validate_raw_transaction(raw_transaction):
         )
 
 
-def validate_withdrawal_dict(
-    withdrawal_dict: Dict[str, Union[int, str, HexStr, bytes]],
-):
-    all_keys_in_dict = all(
-        _key in withdrawal_dict
-        for _key in ("index", "validator_index", "address", "amount")
-    )
-    all_ints_valid = all(
-        is_integer(_value)
-        for _value in (
-            withdrawal_dict["index"],
-            withdrawal_dict["validator_index"],
-            withdrawal_dict["amount"],
-        )
-    )
-    address_valid = is_address(withdrawal_dict["address"])
+INBOUND_WITHDRAWAL_VALIDATORS = {
+    "index": validate_uint64,
+    "validator_index": validate_uint64,
+    "address": validate_address,
+    "amount": validate_uint64,
+}
 
-    if not all((all_keys_in_dict, all_ints_valid, address_valid)):
-        raise ValidationError(
-            "Withdrawal needs to be formatted as a dict with keys "
-            "'index', 'validator_index', and 'amount' mapping to integer values "
-            "and 'address' with valid address value as a hex string or bytes."
-        )
+
+def validate_inbound_withdrawals(
+    withdrawals_list: List[Dict[str, Union[int, str, HexStr, bytes]]],
+):
+    if len(withdrawals_list) == 0:
+        raise ValidationError("Withdrawals list must not be empty.")
+
+    for withdrawal_dict in withdrawals_list:
+        validate_dict(withdrawal_dict, key_validators=INBOUND_WITHDRAWAL_VALIDATORS)

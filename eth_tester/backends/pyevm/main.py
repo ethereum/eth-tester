@@ -46,7 +46,7 @@ from .serializers import (
     serialize_transaction_receipt,
 )
 from .utils import is_supported_pyevm_version_available
-from ...validation.inbound import validate_withdrawal_dict
+from ...validation.inbound import validate_inbound_withdrawals
 
 
 if is_supported_pyevm_version_available():
@@ -671,14 +671,13 @@ class PyEVMBackend(BaseChainBackend):
 
     def apply_withdrawals(
         self,
-        withdrawal_dicts: List[Dict[str, Union[int, str]]],
+        withdrawals_list: List[Dict[str, Union[int, str]]],
     ) -> None:
         """
         Apply a withdrawal to the state and mine the block that includes the
         withdrawal information.
         """
-        for withdrawal_dict in withdrawal_dicts:
-            validate_withdrawal_dict(withdrawal_dict)
+        validate_inbound_withdrawals(withdrawals_list)
 
         vm = _get_vm_for_block_number(self.chain, "latest")
         if not isinstance(vm, ShanghaiVM):
@@ -695,7 +694,7 @@ class PyEVMBackend(BaseChainBackend):
                 ),
                 amount=withdrawal_dict["amount"],
             )
-            for withdrawal_dict in withdrawal_dicts
+            for withdrawal_dict in withdrawals_list
         ]
         self.chain.mine_all(transactions=[], withdrawals=withdrawals)
 

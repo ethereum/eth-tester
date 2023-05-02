@@ -2,6 +2,9 @@ from __future__ import unicode_literals
 
 import pytest
 
+from eth_tester.validation.inbound import validate_inbound_withdrawals
+
+
 try:
     from unittest import mock
 except ImportError:
@@ -503,3 +506,120 @@ def test_transaction_call_and_estimate_gas_input_validation(
             validator.validate_inbound_transaction(
                 transaction, txn_internal_type="estimate"
             )
+
+
+@pytest.mark.parametrize(
+    "withdrawals,is_valid",
+    (
+        (
+            # valid cases all together
+            [
+                {
+                    "index": 0,
+                    "validator_index": 0,
+                    "address": b"\x00" * 20,  # bytes address
+                    "amount": 0,
+                },
+                {
+                    # limit case for uint64 fields
+                    "index": 2**64 - 1,
+                    "validator_index": 2**64 - 1,
+                    "address": b"\x22" * 20,
+                    "amount": 2**64 - 1,
+                },
+                {
+                    "index": 0,
+                    "validator_index": 0,
+                    "address": f"0x{'22' * 20}",  # hexstr address
+                    "amount": 0,
+                },
+            ],
+            True,
+        ),
+        ({}, False),
+        (
+            {"index": 0, "validator_index": 0, "address": b"\x00" * 20, "amount": 0},
+            False,
+        ),
+        ([{}], False),
+        (
+            [  # mixed valid and invalid cases
+                {  # valid case
+                    "index": 0,
+                    "validator_index": 0,
+                    "address": b"\x00" * 20,
+                    "amount": 0,
+                },
+                {  # invalid case
+                    "index": -1,  # negative index
+                    "validator_index": 0,
+                    "address": b"\x00" * 20,
+                    "amount": 0,
+                },
+            ],
+            False,
+        ),
+        (
+            [
+                {
+                    "index": 2**64,  # out of range
+                    "validator_index": 0,
+                    "address": b"\x00" * 20,
+                    "amount": 0,
+                },
+            ],
+            False,
+        ),
+        (
+            [
+                {
+                    "index": 0,
+                    "validator_index": 2**64,  # out of range
+                    "address": b"\x00" * 20,
+                    "amount": 0,
+                },
+            ],
+            False,
+        ),
+        (
+            [
+                {
+                    "index": 0,
+                    "validator_index": 0,
+                    "address": b"\x00" * 20,
+                    "amount": 2**64,  # out of range
+                },
+            ],
+            False,
+        ),
+        (
+            [
+                {
+                    "index": 0,
+                    "validator_index": 0,
+                    "address": b"\x00" * 21,  # not 20 bytes
+                    "amount": 0,
+                },
+            ],
+            False,
+        ),
+        (
+            [
+                {
+                    "index": 0,
+                    "validator_index": 0,
+                    "address": f"0x{'22' * 19}",  # not 20 bytes
+                    "amount": 0,
+                },
+            ],
+            False,
+        ),
+    ),
+)
+def test_apply_withdrawals_inbound_dict_validation(withdrawals, is_valid):
+    if not is_valid:
+        with pytest.raises(ValidationError):
+            validate_inbound_withdrawals(withdrawals)
+
+    else:
+        validate_inbound_withdrawals(withdrawals)
