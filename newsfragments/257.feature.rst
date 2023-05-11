@@ -1,0 +1,1 @@
+Add support for ``Shanghai`` network upgrade and add method on ``PyEVMBackend`` to be able to initiate withdrawals.

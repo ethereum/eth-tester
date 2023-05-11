@@ -674,8 +674,7 @@ class PyEVMBackend(BaseChainBackend):
         withdrawals_list: List[Dict[str, Union[int, str]]],
     ) -> None:
         """
-        Apply a withdrawal to the state and mine the block that includes the
-        withdrawal information.
+        Apply withdrawals to the state and mine the block that includes the withdrawals.
         """
         validate_inbound_withdrawals(withdrawals_list)
 
