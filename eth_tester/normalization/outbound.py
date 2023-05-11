@@ -100,7 +100,6 @@ def _remove_fork_specific_fields_if_none(block):
     """
     for key, value in list(block.items()):
         if value is None:
-            print(key, value)
             block = dissoc(block, key)
     return block
 
