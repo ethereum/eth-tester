@@ -1,1 +1,0 @@
-Update CircleCI common steps to update ``pip`` and install ``tox`` dependency at the sys level, not ``--user``.
