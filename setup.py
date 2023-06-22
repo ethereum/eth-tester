@@ -12,7 +12,7 @@ extras_require = {
         "flake8>=3.5.0,<4.0.0",
     ],
     "test": [
-        "pytest>=6.2.5,<7",
+        "pytest>=7.0.0",
         "pytest-xdist>=2.0.0,<3",
         "eth-hash[pycryptodome]>=0.1.4,<1.0.0",
     ],
