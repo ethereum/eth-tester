@@ -1,0 +1,1 @@
+Do not return a contract address if the contract deployment transaction has failed (receipt "status" is 0).
