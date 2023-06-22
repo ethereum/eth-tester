@@ -1,7 +1,10 @@
 from __future__ import unicode_literals
 
 import pytest
-from toolz import dissoc, merge
+from toolz import (
+    dissoc,
+    merge,
+)
 
 from eth_utils import (
     encode_hex,
@@ -10,7 +13,13 @@ from eth_utils import (
 from eth_tester.exceptions import (
     ValidationError,
 )
-from eth_tester.validation import DefaultValidator
+from eth_tester.validation import (
+    DefaultValidator,
+)
+
+from tests.utils import (
+    make_receipt,
+)
 
 
 @pytest.fixture
@@ -315,72 +324,38 @@ def test_log_entry_output_validation(validator, log_entry, is_valid):
             validator.validate_outbound_log_entry(log_entry)
 
 
-def _make_receipt(
-    transaction_hash=ZERO_32BYTES,
-    transaction_index=0,
-    block_number=0,
-    block_hash=ZERO_32BYTES,
-    cumulative_gas_used=0,
-    _from=ZERO_ADDRESS,
-    gas_used=21000,
-    effective_gas_price=1000000000,
-    contract_address=None,
-    logs=None,
-    state_root=b"\x00",
-    status=0,
-    to=ZERO_ADDRESS,
-    _type="0x0",
-):
-    return {
-        "transaction_hash": transaction_hash,
-        "transaction_index": transaction_index,
-        "block_number": block_number,
-        "block_hash": block_hash,
-        "cumulative_gas_used": cumulative_gas_used,
-        "from": _from,
-        "gas_used": gas_used,
-        "effective_gas_price": effective_gas_price,
-        "contract_address": contract_address,
-        "logs": logs or [],
-        "state_root": state_root,
-        "status": status,
-        "to": to,
-        "type": _type,
-    }
-
-
 @pytest.mark.parametrize(
     "receipt,is_valid",
     (
-        (_make_receipt(), True),
-        (_make_receipt(transaction_hash=HASH32_AS_TEXT), False),
-        (_make_receipt(transaction_hash=HASH31), False),
-        (_make_receipt(block_hash=HASH32_AS_TEXT), False),
-        (_make_receipt(block_hash=HASH31), False),
-        (_make_receipt(transaction_index=-1), False),
-        (_make_receipt(transaction_index=1.0), False),
-        (_make_receipt(transaction_index=True), False),
-        (_make_receipt(block_number=-1), False),
-        (_make_receipt(block_number=1.0), False),
-        (_make_receipt(block_number=True), False),
-        (_make_receipt(gas_used=-1), False),
-        (_make_receipt(gas_used=1.0), False),
-        (_make_receipt(gas_used=True), False),
-        (_make_receipt(cumulative_gas_used=-1), False),
-        (_make_receipt(cumulative_gas_used=1.0), False),
-        (_make_receipt(cumulative_gas_used=True), False),
-        (_make_receipt(contract_address=ZERO_ADDRESS), True),
-        (_make_receipt(contract_address=encode_hex(ZERO_ADDRESS)), False),
-        (_make_receipt(logs=[_make_log()]), True),
-        (_make_receipt(logs=[_make_log(_type="invalid")]), False),
-        (_make_receipt(_from=ADDRESS_A, to=ADDRESS_A), True),
-        (_make_receipt(_from=ADDRESS_A, to=ZERO_ADDRESS), True),
-        (_make_receipt(_from=encode_hex(ZERO_ADDRESS), to=ADDRESS_A), False),
-        (_make_receipt(_from=ADDRESS_A, to=encode_hex(ZERO_ADDRESS)), False),
-        (_make_receipt(status=0), True),
-        (_make_receipt(status=1), True),
-        (_make_receipt(status=2), False),
-        (_make_receipt(status=-1), False),
+        (make_receipt(), True),
+        (make_receipt(transaction_hash=HASH32_AS_TEXT), False),
+        (make_receipt(transaction_hash=HASH31), False),
+        (make_receipt(block_hash=HASH32_AS_TEXT), False),
+        (make_receipt(block_hash=HASH31), False),
+        (make_receipt(transaction_index=-1), False),
+        (make_receipt(transaction_index=1.0), False),
+        (make_receipt(transaction_index=True), False),
+        (make_receipt(block_number=-1), False),
+        (make_receipt(block_number=1.0), False),
+        (make_receipt(block_number=True), False),
+        (make_receipt(gas_used=-1), False),
+        (make_receipt(gas_used=1.0), False),
+        (make_receipt(gas_used=True), False),
+        (make_receipt(cumulative_gas_used=-1), False),
+        (make_receipt(cumulative_gas_used=1.0), False),
+        (make_receipt(cumulative_gas_used=True), False),
+        (make_receipt(contract_address=ZERO_ADDRESS), True),
+        (make_receipt(contract_address=encode_hex(ZERO_ADDRESS)), False),
+        (make_receipt(logs=[_make_log()]), True),
+        (make_receipt(logs=[_make_log(_type="invalid")]), False),
+        (make_receipt(_from=ADDRESS_A, to=ADDRESS_A), True),
+        (make_receipt(_from=ADDRESS_A, to=ZERO_ADDRESS), True),
+        (make_receipt(_from=encode_hex(ZERO_ADDRESS), to=ADDRESS_A), False),
+        (make_receipt(_from=ADDRESS_A, to=encode_hex(ZERO_ADDRESS)), False),
+        (make_receipt(status=0), True),
+        (make_receipt(status=1), True),
+        (make_receipt(status=2), False),
+        (make_receipt(status=-1), False),
     ),
 )
 def test_receipt_output_validation(validator, receipt, is_valid):
