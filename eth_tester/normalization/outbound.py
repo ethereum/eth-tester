@@ -1,6 +1,9 @@
 from __future__ import absolute_import
 
-from toolz import dissoc
+from toolz import (
+    assoc,
+    dissoc,
+)
 
 from eth_utils.curried import (
     apply_one_of_formatters,
@@ -168,6 +171,19 @@ LOG_ENTRY_NORMALIZERS = {
 normalize_log_entry = partial(normalize_dict, normalizers=LOG_ENTRY_NORMALIZERS)
 
 
+def _normalize_contract_address(receipt):
+    if receipt["status"] == 0:
+        return assoc(receipt, "contract_address", None)
+    elif is_address(receipt["contract_address"]):
+        return assoc(
+            receipt,
+            "contract_address",
+            to_checksum_address(receipt["contract_address"]),
+        )
+    else:
+        return receipt
+
+
 RECEIPT_NORMALIZERS = {
     "transaction_hash": encode_hex,
     "transaction_index": identity,
@@ -181,11 +197,7 @@ RECEIPT_NORMALIZERS = {
     "effective_gas_price": identity,
     "from": to_checksum_address,
     "gas_used": identity,
-    "contract_address": partial(
-        normalize_if,
-        conditional_fn=is_address,
-        normalizer=to_checksum_address,
-    ),
+    "contract_address": identity,  # special case, see ``_normalize_contract_address()``
     "logs": partial(normalize_array, normalizer=normalize_log_entry),
     "state_root": identity,
     "status": identity,
@@ -193,4 +205,7 @@ RECEIPT_NORMALIZERS = {
     "type": identity,
     "base_fee_per_gas": identity,
 }
-normalize_receipt = partial(normalize_dict, normalizers=RECEIPT_NORMALIZERS)
+normalize_receipt = compose(
+    partial(normalize_dict, normalizers=RECEIPT_NORMALIZERS),
+    _normalize_contract_address,
+)
