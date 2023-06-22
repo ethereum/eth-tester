@@ -99,10 +99,10 @@ validate_filter_id = partial(validate_positive_integer)
 
 
 def validate_account(value):
-    if not is_text(value):
-        raise ValidationError("Address must be 20 bytes encoded as hexadecimal")
-    elif not is_hex_address(value):
-        raise ValidationError("Address must be 20 bytes encoded as hexadecimal")
+    if not is_text(value) or not is_hex_address(value):
+        raise ValidationError(
+            f"Address must be 20 bytes encoded as hexadecimal - address: {value}"
+        )
     elif is_checksum_formatted_address(value) and not is_checksum_address(value):
         raise ValidationError("Address does not validate EIP55 checksum")
 
