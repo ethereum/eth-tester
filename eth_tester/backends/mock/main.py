@@ -284,6 +284,12 @@ class MockBackend(BaseChainBackend):
         except KeyError:
             return b""
 
+    def set_code(self, account, code):
+        if account in self.account_state_lookup:
+            self.account_state_lookup[account]["code"] = code
+        else:
+            self.account_state_lookup[account] = {"code": code}
+
     #
     # Transactions
     #

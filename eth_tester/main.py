@@ -254,6 +254,11 @@ class EthereumTester:
         code = self.normalizer.normalize_outbound_code(raw_code)
         return code
 
+    def set_code(self, account, code):
+        self.validator.validate_inbound_account(account)
+        raw_account = self.normalizer.normalize_inbound_account(account)
+        self.backend.set_code(raw_account, code)
+
     def get_nonce(self, account, block_number="latest"):
         self.validator.validate_inbound_account(account)
         self.validator.validate_inbound_block_number(block_number)
