@@ -538,6 +538,10 @@ class PyEVMBackend(BaseChainBackend):
         vm = _get_vm_for_block_number(self.chain, block_number)
         return vm.state.get_code(account)
 
+    def set_code(self, account, code):
+        vm = _get_vm_for_block_number(self.chain, block_number)
+        return vm.state.set_code(account, code)
+
     def get_base_fee(self, block_number="latest"):
         vm = _get_vm_for_block_number(self.chain, block_number)
         return vm.state.base_fee

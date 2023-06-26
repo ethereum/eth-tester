@@ -81,6 +81,10 @@ class BaseChainBackend(metaclass=ABCMeta):
     def get_code(self, account, block_number=None):
         raise NotImplementedError("Must be implemented by subclasses")
 
+    @abstractmethod
+    def set_code(self, account, code):
+        raise NotImplementedError("Must be implemented by subclasses")
+
     #
     # Transactions
     #

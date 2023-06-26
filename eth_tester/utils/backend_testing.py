@@ -231,6 +231,11 @@ class BaseTestBackendDirect:
         code = eth_tester.get_code(BURN_ADDRESS)
         assert code == "0x"
 
+    def test_set_code(self, eth_tester):
+        eth_tester.set_code(BURN_ADDRESS, "0x123")
+        code = eth_tester.get_code(BURN_ADDRESS)
+        assert code == "0x123"
+
     def test_get_nonce(self, eth_tester):
         for account in eth_tester.get_accounts():
             nonce = eth_tester.get_nonce(account)
