@@ -1,7 +1,7 @@
 import pytest
 
-from eth_tester.normalization.outbound import (
-    normalize_receipt,
+from eth_tester.normalization import (
+    DefaultNormalizer,
 )
 
 from tests.utils import (
@@ -26,7 +26,19 @@ def test_outbound_receipt_contract_address_status_based_normalization(
     assert receipt["status"] == status
     assert receipt["contract_address"] == contract_address
 
-    normalized_receipt = normalize_receipt(receipt)
+    normalized_receipt = DefaultNormalizer.normalize_outbound_receipt(receipt)
 
     assert normalized_receipt["status"] == status
     assert normalized_receipt["contract_address"] == expected
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    (
+        (0, f"0x{'00'*32}"),
+        (1, f"0x{'00'*31}01"),
+        (2, f"0x{'00'*31}02"),
+    ),
+)
+def test_outbound_storage_normalization(value, expected):
+    assert DefaultNormalizer.normalize_outbound_storage(value) == expected

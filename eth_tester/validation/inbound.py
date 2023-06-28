@@ -15,6 +15,7 @@ from eth_utils import (
     is_dict,
     is_hex,
     is_hex_address,
+    is_hexstr,
     is_integer,
     is_list_like,
     is_string,
@@ -107,13 +108,19 @@ def validate_account(value):
         raise ValidationError("Address does not validate EIP55 checksum")
 
 
-def validate_storage_slot(value):
-    if not (is_hex(value) and value.startswith("0x")):
-        raise ValidationError(
-            "Storage slot must be a hex string representation of a positive integer - "
-            f"slot: {value}"
-        )
-    int_val = int(value, 16)
+def validate_inbound_storage_slot(value):
+    error_msg = (
+        "Storage slot must be a hex string representation of a positive integer - "
+        f"slot: {value}"
+    )
+    if not (is_hexstr(value) and value.startswith("0x")):
+        raise ValidationError(error_msg)
+
+    try:
+        int_val = int(value, 16)
+    except ValueError:
+        raise ValidationError(error_msg)
+
     validate_uint256(int_val)
 
 
