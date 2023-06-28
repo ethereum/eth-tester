@@ -2,7 +2,9 @@ from __future__ import unicode_literals
 
 import pytest
 
-from eth_tester.validation.inbound import validate_inbound_withdrawals
+from eth_tester.validation.inbound import (
+    validate_inbound_withdrawals,
+)
 
 
 try:
@@ -623,3 +625,51 @@ def test_apply_withdrawals_inbound_dict_validation(withdrawals, is_valid):
 
     else:
         validate_inbound_withdrawals(withdrawals)
+
+
+@pytest.mark.parametrize(
+    "value,is_valid",
+    (
+        ("0x0", True),
+        ("0x1", True),
+        ("0x22", True),
+        ("0x4d2", True),
+        (0, False),
+        (1, False),
+        (-1, False),
+        ("1", False),
+        ("-0x1", False),
+        ("test", False),
+        (b"test", False),
+    ),
+)
+def test_validate_inbound_storage_slot(value, is_valid):
+    if not is_valid:
+        with pytest.raises(
+            ValidationError,
+            match=(
+                "Storage slot must be a hex string representation of a positive "
+                f"integer - slot: {value}"
+            ),
+        ):
+            DefaultValidator.validate_inbound_storage_slot(value)
+    else:
+        DefaultValidator.validate_inbound_storage_slot(value)
+
+
+@pytest.mark.parametrize(
+    "value,is_valid",
+    (
+        (hex(2**256 - 1), True),
+        (hex(2**256), False),
+    ),
+)
+def test_validate_inbound_storage_slot_integer_value_at_limit(value, is_valid):
+    if not is_valid:
+        with pytest.raises(
+            ValidationError,
+            match="Value exceeds maximum 256 bit integer size",
+        ):
+            DefaultValidator.validate_inbound_storage_slot(value)
+    else:
+        DefaultValidator.validate_inbound_storage_slot(value)
