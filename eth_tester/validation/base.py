@@ -8,6 +8,9 @@ class BaseValidator:
     def validate_inbound_account(self, account):
         raise NotImplementedError("must be implemented by subclasses")
 
+    def validate_inbound_storage_slot(self, account):
+        raise NotImplementedError("must be implemented by subclasses")
+
     def validate_inbound_block_hash(self, block_hash):
         raise NotImplementedError("must be implemented by subclasses")
 

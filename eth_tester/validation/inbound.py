@@ -107,6 +107,16 @@ def validate_account(value):
         raise ValidationError("Address does not validate EIP55 checksum")
 
 
+def validate_storage_slot(value):
+    if not (is_hex(value) and value.startswith("0x")):
+        raise ValidationError(
+            "Storage slot must be a hex string representation of a positive integer - "
+            f"slot: {value}"
+        )
+    int_val = int(value, 16)
+    validate_uint256(int_val)
+
+
 def is_valid_topic_array(value):
     if not is_list_like(value):
         return False

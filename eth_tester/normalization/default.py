@@ -11,6 +11,10 @@ from eth_utils.toolz import (
 from .base import (
     BaseNormalizer,
 )
+from .common import (
+    int_to_32byte_hex,
+    to_integer_if_hex,
+)
 from .inbound import (
     normalize_filter_params as normalize_inbound_filter_params,
     normalize_log_entry as normalize_inbound_log_entry,
@@ -40,6 +44,7 @@ class DefaultNormalizer(BaseNormalizer):
     normalize_inbound_log_entry = staticmethod(normalize_inbound_log_entry)
     normalize_inbound_private_key = staticmethod(normalize_inbound_private_key)
     normalize_inbound_raw_transaction = staticmethod(normalize_inbound_raw_transaction)
+    normalize_inbound_storage_slot = staticmethod(to_integer_if_hex)
     normalize_inbound_timestamp = staticmethod(identity)
     normalize_inbound_transaction = staticmethod(normalize_inbound_transaction)
     normalize_inbound_transaction_hash = staticmethod(decode_hex)
@@ -57,5 +62,6 @@ class DefaultNormalizer(BaseNormalizer):
     normalize_outbound_nonce = staticmethod(identity)
     normalize_outbound_receipt = staticmethod(normalize_outbound_receipt)
     normalize_outbound_return_data = staticmethod(encode_hex)
+    normalize_outbound_storage = staticmethod(int_to_32byte_hex)
     normalize_outbound_transaction = staticmethod(normalize_outbound_transaction)
     normalize_outbound_transaction_hash = staticmethod(encode_hex)

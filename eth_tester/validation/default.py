@@ -14,6 +14,7 @@ from .inbound import (
     validate_filter_params as validate_inbound_filter_params,
     validate_private_key as validate_inbound_private_key,
     validate_raw_transaction as validate_inbound_raw_transaction,
+    validate_storage_slot as validate_inbound_storage_slot,
     validate_timestamp as validate_inbound_timestamp,
     validate_transaction as validate_inbound_transaction,
     validate_transaction_hash as validate_inbound_transaction_hash,
@@ -41,6 +42,7 @@ class DefaultValidator(BaseValidator):
     validate_inbound_filter_params = staticmethod(validate_inbound_filter_params)
     validate_inbound_private_key = staticmethod(validate_inbound_private_key)
     validate_inbound_raw_transaction = staticmethod(validate_inbound_raw_transaction)
+    validate_inbound_storage_slot = staticmethod(validate_inbound_storage_slot)
     validate_inbound_timestamp = staticmethod(validate_inbound_timestamp)
     validate_inbound_transaction = staticmethod(validate_inbound_transaction)
     validate_inbound_transaction_hash = staticmethod(validate_inbound_transaction_hash)
@@ -58,5 +60,6 @@ class DefaultValidator(BaseValidator):
     validate_outbound_log_entry = staticmethod(validate_outbound_log_entry)
     validate_outbound_receipt = staticmethod(validate_outbound_receipt)
     validate_outbound_return_data = staticmethod(validate_outbound_bytes)
+    validate_outbound_storage = staticmethod(validate_uint256)
     validate_outbound_transaction = staticmethod(validate_outbound_transaction)
     validate_outbound_transaction_hash = staticmethod(validate_32_byte_string)
