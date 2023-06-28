@@ -8,6 +8,7 @@ from eth_abi import abi
 from eth_abi.exceptions import DecodingError
 
 from eth_account.hdaccount import HDPath, seed_from_mnemonic
+from eth_typing import Address
 
 from eth_utils import (
     encode_hex,
@@ -537,6 +538,10 @@ class PyEVMBackend(BaseChainBackend):
     def get_code(self, account, block_number="latest"):
         vm = _get_vm_for_block_number(self.chain, block_number)
         return vm.state.get_code(account)
+
+    def get_storage(self, account: Address, slot: int, block_number="latest") -> bytes:
+        vm = _get_vm_for_block_number(self.chain, block_number)
+        return vm.state.get_storage(account, slot)
 
     def get_base_fee(self, block_number="latest"):
         vm = _get_vm_for_block_number(self.chain, block_number)

@@ -1,4 +1,9 @@
+from eth_tester.utils.encoding import (
+    int_to_32byte_big_endian,
+)
 from eth_utils import (
+    encode_hex,
+    is_hex,
     to_dict,
     to_tuple,
 )
@@ -33,3 +38,13 @@ def normalize_if(value, conditional_fn, normalizer):
         return normalizer(value)
     else:
         return value
+
+
+def to_integer_if_hex(value):
+    if is_hex(value):
+        return int(value, 16)
+    return value
+
+
+def int_to_32byte_hex(value):
+    return encode_hex(int_to_32byte_big_endian(value))

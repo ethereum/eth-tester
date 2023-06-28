@@ -6,6 +6,10 @@ import operator
 import time
 import functools
 
+from eth_typing import (
+    HexAddress,
+    HexStr,
+)
 from eth_utils import (
     is_integer,
     is_same_address,
@@ -253,6 +257,24 @@ class EthereumTester:
         self.validator.validate_outbound_code(raw_code)
         code = self.normalizer.normalize_outbound_code(raw_code)
         return code
+
+    def get_storage_at(
+        self,
+        account: HexAddress,
+        slot: HexStr,
+        # properly type hint once eth-typing brings in updated `BlockIdentifier`
+        block_number="latest",
+    ) -> int:
+        self.validator.validate_inbound_account(account)
+        self.validator.validate_inbound_storage_slot(slot)
+        self.validator.validate_inbound_block_number(block_number)
+        raw_account = self.normalizer.normalize_inbound_account(account)
+        raw_slot = self.normalizer.normalize_inbound_storage_slot(slot)
+        raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
+        raw_storage = self.backend.get_storage(raw_account, raw_slot, raw_block_number)
+        self.validator.validate_outbound_storage(raw_storage)
+        storage = self.normalizer.normalize_outbound_storage(raw_storage)
+        return storage
 
     def get_nonce(self, account, block_number="latest"):
         self.validator.validate_inbound_account(account)
