@@ -16,6 +16,7 @@ from eth.vm.forks import (
     ShanghaiVM,
 )
 from eth_tester.normalization.outbound import normalize_withdrawal
+from eth_typing import HexStr
 from eth_utils import encode_hex, is_hexstr, to_wei
 
 from eth_tester import EthereumTester, PyEVMBackend
@@ -364,3 +365,26 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         assert genesis_block.header.difficulty == POST_MERGE_DIFFICULTY
         assert genesis_block.header.nonce == POST_MERGE_NONCE
         assert genesis_block.header.mix_hash == POST_MERGE_MIX_HASH
+
+    def test_eth_get_storage_at(self):
+        # add storage to accounts in the genesis block
+        state_overrides = {
+            "storage": {
+                1: 1,
+                2: 2,
+            }
+        }
+
+        genesis_state = PyEVMBackend.generate_genesis_state(
+            overrides=state_overrides, num_accounts=3
+        )
+        pyevm_backend = PyEVMBackend(genesis_state=genesis_state)
+        tester = EthereumTester(backend=pyevm_backend)
+
+        accounts = tester.get_accounts()
+        assert len(accounts) == 3
+
+        for acct in accounts:
+            assert tester.get_storage_at(acct, HexStr("0x0")) == f"0x{'00'*32}"
+            assert tester.get_storage_at(acct, HexStr("0x1")) == f"0x{'00'*31}01"
+            assert tester.get_storage_at(acct, HexStr("0x2")) == f"0x{'00'*31}02"
