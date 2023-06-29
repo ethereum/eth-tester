@@ -3,6 +3,21 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
+eth-tester v0.9.0-beta.2 (2023-06-29)
+-------------------------------------
+
+Features
+~~~~~~~~
+
+- Add support for ``eth_getStorageAt`` for ``PyEVMBackend`` via ``get_storage_at()`` method. (#264 https://github.com/ethereum/eth-tester/issues/264)
+
+
+Bugfixes
+~~~~~~~~
+
+- Do not return a contract address if the contract deployment transaction has failed (receipt "status" is 0). (#261 https://github.com/ethereum/eth-tester/issues/261)
+
+
 eth-tester v0.9.0-beta.1 (2023-05-12)
 -------------------------------------
 
