@@ -1505,6 +1505,15 @@ class BaseTestBackendDirect:
                 ],
                 0,
             ],
+            [
+                [
+                    (
+                        b"\xf7\x0f\xe6\x89\xe2\x90\xd8\xce+*8\x8a\xc2\x8d\xb3o\xbb\x0e"
+                        b"\x16\xa6\xd8\x9ch\x04\xc4a\xf6Z\x1b@\xbb\x15"
+                    )
+                ],
+                0,
+            ],
         ),
         ids=[
             "filter None",
