@@ -48,7 +48,7 @@ from .common import (
 )
 
 
-def is_32byte_string(value):
+def is_32_bytes(value):
     return is_bytes(value) and len(value) == 32
 
 
@@ -57,7 +57,7 @@ def is_32byte_hex_string(value):
 
 
 def is_topic(value):
-    return value is None or is_32byte_hex_string(value) or is_32byte_string(value)
+    return value is None or is_32byte_hex_string(value) or is_32_bytes(value)
 
 
 def validate_32_byte_hex_value(value, name):

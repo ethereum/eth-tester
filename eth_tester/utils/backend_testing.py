@@ -55,6 +55,9 @@ from eth_tester.tools.gas_burner_contract import (
     _deploy_gas_burner,
     _make_call_gas_burner_transaction,
 )
+from eth_utils import (
+    encode_hex,
+)
 
 PK_A = "0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d"
 PK_A_ADDRESS = "0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd"
@@ -1562,15 +1565,17 @@ class BaseTestBackendDirect:
         assert len(specific_direct_logs_all) == expected
 
     @pytest.mark.parametrize(
-        "filter_topics,error_type",
+        "filter_topics",
         (
-            ["not a list", ValidationError],
-            [{}, ValidationError],
-            [1, ValidationError],
-            [[1], ValidationError],
-            [[1, 2], ValidationError],
-            [[1, None], ValidationError],
-            [[None, 1], ValidationError],
+            "not a list",
+            {},
+            1,
+            [1],
+            [1, 2],
+            [1, None],
+            [None, 1],
+            [encode_hex(b"\x00" * 30 + b"\x01")],
+            [encode_hex(b"\x00" * 32 + b"\x01")],
         ),
         ids=[
             "filter string",
@@ -1580,11 +1585,11 @@ class BaseTestBackendDirect:
             "filter multiple ints in list",
             "filter int and None in list",
             "filter None and int in list",
+            "filter bytes with less than 32 bytes",
+            "filter bytes with more than 32 bytes",
         ],
     )
-    def test_log_filter_invalid_topics_throws_error(
-        self, eth_tester, filter_topics, error_type
-    ):
+    def test_log_filter_invalid_topics_throws_error(self, eth_tester, filter_topics):
         self.skip_if_no_evm_execution()
 
         emitter_address = _deploy_emitter(eth_tester)
@@ -1595,7 +1600,7 @@ class BaseTestBackendDirect:
             [EMITTER_ENUM["LogSingleWithIndex"], 1],
         )
 
-        with pytest.raises(error_type):
+        with pytest.raises(ValidationError):
             eth_tester.create_log_filter(from_block=0, topics=filter_topics)
 
     def test_log_filter_includes_old_logs(self, eth_tester):
