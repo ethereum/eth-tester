@@ -1512,7 +1512,7 @@ class BaseTestBackendDirect:
                         b"\x16\xa6\xd8\x9ch\x04\xc4a\xf6Z\x1b@\xbb\x15"
                     )
                 ],
-                0,
+                1,
             ],
         ),
         ids=[
@@ -1522,6 +1522,7 @@ class BaseTestBackendDirect:
             "filter Event and None",
             "filter Event and argument",
             "filter Event and wrong argument",
+            "filter Event only bytes",
         ],
     )
     def test_log_filter_picks_up_new_logs(self, eth_tester, filter_topics, expected):
@@ -1559,6 +1560,43 @@ class BaseTestBackendDirect:
         assert len(specific_logs_changes) == expected
         assert len(specific_logs_all) == expected
         assert len(specific_direct_logs_all) == expected
+
+    @pytest.mark.parametrize(
+        "filter_topics,error_type",
+        (
+            ["not a list", ValidationError],
+            [{}, ValidationError],
+            [1, ValidationError],
+            [[1], ValidationError],
+            [[1, 2], ValidationError],
+            [[1, None], ValidationError],
+            [[None, 1], ValidationError],
+        ),
+        ids=[
+            "filter string",
+            "filter dict",
+            "filter int",
+            "filter int in list",
+            "filter multiple ints in list",
+            "filter int and None in list",
+            "filter None and int in list",
+        ],
+    )
+    def test_log_filter_invalid_topics_throws_error(
+        self, eth_tester, filter_topics, error_type
+    ):
+        self.skip_if_no_evm_execution()
+
+        emitter_address = _deploy_emitter(eth_tester)
+        _call_emitter(
+            eth_tester,
+            emitter_address,
+            "logSingle",
+            [EMITTER_ENUM["LogSingleWithIndex"], 1],
+        )
+
+        with pytest.raises(error_type):
+            eth_tester.create_log_filter(from_block=0, topics=filter_topics)
 
     def test_log_filter_includes_old_logs(self, eth_tester):
         """

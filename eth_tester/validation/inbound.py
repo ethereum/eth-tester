@@ -10,6 +10,7 @@ from typing import (
 from eth_typing import HexStr
 from eth_utils import (
     is_boolean,
+    is_bytes,
     is_checksum_address,
     is_checksum_formatted_address,
     is_dict,
@@ -47,12 +48,16 @@ from .common import (
 )
 
 
+def is_32byte_string(value):
+    return is_bytes(value) and len(value) == 32
+
+
 def is_32byte_hex_string(value):
     return is_text(value) and is_hex(value) and len(remove_0x_prefix(value)) == 64
 
 
 def is_topic(value):
-    return value is None or is_32byte_hex_string(value)
+    return value is None or is_32byte_hex_string(value) or is_32byte_string(value)
 
 
 def validate_32_byte_hex_value(value, name):
@@ -156,7 +161,8 @@ def validate_filter_params(from_block, to_block, address, topics):
 
     invalid_topics_message = (
         "Topics must be one of `None`, an array of 32 byte hexadecimal encoded "
-        "strings, or an array of arrays of 32 byte hexadecimal strings"
+        "strings, an array of arrays of 32 byte hexadecimal strings, or an array of 32 "
+        "byte strings"
     )
     # topics
     if topics is None:
