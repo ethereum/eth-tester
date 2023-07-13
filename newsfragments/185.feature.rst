@@ -1,0 +1,1 @@
+Allow filter topics to be passed as `bytes` in addition to `hex` values.
