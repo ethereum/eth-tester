@@ -261,6 +261,37 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
             assert actual.lower() == expected.lower()
             assert tester.get_balance(account=actual) == balance
 
+    def test_from_mnemonic_override_hd_path(self):
+        # Initialize PyEVM backend using MNEMONIC, num_accounts,
+        # and state overrides (balance)
+        num_accounts = 3
+        balance = to_wei(15, "ether")  # Give each account 15 Eth
+        pyevm_backend = PyEVMBackend.from_mnemonic(
+            MNEMONIC,
+            num_accounts=num_accounts,
+            genesis_state_overrides={"balance": balance},
+            hd_path="m/44'/60'/0'/7",
+        )
+
+        # Each of these accounts stems from the MNEMONIC
+        expected_accounts = [
+            "0x486b29e746bDaf58D9518faB773f63FDA1550569",
+            "0x98Bc1d210E617649D56467d6Fe703bB5e9Fe40d3",
+            "0xDcf37B7DB0eCb8464f5a3f6a74048077bCEBd4fe",
+        ]
+
+        # Test integration with EthereumTester
+        tester = EthereumTester(backend=pyevm_backend)
+
+        actual_accounts = tester.get_accounts()
+        assert len(actual_accounts) == num_accounts
+
+        for i in range(0, num_accounts):
+            actual = actual_accounts[i]
+            expected = expected_accounts[i]
+            assert actual.lower() == expected.lower()
+            assert tester.get_balance(account=actual) == balance
+
     def test_generate_custom_genesis_parameters(self):
 
         # Establish parameter overrides, for example a custom genesis gas limit

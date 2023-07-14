@@ -131,12 +131,12 @@ def get_default_account_keys(quantity=None):
 
 
 @to_tuple
-def get_account_keys_from_mnemonic(mnemonic, quantity=None):
+def get_account_keys_from_mnemonic(mnemonic, quantity=None, hd_path_override=None):
     keys = KeyAPI()
     seed = seed_from_mnemonic(mnemonic, "")
     quantity = quantity or 10
     for i in range(0, quantity):
-        hd_path = HDPath(f"m/44'/60'/0'/{i}")
+        hd_path = HDPath(f"{hd_path_override}'/{i}") or HDPath(f"m/44'/60'/0'/{i}")
         private_key = keys.PrivateKey(hd_path.derive(seed))
         yield private_key
 
@@ -183,6 +183,7 @@ def setup_tester_chain(
     num_accounts=None,
     vm_configuration=None,
     mnemonic=None,
+    hd_path=None,
     genesis_is_post_merge=True,
 ):
     from eth.chains.base import MiningChain
@@ -231,7 +232,9 @@ def setup_tester_chain(
         num_accounts = len(genesis_state)
 
     if mnemonic:
-        account_keys = get_account_keys_from_mnemonic(mnemonic, quantity=num_accounts)
+        account_keys = get_account_keys_from_mnemonic(
+            mnemonic, quantity=num_accounts, hd_path_override=hd_path
+        )
     else:
         account_keys = get_default_account_keys(quantity=num_accounts)
 
@@ -321,6 +324,7 @@ class PyEVMBackend(BaseChainBackend):
         genesis_state=None,
         vm_configuration=None,
         mnemonic=None,
+        hd_path=None,
     ):
         """
         :param genesis_parameters: A dict of chain parameters for overriding default
@@ -342,7 +346,12 @@ class PyEVMBackend(BaseChainBackend):
         self.account_keys = None  # set below
         accounts = len(genesis_state) if genesis_state else None
         self.reset_to_genesis(
-            genesis_parameters, genesis_state, accounts, vm_configuration, mnemonic
+            genesis_parameters,
+            genesis_state,
+            accounts,
+            vm_configuration,
+            mnemonic,
+            hd_path,
         )
 
     @classmethod
@@ -353,11 +362,13 @@ class PyEVMBackend(BaseChainBackend):
         num_accounts=None,
         genesis_parameters=None,
         vm_configuration=None,
+        hd_path=None,
     ):
         genesis_state = PyEVMBackend.generate_genesis_state(
             mnemonic=mnemonic,
             overrides=genesis_state_overrides or {},
             num_accounts=num_accounts,
+            hd_path=hd_path,
         )
 
         return cls(
@@ -365,6 +376,7 @@ class PyEVMBackend(BaseChainBackend):
             genesis_state=genesis_state,
             vm_configuration=vm_configuration,
             mnemonic=mnemonic,
+            hd_path=hd_path,
         )
 
     #
@@ -380,16 +392,23 @@ class PyEVMBackend(BaseChainBackend):
         return get_default_genesis_params(overrides=overrides)
 
     @classmethod
-    def generate_genesis_state(cls, overrides=None, num_accounts=None, mnemonic=None):
+    def generate_genesis_state(
+        cls, overrides=None, num_accounts=None, mnemonic=None, hd_path=None
+    ):
         return cls._generate_genesis_state(
-            overrides=overrides, num_accounts=num_accounts, mnemonic=mnemonic
+            overrides=overrides,
+            num_accounts=num_accounts,
+            mnemonic=mnemonic,
+            hd_path=hd_path,
         )
 
     @staticmethod
-    def _generate_genesis_state(overrides=None, num_accounts=None, mnemonic=None):
+    def _generate_genesis_state(
+        overrides=None, num_accounts=None, mnemonic=None, hd_path=None
+    ):
         if mnemonic:
             account_keys = get_account_keys_from_mnemonic(
-                mnemonic, quantity=num_accounts
+                mnemonic, quantity=num_accounts, hd_path_override=hd_path
             )
         else:
             account_keys = get_default_account_keys(quantity=num_accounts)
@@ -405,6 +424,7 @@ class PyEVMBackend(BaseChainBackend):
         num_accounts=None,
         vm_configuration=None,
         mnemonic=None,
+        hd_path=None,
     ):
         self.account_keys, self.chain = setup_tester_chain(
             genesis_params,
@@ -412,6 +432,7 @@ class PyEVMBackend(BaseChainBackend):
             num_accounts,
             vm_configuration,
             mnemonic,
+            hd_path,
         )
 
     #
