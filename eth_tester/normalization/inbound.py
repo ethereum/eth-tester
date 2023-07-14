@@ -27,6 +27,8 @@ from .common import (
 )
 
 from eth_tester.validation.inbound import (
+    is_32byte_hex_string,
+    is_32_bytes,
     is_valid_topic_array,
 )
 
@@ -34,8 +36,12 @@ from eth_tester.validation.inbound import (
 def normalize_topic(topic):
     if topic is None:
         return None
-    else:
+    if is_32byte_hex_string(topic):
         return decode_hex(topic)
+    if is_32_bytes(topic):
+        return topic
+
+    raise TypeError(f"Topic is not in a recognized format: {topic}")
 
 
 @to_tuple

@@ -55,6 +55,9 @@ from eth_tester.tools.gas_burner_contract import (
     _deploy_gas_burner,
     _make_call_gas_burner_transaction,
 )
+from eth_utils import (
+    encode_hex,
+)
 
 PK_A = "0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d"
 PK_A_ADDRESS = "0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd"
@@ -1505,6 +1508,15 @@ class BaseTestBackendDirect:
                 ],
                 0,
             ],
+            [
+                [
+                    (
+                        b"\xf7\x0f\xe6\x89\xe2\x90\xd8\xce+*8\x8a\xc2\x8d\xb3o\xbb\x0e"
+                        b"\x16\xa6\xd8\x9ch\x04\xc4a\xf6Z\x1b@\xbb\x15"
+                    )
+                ],
+                1,
+            ],
         ),
         ids=[
             "filter None",
@@ -1513,6 +1525,7 @@ class BaseTestBackendDirect:
             "filter Event and None",
             "filter Event and argument",
             "filter Event and wrong argument",
+            "filter Event only bytes",
         ],
     )
     def test_log_filter_picks_up_new_logs(self, eth_tester, filter_topics, expected):
@@ -1550,6 +1563,45 @@ class BaseTestBackendDirect:
         assert len(specific_logs_changes) == expected
         assert len(specific_logs_all) == expected
         assert len(specific_direct_logs_all) == expected
+
+    @pytest.mark.parametrize(
+        "filter_topics",
+        (
+            "not a list",
+            {},
+            1,
+            [1],
+            [1, 2],
+            [1, None],
+            [None, 1],
+            [encode_hex(b"\x00" * 30 + b"\x01")],
+            [encode_hex(b"\x00" * 32 + b"\x01")],
+        ),
+        ids=[
+            "filter string",
+            "filter dict",
+            "filter int",
+            "filter int in list",
+            "filter multiple ints in list",
+            "filter int and None in list",
+            "filter None and int in list",
+            "filter bytes with less than 32 bytes",
+            "filter bytes with more than 32 bytes",
+        ],
+    )
+    def test_log_filter_invalid_topics_throws_error(self, eth_tester, filter_topics):
+        self.skip_if_no_evm_execution()
+
+        emitter_address = _deploy_emitter(eth_tester)
+        _call_emitter(
+            eth_tester,
+            emitter_address,
+            "logSingle",
+            [EMITTER_ENUM["LogSingleWithIndex"], 1],
+        )
+
+        with pytest.raises(ValidationError):
+            eth_tester.create_log_filter(from_block=0, topics=filter_topics)
 
     def test_log_filter_includes_old_logs(self, eth_tester):
         """
