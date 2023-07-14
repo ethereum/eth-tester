@@ -160,9 +160,10 @@ def validate_filter_params(from_block, to_block, address, topics):
         validate_account(address)
 
     invalid_topics_message = (
-        "Topics must be one of `None`, an array of 32 byte hexadecimal encoded "
-        "strings, an array of arrays of 32 byte hexadecimal strings, or an array of 32 "
-        "byte strings"
+        "Topics must be one of `None` or an array of topics. Each topic must be 32 "
+        "bytes, represented as a bytestring or it's hex string equivalent. A"
+        'filter query of topics using "OR" can be achieved using a sub-array of '
+        "topics. See https://eth.wiki/json-rpc/API#eth_newfilter for more details."
     )
     # topics
     if topics is None:
