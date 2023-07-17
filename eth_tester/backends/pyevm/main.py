@@ -136,7 +136,10 @@ def get_account_keys_from_mnemonic(mnemonic, quantity=None, hd_path_override=Non
     seed = seed_from_mnemonic(mnemonic, "")
     quantity = quantity or 10
     for i in range(0, quantity):
-        hd_path = HDPath(f"{hd_path_override}'/{i}") or HDPath(f"m/44'/60'/0'/{i}")
+        hd_path = HDPath(f"m/44'/60'/0'/{i}")
+        if hd_path_override is not None:
+            hd_path = HDPath(f"{hd_path_override}'/{i}")
+
         private_key = keys.PrivateKey(hd_path.derive(seed))
         yield private_key
 
