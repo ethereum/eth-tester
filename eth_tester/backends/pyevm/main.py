@@ -367,6 +367,11 @@ class PyEVMBackend(BaseChainBackend):
         vm_configuration=None,
         hd_path=None,
     ):
+        """
+        Create a genesis state pre-populated with accounts. A number of accounts can be
+        initialized with a mnemonic phrase and heirarchical deterministic path. If no
+        overrides are provided, a default set of accounts will be used.
+        """
         genesis_state = PyEVMBackend.generate_genesis_state(
             mnemonic=mnemonic,
             overrides=genesis_state_overrides or {},
