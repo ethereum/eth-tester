@@ -5,6 +5,7 @@ import itertools
 import operator
 import time
 import functools
+from typing import List
 
 from eth_typing import (
     HexAddress,
@@ -362,6 +363,14 @@ class EthereumTester:
         self.validator.validate_outbound_receipt(raw_receipt)
         receipt = self.normalizer.normalize_outbound_receipt(raw_receipt)
         return receipt
+
+    def get_fee_history(
+        self, block_count=1, newest_block="latest", reward_percentiles: List[int] = []
+    ):
+        fee_history = self.backend.get_fee_history(
+            block_count, newest_block, reward_percentiles
+        )
+        return fee_history
 
     #
     # Mining
