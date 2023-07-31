@@ -1,0 +1,1 @@
+Add support for ``eth_getFeeHistory`` for ``PyEVMBackend`` via ``get_fee_history()`` method.
