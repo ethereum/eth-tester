@@ -531,9 +531,7 @@ class PyEVMBackend(BaseChainBackend):
             raise ValidationError("block_count must be between 1 and 1024")
 
         if newest_block == "pending":
-            raise NotImplementedError(
-                '"pending" block identifier is unsupported in eth-tester'
-            )
+            newest_block = "latest"
 
         block = self.get_block_by_number(newest_block)
         block_header = self.chain.get_canonical_block_header_by_number(block["number"])

@@ -284,6 +284,16 @@ class BaseTestBackendDirect:
                     "reward": [],
                 },
             ],
+            [
+                1,
+                "pending",
+                [],
+                {
+                    "base_fee_per_gas": [300657803],
+                    "gas_used_ratio": [0.0],
+                    "reward": [],
+                },
+            ],
         ],
     )
     def test_get_fee_history(
