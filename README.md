@@ -594,6 +594,14 @@ value from the evm.
 Executes the provided `transaction` object, measuring and returning the gas
 consumption.
 
+<a id="api-fee_history"></a>
+
+#### `EthereumTester.get_fee_history(block_count=1, newest_block='latest', reward_percentiles=[])`
+
+Return the historical gas information for the number of blocks specified as the `block_count` starting from `newest_block`.
+Note that specifying `reward_percentiles` has no effect on the response and so `reward` will always return an  empty list.
+
+
 
 ### Logs and Filters
 
