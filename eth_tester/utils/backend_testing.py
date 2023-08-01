@@ -242,6 +242,108 @@ class BaseTestBackendDirect:
         assert nonce <= UINT256_MAX
 
     #
+    # Fee History
+    #
+    @pytest.mark.parametrize(
+        "block_count,newest_block,reward_percentiles,expected",
+        [
+            [
+                3,
+                "latest",
+                [],
+                {
+                    "base_fee_per_gas": [300657803, 343608917, 392695905],
+                    "gas_used_ratio": [0.0, 0.0, 0.0],
+                    "reward": [],
+                },
+            ],
+            [
+                1,
+                "safe",
+                [],
+                {
+                    "base_fee_per_gas": [300657803],
+                    "gas_used_ratio": [0.0],
+                    "reward": [],
+                },
+            ],
+            [
+                1,
+                "finalized",
+                [],
+                {
+                    "base_fee_per_gas": [300657803],
+                    "gas_used_ratio": [0.0],
+                    "reward": [],
+                },
+            ],
+            [
+                1,
+                "earliest",
+                [],
+                {
+                    "base_fee_per_gas": [],
+                    "gas_used_ratio": [],
+                    "reward": [],
+                },
+            ],
+            [
+                1,
+                "pending",
+                [],
+                {
+                    "base_fee_per_gas": [300657803],
+                    "gas_used_ratio": [0.0],
+                    "reward": [],
+                },
+            ],
+        ],
+    )
+    def test_get_fee_history(
+        self, eth_tester, block_count, newest_block, reward_percentiles, expected
+    ):
+        self.skip_if_no_evm_execution()
+
+        eth_tester.mine_blocks(10)
+        fee_history = eth_tester.get_fee_history(
+            block_count, newest_block, reward_percentiles
+        )
+
+        assert fee_history["oldest_block"] == 1
+        assert fee_history["base_fee_per_gas"] == expected["base_fee_per_gas"]
+        assert fee_history["gas_used_ratio"] == expected["gas_used_ratio"]
+        assert fee_history["reward"] == expected["reward"]
+
+    @pytest.mark.parametrize(
+        "block_count,newest_block,reward_percentiles,error,message",
+        [
+            [
+                1,
+                None,
+                None,
+                BlockNotFound,
+                "No block found for block number: None",
+            ],
+            [
+                0,
+                None,
+                None,
+                ValidationError,
+                "block_count must be between 1 and 1024",
+            ],
+        ],
+    )
+    def test_get_fee_history_fails(
+        self, eth_tester, block_count, newest_block, reward_percentiles, error, message
+    ):
+        self.skip_if_no_evm_execution()
+
+        eth_tester.mine_blocks(10)
+
+        with pytest.raises(error, match=message):
+            eth_tester.get_fee_history(block_count, newest_block, reward_percentiles)
+
+    #
     # Mining
     #
     def test_mine_block_single(self, eth_tester):

@@ -556,6 +556,35 @@ class PyEVMBackend(BaseChainBackend):
             is_pending,
         )
 
+    def get_fee_history(
+        self, block_count=1, newest_block="latest", reward_percentiles: List[int] = []
+    ):
+        if isinstance(block_count, int) and not 1 <= block_count <= 1024:
+            raise ValidationError("block_count must be between 1 and 1024")
+
+        if newest_block == "pending":
+            newest_block = "latest"
+
+        block = self.get_block_by_number(newest_block)
+        block_header = self.chain.get_canonical_block_header_by_number(block["number"])
+
+        ancestors = self.chain.get_ancestors(block_count, header=block_header)
+
+        base_fee_per_gas = []
+        gas_used_ratio = []
+        reward = []  # always return empty reward array for now
+
+        for ancestor in ancestors:
+            base_fee_per_gas.append(ancestor.header.base_fee_per_gas)
+            gas_used_ratio.append(ancestor.header.gas_used / ancestor.header.gas_limit)
+
+        return {
+            "oldest_block": 1,
+            "base_fee_per_gas": base_fee_per_gas,
+            "gas_used_ratio": gas_used_ratio,
+            "reward": reward,
+        }
+
     #
     # Account state
     #

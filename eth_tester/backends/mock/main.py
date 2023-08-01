@@ -322,3 +322,13 @@ class MockBackend(BaseChainBackend):
 
     def call(self, transaction, block_number="latest"):
         raise NotImplementedError("Must be implemented by subclasses")
+
+    def get_fee_history(
+        self, block_count=1, newest_block="latest", reward_percentiles=[]
+    ):
+        return {
+            "oldest_block": 1,
+            "base_fee_per_gas": [],
+            "gas_used_ratio": [],
+            "reward": [],
+        }
