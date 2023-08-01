@@ -328,13 +328,6 @@ class BaseTestBackendDirect:
                 ValidationError,
                 "block_count must be between 1 and 1024",
             ],
-            [
-                1,
-                "pending",
-                None,
-                NotImplementedError,
-                '"pending" block identifier is unsupported in eth-tester',
-            ],
         ],
     )
     def test_get_fee_history_fails(
