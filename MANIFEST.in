@@ -1,6 +1,11 @@
 include LICENSE
 include README.md
-include requirements.txt
+
+recursive-include tests *
+
+global-include *.pyi
 
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
+prune .tox
+prune venv*

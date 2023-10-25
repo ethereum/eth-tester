@@ -1,18 +1,22 @@
 # Ethereum Tester
 
-[![Join the chat at https://gitter.im/ethereum/eth-tester](https://badges.gitter.im/ethereum/eth-tester.svg)](https://gitter.im/ethereum/eth-tester)
-[![Build Status](https://circleci.com/gh/ethereum/eth-tester.svg?style=shield)](https://app.circleci.com/pipelines/github/ethereum/eth-tester)
+# <PROJECT_NAME>
 
+[![Join the conversation on Discord](https://img.shields.io/discord/809793915578089484?color=blue&label=chat&logo=discord&logoColor=white)](https://discord.gg/GHryRvPB84)
+[![Build Status](https://circleci.com/gh/ethereum/<REPO_NAME>.svg?style=shield)](https://circleci.com/gh/ethereum/<REPO_NAME>)
+[![PyPI version](https://badge.fury.io/py/<PYPI_NAME>.svg)](https://badge.fury.io/py/<PYPI_NAME>)
+[![Python versions](https://img.shields.io/pypi/pyversions/<PYPI_NAME>.svg)](https://pypi.python.org/pypi/<PYPI_NAME>)
+[![Docs build](https://readthedocs.org/projects/<RTD_NAME>/badge/?version=latest)](https://<RTD_NAME>.readthedocs.io/en/latest/?badge=latest)
 
 Tools for testing ethereum based applications.
 
+Read more in the [documentation on ReadTheDocs](https://<RTD_NAME>.readthedocs.io/). [View the change log](https://<RTD_NAME>.readthedocs.io/en/latest/release_notes.html).
 
 ## Installation
 
 ```sh
 pip install eth-tester
 ```
-
 
 ## Quick Start
 
@@ -98,68 +102,21 @@ pip install eth-tester
  'status': 1}
 ```
 
-
 ## Development
 
 ```sh
 pip install -e ".[dev]"
 ```
 
-
 ### Running the tests
 
 You can run the tests with:
 
 ```sh
-py.test tests
+pytest tests
 ```
 
 Or you can install `tox` to run the full test suite.
-
-
-### Releasing
-
-Pandoc is required for transforming the markdown README to the proper format to
-render correctly on pypi.
-
-For Debian-like systems:
-
-```
-apt install pandoc
-```
-
-Or on OSX:
-
-```sh
-brew install pandoc
-```
-
-To release a new version:
-
-First, compile and commit the release notes:
-```sh
-make notes bump={one of: major, minor, patch, devnum}
-```
-
-Then, do the actual release:
-
-```sh
-make release bump={one of: major, minor, patch, devnum}
-```
-
-#### How to bumpversion
-
-The version format for this repo is `{major}.{minor}.{patch}` for stable, and
-`{major}.{minor}.{patch}-{stage}.{devnum}` for unstable (`stage` can be alpha or beta).
-
-To issue the next version in line, use bumpversion and specify which part to bump,
-like `bumpversion minor` or `bumpversion devnum`.
-
-If you are in a beta version, `bumpversion stage` will switch to a stable.
-
-To issue an unstable version when the current version is stable, specify the
-new version explicitly, like `bumpversion --new-version 4.0.0-alpha.1 devnum`
-
 
 # Documentation
 
