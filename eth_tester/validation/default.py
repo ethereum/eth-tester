@@ -1,4 +1,6 @@
-from __future__ import absolute_import
+from __future__ import (
+    absolute_import,
+)
 
 from .base import (
     BaseValidator,
@@ -12,9 +14,9 @@ from .inbound import (
     validate_block_number as validate_inbound_block_number,
     validate_filter_id as validate_inbound_filter_id,
     validate_filter_params as validate_inbound_filter_params,
+    validate_inbound_storage_slot as validate_inbound_storage_slot,
     validate_private_key as validate_inbound_private_key,
     validate_raw_transaction as validate_inbound_raw_transaction,
-    validate_inbound_storage_slot as validate_inbound_storage_slot,
     validate_timestamp as validate_inbound_timestamp,
     validate_transaction as validate_inbound_transaction,
     validate_transaction_hash as validate_inbound_transaction_hash,

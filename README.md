@@ -1,16 +1,14 @@
-# Ethereum Tester
-
-# <PROJECT_NAME>
+# eth-tester
 
 [![Join the conversation on Discord](https://img.shields.io/discord/809793915578089484?color=blue&label=chat&logo=discord&logoColor=white)](https://discord.gg/GHryRvPB84)
-[![Build Status](https://circleci.com/gh/ethereum/<REPO_NAME>.svg?style=shield)](https://circleci.com/gh/ethereum/<REPO_NAME>)
-[![PyPI version](https://badge.fury.io/py/<PYPI_NAME>.svg)](https://badge.fury.io/py/<PYPI_NAME>)
-[![Python versions](https://img.shields.io/pypi/pyversions/<PYPI_NAME>.svg)](https://pypi.python.org/pypi/<PYPI_NAME>)
-[![Docs build](https://readthedocs.org/projects/<RTD_NAME>/badge/?version=latest)](https://<RTD_NAME>.readthedocs.io/en/latest/?badge=latest)
+[![Build Status](https://circleci.com/gh/ethereum/eth-tester.svg?style=shield)](https://circleci.com/gh/ethereum/eth-tester)
+[![PyPI version](https://badge.fury.io/py/eth-tester.svg)](https://badge.fury.io/py/eth-tester)
+[![Python versions](https://img.shields.io/pypi/pyversions/eth-tester.svg)](https://pypi.python.org/pypi/eth-tester)
+[![Docs build](https://readthedocs.org/projects/eth-tester/badge/?version=latest)](https://eth-tester.readthedocs.io/en/latest/?badge=latest)
 
 Tools for testing ethereum based applications.
 
-Read more in the [documentation on ReadTheDocs](https://<RTD_NAME>.readthedocs.io/). [View the change log](https://<RTD_NAME>.readthedocs.io/en/latest/release_notes.html).
+Read more in the [documentation on ReadTheDocs](https://eth-tester.readthedocs.io/). [View the change log](https://eth-tester.readthedocs.io/en/latest/release_notes.html).
 
 ## Installation
 
@@ -125,31 +123,30 @@ Or you can install `tox` to run the full test suite.
 The ethereum tester library strictly enforces the following input formats and
 types.
 
-* Hexadecimal values **must** be text (not byte) strings.  The `0x` prefix is optional.
-* Any address which contains mixed-case alpha characters will be validated as a checksummed address as specified by [EIP-55](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-55.md)
-* 32-byte hashes **must** be hexadecimal encoded.
-* Numeric values **must** be in their integer representation.
+- Hexadecimal values **must** be text (not byte) strings.  The `0x` prefix is optional.
+- Any address which contains mixed-case alpha characters will be validated as a checksummed address as specified by [EIP-55](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-55.md)
+- 32-byte hashes **must** be hexadecimal encoded.
+- Numeric values **must** be in their integer representation.
 
 Similarly, ethereum tester ensures that return values conform to similar rules.
 
-* 32-byte hashes will be returned in their hexadecimal encoded representation.
-* Addresses will be returned in their hexadecimal representation and EIP55 checksummed.
-* Numeric values will be returned as integers.
-
+- 32-byte hashes will be returned in their hexadecimal encoded representation.
+- Addresses will be returned in their hexadecimal representation and EIP55 checksummed.
+- Numeric values will be returned as integers.
 
 ## Block Numbers
+
 <a id="block-numbers"></a>
 
 Any `block_number` parameter will accept the following string values.
 
-* `'latest'`: for the latest mined block.
-* `'pending'`: for the current un-mined block.
-* `'earliest'`: for the genesis block.
-* `'safe'`: for the last block that has passed 2/3 of attestations post-merge.
-* `'finalized'`: for the last finalized block post-merge.
+- `'latest'`: for the latest mined block.
+- `'pending'`: for the current un-mined block.
+- `'earliest'`: for the genesis block.
+- `'safe'`: for the last block that has passed 2/3 of attestations post-merge.
+- `'finalized'`: for the last finalized block post-merge.
 
 > Note: These **must** be text strings (not byte stringS)
-
 
 ## `eth_tester.EthereumTester`
 
@@ -157,7 +154,7 @@ Any `block_number` parameter will accept the following string values.
 
 ### Instantiation
 
-* `eth_tester.EthereumTester(backend=None, validator=None, normalizer=None, auto_mine_transactions=True, fork_blocks=None)`
+- `eth_tester.EthereumTester(backend=None, validator=None, normalizer=None, auto_mine_transactions=True, fork_blocks=None)`
 
 The `EthereumTester` object is the sole API entrypoint.  Instantiation of this
 object accepts the following parameters.
@@ -168,7 +165,6 @@ object accepts the following parameters.
 - `auto_mine_transactions`: If *truthy* transactions will be automatically mined at the time they are submitted.  See [`enable_auto_mine_transactions`](#api-enable_auto_mine_transactions) and [`disable_auto_mine_transactions`](#api-disable_auto_mine_transactions).
 - `fork_blocks`: configures which block numbers the various network hard fork rules will be activated.  See [fork-rules](#fork-rules)
 
-
 ```python
 >>> from eth_tester import EthereumTester
 >>> t = EthereumTester()
@@ -176,13 +172,14 @@ object accepts the following parameters.
 <eth_tester.main.EthereumTester at 0x102255710>
 ```
 
-
 ### Fork Rules
+
 <a id="fork-rules"></a>
 
 Ethereum tester uses the Paris (PoS) fork rules, starting at block 0.
 
 ### Time Travel
+
 <a id="time-travel"></a>
 
 The chain can only time travel forward in time.
@@ -196,7 +193,6 @@ of the latest block.
 
 > Note: Time traveling will result in a new block being mined.
 
-
 ### Mining
 
 Manually mining blocks can be done with the following API.  The `coinbase`
@@ -208,13 +204,11 @@ parameter of these methods **must** be a hexadecimal encoded address.
 
 Mines `num_blocks` new blocks, returning an iterable of the newly mined block hashes.
 
-
 <a id="api-mine_block"></a>
 
 #### `EthereumTester.mine_block(coinbase=ZERO_ADDRESS)`
 
 Mines a single new block, returning the mined block's hash.
-
 
 <a id="api-auto_mine_transactions"></a>
 
@@ -234,14 +228,13 @@ Turns on auto-mining of transactions.
 
 Turns **off** auto-mining of transactions.
 
-
 ### Accounts
 
 The following API can be used to interact with account data.  The `account`
 parameter in these methods **must** be a hexadecimal encode address.
 
 <a id="api-get_accounts"></a>
- `EthereumTester.get_accounts()`
+`EthereumTester.get_accounts()`
 
 Returns an iterable of the accounts that the tester knows about.  All accounts
 in this list will be EIP55 checksummed.
@@ -253,7 +246,6 @@ in this list will be EIP55 checksummed.
  ...
  '0x90F0B1EBbbA1C1936aFF7AAf20a7878FF9e04B6c')
 ```
-
 
 <a id="api-add_account"></a>
 
@@ -276,7 +268,6 @@ as the second parameter.
 '0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd'
 ```
 
-
 <a id="api-unlock_account"></a>
 
 #### `EthereumTester.unlock_account(account, password, unlock_seconds=None)`
@@ -285,9 +276,9 @@ Unlocks the given account if the provided password matches.
 
 Raises a `ValidationError` if:
 
-* The account is not known.
-* The password does not match.
-* The account was created without a password.
+- The account is not known.
+- The password does not match.
+- The account was created without a password.
 
 ```python
 >>> t.unlock_account('0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd', 'my-secret')
@@ -302,7 +293,6 @@ seconds.
 >>> t.unlock_account('0xdc544d1aa88ff8bbd2f2aec754b1f1e99e1812fd', 'my-secret', 60 * 60)
 ```
 
-
 <a id="api-lock_account"></a>
 
 #### `EthereumTester.lock_account(account)`
@@ -311,9 +301,8 @@ Locks the provided account.
 
 Raises a `ValidationError` if:
 
-* The account is not known
-* The account does not have a password.
-
+- The account is not known
+- The account does not have a password.
 
 <a id="api-get_balance"></a>
 
@@ -325,7 +314,6 @@ Returns the balance, in wei, for the provided account.
 >>> t.get_balance('0x82A978B3f5962A5b0957d9ee9eEf472EE55B42F1')
 1000004999999999999999999
 ```
-
 
 <a id="api-get_nonce"></a>
 
@@ -348,7 +336,6 @@ Returns the code for the given account.
 >>> t.get_code('0x82A978B3f5962A5b0957d9ee9eEf472EE55B42F1')
 "0x"
 ```
-
 
 ### Blocks, Transactions, and Receipts
 
@@ -384,7 +371,6 @@ transaction cannot be found.
 ```
 
 > Note: For unmined transaction, `transaction_index`, `block_number` and `block_hash` will all be `None`.
-
 
 <a id="api-get_block_by_number"></a>
 
@@ -422,7 +408,6 @@ cannot be found.
  'uncles': (),
  'base_fee_per_gas': 875000000}
 ```
-
 
 <a id="api-get_block_by_hash"></a>
 
@@ -468,7 +453,6 @@ Returns the receipt for the given `transaction_hash`, raising
 [`TransactionNotFound`](#errors-TransactionNotFound) if no transaction can be
 found for the given hash.
 
-
 ```python
 >>> t.get_transaction_receipt('0x9a7cc8b7accf54ecb1901bf4d0178f28ca457bb9f9c245692c0ca8fabef08d3b')
  {'block_hash': '0x878f779d8bb25b25fb78fc16b8d64d70a5961310ef1689571aec632e9424290c',
@@ -494,37 +478,36 @@ found for the given hash.
 - Receipts for unmined transactions will have all of `block_hash`, `block_number` and `transaction_index` set to `None`.
 - Receipts for transactions which create a contract will have the created contract address in the `contract_address` field.
 
-
 ### Transaction Sending
 
 A transaction is a formatted as a dictionary with the following keys and
 values.
 
-* `from`: The address of the account sending the transaction (hexadecimal string).
-* `to`: The address of the account the transaction is being sent to.  Empty string should be used to trigger contract creation (hexadecimal string).
-* `gas`: Sets the gas limit for transaction execution (integer).
-* `value`: The amount of ether in wei that should be sent with the transaction (integer).
-* `data`: The data for the transaction (hexadecimal string).
-* `chain_id`: The integer id for the chain the transaction is meant to interact with.
-
+- `from`: The address of the account sending the transaction (hexadecimal string).
+- `to`: The address of the account the transaction is being sent to.  Empty string should be used to trigger contract creation (hexadecimal string).
+- `gas`: Sets the gas limit for transaction execution (integer).
+- `value`: The amount of ether in wei that should be sent with the transaction (integer).
+- `data`: The data for the transaction (hexadecimal string).
+- `chain_id`: The integer id for the chain the transaction is meant to interact with.
 
 In addition to the above, the following parameters are added based on the type of transaction being sent:
 
 #### Legacy transactions
-* `gas_price`: Sets the price per unit of gas in wei that will be paid for transaction execution (integer).
+
+- `gas_price`: Sets the price per unit of gas in wei that will be paid for transaction execution (integer).
 
 #### Access list transactions (EIP-2930)
-* `gas_price`: Sets the price per unit of gas in wei that will be paid for transaction execution (integer).
-* `access_list` (optional): Specifies accounts and storage slots expected to be accessed, based on the transaction, in order to
-gain a discount on the gas for those executions (see quickstart example for usage).
+
+- `gas_price`: Sets the price per unit of gas in wei that will be paid for transaction execution (integer).
+- `access_list` (optional): Specifies accounts and storage slots expected to be accessed, based on the transaction, in order to
+  gain a discount on the gas for those executions (see quickstart example for usage).
 
 #### Dynamic fee transactions (EIP-1559)
-* `max_fee_per_gas`: Sets the maximum fee per unit of gas in wei that will be paid for transaction execution (integer).
-* `max_priority_fee_per_gas`: Sets the fee per unit of gas in wei that is sent to the coinbase address as an incentive for including the transaction (integer).
-* `access_list` (optional): Specifies accounts and storage slots expected to be accessed, based on the transaction, in order to
-gain a discount on the gas for those executions (see quickstart example for usage).
 
-
+- `max_fee_per_gas`: Sets the maximum fee per unit of gas in wei that will be paid for transaction execution (integer).
+- `max_priority_fee_per_gas`: Sets the fee per unit of gas in wei that is sent to the coinbase address as an incentive for including the transaction (integer).
+- `access_list` (optional): Specifies accounts and storage slots expected to be accessed, based on the transaction, in order to
+  gain a discount on the gas for those executions (see quickstart example for usage).
 
 ### Methods
 
@@ -534,7 +517,6 @@ gain a discount on the gas for those executions (see quickstart example for usag
 
 Sends the provided `transaction` object, returning the `transaction_hash` for
 the sent transaction.
-
 
 <a id="api-call"></a>
 
@@ -551,6 +533,12 @@ value from the evm.
 Executes the provided `transaction` object, measuring and returning the gas
 consumption.
 
+<a id="api-fee_history"></a>
+
+#### `EthereumTester.get_fee_history(block_count=1, newest_block='latest', reward_percentiles=[])`
+
+Return the historical gas information for the number of blocks specified as the `block_count` starting from `newest_block`.
+Note that specifying `reward_percentiles` has no effect on the response and so `reward` will always return an empty list.
 
 ### Logs and Filters
 
@@ -652,7 +640,6 @@ See [the filtering guide](#guide-filtering) for detailed information on how to u
 Removes the filter for the provided `filter_id`.  If no filter is found for the
 given `filter_id`, raises [`FilterNotFound`](#errors-FilterNotFound).
 
-
 <a id="api-get_only_filter_changes"></a>
 
 #### `EthereumTester.get_only_filter_changes(filter_id) -> transaction_hash or block_hash or log_entry`
@@ -670,7 +657,6 @@ Returns all values for the provided `filter_id`. Raises
 [`FilterNotFound`](#errors-FilterNotFound) if no filter is found for the given
 `filter_id`.
 
-
 ### Snapshots and Resetting
 
 <a id="api-take_snapshot"></a>
@@ -678,7 +664,6 @@ Returns all values for the provided `filter_id`. Raises
 #### `EthereumTester.take_snapshot() -> snapshot_id`
 
 Takes a snapshot of the current chain state and returns the snapshot id.
-
 
 <a id="api-revert_to_snapshot"></a>
 
@@ -696,7 +681,6 @@ for the given id.
 
 Raised in cases where a transaction cannot be found for the provided transaction hash.
 
-
 <a id="errors-BlockNotFound"></a>
 
 #### `eth_tester.exceptions.BlockNotFound`
@@ -704,20 +688,17 @@ Raised in cases where a transaction cannot be found for the provided transaction
 Raised in cases where a block cannot be found for either a provided number or
 hash.
 
-
 <a id="errors-FilterNotFound"></a>
 
 #### `eth_tester.exceptions.FilterNotFound`
 
 Raised in cases where a filter cannot be found for the provided filter id.
 
-
 <a id="errors-SnapshotNotFound"></a>
 
 #### `eth_tester.exceptions.SnapshotNotFound`
 
 Raised in cases where a snapshot cannot be found for the provided snapshot id.
-
 
 ## Backends
 
@@ -736,7 +717,7 @@ $ pip install eth-tester[<backend-name>]
 You should replace `<backend-name>` with the name of the desired testing
 backend.  Available backends are:
 
-* `py-evm`: [PyEVM (alpha)](https://pypi.python.org/pypi/py-evm) **(experimental)**
+- `py-evm`: [PyEVM (alpha)](https://pypi.python.org/pypi/py-evm) **(experimental)**
 
 ### Selecting a Backend
 
@@ -758,8 +739,8 @@ backend class you wish to use.
 
 Ethereum tester can be used with the following backends.
 
-* PyEVM (experimental)
-* MockBackend
+- PyEVM (experimental)
+- MockBackend
 
 #### MockBackend
 
@@ -781,7 +762,6 @@ Uses the experimental Py-EVM library.
 >>> from eth_tester import EthereumTester, PyEVMBackend
 >>> t = EthereumTester(PyEVMBackend())
 ```
-
 
 #### PyEVM Genesis Parameters and State
 
@@ -829,6 +809,7 @@ to `PyEVM.generate_genesis_params`.
 ```
 
 Then pass the generated `custom_genesis_params` `dict` to the backend's `__init__`
+
 ```python
 >>> from eth_tester import PyEVMBackend, EthereumTester
 >>> pyevm_backend = PyEVMBackend(genesis_parameters=custom_genesis_params)
@@ -841,6 +822,7 @@ to `PyEVMBackend.generate_genesis_state`. Optionally, provide `num_accounts` to 
 For more control on which accounts the backend generates, use the `from_mnemonic()` classmethod. Give it
 a `mnemonic` (and optionally the number of accounts) and it will use that information to generate the accounts.
 Optionally, provide a `genesis_state_overrides` `dict` to adjust the `genesis_state`.
+
 ```python
 >>> from eth_tester import PyEVMBackend, EthereumTester
 >>> from eth_utils import to_wei
@@ -883,7 +865,6 @@ For Example, to create 3 test accounts, each with a balance of 100 ETH each:
 >>> t = EthereumTester(backend=pyevm_backend)
 ```
 
-
 ### Implementing Custom Backends
 
 The base class `eth_tester.backends.base.BaseChainBackend` is the recommended
@@ -891,13 +872,12 @@ base class to begin with if you wish to write your own backend.
 
 Details on implementation are beyond the scope of this document.
 
-
 ## Data Formats
 
 Ethereum tester uses two formats for data.
 
-* The *normal* format is the data format the is expected as input arguments to all `EthereumTester` methods as well as the return types from all method calls.
-* The *canonical* format is the data format that is used internally by the backend class.
+- The *normal* format is the data format the is expected as input arguments to all `EthereumTester` methods as well as the return types from all method calls.
+- The *canonical* format is the data format that is used internally by the backend class.
 
 Ethereum tester enforces strict validation rules on these formats.
 
@@ -905,22 +885,21 @@ Ethereum tester enforces strict validation rules on these formats.
 
 The canonical format is intended for low level handling by backends.
 
-* 32 byte hashes: `bytes` of length 32
-* Arbitrary length strings: `bytes`
-* Addresses: `bytes` of length 20
-* Integers: `int`
-* Array Types: `tuple`
+- 32 byte hashes: `bytes` of length 32
+- Arbitrary length strings: `bytes`
+- Addresses: `bytes` of length 20
+- Integers: `int`
+- Array Types: `tuple`
 
 ### Normal Formats
 
 The normal format is intended for use by end users.
 
-* 32 byte hashes: `0x` prefixed hexadecimal encoded text strings (not byte strings)
-* Arbitrary length strings: `0x` prefixed hexadecimal encoded text strings (not byte strings)
-* Addresses: `0x` prefixed and EIP55 checksummed hexadecimal encoded text strings (not byte strings)
-* Integers: `int`
-* Array Types: `tuple`
-
+- 32 byte hashes: `0x` prefixed hexadecimal encoded text strings (not byte strings)
+- Arbitrary length strings: `0x` prefixed hexadecimal encoded text strings (not byte strings)
+- Addresses: `0x` prefixed and EIP55 checksummed hexadecimal encoded text strings (not byte strings)
+- Integers: `int`
+- Array Types: `tuple`
 
 ## Normalization and Validation
 
@@ -938,8 +917,8 @@ as well, first validating the data returned by the backend, and then
 normalizing it from the *canonical* format to the *normal* form before being
 returned.
 
-
 <a id="normalization"></a>
+
 ### Normalization
 
 The `EthereumTester` delegates normalization to whatever `normalizer` was
@@ -950,6 +929,7 @@ normalizer will be used from
 The specifics of this object are beyond the scope of this document.
 
 <a id="validation"></a>
+
 ### Validation
 
 The `EthereumTester` delegates validation to whatever `validator` was
@@ -958,7 +938,6 @@ validator will be used from
 `eth_tester.validation.default.DefaultValidator`.
 
 The specifics of this object are beyond the scope of this document.
-
 
 # Use with Web3.py
 

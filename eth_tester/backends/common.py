@@ -1,4 +1,6 @@
-from eth_utils.toolz import merge
+from eth_utils.toolz import (
+    merge,
+)
 
 
 def merge_genesis_overrides(defaults, overrides):

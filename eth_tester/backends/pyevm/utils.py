@@ -1,7 +1,8 @@
-from __future__ import absolute_import
+from __future__ import (
+    absolute_import,
+)
 
 import pkg_resources
-
 from semantic_version import (
     Version,
 )

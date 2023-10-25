@@ -3,6 +3,29 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
+eth-tester v0.9.1-beta.1 (2023-07-26)
+------------------------------
+
+Features
+~~~~~~~~
+
+- Allow filter topics to be passed as `bytes` in addition to `hex` values. (#185 https://github.com/ethereum/eth-tester/issues/185)
+- Add mnemonic hd_path parameter to create custom accounts in pyevm backend. (#259 https://github.com/ethereum/eth-tester/issues/259)
+- Add support for ``eth_getStorageAt`` for ``PyEVMBackend`` via ``get_storage_at()`` method. (#264 https://github.com/ethereum/eth-tester/issues/264)
+
+
+Bugfixes
+~~~~~~~~
+
+- Do not return a contract address if the contract deployment transaction has failed (receipt "status" is 0). (#261 https://github.com/ethereum/eth-tester/issues/261)
+
+
+Internal Changes - for eth-tester Contributors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Bump ``py-evm`` dependency to ``v0.7.0-a.4`` (#268 https://github.com/ethereum/eth-tester/issues/268)
+
+
 eth-tester v0.9.0-beta.1 (2023-05-12)
 -------------------------------------
 

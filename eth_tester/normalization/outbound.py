@@ -1,33 +1,34 @@
-from __future__ import absolute_import
-
-from toolz import (
-    assoc,
-    dissoc,
+from __future__ import (
+    absolute_import,
 )
 
 from eth_utils.curried import (
     apply_one_of_formatters,
-    to_checksum_address,
     encode_hex,
     is_address,
     is_bytes,
     is_canonical_address,
     is_dict,
+    to_checksum_address,
 )
-
 from eth_utils.toolz import (
     compose,
     identity,
     partial,
 )
-
-from .common import (
-    normalize_if,
-    normalize_dict,
-    normalize_array,
+from toolz import (
+    assoc,
+    dissoc,
 )
-from ..utils.encoding import int_to_32byte_big_endian
 
+from ..utils.encoding import (
+    int_to_32byte_big_endian,
+)
+from .common import (
+    normalize_array,
+    normalize_dict,
+    normalize_if,
+)
 
 normalize_account = to_checksum_address
 normalize_account_list = partial(normalize_array, normalizer=normalize_account)

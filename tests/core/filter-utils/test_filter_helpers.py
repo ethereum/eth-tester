@@ -1,25 +1,26 @@
-from __future__ import unicode_literals
-
-import pytest
+from __future__ import (
+    unicode_literals,
+)
 
 from eth_utils import (
     big_endian_to_int,
     is_list_like,
 )
+import pytest
+
 from eth_tester.utils.filters import (
-    check_single_topic_match,
+    check_if_address_match,
     check_if_from_block_match,
+    check_if_log_matches,
     check_if_to_block_match,
     check_if_topics_match,
-    check_if_address_match,
-    check_if_log_matches,
-    is_topic,
-    is_flat_topic_array,
-    is_valid_with_nested_topic_array,
-    is_topic_array,
+    check_single_topic_match,
     extrapolate_flat_topic_from_topic_list,
+    is_flat_topic_array,
+    is_topic,
+    is_topic_array,
+    is_valid_with_nested_topic_array,
 )
-
 
 TOPIC_A = b"\x00" * 32
 TOPIC_B = b"\x00" * 31 + b"\x01"

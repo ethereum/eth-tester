@@ -1,15 +1,15 @@
-from eth_tester.utils.encoding import (
-    int_to_32byte_big_endian,
-)
 from eth_utils import (
     encode_hex,
     is_hex,
     to_dict,
     to_tuple,
 )
-
 from eth_utils.toolz import (
     curry,
+)
+
+from eth_tester.utils.encoding import (
+    int_to_32byte_big_endian,
 )
 
 
@@ -25,7 +25,7 @@ def normalize_dict(value, normalizers):
 @to_tuple
 def normalize_array(value, normalizer):
     """
-    This is just `map` but it's nice to have it return a consistent type
+    Just `map` but it's nice to have it return a consistent type
     (tuple).
     """
     for item in value:

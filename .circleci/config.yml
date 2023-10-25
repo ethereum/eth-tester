@@ -46,7 +46,7 @@ windows_steps: &windows_steps
   executor:
     name: win/default
     shell: bash.exe
-  working_directory: C:\Users\circleci\project\<REPO_NAME>
+  working_directory: C:\Users\circleci\project\eth-tester
   steps:
     - checkout
     - restore_cache:
@@ -152,7 +152,7 @@ jobs:
     <<: *windows_steps
     environment:
       TOXENV: py311-wheel-windows
-        
+
   py38-pyevm:
     <<: *common
     docker:

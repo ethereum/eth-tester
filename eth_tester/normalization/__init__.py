@@ -1,4 +1,6 @@
-from __future__ import absolute_import
+from __future__ import (
+    absolute_import,
+)
 
 import os
 
@@ -10,7 +12,6 @@ from eth_tester.utils.module_loading import (
 from .default import (
     DefaultNormalizer,
 )
-
 
 DEFAULT_NORMALIZER_CLASS = get_import_path(DefaultNormalizer)
 

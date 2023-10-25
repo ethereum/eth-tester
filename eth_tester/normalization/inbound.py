@@ -1,4 +1,6 @@
-from __future__ import absolute_import
+from __future__ import (
+    absolute_import,
+)
 
 from eth_utils import (
     remove_0x_prefix,
@@ -8,16 +10,21 @@ from eth_utils.curried import (
     apply_one_of_formatters,
     decode_hex,
     is_address,
-    is_list_like,
     is_hex,
+    is_list_like,
     is_string,
     to_canonical_address,
     to_tuple,
 )
-
 from eth_utils.toolz import (
     identity,
     partial,
+)
+
+from eth_tester.validation.inbound import (
+    is_32_bytes,
+    is_32byte_hex_string,
+    is_valid_topic_array,
 )
 
 from .common import (
@@ -26,16 +33,16 @@ from .common import (
     normalize_if,
 )
 
-from eth_tester.validation.inbound import (
-    is_valid_topic_array,
-)
-
 
 def normalize_topic(topic):
     if topic is None:
         return None
-    else:
+    if is_32byte_hex_string(topic):
         return decode_hex(topic)
+    if is_32_bytes(topic):
+        return topic
+
+    raise TypeError(f"Topic is not in a recognized format: {topic}")
 
 
 @to_tuple

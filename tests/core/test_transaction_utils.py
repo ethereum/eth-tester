@@ -4,7 +4,6 @@ from eth_tester.utils.transactions import (
     remove_matching_transaction_from_list,
 )
 
-
 TX1 = {"from": "0x1", "to": "0x5", "value": 1, "nonce": 0}
 TX2 = {"from": "0x2", "to": "0x5", "value": 1, "nonce": 0}
 TX3 = {"from": "0x3", "to": "0x5", "value": 1, "nonce": 0}

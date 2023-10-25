@@ -1,4 +1,6 @@
-from __future__ import unicode_literals
+from __future__ import (
+    unicode_literals,
+)
 
 from eth_abi import (
     abi,
@@ -124,7 +126,9 @@ def _deploy_throws(eth_tester, contract_name):
 def _make_call_throws_transaction(
     eth_tester, contract_address, contract_name, fn_name, fn_args=None
 ):
-    from eth_abi import encode
+    from eth_abi import (
+        encode,
+    )
 
     if fn_args is None:
         fn_args = tuple()

@@ -1,35 +1,57 @@
-from __future__ import absolute_import
+from __future__ import (
+    absolute_import,
+)
 
 import os
 import time
-from typing import Dict, List, Union
+from typing import (
+    Dict,
+    List,
+    Union,
+)
 
-from eth_abi import abi
-from eth_abi.exceptions import DecodingError
-
-from eth_account.hdaccount import HDPath, seed_from_mnemonic
-from eth_typing import Address
-
+from eth_abi import (
+    abi,
+)
+from eth_abi.exceptions import (
+    DecodingError,
+)
+from eth_account.hdaccount import (
+    HDPath,
+    seed_from_mnemonic,
+)
+from eth_keys import (
+    KeyAPI,
+)
+from eth_typing import (
+    Address,
+)
 from eth_utils import (
     encode_hex,
     int_to_big_endian,
+    is_integer,
     to_bytes,
     to_checksum_address,
     to_dict,
     to_tuple,
     to_wei,
-    is_integer,
 )
-
-from eth_utils.decorators import replace_exceptions
-
+from eth_utils.decorators import (
+    replace_exceptions,
+)
 from eth_utils.toolz import (
     assoc,
 )
 
-from eth_keys import KeyAPI
-
-from eth_tester.constants import DYNAMIC_FEE_TRANSACTION_PARAMS
+from eth_tester.backends.base import (
+    BaseChainBackend,
+)
+from eth_tester.backends.common import (
+    merge_genesis_overrides,
+)
+from eth_tester.constants import (
+    DYNAMIC_FEE_TRANSACTION_PARAMS,
+)
 from eth_tester.exceptions import (
     BackendDistributionNotFound,
     BlockNotFound,
@@ -38,17 +60,17 @@ from eth_tester.exceptions import (
     ValidationError,
 )
 
-from eth_tester.backends.base import BaseChainBackend
-from eth_tester.backends.common import merge_genesis_overrides
-
+from ...validation.inbound import (
+    validate_inbound_withdrawals,
+)
 from .serializers import (
     serialize_block,
     serialize_transaction,
     serialize_transaction_receipt,
 )
-from .utils import is_supported_pyevm_version_available
-from ...validation.inbound import validate_inbound_withdrawals
-
+from .utils import (
+    is_supported_pyevm_version_available,
+)
 
 if is_supported_pyevm_version_available():
     from eth.constants import (
@@ -66,8 +88,12 @@ if is_supported_pyevm_version_available():
         ParisVM,
         ShanghaiVM,
     )
-    from eth.vm.spoof import SpoofTransaction as EVMSpoofTransaction
-    from eth.vm.forks.shanghai.withdrawals import Withdrawal
+    from eth.vm.forks.shanghai.withdrawals import (
+        Withdrawal,
+    )
+    from eth.vm.spoof import (
+        SpoofTransaction as EVMSpoofTransaction,
+    )
 else:
     EVMHeaderNotFound = None
     EVMInvalidInstruction = None
@@ -131,13 +157,19 @@ def get_default_account_keys(quantity=None):
 
 
 @to_tuple
-def get_account_keys_from_mnemonic(mnemonic, quantity=None):
+def get_account_keys_from_mnemonic(mnemonic, quantity=None, hd_path=None):
     keys = KeyAPI()
     seed = seed_from_mnemonic(mnemonic, "")
     quantity = quantity or 10
+
+    if hd_path is None:
+        # default HD path
+        hd_path = "m/44'/60'/0'"
+
     for i in range(0, quantity):
-        hd_path = HDPath(f"m/44'/60'/0'/{i}")
-        private_key = keys.PrivateKey(hd_path.derive(seed))
+        # create unique HDPath to derive the private key for each account
+        key = HDPath(f"{hd_path}/{i}").derive(seed)
+        private_key = keys.PrivateKey(key)
         yield private_key
 
 
@@ -183,14 +215,19 @@ def setup_tester_chain(
     num_accounts=None,
     vm_configuration=None,
     mnemonic=None,
+    hd_path=None,
     genesis_is_post_merge=True,
 ):
-    from eth.chains.base import MiningChain
-    from eth.consensus import (
-        NoProofConsensus,
-        ConsensusApplier,
+    from eth.chains.base import (
+        MiningChain,
     )
-    from eth.db import get_db_backend
+    from eth.consensus import (
+        ConsensusApplier,
+        NoProofConsensus,
+    )
+    from eth.db import (
+        get_db_backend,
+    )
 
     if vm_configuration is None:
         vm_config = ((0, ShanghaiVM),)
@@ -231,7 +268,9 @@ def setup_tester_chain(
         num_accounts = len(genesis_state)
 
     if mnemonic:
-        account_keys = get_account_keys_from_mnemonic(mnemonic, quantity=num_accounts)
+        account_keys = get_account_keys_from_mnemonic(
+            mnemonic, quantity=num_accounts, hd_path=hd_path
+        )
     else:
         account_keys = get_default_account_keys(quantity=num_accounts)
 
@@ -321,6 +360,7 @@ class PyEVMBackend(BaseChainBackend):
         genesis_state=None,
         vm_configuration=None,
         mnemonic=None,
+        hd_path=None,
     ):
         """
         :param genesis_parameters: A dict of chain parameters for overriding default
@@ -342,7 +382,12 @@ class PyEVMBackend(BaseChainBackend):
         self.account_keys = None  # set below
         accounts = len(genesis_state) if genesis_state else None
         self.reset_to_genesis(
-            genesis_parameters, genesis_state, accounts, vm_configuration, mnemonic
+            genesis_parameters,
+            genesis_state,
+            accounts,
+            vm_configuration,
+            mnemonic,
+            hd_path,
         )
 
     @classmethod
@@ -353,11 +398,18 @@ class PyEVMBackend(BaseChainBackend):
         num_accounts=None,
         genesis_parameters=None,
         vm_configuration=None,
+        hd_path=None,
     ):
+        """
+        Create a genesis state pre-populated with accounts. A number of accounts can be
+        initialized with a mnemonic phrase and heirarchical deterministic path. If no
+        overrides are provided, a default set of accounts will be used.
+        """
         genesis_state = PyEVMBackend.generate_genesis_state(
             mnemonic=mnemonic,
             overrides=genesis_state_overrides or {},
             num_accounts=num_accounts,
+            hd_path=hd_path,
         )
 
         return cls(
@@ -365,6 +417,7 @@ class PyEVMBackend(BaseChainBackend):
             genesis_state=genesis_state,
             vm_configuration=vm_configuration,
             mnemonic=mnemonic,
+            hd_path=hd_path,
         )
 
     #
@@ -380,16 +433,23 @@ class PyEVMBackend(BaseChainBackend):
         return get_default_genesis_params(overrides=overrides)
 
     @classmethod
-    def generate_genesis_state(cls, overrides=None, num_accounts=None, mnemonic=None):
+    def generate_genesis_state(
+        cls, overrides=None, num_accounts=None, mnemonic=None, hd_path=None
+    ):
         return cls._generate_genesis_state(
-            overrides=overrides, num_accounts=num_accounts, mnemonic=mnemonic
+            overrides=overrides,
+            num_accounts=num_accounts,
+            mnemonic=mnemonic,
+            hd_path=hd_path,
         )
 
     @staticmethod
-    def _generate_genesis_state(overrides=None, num_accounts=None, mnemonic=None):
+    def _generate_genesis_state(
+        overrides=None, num_accounts=None, mnemonic=None, hd_path=None
+    ):
         if mnemonic:
             account_keys = get_account_keys_from_mnemonic(
-                mnemonic, quantity=num_accounts
+                mnemonic, quantity=num_accounts, hd_path=hd_path
             )
         else:
             account_keys = get_default_account_keys(quantity=num_accounts)
@@ -405,6 +465,7 @@ class PyEVMBackend(BaseChainBackend):
         num_accounts=None,
         vm_configuration=None,
         mnemonic=None,
+        hd_path=None,
     ):
         self.account_keys, self.chain = setup_tester_chain(
             genesis_params,
@@ -412,6 +473,7 @@ class PyEVMBackend(BaseChainBackend):
             num_accounts,
             vm_configuration,
             mnemonic,
+            hd_path,
         )
 
     #
@@ -523,6 +585,35 @@ class PyEVMBackend(BaseChainBackend):
             transaction_index,
             is_pending,
         )
+
+    def get_fee_history(
+        self, block_count=1, newest_block="latest", reward_percentiles: List[int] = ()
+    ):
+        if isinstance(block_count, int) and not 1 <= block_count <= 1024:
+            raise ValidationError("block_count must be between 1 and 1024")
+
+        if newest_block == "pending":
+            newest_block = "latest"
+
+        block = self.get_block_by_number(newest_block)
+        block_header = self.chain.get_canonical_block_header_by_number(block["number"])
+
+        ancestors = self.chain.get_ancestors(block_count, header=block_header)
+
+        base_fee_per_gas = []
+        gas_used_ratio = []
+        reward = []  # always return empty reward array for now
+
+        for ancestor in ancestors:
+            base_fee_per_gas.append(ancestor.header.base_fee_per_gas)
+            gas_used_ratio.append(ancestor.header.gas_used / ancestor.header.gas_limit)
+
+        return {
+            "oldest_block": 1,
+            "base_fee_per_gas": base_fee_per_gas,
+            "gas_used_ratio": gas_used_ratio,
+            "reward": reward,
+        }
 
     #
     # Account state

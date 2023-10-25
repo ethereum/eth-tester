@@ -1,4 +1,6 @@
-from __future__ import unicode_literals
+from __future__ import (
+    unicode_literals,
+)
 
 import pytest
 
@@ -6,22 +8,23 @@ from eth_tester.validation.inbound import (
     validate_inbound_withdrawals,
 )
 
-
 try:
-    from unittest import mock
+    pass
 except ImportError:
-    import mock
+    pass
 
 from eth_utils import (
-    to_dict,
-    encode_hex,
     decode_hex,
+    encode_hex,
+    to_dict,
 )
 
 from eth_tester.exceptions import (
     ValidationError,
 )
-from eth_tester.validation import DefaultValidator
+from eth_tester.validation import (
+    DefaultValidator,
+)
 
 
 @pytest.fixture
@@ -142,6 +145,8 @@ ADDRESS_A = encode_hex(b"\x00" * 19 + b"\x01")
 ADDRESS_B = encode_hex(b"\x00" * 19 + b"\x02")
 TOPIC_A = encode_hex(b"\x00" * 31 + b"\x01")
 TOPIC_B = encode_hex(b"\x00" * 31 + b"\x02")
+TOPIC_C = encode_hex(b"\x00" * 30 + b"\x01")
+TOPIC_D = encode_hex(b"\x00" * 32 + b"\x01")
 
 
 def _yield_key_value_if_value_not_none(key, value):
@@ -175,6 +180,27 @@ def _yield_key_value_if_value_not_none(key, value):
         (_make_filter_params(topics=[[TOPIC_A], [TOPIC_B]]), True),
         (_make_filter_params(topics=[TOPIC_A, [TOPIC_B, TOPIC_A]]), True),
         (_make_filter_params(topics=[[TOPIC_A], [TOPIC_B, None]]), True),
+        (_make_filter_params(topics=[decode_hex(TOPIC_A)]), True),
+        (_make_filter_params(topics=[decode_hex(TOPIC_A), decode_hex(TOPIC_B)]), True),
+        (_make_filter_params(topics=[decode_hex(TOPIC_A), None]), True),
+        (
+            _make_filter_params(topics=[[decode_hex(TOPIC_A)], [decode_hex(TOPIC_B)]]),
+            True,
+        ),
+        (
+            _make_filter_params(
+                topics=[decode_hex(TOPIC_A), [decode_hex(TOPIC_B), decode_hex(TOPIC_A)]]
+            ),
+            True,
+        ),
+        (
+            _make_filter_params(
+                topics=[[decode_hex(TOPIC_A)], [decode_hex(TOPIC_B), None]]
+            ),
+            True,
+        ),
+        (_make_filter_params(topics=[decode_hex(TOPIC_C)]), False),
+        (_make_filter_params(topics=[decode_hex(TOPIC_D)]), False),
         (_make_filter_params(topics=[ADDRESS_A]), False),
         (_make_filter_params(topics=[ADDRESS_A, TOPIC_B]), False),
         (_make_filter_params(topics=[[ADDRESS_A], [TOPIC_B]]), False),
@@ -356,8 +382,8 @@ def _make_transaction(
                     {
                         "address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
                         "storage_keys": (
-                            "0x0000000000000000000000000000000000000000000000000000000000000003",
-                            "0x0000000000000000000000000000000000000000000000000000000000000007",
+                            "0x0000000000000000000000000000000000000000000000000000000000000003",  # noqa: E501
+                            "0x0000000000000000000000000000000000000000000000000000000000000007",  # noqa: E501
                         ),
                     },
                     {
@@ -381,7 +407,7 @@ def _make_transaction(
                         "address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
                         "storage_keys": (
                             "3",
-                            "0x0000000000000000000000000000000000000000000000000000000000000007",
+                            "0x0000000000000000000000000000000000000000000000000000000000000007",  # noqa: E501
                         ),
                     },
                     {
@@ -403,8 +429,8 @@ def _make_transaction(
                     {
                         "address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
                         "storage_keys": (
-                            "0x0000000000000000000000000000000000000000000000000000000000000003",
-                            "0x0000000000000000000000000000000000000000000000000000000000000007",
+                            "0x0000000000000000000000000000000000000000000000000000000000000003",  # noqa: E501
+                            "0x0000000000000000000000000000000000000000000000000000000000000007",  # noqa: E501
                         ),
                     },
                     {"address": b"", "storage_keys": ()},
@@ -425,8 +451,8 @@ def _make_transaction(
                     {
                         "address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
                         "storage_keys": (
-                            "0x0000000000000000000000000000000000000000000000000000000000000003",
-                            "0x0000000000000000000000000000000000000000000000000000000000000007",
+                            "0x0000000000000000000000000000000000000000000000000000000000000003",  # noqa: E501
+                            "0x0000000000000000000000000000000000000000000000000000000000000007",  # noqa: E501
                         ),
                     },
                     {

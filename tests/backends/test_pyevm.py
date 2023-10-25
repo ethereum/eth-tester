@@ -1,6 +1,6 @@
-from __future__ import unicode_literals
-
-import pytest
+from __future__ import (
+    unicode_literals,
+)
 
 from eth.constants import (
     POST_MERGE_DIFFICULTY,
@@ -15,11 +15,20 @@ from eth.vm.forks import (
     ParisVM,
     ShanghaiVM,
 )
-from eth_tester.normalization.outbound import normalize_withdrawal
-from eth_typing import HexStr
-from eth_utils import encode_hex, is_hexstr, to_wei
+from eth_typing import (
+    HexStr,
+)
+from eth_utils import (
+    encode_hex,
+    is_hexstr,
+    to_wei,
+)
+import pytest
 
-from eth_tester import EthereumTester, PyEVMBackend
+from eth_tester import (
+    EthereumTester,
+    PyEVMBackend,
+)
 from eth_tester.backends.pyevm.main import (
     GENESIS_DIFFICULTY,
     GENESIS_MIX_HASH,
@@ -29,10 +38,20 @@ from eth_tester.backends.pyevm.main import (
     get_default_genesis_params,
     setup_tester_chain,
 )
-from eth_tester.backends.pyevm.utils import is_supported_pyevm_version_available
-from eth_tester.exceptions import BlockNotFound, ValidationError
-from eth_tester.utils.backend_testing import BaseTestBackendDirect, SIMPLE_TRANSACTION
-
+from eth_tester.backends.pyevm.utils import (
+    is_supported_pyevm_version_available,
+)
+from eth_tester.exceptions import (
+    BlockNotFound,
+    ValidationError,
+)
+from eth_tester.normalization.outbound import (
+    normalize_withdrawal,
+)
+from eth_tester.utils.backend_testing import (
+    SIMPLE_TRANSACTION,
+    BaseTestBackendDirect,
+)
 
 ZERO_ADDRESS_HEX = "0x0000000000000000000000000000000000000000"
 MNEMONIC = "test test test test test test test test test test test junk"
@@ -44,6 +63,15 @@ def eth_tester():
         pytest.skip("PyEVM is not available")
     backend = PyEVMBackend()
     return EthereumTester(backend=backend)
+
+
+@pytest.fixture
+def accounts_from_mnemonic():
+    return [
+        "0x1e59ce931B4CFea3fe4B875411e280e173cB7A9C",
+        "0xc89D42189f0450C2b2c3c61f58Ec5d628176A1E7",
+        "0x318b469BBa396AEc2C60342F9441be36A1945174",
+    ]
 
 
 def test_custom_virtual_machines():
@@ -188,7 +216,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         # Only existing default genesis state keys can be overridden
         with pytest.raises(ValueError):
-            _invalid_genesis_state = generate_genesis_state_for_keys(
+            generate_genesis_state_for_keys(
                 account_keys=account_keys, overrides=invalid_overrides
             )
 
@@ -203,9 +231,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         # Only existing default genesis state keys can be overridden
         with pytest.raises(ValueError):
-            _invalid_genesis_state = PyEVMBackend.generate_genesis_state(
-                overrides=invalid_overrides
-            )
+            PyEVMBackend.generate_genesis_state(overrides=invalid_overrides)
 
     def test_override_genesis_state(self):
         state_overrides = {"balance": to_wei(900000, "ether")}
@@ -216,7 +242,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
             overrides=state_overrides, num_accounts=test_accounts
         )
 
-        # Test the correct number of accounts are created with the specified balance override
+        # Test the correct # of accounts are created with the specified balance override
         pyevm_backend = PyEVMBackend(genesis_state=genesis_state)
         assert len(pyevm_backend.account_keys) == test_accounts
         for private_key in pyevm_backend.account_keys:
@@ -231,7 +257,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
             balance = tester.get_balance(account=account)
             assert balance == state_overrides["balance"]
 
-    def test_from_mnemonic(self):
+    def test_from_mnemonic(self, accounts_from_mnemonic):
         # Initialize PyEVM backend using MNEMONIC, num_accounts,
         # and state overrides (balance)
         num_accounts = 3
@@ -242,11 +268,35 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
             genesis_state_overrides={"balance": balance},
         )
 
-        # Each of these accounts stems from the MNEMONIC
+        # Test integration with EthereumTester
+        tester = EthereumTester(backend=pyevm_backend)
+
+        actual_accounts = tester.get_accounts()
+        assert len(actual_accounts) == num_accounts
+
+        assert all(acct in accounts_from_mnemonic for acct in actual_accounts)
+
+        for i in range(0, num_accounts):
+            actual = actual_accounts[i]
+            expected = accounts_from_mnemonic[i]
+            assert actual.lower() == expected.lower()
+            assert tester.get_balance(account=actual) == balance
+
+    def test_from_mnemonic_override_hd_path(self, accounts_from_mnemonic):
+        # Initialize PyEVM backend using MNEMONIC, num_accounts,
+        # and custom hd_path
+        num_accounts = 3
+        pyevm_backend = PyEVMBackend.from_mnemonic(
+            MNEMONIC,
+            num_accounts=num_accounts,
+            hd_path="m/44'/60'/7'",
+        )
+
+        # Each of these accounts stems from the MNEMONIC, but with a different hd_path
         expected_accounts = [
-            "0x1e59ce931b4cfea3fe4b875411e280e173cb7a9c",
-            "0xc89d42189f0450c2b2c3c61f58ec5d628176a1e7",
-            "0x318b469bba396aec2c60342f9441be36a1945174",
+            "0x9aEFA413550e6Ae8690642994310d13dDA248b6b",
+            "0xcBA8AFA62949343128FE341C3C7F6b119dF78249",
+            "0x2C7DdecbF4555dd2220eF92e21B2912342655845",
         ]
 
         # Test integration with EthereumTester
@@ -255,14 +305,10 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         actual_accounts = tester.get_accounts()
         assert len(actual_accounts) == num_accounts
 
-        for i in range(0, num_accounts):
-            actual = actual_accounts[i]
-            expected = expected_accounts[i]
-            assert actual.lower() == expected.lower()
-            assert tester.get_balance(account=actual) == balance
+        assert not any(acct in accounts_from_mnemonic for acct in actual_accounts)
+        assert all(acct in expected_accounts for acct in actual_accounts)
 
     def test_generate_custom_genesis_parameters(self):
-
         # Establish parameter overrides, for example a custom genesis gas limit
         param_overrides = {"gas_limit": 4750000}
 
@@ -277,12 +323,9 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         # Only existing default genesis parameter keys can be overridden
         invalid_overrides = {"gato": "con botas"}
         with pytest.raises(ValueError):
-            _invalid_genesis_params = PyEVMBackend.generate_genesis_params(
-                overrides=invalid_overrides
-            )
+            PyEVMBackend.generate_genesis_params(overrides=invalid_overrides)
 
     def test_override_genesis_parameters(self):
-
         # Establish a custom gas limit
         param_overrides = {
             "gas_limit": 4750000,

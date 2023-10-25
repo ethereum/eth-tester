@@ -1,1 +1,0 @@
-Add support for ``eth_getStorageAt`` for ``PyEVMBackend`` via ``get_storage_at()`` method.

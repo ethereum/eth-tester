@@ -5,7 +5,6 @@ from setuptools import (
     setup,
 )
 
-
 extras_require = {
     "dev": [
         "build>=0.9.0",
@@ -27,7 +26,7 @@ extras_require = {
     "py-evm": [
         # Pin py-evm to exact version, until it leaves alpha.
         # EVM is very high velocity and might change API at each alpha.
-        "py-evm==0.7.0a2",
+        "py-evm==0.7.0a4",
         "eth-hash[pysha3]>=0.1.4,<1.0.0;implementation_name=='cpython'",
         "eth-hash[pycryptodome]>=0.1.4,<1.0.0;implementation_name=='pypy'",
     ],
@@ -48,7 +47,7 @@ with open("./README.md") as readme:
 setup(
     name="eth-tester",
     # *IMPORTANT*: Don't manually change the version here. Use the 'bumpversion' utility.
-    version="0.9.0-beta.1",
+    version="0.9.1-beta.1",
     description="""eth-tester: Tools for testing Ethereum applications.""",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -71,7 +70,7 @@ setup(
     zip_safe=False,
     keywords="ethereum",
     packages=find_packages(exclude=["tests", "tests.*"]),
-    package_data={"<MODULE_NAME>": ["py.typed"]},
+    package_data={"eth_tester": ["py.typed"]},
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",

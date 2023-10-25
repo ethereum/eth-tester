@@ -1,4 +1,6 @@
-from __future__ import unicode_literals
+from __future__ import (
+    unicode_literals,
+)
 
 import binascii
 from typing import (
@@ -7,9 +9,13 @@ from typing import (
     Union,
 )
 
-from eth_typing import HexStr
+from eth_typing import (
+    HexStr,
+)
 from eth_utils import (
+    decode_hex,
     is_boolean,
+    is_bytes,
     is_checksum_address,
     is_checksum_formatted_address,
     is_dict,
@@ -21,9 +27,7 @@ from eth_utils import (
     is_string,
     is_text,
     remove_0x_prefix,
-    decode_hex,
 )
-
 from eth_utils.toolz import (
     partial,
 )
@@ -39,12 +43,16 @@ from .common import (
     validate_address,
     validate_dict,
     validate_positive_integer,
-    validate_transaction_type,
-    validate_uint256,
-    validate_uint64,
-    validate_uint8,
     validate_text,
+    validate_transaction_type,
+    validate_uint8,
+    validate_uint64,
+    validate_uint256,
 )
+
+
+def is_32_bytes(value):
+    return is_bytes(value) and len(value) == 32
 
 
 def is_32byte_hex_string(value):
@@ -52,7 +60,7 @@ def is_32byte_hex_string(value):
 
 
 def is_topic(value):
-    return value is None or is_32byte_hex_string(value)
+    return value is None or is_32byte_hex_string(value) or is_32_bytes(value)
 
 
 def validate_32_byte_hex_value(value, name):
@@ -155,8 +163,10 @@ def validate_filter_params(from_block, to_block, address, topics):
         validate_account(address)
 
     invalid_topics_message = (
-        "Topics must be one of `None`, an array of 32 byte hexadecimal encoded "
-        "strings, or an array of arrays of 32 byte hexadecimal strings"
+        "Topics must be one of `None` or an array of topics. Each topic must be 32 "
+        "bytes, represented as a bytestring or its hex string equivalent. A "
+        'filter query of topics using "OR" can be achieved using a sub-array of '
+        "topics. See https://eth.wiki/json-rpc/API#eth_newfilter for more details."
     )
     # topics
     if topics is None:

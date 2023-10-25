@@ -1,17 +1,16 @@
-import itertools
 import copy
+import itertools
 import os
 
 from eth_utils import (
     decode_hex,
-    int_to_big_endian,
     denoms,
+    int_to_big_endian,
+    is_integer,
     keccak,
     to_canonical_address,
     to_tuple,
-    is_integer,
 )
-
 from eth_utils.toolz import (
     assoc,
     compose,
@@ -26,7 +25,6 @@ from eth_tester.exceptions import (
     BlockNotFound,
     TransactionNotFound,
 )
-
 from eth_tester.utils.accounts import (
     private_key_to_address,
 )
@@ -34,20 +32,22 @@ from eth_tester.utils.encoding import (
     zpad,
 )
 
+from ..pyevm.main import (
+    ZERO_ADDRESS,
+)
 from .factory import (
-    fake_rlp_hash,
-    make_genesis_block,
-    make_block_from_parent,
     create_transaction,
+    fake_rlp_hash,
+    make_block_from_parent,
+    make_genesis_block,
     make_receipt,
 )
 from .serializers import (
     serialize_block,
     serialize_full_transaction,
-    serialize_transaction_as_hash,
     serialize_receipt,
+    serialize_transaction_as_hash,
 )
-from ..pyevm.main import ZERO_ADDRESS
 
 
 def _generate_dummy_address(idx):
@@ -322,3 +322,13 @@ class MockBackend(BaseChainBackend):
 
     def call(self, transaction, block_number="latest"):
         raise NotImplementedError("Must be implemented by subclasses")
+
+    def get_fee_history(
+        self, block_count=1, newest_block="latest", reward_percentiles=()
+    ):
+        return {
+            "oldest_block": 1,
+            "base_fee_per_gas": [],
+            "gas_used_ratio": [],
+            "reward": [],
+        }
