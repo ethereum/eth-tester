@@ -3,7 +3,6 @@ from eth_utils import (
     to_list,
 )
 
-
 VALID_TRANSACTION_PARAMS = [
     "type",
     "chain_id",

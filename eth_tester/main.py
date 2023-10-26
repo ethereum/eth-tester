@@ -1,11 +1,15 @@
-from __future__ import unicode_literals
+from __future__ import (
+    unicode_literals,
+)
 
 import collections
+import functools
 import itertools
 import operator
 import time
-import functools
-from typing import List
+from typing import (
+    List,
+)
 
 from eth_typing import (
     HexAddress,
@@ -17,14 +21,13 @@ from eth_utils import (
     to_list,
     to_tuple,
 )
-
 from eth_utils.toolz import (
     assoc,
-    dissoc,
-    remove,
     compose,
+    dissoc,
     excepts,
     partial,
+    remove,
 )
 
 from eth_tester.backends import (
@@ -365,7 +368,7 @@ class EthereumTester:
         return receipt
 
     def get_fee_history(
-        self, block_count=1, newest_block="latest", reward_percentiles: List[int] = []
+        self, block_count=1, newest_block="latest", reward_percentiles: List[int] = ()
     ):
         fee_history = self.backend.get_fee_history(
             block_count, newest_block, reward_percentiles
@@ -429,7 +432,7 @@ class EthereumTester:
     # Private mining API
     #
     def _process_block_logs(self, block):
-        for fid, filter in self._log_filters.items():
+        for _fid, filter in self._log_filters.items():
             self._add_log_entries_to_filter(block, filter)
 
     def _add_log_entries_to_filter(self, block, filter_):

@@ -1,8 +1,9 @@
-from __future__ import unicode_literals
-
-import math
+from __future__ import (
+    unicode_literals,
+)
 
 import functools
+import math
 from typing import (
     Union,
 )
@@ -13,23 +14,22 @@ from eth_typing import (
 from eth_utils import (
     is_address,
     is_bytes,
-    is_hexstr,
-    is_text,
     is_dict,
+    is_hexstr,
     is_integer,
     is_list_like,
+    is_text,
     to_dict,
     to_tuple,
 )
-
 from eth_utils.toolz import (
     curry,
 )
 
 from eth_tester.constants import (
-    UINT256_MAX,
-    UINT64_MAX,
     UINT8_MAX,
+    UINT64_MAX,
+    UINT256_MAX,
 )
 from eth_tester.exceptions import (
     ValidationError,

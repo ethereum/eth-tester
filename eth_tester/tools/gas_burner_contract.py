@@ -1,11 +1,14 @@
-from __future__ import unicode_literals
+from __future__ import (
+    unicode_literals,
+)
 
+from eth_abi import (
+    abi,
+)
 from eth_utils import (
     encode_hex,
     function_abi_to_4byte_selector,
 )
-
-from eth_abi import abi
 
 # The following contract burns gas relative to the current block number. The
 # higher the block number, the more gas is burned. It is used to test

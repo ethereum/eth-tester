@@ -1,4 +1,6 @@
-from __future__ import unicode_literals
+from __future__ import (
+    unicode_literals,
+)
 
 import pytest
 
@@ -6,22 +8,23 @@ from eth_tester.validation.inbound import (
     validate_inbound_withdrawals,
 )
 
-
 try:
-    from unittest import mock
+    pass
 except ImportError:
-    import mock
+    pass
 
 from eth_utils import (
-    to_dict,
-    encode_hex,
     decode_hex,
+    encode_hex,
+    to_dict,
 )
 
 from eth_tester.exceptions import (
     ValidationError,
 )
-from eth_tester.validation import DefaultValidator
+from eth_tester.validation import (
+    DefaultValidator,
+)
 
 
 @pytest.fixture
@@ -379,8 +382,8 @@ def _make_transaction(
                     {
                         "address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
                         "storage_keys": (
-                            "0x0000000000000000000000000000000000000000000000000000000000000003",
-                            "0x0000000000000000000000000000000000000000000000000000000000000007",
+                            "0x0000000000000000000000000000000000000000000000000000000000000003",  # noqa: E501
+                            "0x0000000000000000000000000000000000000000000000000000000000000007",  # noqa: E501
                         ),
                     },
                     {
@@ -404,7 +407,7 @@ def _make_transaction(
                         "address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
                         "storage_keys": (
                             "3",
-                            "0x0000000000000000000000000000000000000000000000000000000000000007",
+                            "0x0000000000000000000000000000000000000000000000000000000000000007",  # noqa: E501
                         ),
                     },
                     {
@@ -426,8 +429,8 @@ def _make_transaction(
                     {
                         "address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
                         "storage_keys": (
-                            "0x0000000000000000000000000000000000000000000000000000000000000003",
-                            "0x0000000000000000000000000000000000000000000000000000000000000007",
+                            "0x0000000000000000000000000000000000000000000000000000000000000003",  # noqa: E501
+                            "0x0000000000000000000000000000000000000000000000000000000000000007",  # noqa: E501
                         ),
                     },
                     {"address": b"", "storage_keys": ()},
@@ -448,8 +451,8 @@ def _make_transaction(
                     {
                         "address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
                         "storage_keys": (
-                            "0x0000000000000000000000000000000000000000000000000000000000000003",
-                            "0x0000000000000000000000000000000000000000000000000000000000000007",
+                            "0x0000000000000000000000000000000000000000000000000000000000000003",  # noqa: E501
+                            "0x0000000000000000000000000000000000000000000000000000000000000007",  # noqa: E501
                         ),
                     },
                     {

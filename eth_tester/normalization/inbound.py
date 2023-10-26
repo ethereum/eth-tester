@@ -1,4 +1,6 @@
-from __future__ import absolute_import
+from __future__ import (
+    absolute_import,
+)
 
 from eth_utils import (
     remove_0x_prefix,
@@ -8,28 +10,27 @@ from eth_utils.curried import (
     apply_one_of_formatters,
     decode_hex,
     is_address,
-    is_list_like,
     is_hex,
+    is_list_like,
     is_string,
     to_canonical_address,
     to_tuple,
 )
-
 from eth_utils.toolz import (
     identity,
     partial,
+)
+
+from eth_tester.validation.inbound import (
+    is_32_bytes,
+    is_32byte_hex_string,
+    is_valid_topic_array,
 )
 
 from .common import (
     normalize_array,
     normalize_dict,
     normalize_if,
-)
-
-from eth_tester.validation.inbound import (
-    is_32byte_hex_string,
-    is_32_bytes,
-    is_valid_topic_array,
 )
 
 

@@ -1,6 +1,6 @@
-from __future__ import unicode_literals
-
-from toolz import identity
+from __future__ import (
+    unicode_literals,
+)
 
 from eth_utils import (
     is_bytes,
@@ -8,11 +8,13 @@ from eth_utils import (
     is_integer,
     is_list_like,
 )
-
 from eth_utils.toolz import (
     compose,
     merge,
     partial,
+)
+from toolz import (
+    identity,
 )
 
 from eth_tester.constants import (
@@ -24,16 +26,16 @@ from eth_tester.exceptions import (
 )
 
 from .common import (
-    if_not_null,
     if_not_create_address,
+    if_not_null,
     validate_any,
     validate_array,
     validate_bytes,
-    validate_positive_integer,
     validate_dict,
+    validate_positive_integer,
     validate_transaction_type,
-    validate_uint256,
     validate_uint64,
+    validate_uint256,
 )
 
 

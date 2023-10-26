@@ -1,4 +1,6 @@
-from __future__ import unicode_literals
+from __future__ import (
+    unicode_literals,
+)
 
 from eth_abi import (
     abi,
@@ -8,7 +10,6 @@ from eth_utils import (
     encode_hex,
     function_abi_to_4byte_selector,
 )
-
 
 MATH_BYTECODE = (
     "606060405261022e806100126000396000f360606040523615610074576000357c01000000000000"

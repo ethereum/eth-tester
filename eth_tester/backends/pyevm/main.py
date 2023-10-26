@@ -1,35 +1,57 @@
-from __future__ import absolute_import
+from __future__ import (
+    absolute_import,
+)
 
 import os
 import time
-from typing import Dict, List, Union
+from typing import (
+    Dict,
+    List,
+    Union,
+)
 
-from eth_abi import abi
-from eth_abi.exceptions import DecodingError
-
-from eth_account.hdaccount import HDPath, seed_from_mnemonic
-from eth_typing import Address
-
+from eth_abi import (
+    abi,
+)
+from eth_abi.exceptions import (
+    DecodingError,
+)
+from eth_account.hdaccount import (
+    HDPath,
+    seed_from_mnemonic,
+)
+from eth_keys import (
+    KeyAPI,
+)
+from eth_typing import (
+    Address,
+)
 from eth_utils import (
     encode_hex,
     int_to_big_endian,
+    is_integer,
     to_bytes,
     to_checksum_address,
     to_dict,
     to_tuple,
     to_wei,
-    is_integer,
 )
-
-from eth_utils.decorators import replace_exceptions
-
+from eth_utils.decorators import (
+    replace_exceptions,
+)
 from eth_utils.toolz import (
     assoc,
 )
 
-from eth_keys import KeyAPI
-
-from eth_tester.constants import DYNAMIC_FEE_TRANSACTION_PARAMS
+from eth_tester.backends.base import (
+    BaseChainBackend,
+)
+from eth_tester.backends.common import (
+    merge_genesis_overrides,
+)
+from eth_tester.constants import (
+    DYNAMIC_FEE_TRANSACTION_PARAMS,
+)
 from eth_tester.exceptions import (
     BackendDistributionNotFound,
     BlockNotFound,
@@ -38,17 +60,17 @@ from eth_tester.exceptions import (
     ValidationError,
 )
 
-from eth_tester.backends.base import BaseChainBackend
-from eth_tester.backends.common import merge_genesis_overrides
-
+from ...validation.inbound import (
+    validate_inbound_withdrawals,
+)
 from .serializers import (
     serialize_block,
     serialize_transaction,
     serialize_transaction_receipt,
 )
-from .utils import is_supported_pyevm_version_available
-from ...validation.inbound import validate_inbound_withdrawals
-
+from .utils import (
+    is_supported_pyevm_version_available,
+)
 
 if is_supported_pyevm_version_available():
     from eth.constants import (
@@ -66,8 +88,12 @@ if is_supported_pyevm_version_available():
         ParisVM,
         ShanghaiVM,
     )
-    from eth.vm.spoof import SpoofTransaction as EVMSpoofTransaction
-    from eth.vm.forks.shanghai.withdrawals import Withdrawal
+    from eth.vm.forks.shanghai.withdrawals import (
+        Withdrawal,
+    )
+    from eth.vm.spoof import (
+        SpoofTransaction as EVMSpoofTransaction,
+    )
 else:
     EVMHeaderNotFound = None
     EVMInvalidInstruction = None
@@ -192,12 +218,16 @@ def setup_tester_chain(
     hd_path=None,
     genesis_is_post_merge=True,
 ):
-    from eth.chains.base import MiningChain
-    from eth.consensus import (
-        NoProofConsensus,
-        ConsensusApplier,
+    from eth.chains.base import (
+        MiningChain,
     )
-    from eth.db import get_db_backend
+    from eth.consensus import (
+        ConsensusApplier,
+        NoProofConsensus,
+    )
+    from eth.db import (
+        get_db_backend,
+    )
 
     if vm_configuration is None:
         vm_config = ((0, ShanghaiVM),)
@@ -557,7 +587,7 @@ class PyEVMBackend(BaseChainBackend):
         )
 
     def get_fee_history(
-        self, block_count=1, newest_block="latest", reward_percentiles: List[int] = []
+        self, block_count=1, newest_block="latest", reward_percentiles: List[int] = ()
     ):
         if isinstance(block_count, int) and not 1 <= block_count <= 1024:
             raise ValidationError("block_count must be between 1 and 1024")

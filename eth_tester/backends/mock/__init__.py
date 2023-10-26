@@ -1,3 +1,3 @@
-from .main import (  # noqa: F401
+from .main import (
     MockBackend,
 )

@@ -1,22 +1,29 @@
-from eth_utils import to_int
-
+from eth_utils import (
+    to_int,
+)
 import rlp
-
 from toolz import (
     merge,
 )
 
-from .utils import is_supported_pyevm_version_available
-
+from .utils import (
+    is_supported_pyevm_version_available,
+)
 
 if is_supported_pyevm_version_available():
-    from eth.rlp.transactions import BaseTransaction
-    from eth.vm.forks.berlin.transactions import TypedTransaction
+    from eth.rlp.transactions import (
+        BaseTransaction,
+    )
+    from eth.vm.forks.berlin.transactions import (
+        TypedTransaction,
+    )
 else:
     BaseTransaction = None
     TypedTransaction = None
 
-from eth_tester.exceptions import ValidationError
+from eth_tester.exceptions import (
+    ValidationError,
+)
 from eth_tester.utils.address import (
     generate_contract_address,
 )

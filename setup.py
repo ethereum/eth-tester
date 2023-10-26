@@ -5,7 +5,6 @@ from setuptools import (
     setup,
 )
 
-
 extras_require = {
     "dev": [
         "build>=0.9.0",
@@ -71,7 +70,7 @@ setup(
     zip_safe=False,
     keywords="ethereum",
     packages=find_packages(exclude=["tests", "tests.*"]),
-    package_data={"<MODULE_NAME>": ["py.typed"]},
+    package_data={"eth_tester": ["py.typed"]},
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
