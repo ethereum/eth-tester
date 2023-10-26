@@ -8,6 +8,7 @@
 *.egg-info
 dist
 build
+.build
 eggs
 .eggs
 parts
@@ -18,6 +19,9 @@ develop-eggs
 .installed.cfg
 lib
 lib64
+pip-wheel-metadata
+venv*
+.venv*
 
 # Installer logs
 pip-log.txt
@@ -41,8 +45,15 @@ output/*/index.html
 
 # Sphinx
 docs/_build
+docs/modules.rst
+docs/*.internal.rst
+docs/*.utils.rst
+docs/*._utils.*
 
-# Hypothese Property base testing
+# Blockchain
+chains
+
+# Hypothesis Property base testing
 .hypothesis
 
 # tox/pytest cache
@@ -51,63 +62,45 @@ docs/_build
 
 # Test output logs
 logs
-### JetBrains template
+
+# VIM temp files
+*.sw[op]
+
+# mypy
+.mypy_cache
+
+# macOS
+.DS_Store
+
+# pyenv
+.python-version
+
+# vs-code
+.vscode
+
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and Webstorm
-# Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
+# For a more precise, explicit template, see:
+# https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
-# User-specific stuff:
-.idea/workspace.xml
-.idea/tasks.xml
-.idea/dictionaries
-.idea/vcs.xml
-.idea/jsLibraryMappings.xml
-
-# Sensitive or high-churn files:
-.idea/dataSources.ids
-.idea/dataSources.xml
-.idea/dataSources.local.xml
-.idea/sqlDataSources.xml
-.idea/dynamic.xml
-.idea/uiDesigner.xml
-
-# Gradle:
-.idea/gradle.xml
-.idea/libraries
-
-# Mongo Explorer plugin:
-.idea/mongoSettings.xml
+## General
+.idea/*
+.idea_modules/*
 
 ## File-based project format:
 *.iws
 
+## IntelliJ
+out/
+
 ## Plugin-specific files:
 
-# IntelliJ
-/out/
-
-# mpeltonen/sbt-idea plugin
-.idea_modules/
-
-# JIRA plugin
+### JIRA plugin
 atlassian-ide-plugin.xml
 
-# Crashlytics plugin (for Android Studio and IntelliJ)
+### Crashlytics plugin (for Android Studio and IntelliJ)
 com_crashlytics_export_strings.xml
 crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
-# VS Code
-.vscode/
-
-# DS Store files
-*.DS_Store
-
-# virtualenv directories
-venv*
-
-# pyenv-virtualenv
-.python-version
-
-# VIM
-*.swp
+# END JetBrains section

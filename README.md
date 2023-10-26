@@ -1,18 +1,20 @@
-# Ethereum Tester
+# <PROJECT_NAME>
 
-[![Join the chat at https://gitter.im/ethereum/eth-tester](https://badges.gitter.im/ethereum/eth-tester.svg)](https://gitter.im/ethereum/eth-tester)
-[![Build Status](https://circleci.com/gh/ethereum/eth-tester.svg?style=shield)](https://app.circleci.com/pipelines/github/ethereum/eth-tester)
+[![Join the conversation on Discord](https://img.shields.io/discord/809793915578089484?color=blue&label=chat&logo=discord&logoColor=white)](https://discord.gg/GHryRvPB84)
+[![Build Status](https://circleci.com/gh/ethereum/<REPO_NAME>.svg?style=shield)](https://circleci.com/gh/ethereum/<REPO_NAME>)
+[![PyPI version](https://badge.fury.io/py/<PYPI_NAME>.svg)](https://badge.fury.io/py/<PYPI_NAME>)
+[![Python versions](https://img.shields.io/pypi/pyversions/<PYPI_NAME>.svg)](https://pypi.python.org/pypi/<PYPI_NAME>)
+[![Docs build](https://readthedocs.org/projects/<RTD_NAME>/badge/?version=latest)](https://<RTD_NAME>.readthedocs.io/en/latest/?badge=latest)
 
+<SHORT_DESCRIPTION>
 
-Tools for testing ethereum based applications.
+Read more in the [documentation on ReadTheDocs](https://<RTD_NAME>.readthedocs.io/). [View the change log](https://<RTD_NAME>.readthedocs.io/en/latest/release_notes.html).
 
-
-## Installation
+## Quickstart
 
 ```sh
-pip install eth-tester
+python -m pip install <PYPI_NAME>
 ```
-
 
 ## Quick Start
 
@@ -98,67 +100,6 @@ pip install eth-tester
  'status': 1}
 ```
 
-
-## Development
-
-```sh
-pip install -e ".[dev]"
-```
-
-
-### Running the tests
-
-You can run the tests with:
-
-```sh
-py.test tests
-```
-
-Or you can install `tox` to run the full test suite.
-
-
-### Releasing
-
-Pandoc is required for transforming the markdown README to the proper format to
-render correctly on pypi.
-
-For Debian-like systems:
-
-```
-apt install pandoc
-```
-
-Or on OSX:
-
-```sh
-brew install pandoc
-```
-
-To release a new version:
-
-First, compile and commit the release notes:
-```sh
-make notes bump={one of: major, minor, patch, devnum}
-```
-
-Then, do the actual release:
-
-```sh
-make release bump={one of: major, minor, patch, devnum}
-```
-
-#### How to bumpversion
-
-The version format for this repo is `{major}.{minor}.{patch}` for stable, and
-`{major}.{minor}.{patch}-{stage}.{devnum}` for unstable (`stage` can be alpha or beta).
-
-To issue the next version in line, use bumpversion and specify which part to bump,
-like `bumpversion minor` or `bumpversion devnum`.
-
-If you are in a beta version, `bumpversion stage` will switch to a stable.
-
-To issue an unstable version when the current version is stable, specify the
-new version explicitly, like `bumpversion --new-version 4.0.0-alpha.1 devnum`
 
 
 # Documentation
@@ -1016,3 +957,54 @@ The specifics of this object are beyond the scope of this document.
 See the [web3.py documentation](http://web3py.readthedocs.io/en/latest/) for
 information on the `EthereumTester` provider which integrates with this
 library.
+
+## Developer Setup
+
+If you would like to hack on <REPO_NAME>, please check out the [Snake Charmers
+Tactical Manual](https://github.com/ethereum/snake-charmers-tactical-manual)
+for information on how we do:
+
+- Testing
+- Pull Requests
+- Documentation
+
+We use [pre-commit](https://pre-commit.com/) to maintain consistent code style. Once
+installed, it will run automatically with every commit. You can also run it manually
+with `make lint`. If you need to make a commit that skips the `pre-commit` checks, you
+can do so with `git commit --no-verify`.
+
+### Development Environment Setup
+
+You can set up your dev environment with:
+
+```sh
+git clone git@github.com:ethereum/<REPO_NAME>.git
+cd <REPO_NAME>
+virtualenv -p python3 venv
+. venv/bin/activate
+python -m pip install -e ".[dev]"
+pre-commit install
+```
+
+### Release setup
+
+To release a new version:
+
+```sh
+make release bump=$$VERSION_PART_TO_BUMP$$
+```
+
+#### How to bumpversion
+
+The version format for this repo is `{major}.{minor}.{patch}` for stable, and
+`{major}.{minor}.{patch}-{stage}.{devnum}` for unstable (`stage` can be alpha or beta).
+
+To issue the next version in line, specify which part to bump,
+like `make release bump=minor` or `make release bump=devnum`. This is typically done from the
+main branch, except when releasing a beta (in which case the beta is released from main,
+and the previous stable branch is released from said branch).
+
+If you are in a beta version, `make release bump=stage` will switch to a stable.
+
+To issue an unstable version when the current version is stable, specify the
+new version explicitly, like `make release bump="--new-version 4.0.0-alpha.1 devnum"`
