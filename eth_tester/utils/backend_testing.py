@@ -39,6 +39,9 @@ from eth_tester.tools.gas_burner_contract import (
     _deploy_gas_burner,
     _make_call_gas_burner_transaction,
 )
+from eth_utils import (
+    encode_hex,
+)
 
 from .emitter_contract import (
     EMITTER_ENUM,

@@ -33,6 +33,11 @@ from .common import (
     normalize_if,
 )
 
+from eth_tester.validation.inbound import (
+    is_32byte_hex_string,
+    is_32_bytes,
+    is_valid_topic_array,
+)
 
 def normalize_topic(topic):
     if topic is None:
