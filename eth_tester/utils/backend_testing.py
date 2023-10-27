@@ -1,62 +1,59 @@
-from __future__ import unicode_literals
-
-import pytest
-
-import rlp
-
-from eth_utils import (
-    is_address,
-    is_integer,
-    is_same_address,
-    is_dict,
-    is_hex,
-    denoms,
-)
-
-from eth_utils.toolz import (
-    assoc,
-    dissoc,
-    merge,
+from __future__ import (
+    unicode_literals,
 )
 
 from eth_keys import (
     keys,
 )
+from eth_utils import (
+    denoms,
+    encode_hex,
+    is_address,
+    is_dict,
+    is_hex,
+    is_integer,
+    is_same_address,
+)
+from eth_utils.toolz import (
+    assoc,
+    dissoc,
+    merge,
+)
+import pytest
+import rlp
 
 from eth_tester.constants import (
-    UINT256_MIN,
-    UINT256_MAX,
     BURN_ADDRESS,
+    UINT256_MAX,
+    UINT256_MIN,
 )
 from eth_tester.exceptions import (
     AccountLocked,
     BlockNotFound,
     FilterNotFound,
-    ValidationError,
     TransactionFailed,
     TransactionNotFound,
-)
-from .emitter_contract import (
-    _deploy_emitter,
-    _call_emitter,
-    EMITTER_ENUM,
-)
-from .math_contract import (
-    _deploy_math,
-    _make_call_math_transaction,
-    _decode_math_result,
-)
-from .throws_contract import (
-    _deploy_throws,
-    _make_call_throws_transaction,
-    _decode_throws_result,
+    ValidationError,
 )
 from eth_tester.tools.gas_burner_contract import (
     _deploy_gas_burner,
     _make_call_gas_burner_transaction,
 )
-from eth_utils import (
-    encode_hex,
+
+from .emitter_contract import (
+    EMITTER_ENUM,
+    _call_emitter,
+    _deploy_emitter,
+)
+from .math_contract import (
+    _decode_math_result,
+    _deploy_math,
+    _make_call_math_transaction,
+)
+from .throws_contract import (
+    _decode_throws_result,
+    _deploy_throws,
+    _make_call_throws_transaction,
 )
 
 PK_A = "0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d"

@@ -1,15 +1,17 @@
-from eth_utils import to_bytes
+from eth_utils import (
+    to_bytes,
+)
+from eth_utils.toolz import (
+    assoc,
+    partial,
+    pipe,
+)
 
 from eth_tester.backends.mock.common import (
     calculate_effective_gas_price,
 )
 from eth_tester.utils.transactions import (
     extract_transaction_type,
-)
-from eth_utils.toolz import (
-    assoc,
-    partial,
-    pipe,
 )
 
 

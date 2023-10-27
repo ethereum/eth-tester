@@ -1,13 +1,14 @@
-from __future__ import unicode_literals
-
-import pytest
-from toolz import (
-    dissoc,
-    merge,
+from __future__ import (
+    unicode_literals,
 )
 
 from eth_utils import (
     encode_hex,
+)
+import pytest
+from toolz import (
+    dissoc,
+    merge,
 )
 
 from eth_tester.exceptions import (
@@ -16,7 +17,6 @@ from eth_tester.exceptions import (
 from eth_tester.validation import (
     DefaultValidator,
 )
-
 from tests.utils import (
     make_receipt,
 )
@@ -96,7 +96,7 @@ def _make_legacy_txn(
 
 def _make_access_list_txn(
     chain_id=131277322940537,
-    access_list=[],
+    access_list=(),
     **kwargs,
 ):
     legacy_kwargs = dissoc(dict(**kwargs), "chain_id", "access_list")
@@ -105,13 +105,13 @@ def _make_access_list_txn(
         {
             "type": "0x1",
             "chain_id": chain_id,
-            "access_list": access_list,
+            "access_list": list(access_list),
         },
     )
 
 
-# This is an outbound transaction so we still keep the gas_price for now since the gas_price is
-# the min(max_fee_per_gas, base_fee_per_gas + max_priority_fee_per_gas).
+# This is an outbound transaction so we still keep the gas_price for now since the
+# gas_price is the min(max_fee_per_gas, base_fee_per_gas + max_priority_fee_per_gas).
 # TODO: Sometime in 2022 the inclusion of gas_price may be removed from dynamic fee
 #  transactions and we can get rid of this behavior.
 #  https://github.com/ethereum/execution-specs/pull/251
@@ -119,7 +119,7 @@ def _make_dynamic_fee_txn(
     chain_id=131277322940537,
     max_fee_per_gas=2000000000,
     max_priority_fee_per_gas=1000000000,
-    access_list=[],
+    access_list=(),
     **kwargs,
 ):
     legacy_kwargs = dissoc(

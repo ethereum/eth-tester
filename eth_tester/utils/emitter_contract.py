@@ -1,4 +1,6 @@
-from __future__ import unicode_literals
+from __future__ import (
+    unicode_literals,
+)
 
 from eth_abi import (
     abi,
@@ -7,7 +9,6 @@ from eth_utils import (
     encode_hex,
     function_abi_to_4byte_selector,
 )
-
 
 EMITTER_BYTECODE = (
     "60606040526104ae806100126000396000f3606060405236156100615760e060020a60003504630b"

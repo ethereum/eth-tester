@@ -3,7 +3,6 @@ import pytest
 from eth_tester.normalization import (
     DefaultNormalizer,
 )
-
 from tests.utils import (
     make_receipt,
 )

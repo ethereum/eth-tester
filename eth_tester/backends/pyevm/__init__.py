@@ -1,8 +1,10 @@
-from __future__ import absolute_import
-
-from .utils import (  # noqa: F401
-    is_supported_pyevm_version_available,
+from __future__ import (
+    absolute_import,
 )
-from .main import (  # noqa: F401
+
+from .main import (
     PyEVMBackend,
+)
+from .utils import (
+    is_supported_pyevm_version_available,
 )

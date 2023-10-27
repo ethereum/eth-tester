@@ -1,9 +1,8 @@
-import rlp
-
 from eth_utils import (
     keccak,
     to_canonical_address,
 )
+import rlp
 
 
 def generate_contract_address(address, nonce):

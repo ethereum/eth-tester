@@ -1,15 +1,15 @@
 import itertools
-from eth_utils import (
-    to_tuple,
-    is_bytes,
-    is_address,
-    is_same_address,
-    is_integer,
+from queue import (
+    Empty,
+    Queue,
 )
 
-from queue import (
-    Queue,
-    Empty,
+from eth_utils import (
+    is_address,
+    is_bytes,
+    is_integer,
+    is_same_address,
+    to_tuple,
 )
 
 

@@ -1,6 +1,6 @@
-from __future__ import unicode_literals
-
-import pytest
+from __future__ import (
+    unicode_literals,
+)
 
 from eth.constants import (
     POST_MERGE_DIFFICULTY,
@@ -15,11 +15,20 @@ from eth.vm.forks import (
     ParisVM,
     ShanghaiVM,
 )
-from eth_tester.normalization.outbound import normalize_withdrawal
-from eth_typing import HexStr
-from eth_utils import encode_hex, is_hexstr, to_wei
+from eth_typing import (
+    HexStr,
+)
+from eth_utils import (
+    encode_hex,
+    is_hexstr,
+    to_wei,
+)
+import pytest
 
-from eth_tester import EthereumTester, PyEVMBackend
+from eth_tester import (
+    EthereumTester,
+    PyEVMBackend,
+)
 from eth_tester.backends.pyevm.main import (
     GENESIS_DIFFICULTY,
     GENESIS_MIX_HASH,
@@ -29,10 +38,20 @@ from eth_tester.backends.pyevm.main import (
     get_default_genesis_params,
     setup_tester_chain,
 )
-from eth_tester.backends.pyevm.utils import is_supported_pyevm_version_available
-from eth_tester.exceptions import BlockNotFound, ValidationError
-from eth_tester.utils.backend_testing import BaseTestBackendDirect, SIMPLE_TRANSACTION
-
+from eth_tester.backends.pyevm.utils import (
+    is_supported_pyevm_version_available,
+)
+from eth_tester.exceptions import (
+    BlockNotFound,
+    ValidationError,
+)
+from eth_tester.normalization.outbound import (
+    normalize_withdrawal,
+)
+from eth_tester.utils.backend_testing import (
+    SIMPLE_TRANSACTION,
+    BaseTestBackendDirect,
+)
 
 ZERO_ADDRESS_HEX = "0x0000000000000000000000000000000000000000"
 MNEMONIC = "test test test test test test test test test test test junk"
@@ -197,7 +216,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         # Only existing default genesis state keys can be overridden
         with pytest.raises(ValueError):
-            _invalid_genesis_state = generate_genesis_state_for_keys(
+            generate_genesis_state_for_keys(
                 account_keys=account_keys, overrides=invalid_overrides
             )
 
@@ -212,9 +231,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         # Only existing default genesis state keys can be overridden
         with pytest.raises(ValueError):
-            _invalid_genesis_state = PyEVMBackend.generate_genesis_state(
-                overrides=invalid_overrides
-            )
+            PyEVMBackend.generate_genesis_state(overrides=invalid_overrides)
 
     def test_override_genesis_state(self):
         state_overrides = {"balance": to_wei(900000, "ether")}
@@ -225,7 +242,8 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
             overrides=state_overrides, num_accounts=test_accounts
         )
 
-        # Test the correct number of accounts are created with the specified balance override
+        # Test the correct number of accounts are created with the specified
+        # balance override
         pyevm_backend = PyEVMBackend(genesis_state=genesis_state)
         assert len(pyevm_backend.account_keys) == test_accounts
         for private_key in pyevm_backend.account_keys:
@@ -292,7 +310,6 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         assert all(acct in expected_accounts for acct in actual_accounts)
 
     def test_generate_custom_genesis_parameters(self):
-
         # Establish parameter overrides, for example a custom genesis gas limit
         param_overrides = {"gas_limit": 4750000}
 
@@ -307,12 +324,9 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         # Only existing default genesis parameter keys can be overridden
         invalid_overrides = {"gato": "con botas"}
         with pytest.raises(ValueError):
-            _invalid_genesis_params = PyEVMBackend.generate_genesis_params(
-                overrides=invalid_overrides
-            )
+            PyEVMBackend.generate_genesis_params(overrides=invalid_overrides)
 
     def test_override_genesis_parameters(self):
-
         # Establish a custom gas limit
         param_overrides = {
             "gas_limit": 4750000,

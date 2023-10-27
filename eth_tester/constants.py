@@ -1,5 +1,6 @@
-from __future__ import unicode_literals
-
+from __future__ import (
+    unicode_literals,
+)
 
 UINT256_MIN = 0
 UINT256_MAX = 2**256 - 1

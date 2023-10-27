@@ -1,4 +1,6 @@
-from __future__ import unicode_literals
+from __future__ import (
+    unicode_literals,
+)
 
 import binascii
 from typing import (
@@ -7,8 +9,11 @@ from typing import (
     Union,
 )
 
-from eth_typing import HexStr
+from eth_typing import (
+    HexStr,
+)
 from eth_utils import (
+    decode_hex,
     is_boolean,
     is_bytes,
     is_checksum_address,
@@ -22,9 +27,7 @@ from eth_utils import (
     is_string,
     is_text,
     remove_0x_prefix,
-    decode_hex,
 )
-
 from eth_utils.toolz import (
     partial,
 )
@@ -40,11 +43,11 @@ from .common import (
     validate_address,
     validate_dict,
     validate_positive_integer,
-    validate_transaction_type,
-    validate_uint256,
-    validate_uint64,
-    validate_uint8,
     validate_text,
+    validate_transaction_type,
+    validate_uint8,
+    validate_uint64,
+    validate_uint256,
 )
 
 

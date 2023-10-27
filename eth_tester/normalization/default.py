@@ -3,7 +3,6 @@ from eth_utils import (
     encode_hex,
     to_canonical_address,
 )
-
 from eth_utils.toolz import (
     identity,
 )

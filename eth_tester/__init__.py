@@ -1,18 +1,13 @@
-import pkg_resources
-import sys
-
-from .main import (  # noqa: F401
-    EthereumTester,
+from importlib.metadata import (
+    version as __version,
 )
 
-from .backends import (  # noqa: F401
+from .backends import (
     MockBackend,
     PyEVMBackend,
 )
+from .main import (
+    EthereumTester,
+)
 
-
-if sys.version_info.major < 3:
-    raise EnvironmentError("eth-tester only supports Python 3")
-
-
-__version__ = pkg_resources.get_distribution("eth-tester").version
+__version__ = __version("eth-tester")
