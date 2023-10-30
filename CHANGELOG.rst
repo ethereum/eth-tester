@@ -3,6 +3,28 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
+eth-tester v0.10.0-beta.1 (2023-10-30)
+--------------------------------------
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+- Drop python 3.7 support (`#273 <https://github.com/ethereum/eth-tester/issues/273>`__)
+
+
+Features
+~~~~~~~~
+
+- Add support for ``eth_feeHistory`` for ``PyEVMBackend`` via ``get_fee_history()`` method. (`#258 <https://github.com/ethereum/eth-tester/issues/258>`__)
+- Add python 3.11 support (`#273 <https://github.com/ethereum/eth-tester/issues/273>`__)
+
+
+Internal Changes - for eth-tester Contributors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Merge in updates from the python project template (`#273 <https://github.com/ethereum/eth-tester/issues/273>`__)
+
+
 eth-tester v0.9.1-beta.1 (2023-07-26)
 -------------------------------------
 
