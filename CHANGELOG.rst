@@ -4,7 +4,7 @@ Eth Tester Changelog
 .. towncrier release notes start
 
 eth-tester v0.9.1-beta.1 (2023-07-26)
-------------------------------
+-------------------------------------
 
 Features
 ~~~~~~~~
