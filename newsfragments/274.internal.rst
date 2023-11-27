@@ -1,0 +1,1 @@
+Change the name of ``master`` branch to ``main``
