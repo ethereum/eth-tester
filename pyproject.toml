@@ -68,7 +68,7 @@ log_format = "%(levelname)8s  %(asctime)s  %(filename)20s  %(message)s"
 log_date_format = "%m-%d %H:%M:%S"
 
 [tool.towncrier]
-# Read https://github.com/ethereum/eth-tester/blob/master/newsfragments/README.md for instructions
+# Read https://github.com/ethereum/eth-tester/blob/main/newsfragments/README.md for instructions
 package = "eth_tester"
 filename = "CHANGELOG.rst"
 directory = "newsfragments"

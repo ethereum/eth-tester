@@ -11,7 +11,7 @@ Closes #
 
 - [ ] Add or update documentation related to these changes
 
-- [ ] Add entry to the [release notes](https://github.com/ethereum/eth-tester/blob/master/newsfragments/README.md)
+- [ ] Add entry to the [release notes](https://github.com/ethereum/eth-tester/blob/main/newsfragments/README.md)
 
 #### Cute Animal Picture
 

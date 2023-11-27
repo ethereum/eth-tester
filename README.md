@@ -7,7 +7,7 @@
 
 Tools for testing Ethereum applications
 
-Read more in the documentation below. [View the change log](https://github.com/ethereum/eth-tester/blob/master/CHANGELOG.rst).
+Read more in the documentation below. [View the change log](https://github.com/ethereum/eth-tester/blob/main/CHANGELOG.rst).
 
 ## Quick Start
 
@@ -105,7 +105,7 @@ The ethereum tester library strictly enforces the following input formats and
 types.
 
 - Hexadecimal values **must** be text (not byte) strings.  The `0x` prefix is optional.
-- Any address which contains mixed-case alpha characters will be validated as a checksummed address as specified by [EIP-55](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-55.md)
+- Any address which contains mixed-case alpha characters will be validated as a checksummed address as specified by [EIP-55](https://github.com/ethereum/ercs/blob/master/ERCS/erc-55.md)
 - 32-byte hashes **must** be hexadecimal encoded.
 - Numeric values **must** be in their integer representation.
 
@@ -967,7 +967,7 @@ The version format for this repo is `{major}.{minor}.{patch}` for stable, and
 
 To issue the next version in line, specify which part to bump,
 like `make release bump=minor` or `make release bump=devnum`. This is typically done from the
-master branch, except when releasing a beta (in which case the beta is released from master,
+main branch, except when releasing a beta (in which case the beta is released from main,
 and the previous stable branch is released from said branch).
 
 If you are in a beta version, `make release bump=stage` will switch to a stable.
