@@ -376,6 +376,30 @@ class EthereumTester:
         return fee_history
 
     #
+    # Create Access List
+    #
+    def create_access_list(self, transaction, block_number="latest"):
+        return {
+            "accessList": (
+                {
+                    "address": transaction["from"],
+                    "storageKeys": (
+                        "0x0000000000000000000000000000000000000000000000000000000000000003",  # noqa: E501
+                        "0x0000000000000000000000000000000000000000000000000000000000000007",  # noqa: E501
+                    ),
+                },
+                {
+                    "address": transaction["from"],
+                    "storageKeys": (
+                        "0x0000000000000000000000000000000000000000000000000000000000000003",  # noqa: E501
+                        "0x0000000000000000000000000000000000000000000000000000000000000007",  # noqa: E501
+                    ),
+                },
+            ),
+            "gasUsed": "21000",
+        }
+
+    #
     # Mining
     #
     def enable_auto_mine_transactions(self):

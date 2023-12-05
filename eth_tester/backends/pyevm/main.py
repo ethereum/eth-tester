@@ -869,3 +869,27 @@ class PyEVMBackend(BaseChainBackend):
             raise TransactionFailed(msg)
 
         return computation.output
+
+    #
+    # Create Access List
+    #
+    def create_access_list(self, transaction, block_number="latest"):
+        return {
+            "accessList": (
+                {
+                    "address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
+                    "storageKeys": (
+                        "0x0000000000000000000000000000000000000000000000000000000000000003",  # noqa: E501
+                        "0x0000000000000000000000000000000000000000000000000000000000000007",  # noqa: E501
+                    ),
+                },
+                {
+                    "address": "0xbb9bc244d798123fde783fcc1c72d3bb8c189413",
+                    "storageKeys": (
+                        "0x0000000000000000000000000000000000000000000000000000000000000003",  # noqa: E501
+                        "0x0000000000000000000000000000000000000000000000000000000000000007",  # noqa: E501
+                    ),
+                },
+            ),
+            "gasUsed": "21000",
+        }

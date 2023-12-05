@@ -99,3 +99,10 @@ class BaseChainBackend(metaclass=ABCMeta):
     @abstractmethod
     def call(self, transaction, block_number="latest"):
         raise NotImplementedError("Must be implemented by subclasses")
+
+    #
+    # Create Access List
+    #
+    @abstractmethod
+    def create_access_list(self, transaction, block_number="latest"):
+        raise NotImplementedError("Must be implemented by subclasses")
