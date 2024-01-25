@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 from eth_utils import (
-    remove_0x_prefix,
     to_bytes,
 )
 from eth_utils.curried import (
@@ -93,7 +92,7 @@ def _normalize_inbound_access_list(access_list):
             tuple(
                 [
                     to_bytes(hexstr=entry["address"]),
-                    tuple([int(remove_0x_prefix(k)) for k in entry["storage_keys"]]),
+                    tuple([int(k, 16) for k in entry["storage_keys"]]),
                 ]
             )
             for entry in access_list
