@@ -3,6 +3,21 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
+eth-tester v0.10.0-beta.2 (2024-01-26)
+--------------------------------------
+
+Bugfixes
+~~~~~~~~
+
+- Properly convert access list storage keys to ``int`` with base 16. (`#281 <https://github.com/ethereum/eth-tester/issues/281>`__)
+
+
+Internal Changes - for eth-tester Contributors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Change the name of ``master`` branch to ``main`` (`#274 <https://github.com/ethereum/eth-tester/issues/274>`__)
+
+
 eth-tester v0.10.0-beta.1 (2023-10-30)
 --------------------------------------
 
