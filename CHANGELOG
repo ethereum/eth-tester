@@ -3,6 +3,21 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
+eth-tester v0.9.1-beta.2 (2024-01-26)
+-------------------------------------
+
+Features
+~~~~~~~~
+
+- Add support for ``eth_feeHistory`` for ``PyEVMBackend`` via ``get_fee_history()`` method. (#258 https://github.com/ethereum/eth-tester/issues/258)
+
+
+Bugfixes
+~~~~~~~~
+
+- Properly convert access list storage keys to ``int`` with base 16. (#282 https://github.com/ethereum/eth-tester/issues/282)
+
+
 eth-tester v0.9.1-beta.1 (2023-07-26)
 ------------------------------
 
