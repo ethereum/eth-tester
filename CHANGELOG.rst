@@ -3,6 +3,15 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
+eth-tester v0.10.0-beta.3 (2024-02-26)
+--------------------------------------
+
+Miscellaneous Changes
+~~~~~~~~~~~~~~~~~~~~~
+
+- Bump ``py-evm`` to ``0.9.0b1`` `#283 <https://github.com/ethereum/eth-tester/issues/283>`__
+
+
 eth-tester v0.10.0-beta.2 (2024-01-26)
 --------------------------------------
 
