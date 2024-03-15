@@ -87,6 +87,7 @@ if is_supported_pyevm_version_available():
     from eth.vm.forks import (
         ParisVM,
         ShanghaiVM,
+        CancunVM,
     )
     from eth.vm.forks.shanghai.withdrawals import (
         Withdrawal,
@@ -230,7 +231,7 @@ def setup_tester_chain(
     )
 
     if vm_configuration is None:
-        vm_config = ((0, ShanghaiVM),)
+        vm_config = ((0, CancunVM),)
     else:
         if len(vm_configuration) > 0:
             _genesis_block_num, genesis_vm = vm_configuration[0]
