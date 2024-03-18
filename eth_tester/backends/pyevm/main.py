@@ -85,9 +85,9 @@ if is_supported_pyevm_version_available():
         Revert as EVMRevert,
     )
     from eth.vm.forks import (
+        CancunVM,
         ParisVM,
         ShanghaiVM,
-        CancunVM,
     )
     from eth.vm.forks.shanghai.withdrawals import (
         Withdrawal,
