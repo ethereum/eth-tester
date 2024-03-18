@@ -3,6 +3,15 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
+eth-tester v0.10.0-beta.4 (2024-03-18)
+--------------------------------------
+
+Internal Changes - for eth-tester Contributors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Update default config to use CancunVM (`#284 <https://github.com/ethereum/eth-tester/issues/284>`__)
+
+
 eth-tester v0.10.0-beta.3 (2024-02-26)
 --------------------------------------
 
