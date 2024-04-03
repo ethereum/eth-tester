@@ -57,6 +57,12 @@ def _normalize_outbound_access_list(access_list):
 
 TRANSACTION_NORMALIZERS = {
     "type": identity,
+    "blob_versioned_hashes": partial(
+        normalize_array,
+        normalizer=partial(
+            normalize_if, conditional_fn=is_bytes, normalizer=encode_hex
+        ),
+    ),
     "chain_id": identity,
     "hash": encode_hex,
     "nonce": identity,
@@ -68,6 +74,7 @@ TRANSACTION_NORMALIZERS = {
     "value": identity,
     "gas": identity,
     "gas_price": identity,
+    "max_fee_per_blob_gas": identity,
     "max_fee_per_gas": identity,
     "max_priority_fee_per_gas": identity,
     "data": encode_hex,
@@ -75,6 +82,7 @@ TRANSACTION_NORMALIZERS = {
     "r": identity,
     "s": identity,
     "v": identity,
+    "y_parity": identity,
 }
 normalize_transaction = partial(normalize_dict, normalizers=TRANSACTION_NORMALIZERS)
 
@@ -143,6 +151,9 @@ BLOCK_NORMALIZERS = {
     "uncles": partial(normalize_array, normalizer=encode_hex),
     "withdrawals": partial(normalize_array, normalizer=normalize_withdrawal),
     "withdrawals_root": encode_hex,
+    "parent_beacon_block_root": encode_hex,
+    "blob_gas_used": identity,
+    "excess_blob_gas": identity,
 }
 normalize_block = compose(
     partial(normalize_dict, normalizers=BLOCK_NORMALIZERS),
@@ -205,6 +216,8 @@ RECEIPT_NORMALIZERS = {
     "to": to_empty_or_checksum_address,
     "type": identity,
     "base_fee_per_gas": identity,
+    "blob_gas_used": identity,
+    "blob_gas_price": identity,
 }
 normalize_receipt = compose(
     partial(normalize_dict, normalizers=RECEIPT_NORMALIZERS),

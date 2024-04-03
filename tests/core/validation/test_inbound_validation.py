@@ -300,7 +300,7 @@ def _make_transaction(
         ("send", _make_transaction(_from=ADDRESS_A, to="", gas=21000, _type=1), True),
         (
             "send",
-            _make_transaction(_from=ADDRESS_A, to="", gas=21000, _type="0x3"),
+            _make_transaction(_from=ADDRESS_A, to="", gas=21000, _type="0x4"),
             False,
         ),
         (

@@ -1,0 +1,1 @@
+Calculate the total blob gas used in a block and send the correct number to the execution layer for ``PyEVMBackend``. Only send the expected RLP transaction payload to the execution layer rather than the ``PooledTransaction`` since blob data should not be sent to the EL.

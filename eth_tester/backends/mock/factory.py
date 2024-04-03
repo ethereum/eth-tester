@@ -280,6 +280,9 @@ def make_genesis_block(overrides=None):
         "base_fee_per_gas": 1000000000,
         "withdrawals": [],
         "withdrawals_root": BLANK_ROOT_HASH,
+        "parent_beacon_block_root": BLANK_ROOT_HASH,
+        "blob_gas_used": 0,
+        "excess_blob_gas": 0,
     }
     if overrides is not None:
         genesis_block = merge_genesis_overrides(

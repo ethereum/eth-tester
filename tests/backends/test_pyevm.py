@@ -9,6 +9,7 @@ from eth.constants import (
 )
 from eth.vm.forks import (
     BerlinVM,
+    CancunVM,
     FrontierVM,
     GrayGlacierVM,
     LondonVM,
@@ -110,6 +111,8 @@ def test_custom_virtual_machines():
         (BerlinVM, LondonVM, "base_fee_per_gas"),
         (ParisVM, ShanghaiVM, "withdrawals"),
         (ParisVM, ShanghaiVM, "withdrawals_root"),
+        (ShanghaiVM, CancunVM, "blob_gas_used"),
+        (ShanghaiVM, CancunVM, "excess_blob_gas"),
     ),
 )
 def test_newly_introduced_block_fields_at_fork_transition(
