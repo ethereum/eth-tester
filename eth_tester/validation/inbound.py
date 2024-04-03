@@ -33,6 +33,7 @@ from eth_utils.toolz import (
 )
 
 from eth_tester.constants import (
+    BLOB_TRANSACTION_PARAMS,
     BLOCK_NUMBER_META_VALUES,
 )
 from eth_tester.exceptions import (
@@ -237,6 +238,13 @@ def validate_transaction(value, txn_internal_type):
         )
     )
     if unknown_keys:
+        if any(k in value for k in BLOB_TRANSACTION_PARAMS):
+            raise ValidationError(
+                "Transaction contains blob-specific parameters. Blob transactions are "
+                "only supported via `eth_sendRawTransaction`, rlp encoding the blob "
+                "sidecar data along with the transaction as per the EIP-4844 "
+                "`PooledTransaction` model."
+            )
         raise ValidationError(
             "Only the keys '{}' are allowed.  Got extra keys: '{}'".format(
                 "/".join(

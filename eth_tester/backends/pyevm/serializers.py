@@ -21,6 +21,9 @@ else:
     BaseTransaction = None
     TypedTransaction = None
 
+from eth_tester.constants import (
+    GAS_PER_BLOB,
+)
 from eth_tester.exceptions import (
     ValidationError,
 )
@@ -74,12 +77,29 @@ def serialize_block(block, full_transaction, is_pending):
     }
 
     if hasattr(block.header, "base_fee_per_gas"):
+        # london
         base_fee = block.header.base_fee_per_gas
         block_info.update({"base_fee_per_gas": base_fee})
 
-    if hasattr(block.header, "withdrawals_root") and hasattr(block, "withdrawals"):
+    if hasattr(block.header, "withdrawals_root"):
+        # shanghai
         block_info.update({"withdrawals": serialize_block_withdrawals(block)})
         block_info.update({"withdrawals_root": block.header.withdrawals_root})
+
+    if all(
+        hasattr(block.header, cancun_attr)
+        for cancun_attr in (
+            "blob_gas_used",
+            "excess_blob_gas",
+            "parent_beacon_block_root",
+        )
+    ):
+        # cancun
+        block_info.update(
+            {"parent_beacon_block_root": block.header.parent_beacon_block_root}
+        )
+        block_info.update({"blob_gas_used": block.header.blob_gas_used})
+        block_info.update({"excess_blob_gas": block.header.excess_blob_gas})
 
     return block_info
 
@@ -103,13 +123,8 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
         "value": transaction.value,
         "gas": transaction.gas,
         "data": transaction.data,
-        "r": transaction.r,
-        "s": transaction.s,
-        "v": transaction.v
-        if _field_in_transaction(transaction, "v")
-        else transaction.y_parity,
     }
-    if _field_in_transaction(transaction, "gas_price"):
+    if int(txn_type, 16) in (0, 1):
         type_specific_params = {"gas_price": transaction.gas_price}
 
         if _field_in_transaction(transaction, "access_list"):
@@ -121,10 +136,7 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
                     "access_list": transaction.access_list or (),
                 },
             )
-    elif any(
-        _field_in_transaction(transaction, _)
-        for _ in ("max_fee_per_gas" and "max_priority_fee_per_gas")
-    ):
+    elif int(txn_type, 16) >= 2:
         # dynamic fee transaction
         type_specific_params = {
             "chain_id": transaction.chain_id,
@@ -140,10 +152,32 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
                 else _calculate_effective_gas_price(transaction, block, txn_type)
             ),
         }
+        if int(txn_type, 16) == 3:
+            # blob transaction
+            type_specific_params = merge(
+                type_specific_params,
+                {
+                    "max_fee_per_blob_gas": transaction.max_fee_per_blob_gas,
+                    "blob_versioned_hashes": transaction.blob_versioned_hashes,
+                },
+            )
     else:
         raise ValidationError("Invariant: code path should be unreachable")
 
-    return merge(common_transaction_params, type_specific_params)
+    # the signature fields are commonly the last fields in a node's JSON-RPC response
+    signed_tx_params = {
+        "v": (
+            transaction.v
+            if _field_in_transaction(transaction, "v")
+            else transaction.y_parity
+        ),
+        "s": transaction.s,
+        "r": transaction.r,
+    }
+    if txn_type != "0x0":
+        signed_tx_params["y_parity"] = signed_tx_params["v"]
+
+    return merge(common_transaction_params, type_specific_params, signed_tx_params)
 
 
 def _field_in_transaction(transaction, field):
@@ -163,7 +197,7 @@ def _field_in_transaction(transaction, field):
 
 
 def serialize_transaction_receipt(
-    block, receipts, transaction, transaction_index, is_pending
+    block, receipts, transaction, transaction_index, is_pending, vm
 ):
     receipt = receipts[transaction_index]
     _txn_type = _extract_transaction_type(transaction)
@@ -182,7 +216,7 @@ def serialize_transaction_receipt(
     else:
         origin_gas = receipts[transaction_index - 1].gas_used
 
-    return {
+    receipt_fields = {
         "block_hash": None if is_pending else block.hash,
         "block_number": None if is_pending else block.number,
         "contract_address": contract_addr,
@@ -206,6 +240,14 @@ def serialize_transaction_receipt(
         "type": _txn_type,
     }
 
+    if int(_txn_type, 16) == 3:
+        # blob transaction
+        blob_gas_used = GAS_PER_BLOB * len(transaction.blob_versioned_hashes)
+        receipt_fields["blob_gas_used"] = blob_gas_used
+        receipt_fields["blob_gas_price"] = vm.state.blob_base_fee * blob_gas_used
+
+    return receipt_fields
+
 
 def serialize_log(block, transaction, transaction_index, log, log_index, is_pending):
     return {
@@ -223,12 +265,9 @@ def serialize_log(block, transaction, transaction_index, log, log_index, is_pend
 
 def _extract_transaction_type(transaction):
     if isinstance(transaction, TypedTransaction):
-        try:
-            transaction.gas_price  # noqa: 201
-            return "0x1"
-        except AttributeError:
-            return "0x2"
-    # legacy transactions being '0x0' taken from current geth version v1.10.10
+        return hex(transaction.type_id)
+
+    # legacy transactions are now considered "0x0" type
     return "0x0"
 
 
@@ -238,7 +277,7 @@ def _calculate_effective_gas_price(transaction, block, transaction_type):
             transaction.max_fee_per_gas,
             transaction.max_priority_fee_per_gas + block.header.base_fee_per_gas,
         )
-        if transaction_type == "0x2"
+        if int(transaction_type, 16) >= 2
         else transaction.gas_price
     )
 

@@ -52,6 +52,13 @@ def serialize_full_transaction(transaction, block, transaction_index, is_pending
         partial(assoc, key="type", value=extract_transaction_type(transaction)),
     )
 
+    if int(serialized_transaction["type"], 16) > 0:
+        serialized_transaction = assoc(
+            serialized_transaction,
+            "y_parity",
+            transaction["v"],
+        )
+
     if "gas_price" in transaction:
         return serialized_transaction
     else:

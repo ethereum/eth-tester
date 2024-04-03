@@ -156,6 +156,7 @@ ACCESS_LIST_TRANSACTION_VALIDATORS = merge(
     LEGACY_TRANSACTION_VALIDATORS,
     {
         "v": validate_y_parity,
+        "y_parity": validate_y_parity,
         "chain_id": validate_uint256,
         "access_list": _validate_outbound_access_list,
     },
@@ -176,6 +177,19 @@ validate_dynamic_fee_transaction = partial(
     validate_dict, key_validators=DYNAMIC_FEE_TRANSACTION_VALIDATORS
 )
 
+BLOB_TRANSACTION_VALIDATORS = merge(
+    DYNAMIC_FEE_TRANSACTION_VALIDATORS,
+    {
+        "max_fee_per_blob_gas": validate_uint256,
+        "blob_versioned_hashes": partial(
+            validate_array,
+            validator=validate_32_byte_string,
+        ),
+    },
+)
+validate_blob_transactions = partial(
+    validate_dict, key_validators=BLOB_TRANSACTION_VALIDATORS
+)
 
 validate_transaction = partial(
     validate_any,
@@ -183,6 +197,7 @@ validate_transaction = partial(
         partial(validate_dict, key_validators=LEGACY_TRANSACTION_VALIDATORS),
         partial(validate_dict, key_validators=ACCESS_LIST_TRANSACTION_VALIDATORS),
         partial(validate_dict, key_validators=DYNAMIC_FEE_TRANSACTION_VALIDATORS),
+        partial(validate_dict, key_validators=BLOB_TRANSACTION_VALIDATORS),
     ),
 )
 
@@ -218,7 +233,20 @@ RECEIPT_VALIDATORS = {
     "to": if_not_create_address(validate_canonical_address),
     "type": validate_transaction_type,
 }
-validate_receipt = partial(validate_dict, key_validators=RECEIPT_VALIDATORS)
+CANCUN_RECEIPT_VALIDATORS = merge(
+    RECEIPT_VALIDATORS,
+    {
+        "blob_gas_used": validate_positive_integer,
+        "blob_gas_price": validate_positive_integer,
+    },
+)
+validate_receipt = partial(
+    validate_any,
+    validators=(
+        partial(validate_dict, key_validators=RECEIPT_VALIDATORS),
+        partial(validate_dict, key_validators=CANCUN_RECEIPT_VALIDATORS),
+    ),
+)
 
 
 BLOCK_VALIDATORS = {
@@ -247,13 +275,20 @@ BLOCK_VALIDATORS = {
             partial(validate_array, validator=validate_legacy_transaction),
             partial(validate_array, validator=validate_access_list_transaction),
             partial(validate_array, validator=validate_dynamic_fee_transaction),
+            partial(validate_array, validator=validate_blob_transactions),
         ),
     ),
     "uncles": partial(validate_array, validator=validate_32_byte_string),
     # fork-specific fields, validated separately in `_validate_fork_specific_fields()`
+    # London fork:
     "base_fee_per_gas": identity,
+    # Shanghai fork:
     "withdrawals": identity,
     "withdrawals_root": identity,
+    # Cancun fork:
+    "parent_beacon_block_root": identity,
+    "blob_gas_used": identity,
+    "excess_blob_gas": identity,
 }
 
 
@@ -276,6 +311,19 @@ def _validate_fork_specific_fields(block):
     else:
         partial(validate_array, validator=validate_withdrawal)(block["withdrawals"])
         validate_32_byte_string(block["withdrawals_root"])
+
+    # Cancun fork
+    if all(
+        _ not in block
+        for _ in ("parent_beacon_block_root", "blob_gas_used", "excess_blob_gas")
+    ):
+        block["parent_beacon_block_root"] = None
+        block["blob_gas_used"] = None
+        block["excess_blob_gas"] = None
+    else:
+        validate_32_byte_string(block["parent_beacon_block_root"])
+        validate_positive_integer(block["blob_gas_used"])
+        validate_positive_integer(block["excess_blob_gas"])
 
     return block
 

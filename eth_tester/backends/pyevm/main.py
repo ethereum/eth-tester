@@ -16,6 +16,9 @@ from eth_abi import (
 from eth_abi.exceptions import (
     DecodingError,
 )
+from eth_account._utils.typed_transactions import (
+    BlobTransaction,
+)
 from eth_account.hdaccount import (
     HDPath,
     seed_from_mnemonic,
@@ -41,6 +44,9 @@ from eth_utils.decorators import (
 )
 from eth_utils.toolz import (
     assoc,
+)
+from hexbytes import (
+    HexBytes,
 )
 
 from eth_tester.backends.base import (
@@ -88,6 +94,9 @@ if is_supported_pyevm_version_available():
         CancunVM,
         ParisVM,
         ShanghaiVM,
+    )
+    from eth.vm.forks.cancun import (
+        get_total_blob_gas,
     )
     from eth.vm.forks.shanghai.withdrawals import (
         Withdrawal,
@@ -525,6 +534,12 @@ class PyEVMBackend(BaseChainBackend):
                 # `prevrandao` value.
                 mine_kwargs["mix_hash"] = os.urandom(32)
 
+            if isinstance(self.chain.get_vm(), CancunVM):
+                transactions = self.chain.get_block().transactions
+                mine_kwargs["blob_gas_used"] = sum(
+                    get_total_blob_gas(tx) for tx in transactions
+                )
+
             block = self.chain.mine_block(**mine_kwargs)
             yield block.hash
 
@@ -585,6 +600,7 @@ class PyEVMBackend(BaseChainBackend):
             transaction,
             transaction_index,
             is_pending,
+            self.chain.get_vm(),
         )
 
     def get_fee_history(
@@ -734,7 +750,25 @@ class PyEVMBackend(BaseChainBackend):
 
     def send_raw_transaction(self, raw_transaction):
         vm = _get_vm_for_block_number(self.chain, "latest")
-        evm_transaction = vm.get_transaction_builder().decode(raw_transaction)
+
+        if raw_transaction[0] == 3:
+            # Blob transactions are handled differently
+            blob_transaction = BlobTransaction.from_bytes(HexBytes(raw_transaction))
+
+            # Blob data is handled in consensus layer, not sent to execution layer.
+            # Set it to `None` so the `payload()` re-encodes without the blob sidecar.
+            blob_transaction.blob_data = None
+
+            raw_evm_blob_transaction = (
+                blob_transaction.transaction_type.to_bytes()
+                + blob_transaction.payload()
+            )
+            evm_transaction = vm.get_transaction_builder().decode(
+                raw_evm_blob_transaction
+            )
+        else:
+            evm_transaction = vm.get_transaction_builder().decode(raw_transaction)
+
         self.chain.apply_transaction(evm_transaction)
         return evm_transaction.hash
 

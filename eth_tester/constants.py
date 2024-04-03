@@ -77,4 +77,9 @@ SECPK1_G = (SECPK1_Gx, SECPK1_Gy)
 #
 # EIP CONSTANTS
 #
+# EIP-1559
 DYNAMIC_FEE_TRANSACTION_PARAMS = ("max_fee_per_gas", "max_priority_fee_per_gas")
+
+# EIP-4844
+BLOB_TRANSACTION_PARAMS = ("max_fee_per_blob_gas", "blob_versioned_hashes")
+GAS_PER_BLOB = 2**17

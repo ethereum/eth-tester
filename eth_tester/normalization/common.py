@@ -2,7 +2,7 @@ from eth_utils import (
     encode_hex,
     is_hex,
     to_dict,
-    to_tuple,
+    to_list,
 )
 from eth_utils.toolz import (
     curry,
@@ -22,7 +22,7 @@ def normalize_dict(value, normalizers):
 
 
 @curry
-@to_tuple
+@to_list
 def normalize_array(value, normalizer):
     """
     Just `map` but it's nice to have it return a consistent type

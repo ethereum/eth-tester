@@ -88,9 +88,9 @@ def _make_legacy_txn(
         "gas": gas,
         "gas_price": gas_price,
         "data": data,
-        "v": v,
-        "r": r,
         "s": s,
+        "r": r,
+        "v": v,
     }
 
 
@@ -106,6 +106,7 @@ def _make_access_list_txn(
             "type": "0x1",
             "chain_id": chain_id,
             "access_list": list(access_list),
+            "y_parity": legacy_kwargs.get("v", 0),
         },
     )
 
