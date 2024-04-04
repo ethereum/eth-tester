@@ -2,28 +2,24 @@ from __future__ import (
     unicode_literals,
 )
 
-import pytest
-
-from eth_tester.validation.inbound import (
-    validate_inbound_withdrawals,
-)
-
-try:
-    pass
-except ImportError:
-    pass
-
 from eth_utils import (
     decode_hex,
     encode_hex,
     to_dict,
 )
+import pytest
 
 from eth_tester.exceptions import (
     ValidationError,
 )
 from eth_tester.validation import (
     DefaultValidator,
+)
+from eth_tester.validation.inbound import (
+    validate_inbound_withdrawals,
+)
+from tests.utils import (
+    yield_key_value_if_value_not_none,
 )
 
 
@@ -149,11 +145,6 @@ TOPIC_C = encode_hex(b"\x00" * 30 + b"\x01")
 TOPIC_D = encode_hex(b"\x00" * 32 + b"\x01")
 
 
-def _yield_key_value_if_value_not_none(key, value):
-    if value is not None:
-        yield key, value
-
-
 @pytest.mark.parametrize(
     "filter_params,is_valid",
     (
@@ -216,12 +207,14 @@ def test_filter_params_input_validation(validator, filter_params, is_valid):
 
 @to_dict
 def _make_transaction(
+    blob_versioned_hashes=None,
     chain_id=None,
     _type=None,
     _from=None,
     to=None,
     gas=None,
     gas_price=None,
+    max_fee_per_blob_gas=None,
     max_fee_per_gas=None,
     max_priority_fee_per_gas=None,
     value=None,
@@ -232,23 +225,29 @@ def _make_transaction(
     s=None,
     v=None,
 ):
-    yield from _yield_key_value_if_value_not_none("type", _type)
-    yield from _yield_key_value_if_value_not_none("chain_id", chain_id)
-    yield from _yield_key_value_if_value_not_none("from", _from)
-    yield from _yield_key_value_if_value_not_none("to", to)
-    yield from _yield_key_value_if_value_not_none("gas", gas)
-    yield from _yield_key_value_if_value_not_none("gas_price", gas_price)
-    yield from _yield_key_value_if_value_not_none("max_fee_per_gas", max_fee_per_gas)
-    yield from _yield_key_value_if_value_not_none(
+    yield from yield_key_value_if_value_not_none("type", _type)
+    yield from yield_key_value_if_value_not_none("chain_id", chain_id)
+    yield from yield_key_value_if_value_not_none("from", _from)
+    yield from yield_key_value_if_value_not_none("to", to)
+    yield from yield_key_value_if_value_not_none("gas", gas)
+    yield from yield_key_value_if_value_not_none("gas_price", gas_price)
+    yield from yield_key_value_if_value_not_none("max_fee_per_gas", max_fee_per_gas)
+    yield from yield_key_value_if_value_not_none(
         "max_priority_fee_per_gas", max_priority_fee_per_gas
     )
-    yield from _yield_key_value_if_value_not_none("value", value)
-    yield from _yield_key_value_if_value_not_none("data", data)
-    yield from _yield_key_value_if_value_not_none("nonce", nonce)
-    yield from _yield_key_value_if_value_not_none("access_list", access_list)
-    yield from _yield_key_value_if_value_not_none("r", r)
-    yield from _yield_key_value_if_value_not_none("s", s)
-    yield from _yield_key_value_if_value_not_none("v", v)
+    yield from yield_key_value_if_value_not_none("value", value)
+    yield from yield_key_value_if_value_not_none("data", data)
+    yield from yield_key_value_if_value_not_none("nonce", nonce)
+    yield from yield_key_value_if_value_not_none("access_list", access_list)
+    yield from yield_key_value_if_value_not_none("r", r)
+    yield from yield_key_value_if_value_not_none("s", s)
+    yield from yield_key_value_if_value_not_none("v", v)
+    yield from yield_key_value_if_value_not_none(
+        "blob_versioned_hashes", blob_versioned_hashes
+    )
+    yield from yield_key_value_if_value_not_none(
+        "max_fee_per_blob_gas", max_fee_per_blob_gas
+    )
 
 
 @pytest.mark.parametrize(
@@ -463,6 +462,14 @@ def _make_transaction(
             ),
             True,
         ),
+        # Cancun
+        # `eth_sendTransaction` does not support blob transactions:
+        ("send", _make_transaction(blob_versioned_hashes=[]), False),
+        ("send", _make_transaction(blob_versioned_hashes=[b""]), False),
+        ("send", _make_transaction(blob_versioned_hashes=[b"0x"]), False),
+        ("send", _make_transaction(max_fee_per_blob_gas=0), False),
+        ("send", _make_transaction(max_fee_per_blob_gas=1), False),
+        ("send", _make_transaction(max_fee_per_blob_gas="0x0"), False),
     ),
 )
 def test_transaction_input_validation(
