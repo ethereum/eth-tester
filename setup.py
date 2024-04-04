@@ -24,9 +24,9 @@ extras_require = {
         "eth-hash[pycryptodome]>=0.1.4,<1.0.0",
     ],
     "py-evm": [
-        # Pin py-evm to exact version, until it leaves alpha.
-        # EVM is very high velocity and might change API at each alpha.
-        "py-evm==0.10.0b4",
+        # Pin py-evm to a minor version range to ensure compatibility with the current
+        # implemented EVM version.
+        "py-evm>=0.10.0b0,<0.11.0b0",
         "eth-hash[pysha3]>=0.1.4,<1.0.0;implementation_name=='cpython'",
         "eth-hash[pycryptodome]>=0.1.4,<1.0.0;implementation_name=='pypy'",
     ],
@@ -57,7 +57,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "eth-abi>=3.0.1",
-        "eth-account>=0.6.0",
+        "eth-account>=0.11.1",
         "eth-keys>=0.4.0",
         "eth-utils>=2.0.0",
         "rlp>=3.0.0",
