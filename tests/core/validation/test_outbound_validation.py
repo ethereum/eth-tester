@@ -357,6 +357,16 @@ def test_log_entry_output_validation(validator, log_entry, is_valid):
         (make_receipt(status=1), True),
         (make_receipt(status=2), False),
         (make_receipt(status=-1), False),
+        (make_receipt(blob_gas_used=-1, blob_gas_price=-1), False),
+        (make_receipt(blob_gas_used=-1, blob_gas_price=0), False),
+        (make_receipt(blob_gas_used=0, blob_gas_price=-1), False),
+        (make_receipt(blob_gas_used=0, blob_gas_price=0), True),
+        (make_receipt(blob_gas_used=0, blob_gas_price=1), True),
+        (make_receipt(blob_gas_used=1, blob_gas_price=0), True),
+        (make_receipt(blob_gas_used=1, blob_gas_price=1), True),
+        (make_receipt(blob_gas_used=2, blob_gas_price=1), True),
+        (make_receipt(blob_gas_used=1, blob_gas_price=2), True),
+        (make_receipt(blob_gas_used=2, blob_gas_price=2), True),
     ),
 )
 def test_receipt_output_validation(validator, receipt, is_valid):
