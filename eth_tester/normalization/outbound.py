@@ -2,7 +2,11 @@ from __future__ import (
     absolute_import,
 )
 
+from eth_utils import (
+    is_integer,
+)
 from eth_utils.curried import (
+    apply_formatter_if,
     apply_one_of_formatters,
     encode_hex,
     is_address,
@@ -39,6 +43,7 @@ to_empty_or_checksum_address = apply_one_of_formatters(
         (is_canonical_address, to_checksum_address),
     )
 )
+to_hex_if_integer = apply_formatter_if(is_integer, hex)
 
 
 def _normalize_outbound_access_list(access_list):
@@ -56,7 +61,7 @@ def _normalize_outbound_access_list(access_list):
 
 
 TRANSACTION_NORMALIZERS = {
-    "type": identity,
+    "type": to_hex_if_integer,
     "blob_versioned_hashes": partial(
         normalize_array,
         normalizer=partial(
@@ -214,7 +219,7 @@ RECEIPT_NORMALIZERS = {
     "state_root": identity,
     "status": identity,
     "to": to_empty_or_checksum_address,
-    "type": identity,
+    "type": to_hex_if_integer,
     "base_fee_per_gas": identity,
     "blob_gas_used": identity,
     "blob_gas_price": identity,

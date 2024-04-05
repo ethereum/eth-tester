@@ -74,9 +74,16 @@ SECPK1_Gy = (
 )
 SECPK1_G = (SECPK1_Gx, SECPK1_Gy)
 
-#
-# EIP CONSTANTS
-#
+
+# -- KNOWN TRANSACTION TYPES -- #
+LEGACY_TX_TYPE = 0
+ACCESS_LIST_TX_TYPE = 1
+DYNAMIC_FEE_TX_TYPE = 2
+BLOB_TX_TYPE = 3
+
+
+# -- EIP CONSTANTS -- #
+
 # EIP-1559
 DYNAMIC_FEE_TRANSACTION_PARAMS = ("max_fee_per_gas", "max_priority_fee_per_gas")
 

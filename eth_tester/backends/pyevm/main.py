@@ -56,6 +56,7 @@ from eth_tester.backends.common import (
     merge_genesis_overrides,
 )
 from eth_tester.constants import (
+    BLOB_TX_TYPE,
     DYNAMIC_FEE_TRANSACTION_PARAMS,
 )
 from eth_tester.exceptions import (
@@ -751,8 +752,9 @@ class PyEVMBackend(BaseChainBackend):
     def send_raw_transaction(self, raw_transaction):
         vm = _get_vm_for_block_number(self.chain, "latest")
 
-        if raw_transaction[0] == 3:
-            # Blob transactions are handled differently
+        # first byte of rlp-encoded raw transaction indicates the transaction type
+        if raw_transaction[0] == BLOB_TX_TYPE:
+            # Blob transactions (type=3) are handled differently
             blob_transaction = BlobTransaction.from_bytes(HexBytes(raw_transaction))
 
             # Blob data is handled in consensus layer, not sent to execution layer.
