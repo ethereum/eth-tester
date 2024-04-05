@@ -25,6 +25,11 @@ from eth_tester.exceptions import (
     ValidationError,
 )
 
+from ..backends.pyevm.utils import (
+    is_cancun_block,
+    is_london_block,
+    is_shanghai_block,
+)
 from .common import (
     if_not_create_address,
     if_not_null,
@@ -298,32 +303,26 @@ def _validate_fork_specific_fields(block):
     blocks that are missing this key (before it was introduced via a fork), set the
     value to `None` during validation and pop it back out during normalization.
     """
-    # London fork
-    if "base_fee_per_gas" not in block:
-        block["base_fee_per_gas"] = None
-    else:
+    if is_london_block(block):
         validate_positive_integer(block["base_fee_per_gas"])
-
-    # Shanghai fork
-    if all(_ not in block for _ in ("withdrawals", "withdrawals_root")):
-        block["withdrawals"] = None
-        block["withdrawals_root"] = None
     else:
+        block["base_fee_per_gas"] = None
+
+    if is_shanghai_block(block):
         partial(validate_array, validator=validate_withdrawal)(block["withdrawals"])
         validate_32_byte_string(block["withdrawals_root"])
-
-    # Cancun fork
-    if all(
-        _ not in block
-        for _ in ("parent_beacon_block_root", "blob_gas_used", "excess_blob_gas")
-    ):
-        block["parent_beacon_block_root"] = None
-        block["blob_gas_used"] = None
-        block["excess_blob_gas"] = None
     else:
+        block["withdrawals"] = None
+        block["withdrawals_root"] = None
+
+    if is_cancun_block(block):
         validate_32_byte_string(block["parent_beacon_block_root"])
         validate_positive_integer(block["blob_gas_used"])
         validate_positive_integer(block["excess_blob_gas"])
+    else:
+        block["parent_beacon_block_root"] = None
+        block["blob_gas_used"] = None
+        block["excess_blob_gas"] = None
 
     return block
 

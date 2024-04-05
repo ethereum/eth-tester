@@ -10,6 +10,9 @@ from eth_utils.toolz import (
 from eth_tester.backends.mock.common import (
     calculate_effective_gas_price,
 )
+from eth_tester.constants import (
+    LEGACY_TX_TYPE,
+)
 from eth_tester.utils.transactions import (
     extract_transaction_type,
 )
@@ -52,7 +55,10 @@ def serialize_full_transaction(transaction, block, transaction_index, is_pending
         partial(assoc, key="type", value=extract_transaction_type(transaction)),
     )
 
-    if int(serialized_transaction["type"], 16) > 0:
+    if int(serialized_transaction["type"], 16) > LEGACY_TX_TYPE:
+        # if the transaction is not a legacy (type=0) transaction, `y_parity` is
+        # the correct signature field but clients commonly return both `v` and
+        # `y_parity`.
         serialized_transaction = assoc(
             serialized_transaction,
             "y_parity",
