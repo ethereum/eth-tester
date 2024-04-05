@@ -760,8 +760,7 @@ class PyEVMBackend(BaseChainBackend):
             blob_transaction.blob_data = None
 
             raw_evm_blob_transaction = (
-                blob_transaction.transaction_type.to_bytes()
-                + blob_transaction.payload()
+                to_bytes(blob_transaction.transaction_type) + blob_transaction.payload()
             )
             evm_transaction = vm.get_transaction_builder().decode(
                 raw_evm_blob_transaction
