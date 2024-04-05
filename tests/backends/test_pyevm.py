@@ -16,12 +16,20 @@ from eth.vm.forks import (
     ParisVM,
     ShanghaiVM,
 )
+from eth_abi import (
+    abi,
+)
+from eth_account import (
+    Account,
+)
 from eth_typing import (
     HexStr,
 )
 from eth_utils import (
+    ValidationError as EthUtilsValidationError,
     encode_hex,
     is_hexstr,
+    to_hex,
     to_wei,
 )
 import pytest
@@ -435,3 +443,54 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
             assert tester.get_storage_at(acct, HexStr("0x0")) == f"0x{'00'*32}"
             assert tester.get_storage_at(acct, HexStr("0x1")) == f"0x{'00'*31}01"
             assert tester.get_storage_at(acct, HexStr("0x2")) == f"0x{'00'*31}02"
+
+    # --- cancun network upgrade --- #
+
+    BLOB_TEXT = "We are the music makers, And we are the dreamers of dreams."
+    ENCODED_BLOB_TEXT = abi.encode(["string"], [BLOB_TEXT])
+
+    BLOB_TX_FOR_SIGNING = {
+        "type": 3,
+        "chainId": 1337,
+        "value": 0,
+        "gas": 21000,
+        "maxFeePerGas": 10**10,
+        "maxPriorityFeePerGas": 10**10,
+        "maxFeePerBlobGas": 10**10,
+        "nonce": 0,
+    }
+
+    def test_send_raw_transaction_valid_blob_transaction(self, eth_tester):
+        pkey = eth_tester.backend.account_keys[0]
+        acct = Account.from_key(pkey)
+
+        tx = self.BLOB_TX_FOR_SIGNING.copy()
+        tx["from"] = acct.address
+        tx["to"] = eth_tester.get_accounts()[1]
+
+        # Blobs contain 4096 32-byte field elements. Subtract the length of the encoded
+        # text divided into 32-byte chunks from 4096 and pad the rest with zeros.
+        blob_data = (
+            b"\x00" * 32 * (4096 - len(self.ENCODED_BLOB_TEXT) // 32)
+        ) + self.ENCODED_BLOB_TEXT
+
+        signed = acct.sign_transaction(tx, blobs=[blob_data])
+        tx_hash = eth_tester.send_raw_transaction(to_hex(signed.rawTransaction))
+        assert eth_tester.get_transaction_by_hash(tx_hash)
+
+    def test_send_raw_transaction_invalid_blob_transaction(self, eth_tester):
+        pkey = eth_tester.backend.account_keys[0]
+        acct = Account.from_key(pkey)
+
+        tx = self.BLOB_TX_FOR_SIGNING.copy()
+        tx["from"] = acct.address
+        tx["to"] = eth_tester.get_accounts()[1]
+
+        blob_data = (
+            b"\x00" * 32 * (4096 - len(self.ENCODED_BLOB_TEXT) // 32)
+        ) + self.ENCODED_BLOB_TEXT[
+            :-1
+        ]  # only 1 byte short -- invalid
+
+        with pytest.raises(EthUtilsValidationError):
+            acct.sign_transaction(tx, blobs=[blob_data])
