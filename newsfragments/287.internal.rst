@@ -1,1 +1,0 @@
-Bump `eth-account` to ``>=0.11.2`` since there was a dependency-related bugfix.

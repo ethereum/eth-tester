@@ -3,6 +3,21 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
+eth-tester v0.11.0-beta.1 (2024-04-10)
+--------------------------------------
+
+Bugfixes
+~~~~~~~~
+
+- Calculate the total blob gas used in a block and send the correct number to the execution layer for ``PyEVMBackend``. Only send the expected RLP transaction payload to the execution layer rather than the ``PooledTransaction`` since blob data should not be sent to the EL. (`#285 <https://github.com/ethereum/eth-tester/issues/285>`__)
+
+
+Internal Changes - for eth-tester Contributors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Bump `eth-account` to ``>=0.11.2`` since there was a dependency-related bugfix. (`#287 <https://github.com/ethereum/eth-tester/issues/287>`__)
+
+
 eth-tester v0.10.0-beta.4 (2024-03-18)
 --------------------------------------
 
