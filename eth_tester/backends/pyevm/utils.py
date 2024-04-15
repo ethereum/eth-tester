@@ -2,13 +2,16 @@ from __future__ import (
     absolute_import,
 )
 
+from importlib.metadata import (
+    PackageNotFoundError,
+    version,
+)
 from typing import (
     Any,
     Dict,
     Union,
 )
 
-import pkg_resources
 from semantic_version import (
     Version,
 )
@@ -16,11 +19,15 @@ from semantic_version import (
 
 def get_pyevm_version():
     try:
-        base_version = pkg_resources.parse_version(
-            pkg_resources.get_distribution("py-evm").version
-        ).base_version
-        return Version(base_version)
-    except pkg_resources.DistributionNotFound:
+        # Fetch the version string of py-evm from its metadata
+        base_version = version("py-evm")
+        # Create a Version instance from the semantic version library
+        return Version.coerce(base_version)
+    except PackageNotFoundError:
+        print("Package 'py-evm' not found.")
+        return None
+    except ValueError as ve:
+        print(f"Version parsing error: {ve}")
         return None
 
 
