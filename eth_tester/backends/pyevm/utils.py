@@ -2,14 +2,19 @@ from __future__ import (
     absolute_import,
 )
 
+from importlib.metadata import (
+    PackageNotFoundError,
+    version,
+)
 from typing import (
     Any,
     Dict,
     Union,
 )
 
-from importlib.metadata import version, PackageNotFoundError
-from semantic_version import Version
+from semantic_version import (
+    Version,
+)
 
 
 def get_pyevm_version():
