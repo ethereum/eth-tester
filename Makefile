@@ -53,7 +53,7 @@ notes: check-bump
 
 release: check-bump clean
 	# require that upstream is configured for ethereum/eth-tester
-	git remote -v | grep "upstream\tgit@github.com:ethereum/eth-tester.git (push)\|upstream\thttps://github.com/ethereum/eth-tester (push)"
+	git remote -v | grep -E 'upstream[[:blank:]]+git@github.com:ethereum/eth-tester.git \(push\)|upstream[[:blank:]]+https://github.com/ethereum/eth-tester (push)'
 	# verify that docs build correctly
 	./newsfragments/validate_files.py is-empty
 	make docs
