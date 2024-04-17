@@ -1,0 +1,1 @@
+Make ``make release`` work on zsh by using more general ``grep`` command
