@@ -1,7 +1,3 @@
-from __future__ import (
-    absolute_import,
-)
-
 from eth_utils import (
     to_bytes,
 )

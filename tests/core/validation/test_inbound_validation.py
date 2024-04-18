@@ -1,13 +1,10 @@
-from __future__ import (
-    unicode_literals,
-)
+import pytest
 
 from eth_utils import (
     decode_hex,
     encode_hex,
     to_dict,
 )
-import pytest
 
 from eth_tester.exceptions import (
     ValidationError,

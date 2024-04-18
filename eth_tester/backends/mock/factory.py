@@ -75,9 +75,9 @@ def bytes_repr(value):
     elif is_integer(value):
         yield to_bytes(value)
     elif is_null(value):
-        yield "None@{}".format(id(value))
+        yield f"None@{id(value)}"
     else:
-        raise TypeError("Unsupported type for bytes_repr: {}".format(type(value)))
+        raise TypeError(f"Unsupported type for bytes_repr: {type(value)}")
 
 
 def fake_rlp_hash(value):

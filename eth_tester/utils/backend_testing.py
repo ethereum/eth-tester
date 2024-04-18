@@ -1,6 +1,4 @@
-from __future__ import (
-    unicode_literals,
-)
+import pytest
 
 from eth_keys import (
     keys,
@@ -19,7 +17,6 @@ from eth_utils.toolz import (
     dissoc,
     merge,
 )
-import pytest
 import rlp
 
 from eth_tester.constants import (

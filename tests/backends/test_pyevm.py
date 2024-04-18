@@ -1,6 +1,4 @@
-from __future__ import (
-    unicode_literals,
-)
+import pytest
 
 from eth.constants import (
     POST_MERGE_DIFFICULTY,
@@ -32,7 +30,6 @@ from eth_utils import (
     to_hex,
     to_wei,
 )
-import pytest
 
 from eth_tester import (
     EthereumTester,

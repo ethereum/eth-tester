@@ -1,7 +1,3 @@
-from __future__ import (
-    unicode_literals,
-)
-
 from eth_utils import (
     is_bytes,
     is_canonical_address,
@@ -48,7 +44,7 @@ def validate_32_byte_string(value):
     validate_bytes(value)
     if len(value) != 32:
         raise ValidationError(
-            "Must be of length 32.  Got: {} of length {}".format(value, len(value))
+            f"Must be of length 32.  Got: {value} of length {len(value)}"
         )
 
 
@@ -59,7 +55,7 @@ def validate_nonce(value):
     validate_bytes(value)
     if len(value) != 8:
         raise ValidationError(
-            "Must be of length 8.  Got: {} of length {}".format(value, len(value))
+            f"Must be of length 8.  Got: {value} of length {len(value)}"
         )
 
 

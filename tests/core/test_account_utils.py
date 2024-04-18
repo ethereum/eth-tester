@@ -1,7 +1,8 @@
+import pytest
+
 from eth_utils import (
     decode_hex,
 )
-import pytest
 
 from eth_tester.utils.accounts import (
     private_key_to_address,

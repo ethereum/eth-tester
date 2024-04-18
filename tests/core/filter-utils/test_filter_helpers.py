@@ -1,12 +1,9 @@
-from __future__ import (
-    unicode_literals,
-)
+import pytest
 
 from eth_utils import (
     big_endian_to_int,
     is_list_like,
 )
-import pytest
 
 from eth_tester.utils.filters import (
     check_if_address_match,
