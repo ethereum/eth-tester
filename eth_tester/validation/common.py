@@ -1,7 +1,3 @@
-from __future__ import (
-    unicode_literals,
-)
-
 import functools
 import math
 from typing import (
@@ -63,30 +59,22 @@ validate_uint8 = validate_uint(UINT8_MAX)
 
 def validate_bytes(value):
     if not is_bytes(value):
-        raise ValidationError(
-            "Value must be a byte string.  Got type: {}".format(type(value))
-        )
+        raise ValidationError(f"Value must be a byte string.  Got type: {type(value)}")
 
 
 def validate_text(value):
     if not is_text(value):
-        raise ValidationError(
-            "Value must be a text string.  Got type: {}".format(type(value))
-        )
+        raise ValidationError(f"Value must be a text string.  Got type: {type(value)}")
 
 
 def validate_is_dict(value):
     if not is_dict(value):
-        raise ValidationError(
-            "Value must be a dictionary.  Got: {}".format(type(value))
-        )
+        raise ValidationError(f"Value must be a dictionary.  Got: {type(value)}")
 
 
 def validate_is_list_like(value):
     if not is_list_like(value):
-        raise ValidationError(
-            "Value must be a sequence type.  Got: {}".format(type(value))
-        )
+        raise ValidationError(f"Value must be a sequence type.  Got: {type(value)}")
 
 
 @to_tuple
@@ -101,9 +89,7 @@ def _accumulate_errors(value, validators):
 def validate_any(value, validators):
     errors = _accumulate_errors(value, validators)
     if len(errors) == len(validators):
-        item_error_messages = tuple(
-            " - [{}]: {}".format(idx, str(err)) for idx, err in errors
-        )
+        item_error_messages = tuple(f" - [{idx}]: {str(err)}" for idx, err in errors)
         error_message = (
             "Value did not pass any of the provided validators:\n"
             "{}".format("\n".join(item_error_messages))
@@ -151,7 +137,7 @@ def validate_dict(value, key_validators):
     key_errors = _accumulate_dict_errors(value, key_validators)
     if key_errors:
         key_messages = tuple(
-            "{}: {}".format(key, str(err)) for key, err in sorted(key_errors.items())
+            f"{key}: {str(err)}" for key, err in sorted(key_errors.items())
         )
         error_message = "The following keys failed to validate\n" "- {}".format(
             "\n - ".join(key_messages)
@@ -174,7 +160,7 @@ def validate_array(value, validator):
     item_errors = _accumulate_array_errors(value, validator)
     if item_errors:
         item_messages = tuple(
-            "[{}]: {}".format(index, str(err)) for index, err in sorted(item_errors)
+            f"[{index}]: {str(err)}" for index, err in sorted(item_errors)
         )
         error_message = "The following items failed to validate\n" "- {}".format(
             "\n - ".join(item_messages)

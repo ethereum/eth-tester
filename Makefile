@@ -31,7 +31,7 @@ lint:
 	)
 
 test:
-	pytest tests
+	python -m pytest tests
 
 docs:
 	python ./newsfragments/validate_files.py
@@ -49,11 +49,11 @@ notes: check-bump
 	towncrier build --yes --version $(UPCOMING_VERSION)
 	# Before we bump the version, make sure that the towncrier-generated docs will build
 	make docs
-	git commit -m "Compile release notes"
+	git commit -m "Compile release notes for v$(UPCOMING_VERSION)"
 
 release: check-bump clean
 	# require that upstream is configured for ethereum/eth-tester
-	git remote -v | grep "upstream\tgit@github.com:ethereum/eth-tester.git (push)\|upstream\thttps://github.com/ethereum/eth-tester (push)"
+	@git remote -v | grep "upstream[[:space:]]git@github.com:ethereum/eth-tester.git (push)\|upstream[[:space:]]https://github.com/ethereum/eth-tester (push)"
 	# verify that docs build correctly
 	./newsfragments/validate_files.py is-empty
 	make docs

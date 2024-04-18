@@ -1,7 +1,3 @@
-from __future__ import (
-    unicode_literals,
-)
-
 import collections
 import functools
 import itertools
@@ -167,7 +163,7 @@ class EthereumTester:
 
         # raw accounts
         self._account_passwords = {}
-        self._account_unlock = collections.defaultdict(lambda: False)
+        self._account_unlock = collections.defaultdict(bool)
 
     #
     # Time Traveling

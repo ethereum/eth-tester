@@ -1,7 +1,3 @@
-from __future__ import (
-    unicode_literals,
-)
-
 import binascii
 from typing import (
     Dict,
@@ -226,9 +222,7 @@ def validate_transaction(value, txn_internal_type):
             "the `txn_internal_type` parameter must be one of send/call/estimate"
         )
     if not is_dict(value):
-        raise ValidationError(
-            "Transaction must be a dictionary. Got: {}".format(type(value))
-        )
+        raise ValidationError(f"Transaction must be a dictionary. Got: {type(value)}")
 
     unknown_keys = tuple(
         sorted(

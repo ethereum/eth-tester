@@ -1,11 +1,8 @@
-from __future__ import (
-    unicode_literals,
-)
+import pytest
 
 from eth_utils import (
     encode_hex,
 )
-import pytest
 from toolz import (
     dissoc,
     merge,
