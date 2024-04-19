@@ -1,0 +1,1 @@
+Remove ``py.typed`` file, as lib is not typed
