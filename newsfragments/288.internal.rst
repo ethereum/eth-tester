@@ -1,1 +1,0 @@
-Drop ``pkg_resources`` in favor of ``importlib.metadata`` for getting ``pyevm`` version

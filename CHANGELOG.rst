@@ -3,6 +3,23 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
+eth-tester v0.11.0-beta.2 (2024-04-22)
+--------------------------------------
+
+Internal Changes - for eth-tester Contributors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Drop ``pkg_resources`` in favor of ``importlib.metadata`` for getting ``pyevm`` version (`#288 <https://github.com/ethereum/eth-tester/issues/288>`__)
+- Merge template updates, notably adding python 3.12 support (`#290 <https://github.com/ethereum/eth-tester/issues/290>`__)
+- Remove ``py.typed`` file, as lib is not typed (`#292 <https://github.com/ethereum/eth-tester/issues/292>`__)
+
+
+Miscellaneous Changes
+~~~~~~~~~~~~~~~~~~~~~
+
+- `#291 <https://github.com/ethereum/eth-tester/issues/291>`__
+
+
 eth-tester v0.11.0-beta.1 (2024-04-10)
 --------------------------------------
 
