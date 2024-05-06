@@ -12,12 +12,12 @@ from eth_abi import (
 from eth_abi.exceptions import (
     DecodingError,
 )
-from eth_account.typed_transactions import (
-    BlobTransaction,
-)
 from eth_account.hdaccount import (
     HDPath,
     seed_from_mnemonic,
+)
+from eth_account.typed_transactions import (
+    BlobTransaction,
 )
 from eth_keys import (
     KeyAPI,
