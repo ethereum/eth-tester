@@ -12,7 +12,7 @@ from eth_abi import (
 from eth_abi.exceptions import (
     DecodingError,
 )
-from eth_account._utils.typed_transactions import (
+from eth_account.typed_transactions import (
     BlobTransaction,
 )
 from eth_account.hdaccount import (
