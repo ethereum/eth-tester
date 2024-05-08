@@ -472,7 +472,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         ) + self.ENCODED_BLOB_TEXT
 
         signed = acct.sign_transaction(tx, blobs=[blob_data])
-        tx_hash = eth_tester.send_raw_transaction(to_hex(signed.rawTransaction))
+        tx_hash = eth_tester.send_raw_transaction(to_hex(signed.raw_transaction))
         assert eth_tester.get_transaction_by_hash(tx_hash)
 
     def test_send_raw_transaction_invalid_blob_transaction(self, eth_tester):
