@@ -3,6 +3,15 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
+eth-tester v0.12.0-beta.1 (2024-05-16)
+--------------------------------------
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+- Bump eth-account dependency to account for breaking changes in eth-account (`#293 <https://github.com/ethereum/eth-tester/issues/293>`__)
+
+
 eth-tester v0.11.0-beta.2 (2024-04-22)
 --------------------------------------
 
