@@ -1,5 +1,4 @@
 import os
-import sys
 import warnings
 
 from eth_tester.utils.module_loading import (
@@ -7,6 +6,9 @@ from eth_tester.utils.module_loading import (
     import_string,
 )
 
+from .eels import (
+    EELSBackend,
+)
 from .mock import (
     MockBackend,
 )
