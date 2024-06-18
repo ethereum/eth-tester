@@ -4,6 +4,8 @@ UINT64_MAX = 2**64 - 1
 UINT8_MAX = 2**8 - 1
 UINT2048_MAX = 2**2048 - 1
 
+# keccak(rlp([]))
+EMPTY_TRIE_ROOT = b"\x56\x3e\x8b\x0f\x5d\x8a\x3e\x3f\x0d\x1e\x6d\x9c\x19\x2c\x5c\x2c\x2c\x6e\xbf\x0e\x0b\x8e\x2f\x5d\x6f\x5f\x1f\x8a\x2d\x0c\x5d\x4d\x1e"  # noqa: E501
 
 ZERO_ADDRESS_HEX = "0x0000000000000000000000000000000000000000"
 BURN_ADDRESS = "0xdead000000000000000000000000000000000000"
@@ -86,3 +88,9 @@ DYNAMIC_FEE_TRANSACTION_PARAMS = ("max_fee_per_gas", "max_priority_fee_per_gas")
 # EIP-4844
 BLOB_TRANSACTION_PARAMS = ("max_fee_per_blob_gas", "blob_versioned_hashes")
 GAS_PER_BLOB = 2**17
+
+# EIP-4788
+BEACON_ROOTS_CONTRACT_ADDRESS = (
+    b'\x00\x0f=\xf6\xd72\x80~\xf11\x9f\xb7\xb8\xbb\x85"\xd0\xbe\xac\x02'
+)
+BEACON_ROOTS_CONTRACT_CODE = b"3s\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\x14`MW` 6\x14`$W__\xfd[_5\x80\x15`IWb\x00\x1f\xff\x81\x06\x90\x81T\x14`<W__\xfd[b\x00\x1f\xff\x01T_R` _\xf3[__\xfd[b\x00\x1f\xffB\x06B\x81U_5\x90b\x00\x1f\xff\x01U\x00"  # noqa: E501

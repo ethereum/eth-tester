@@ -12,10 +12,6 @@ from eth_abi import (
 from eth_abi.exceptions import (
     DecodingError,
 )
-from eth_account.hdaccount import (
-    HDPath,
-    seed_from_mnemonic,
-)
 from eth_account.typed_transactions import (
     BlobTransaction,
 )
@@ -27,7 +23,6 @@ from eth_typing import (
 )
 from eth_utils import (
     encode_hex,
-    int_to_big_endian,
     is_integer,
     to_bytes,
     to_checksum_address,
@@ -63,6 +58,10 @@ from eth_tester.exceptions import (
     ValidationError,
 )
 
+from ...utils.accounts import (
+    get_account_keys_from_mnemonic,
+    get_default_account_keys,
+)
 from ...validation.inbound import (
     validate_inbound_withdrawals,
 )
@@ -151,34 +150,6 @@ def get_default_account_state(overrides=None):
     else:
         account_state = default_account_state
     return account_state
-
-
-@to_tuple
-def get_default_account_keys(quantity=None):
-    keys = KeyAPI()
-    quantity = quantity or 10
-    for i in range(1, quantity + 1):
-        pk_bytes = int_to_big_endian(i).rjust(32, b"\x00")
-        private_key = keys.PrivateKey(pk_bytes)
-        yield private_key
-
-
-@to_tuple
-def get_account_keys_from_mnemonic(mnemonic, quantity=None, hd_path=None):
-    keys = KeyAPI()
-    seed = seed_from_mnemonic(mnemonic, "")
-    quantity = quantity or 10
-
-    if hd_path is None:
-        # default HD path
-        hd_path = "m/44'/60'/0'"
-
-    for i in range(0, quantity):
-        # create unique HDPath to derive the private key for each account
-        key = HDPath(f"{hd_path}/{i}").derive(seed)
-        private_key = keys.PrivateKey(key)
-        yield private_key
-
 
 @to_dict
 def generate_genesis_state_for_keys(account_keys, overrides=None):
@@ -292,17 +263,17 @@ def setup_tester_chain(
 
 def _get_block_by_number(chain, block_number):
     if block_number in ("latest", "safe", "finalized"):
-        head_block = chain.get_block()
+        head_block = chain.latest_block()
         return chain.get_canonical_block_by_number(max(0, head_block.number - 1))
     elif block_number == "earliest":
         return chain.get_canonical_block_by_number(0)
     elif block_number == "pending":
-        return chain.get_block()
+        return chain.latest_block()
     elif is_integer(block_number):
         # Note: The head block is the pending block. If a block number is passed
         # explicitly here, return the block only if it is already part of the chain
         # (i.e. not pending).
-        head_block = chain.get_block()
+        head_block = chain.latest_block()
         if block_number < head_block.number:
             return chain.get_canonical_block_by_number(block_number)
 
@@ -313,7 +284,7 @@ def _get_block_by_number(chain, block_number):
 def _get_block_by_hash(chain, block_hash):
     block = chain.get_block_by_hash(block_hash)
 
-    if block.number >= chain.get_block().number:
+    if block.number >= chain.latest_block().number:
         raise BlockNotFound(f"No block found for block hash: {block_hash}")
 
     block_at_height = chain.get_canonical_block_by_number(block.number)
@@ -324,7 +295,7 @@ def _get_block_by_hash(chain, block_hash):
 
 
 def _get_transaction_by_hash(chain, transaction_hash):
-    head_block = chain.get_block()
+    head_block = chain.latest_block()
     for index, transaction in enumerate(head_block.transactions):
         if transaction.hash == transaction_hash:
             return head_block, transaction, index
@@ -430,6 +401,26 @@ class PyEVMBackend(BaseChainBackend):
     #
     # Genesis
     #
+
+    def _get_default_account_state(self, overrides=None):
+        default_account_state = {
+            "balance": to_wei(1000000, "ether"),
+            "storage": {},
+            "code": b"",
+            "nonce": 0,
+        }
+        if overrides is not None:
+            account_state = merge_genesis_overrides(
+                defaults=default_account_state, overrides=overrides
+            )
+        else:
+            account_state = default_account_state
+        return account_state
+
+    def _generate_genesis_state_for_keys(self, account_keys, overrides=None):
+        for private_key in account_keys:
+            account_state = self._get_default_account_state(overrides=overrides)
+            yield private_key.public_key.to_canonical_address(), account_state
 
     @classmethod
     def generate_genesis_params(cls, overrides=None):
