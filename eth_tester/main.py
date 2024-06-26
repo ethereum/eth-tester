@@ -797,7 +797,7 @@ class EthereumTester:
         else:
             upper_bound = self.get_block_by_number(raw_to_block)["number"]
 
-        # Enumerate the blocks in the block range to find all log entries which match.
+        # Enumerate the blocks in the block range to find all log entries that match.
         for block_number in range(lower_bound, upper_bound + 1):
             block = self.get_block_by_number(block_number)
             for transaction_hash in block["transactions"]:
