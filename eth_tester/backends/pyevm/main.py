@@ -133,7 +133,7 @@ GENESIS_INITIAL_ALLOC = {}
 
 
 MINIMUM_GAS_ESTIMATE = 30000
-# A buffer of 1.1 would mean allocate 10% more gas than estimated
+# A buffer of 1.1 would mean allocating 10% more gas than estimated
 GAS_ESTIMATE_BUFFER = 1.5
 
 
