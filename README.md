@@ -461,7 +461,7 @@ found for the given hash.
 
 ### Transaction Sending
 
-A transaction is a formatted as a dictionary with the following keys and
+A transaction is formatted as a dictionary with the following keys and
 values.
 
 - `from`: The address of the account sending the transaction (hexadecimal string).
