@@ -110,7 +110,7 @@ def _make_access_list_txn(
 
 # This is an outbound transaction so we still keep the gas_price for now since the
 # gas_price is the min(max_fee_per_gas, base_fee_per_gas + max_priority_fee_per_gas).
-# TODO: Sometime in 2022 the inclusion of gas_price may be removed from dynamic fee
+# TODO: Sometime in 2022 the inclusion of gas_price may be removed from the dynamic fee
 #  transactions and we can get rid of this behavior.
 #  https://github.com/ethereum/execution-specs/pull/251
 def _make_dynamic_fee_txn(
