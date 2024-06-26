@@ -104,7 +104,7 @@ def test_custom_virtual_machines():
 
     # Right now, just test that EthereumTester doesn't crash
     # Maybe some more sophisticated test to make sure the VMs are set correctly?
-    # We should to make sure the VM config translates all the way to the main
+    # We should make sure the VM config translates all the way to the main
     #   tester, maybe with a custom VM that hard-codes some block value? that can
     #   be found with tester.get_block_by_number()?
     EthereumTester(backend=backend)
