@@ -29,7 +29,7 @@ def test_filter_starts_empty(f):
     # put another item in the filter
     f.add("value-b")
 
-    # verify that it now has changes again
+    # verify that it now has changed again
     assert f.get_changes()
 
     # verify that it no longer has changes
