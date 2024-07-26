@@ -60,6 +60,8 @@ from eth_tester.backends.common import (
 from eth_tester.constants import (
     BEACON_ROOTS_CONTRACT_ADDRESS,
     BEACON_ROOTS_CONTRACT_CODE,
+    ZERO_ADDRESS,
+    ZERO_HASH32,
 )
 from eth_tester.exceptions import (
     BackendDistributionNotFound,
@@ -94,13 +96,8 @@ if is_eels_available():
         SYSTEM_ADDRESS,
         SYSTEM_TRANSACTION_GAS,
         BlockChain,
-        apply_body,
     )
 
-ZERO_ADDRESS = 20 * b"\x00"
-ZERO_HASH32 = 32 * b"\x00"
-EMPTY_RLP_LIST_HASH = b"\x1d\xccM\xe8\xde\xc7]z\xab\x85\xb5g\xb6\xcc\xd4\x1a\xd3\x12E\x1b\x94\x8at\x13\xf0\xa1B\xfd@\xd4\x93G"  # noqa: E501
-BLANK_ROOT_HASH = b"V\xe8\x1f\x17\x1b\xccU\xa6\xff\x83E\xe6\x92\xc0\xf8n\x5bH\xe0\x1b\x99l\xad\xc0\x01b/\xb5\xe3c\xb4!"  # noqa: E501
 
 GENESIS_BLOCK_NUMBER = Uint(0)
 GENESIS_DIFFICULTY = Uint(0)
@@ -292,17 +289,7 @@ class EELSBackend(BaseChainBackend):
         transactions_trie = self.fork.Trie(secured=False, default=None)
         receipts_trie = self.fork.Trie(secured=False, default=None)
 
-        state_copy = self.fork.State()
-        for address, account in self.chain.state._main_trie._data.items():
-            self.fork.set_account(
-                state_copy,
-                address,
-                self.fork.Account(
-                    balance=account.balance,
-                    nonce=account.nonce,
-                    code=account.code,
-                ),
-            )
+        state_copy = self._create_synthetic_state()
 
         if not self.fork.state_root(self.chain.state) == self.fork.state_root(
             state_copy
@@ -444,6 +431,20 @@ class EELSBackend(BaseChainBackend):
             self._pending_block["ommers"]
         )
         return apply_body_output_dict
+
+    def _create_synthetic_state(self):
+        state_copy = self.fork.State()
+        for address, account in self.chain.state._main_trie._data.items():
+            self.fork.set_account(
+                state_copy,
+                address,
+                self.fork.Account(
+                    balance=account.balance,
+                    nonce=account.nonce,
+                    code=account.code,
+                ),
+            )
+        return state_copy
 
     def _generate_genesis_block(self):
         return self.fork.Block(
@@ -587,11 +588,27 @@ class EELSBackend(BaseChainBackend):
     # Chain data
     #
     def get_block_by_number(self, block_number, full_transaction=True):
-        # work in reverse order to find the block, since blocks are stored in
-        # increasing order by block number
-        for i, block in enumerate(reversed(self.chain.blocks)):
-            if block.header.number == block_number:
-                return serialize_block(self, block, full_transaction=full_transaction)
+        block = None
+        is_pending = False
+
+        if block_number == "latest":
+            block = self.chain.latest_block
+        elif block_number == "earliest":
+            block = self.chain.blocks[0]
+        elif block_number == "pending":
+            block = self._pending_block
+            is_pending = True
+        elif isinstance(block_number, int):
+            # work in reverse order to find the block, since blocks are stored in
+            # increasing order by block number
+            for i, blk in enumerate(reversed(self.chain.blocks)):
+                if blk.header.number == block_number:
+                    block = blk
+
+        if block:
+            return serialize_block(
+                self, block, full_transaction=full_transaction, pending=is_pending
+            )
 
         raise BlockNotFound(f"No block found for block number: {block_number}")
 
@@ -916,36 +933,5 @@ class EELSBackend(BaseChainBackend):
         #     )
 
     def call(self, transaction, block_number="latest"):
-        pass
-        # defaulted_transaction = transaction.copy()
-        # if "gas" not in defaulted_transaction:
-        #     defaulted_transaction["gas"] = self._max_available_gas()
-        #
-        # signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
-        #     defaulted_transaction,
-        #     block_number,
-        # )
-        #
-        # computation = _execute_and_revert_transaction(
-        #     self.chain,
-        #     signed_evm_transaction,
-        #     block_number,
-        # )
-        # if computation.is_error:
-        #     msg = str(computation._error)
-        #
-        #     # Check to see if it's a EIP838 standard error, with ABI signature
-        #     # of Error(string). If so - extract the message/reason.
-        #     if self.is_eip838_error(computation._error):
-        #         error_str = computation._error.args[0][4:]
-        #         try:
-        #             decoded_args = abi.decode(["string"], error_str)
-        #             msg = decoded_args[0]
-        #         except DecodingError:
-        #             # Invalid encoded bytes, leave msg as computation._error
-        #             # byte string.
-        #             pass
-        #
-        #     raise TransactionFailed(msg)
-        #
-        # return computation.output
+        # TODO: Implementation
+        raise NotImplementedError("The `call` method is not yet implemented.")
