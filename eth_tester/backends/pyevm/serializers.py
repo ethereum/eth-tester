@@ -6,6 +6,9 @@ from toolz import (
     merge,
 )
 
+from ...utils.transactions import (
+    calculate_effective_gas_price,
+)
 from .utils import (
     is_cancun_block,
     is_london_block,
@@ -154,9 +157,7 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
                     "gas_price": (
                         transaction.max_fee_per_gas
                         if is_pending
-                        else _calculate_effective_gas_price(
-                            transaction, block, txn_type
-                        )
+                        else calculate_effective_gas_price(transaction, block)
                     ),
                 },
             )
@@ -232,9 +233,7 @@ def serialize_transaction_receipt(
         "block_number": None if is_pending else block.number,
         "contract_address": contract_addr,
         "cumulative_gas_used": receipt.gas_used,
-        "effective_gas_price": _calculate_effective_gas_price(
-            transaction, block, _txn_type
-        ),
+        "effective_gas_price": calculate_effective_gas_price(transaction, block),
         "from": transaction.sender,
         "gas_used": receipt.gas_used - origin_gas,
         "logs": [
@@ -280,17 +279,6 @@ def _extract_transaction_type(transaction):
 
     # legacy transactions are now considered type=0
     return 0
-
-
-def _calculate_effective_gas_price(transaction, block, transaction_type):
-    return (
-        min(
-            transaction.max_fee_per_gas,
-            transaction.max_priority_fee_per_gas + block.header.base_fee_per_gas,
-        )
-        if transaction_type >= DYNAMIC_FEE_TX_TYPE
-        else transaction.gas_price
-    )
 
 
 def serialize_block_withdrawals(block):

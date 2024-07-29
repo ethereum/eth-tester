@@ -5,14 +5,21 @@ from typing import (
     Union,
 )
 
+from ethereum.cancun.blocks import (
+    Block,
+)
+
 from eth_tester.constants import (
     BLANK_ROOT_HASH,
     EMPTY_RLP_LIST_HASH,
     ZERO_HASH32,
 )
-
-from ethereum.cancun.blocks import (
-    Block,
+from eth_tester.utils.casing import (
+    lower_camel_case_to_snake_case,
+)
+from eth_tester.utils.transactions import (
+    calculate_effective_gas_price,
+    extract_transaction_type,
 )
 
 
@@ -20,9 +27,9 @@ def serialize_block(
     backend_instance,
     block: Union[Block, Dict[str, Any]],
     full_transaction: bool = False,
-    pending: bool = False,
+    is_pending: bool = False,
 ):
-    if pending:
+    if is_pending:
         # still a dict
         serialized_block = {
             "number": block["header"]["number"],
@@ -51,14 +58,10 @@ def serialize_block(
             ),
             "receipts_root": block["header"].get("receipts_root", BLANK_ROOT_HASH),
         }
-        for tx in block["transactions"]:
-            if full_transaction:
-                json_tx = serialize_transaction_for_block(backend_instance, block, tx)
-                serialized_block["transactions"].append(json_tx)
-            else:
-                serialized_block["transactions"].append(
-                    backend_instance._get_tx_hash(tx)
-                )
+        tx_list = enumerate(block["transactions"])
+        serialized_block = _append_txs_to_block(
+            backend_instance, serialized_block, tx_list, full_transaction
+        )
 
     else:
         serialized_block = {
@@ -84,17 +87,23 @@ def serialize_block(
             "uncles": [],
             "withdrawals": [],
         }
-        for i, tx in enumerate(block.transactions):
-            if full_transaction:
-                json_tx = serialize_transaction_for_block(
-                    backend_instance, serialized_block, tx, i
-                )
-                serialized_block["transactions"].append(json_tx)
-            else:
-                serialized_block["transactions"].append(
-                    backend_instance._get_tx_hash(tx)
-                )
+        tx_list = enumerate(block.transactions)
+        serialized_block = _append_txs_to_block(
+            backend_instance, serialized_block, tx_list, full_transaction
+        )
 
+    return serialized_block
+
+
+def _append_txs_to_block(backend_instance, serialized_block, tx_list, full_transaction):
+    for i, tx in tx_list:
+        if full_transaction:
+            json_tx = serialize_transaction_for_block(
+                backend_instance, serialized_block, tx, i
+            )
+            serialized_block["transactions"].append(json_tx)
+        else:
+            serialized_block["transactions"].append(backend_instance._get_tx_hash(tx))
     return serialized_block
 
 
@@ -154,3 +163,45 @@ def serialize_transaction_for_block(
         json_tx["type"] = "0x03"
 
     return json_tx
+
+
+def serialize_transaction(tx, pending_block: Dict[str, Any] = None):
+    if pending_block:
+        tx["block_hash"] = ZERO_HASH32
+        tx["block_number"] = pending_block["header"]["number"]
+        tx["transaction_index"] = len(pending_block["transactions"]) - 1
+
+    serialized = {
+        lower_camel_case_to_snake_case(key): value for key, value in tx.items()
+    }
+
+    if "gas_limit" in serialized and "gas" not in serialized:
+        serialized["gas"] = serialized.pop("gas_limit")
+
+    return serialized
+
+
+def serialize_receipt(
+    backend_instance, tx, process_transaction_return, index, cumulative_gas_used, contract_address=None,
+):
+    tx_gas_consumed = process_transaction_return[0]
+    logs = process_transaction_return[1]
+    errors = process_transaction_return[2]
+    pending_block = backend_instance._pending_block
+    serialized = {
+        "block_hash": None,  # updated when block is finalized
+        "transaction_hash": backend_instance._get_tx_hash(tx),
+        "transaction_index": index,
+        "block_number": pending_block["header"]["number"],
+        "to": tx.to,
+        "from": backend_instance._fork_module.recover_sender(tx.chain_id, tx),
+        "gas_used": tx_gas_consumed,
+        "cumulative_gas_used": cumulative_gas_used,
+        "effective_gas_price": calculate_effective_gas_price(tx, pending_block),
+        "contract_address": contract_address,
+        "state_root": None,  # updated when block is finalized
+        "logs": logs,
+        "status": 0 if errors else 1,
+        "type": extract_transaction_type(tx),
+    }
+    return serialized

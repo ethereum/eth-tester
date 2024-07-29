@@ -24,9 +24,6 @@ from eth_utils.toolz import (
 from eth_tester.backends.common import (
     merge_genesis_overrides,
 )
-from eth_tester.backends.mock.common import (
-    calculate_effective_gas_price,
-)
 from eth_tester.constants import (
     DYNAMIC_FEE_TRANSACTION_PARAMS,
 )
@@ -34,6 +31,7 @@ from eth_tester.utils.address import (
     generate_contract_address,
 )
 from eth_tester.utils.transactions import (
+    calculate_effective_gas_price,
     extract_transaction_type,
 )
 
