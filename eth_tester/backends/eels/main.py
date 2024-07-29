@@ -1,4 +1,3 @@
-import copy
 import time
 from typing import (
     Any,
@@ -29,7 +28,6 @@ from ethereum import (
 from ethereum.base_types import (
     U64,
     U256,
-    Bytes32,
     Uint,
 )
 from ethereum.crypto.hash import (
@@ -59,7 +57,6 @@ from eth_tester.backends.common import (
 )
 from eth_tester.constants import (
     BEACON_ROOTS_CONTRACT_ADDRESS,
-    BEACON_ROOTS_CONTRACT_CODE,
     ZERO_ADDRESS,
     ZERO_HASH32,
 )
@@ -74,7 +71,6 @@ from ...utils.accounts import (
     get_account_keys_from_mnemonic,
     get_default_account_keys,
 )
-
 from ...utils.transactions import (
     normalize_transaction_fields,
 )
@@ -86,6 +82,9 @@ from .eels_normalizers import (
 )
 from .serializers import (
     serialize_block,
+    serialize_receipt,
+    serialize_transaction,
+    serialize_transaction_for_block,
 )
 from .utils import (
     is_eels_available,
@@ -110,7 +109,7 @@ GENESIS_LOGS_BLOOM = b"\x00" * 256
 GENESIS_INITIAL_ALLOC = {}
 
 
-MINIMUM_GAS_ESTIMATE = 30000
+MINIMUM_GAS_ESTIMATE = 300000
 # A buffer of 1.1 would mean allocate 10% more gas than estimated
 GAS_ESTIMATE_BUFFER = 1.5
 
@@ -154,6 +153,7 @@ class EELSBackend(BaseChainBackend):
         self._fork_module = self.fork._module("fork")
         self._state_module = self.fork._module("state")
         self._vm_module = self.fork._module("vm")
+        self._blocks_module = self.fork._module("blocks")
         self._transactions_module = self.fork._module("transactions")
         self._fork_types = self.fork._module("fork_types")
 
@@ -343,15 +343,21 @@ class EELSBackend(BaseChainBackend):
             system_tx_output = self.fork.process_message_call(
                 system_tx_message, system_tx_env
             )
+
             self.fork.destroy_touched_empty_accounts(
                 system_tx_env.state, system_tx_output.touched_accounts
             )
 
+        apply_body_output_dict = {"receipts_map": {}}
         for i, tx in enumerate(self._pending_block["transactions"]):
             try:
                 # TODO: Handle state reversion / snapshotting appropriately
                 env = self.environment(tx, gas_available, state=state_copy)
+                pre_state = self._create_synthetic_state()
                 process_transaction_return = self.fork.process_transaction(env, tx)
+                post_state = env.state
+
+                contract_address = self._extract_contract_address(pre_state, post_state)
 
                 if self.fork.is_after_fork("ethereum.cancun"):
                     blob_gas_used += self.fork.calculate_total_blob_gas(tx)
@@ -370,21 +376,28 @@ class EELSBackend(BaseChainBackend):
                     rlp.encode(Uint(i)),
                     self.fork.encode_transaction(tx),
                 )
-                tx_hash = rlp.rlp_hash(tx)
-                self._transactions_map[tx_hash] = tx
 
+                apply_body_output_dict["receipts_map"][self._get_tx_hash(tx)] = (
+                    serialize_receipt(
+                        self,
+                        tx,
+                        process_transaction_return,
+                        i,
+                        (block_gas_limit - gas_available),
+                        contract_address,
+                    )
+                )
                 receipt = self.fork.make_receipt(
                     tx, None, (block_gas_limit - gas_available), block_logs
                 )
+
                 self.fork.trie_set(
                     receipts_trie,
                     rlp.encode(Uint(i)),
                     receipt,
                 )
-                self._receipts_map[tx_hash] = receipt
 
                 block_logs += process_transaction_return[1]
-
                 state_copy._snapshots = []
 
         if (
@@ -398,11 +411,12 @@ class EELSBackend(BaseChainBackend):
                 self._pending_block["ommers"],
             )
 
-        apply_body_output_dict = {
-            "block_gas_used": block_gas_limit - gas_available,
-            "block_logs_bloom": self.fork.logs_bloom(block_logs),
-            # "logs_hash": keccak256(rlp.encode(block_logs)),
-        }
+        apply_body_output_dict.update(
+            {
+                "block_gas_used": block_gas_limit - gas_available,
+                "block_logs_bloom": self.fork.logs_bloom(block_logs),
+            }
+        )
         if self.fork.is_after_fork("ethereum.shanghai"):
             withdrawals_trie = self.fork.Trie(secured=False, default=None)
             for i, wd in enumerate(self._pending_block["withdrawals"]):
@@ -560,7 +574,30 @@ class EELSBackend(BaseChainBackend):
             ommers=tuple(block["ommers"]),
             withdrawals=tuple(block["withdrawals"]),
         )
+
         self.fork.state_transition(self.chain, _eels_block)
+
+        for i, tx in enumerate(block["transactions"]):
+            # update saved tx data post-mining
+            tx_hash = self._get_tx_hash(tx)
+            updated_tx = self._transactions_map[tx_hash]
+            updated_tx["block_number"] = block_header["number"]
+            updated_tx["block_hash"] = self._fork_module.compute_header_hash(
+                _eels_block_header
+            )
+            updated_tx["transaction_index"] = i
+            self._transactions_map[tx_hash] = updated_tx
+
+            # update receipt values in apply_body_output, post-mining
+            updated_receipt = apply_body_output["receipts_map"][tx_hash]
+            updated_receipt["block_number"] = block_header["number"]
+            updated_receipt["block_hash"] = self._fork_module.compute_header_hash(
+                _eels_block_header
+            )
+            updated_receipt["transaction_index"] = i
+            updated_receipt["state_root"] = block_header["state_root"]
+            self._receipts_map[tx_hash] = updated_receipt
+
         return block
 
     @to_tuple
@@ -607,7 +644,7 @@ class EELSBackend(BaseChainBackend):
 
         if block:
             return serialize_block(
-                self, block, full_transaction=full_transaction, pending=is_pending
+                self, block, full_transaction=full_transaction, is_pending=is_pending
             )
 
         raise BlockNotFound(f"No block found for block number: {block_number}")
@@ -631,7 +668,7 @@ class EELSBackend(BaseChainBackend):
 
     def get_transaction_by_hash(self, transaction_hash):
         if transaction_hash in self._transactions_map:
-            return self._transactions_map[transaction_hash]
+            return serialize_transaction(self._transactions_map[transaction_hash])
 
         raise TransactionNotFound(
             f"No transaction found for transaction hash: {transaction_hash}"
@@ -779,7 +816,7 @@ class EELSBackend(BaseChainBackend):
         signed_transaction = self.sign_transaction(
             eels_normalized_transaction, private_key
         )
-        return TransactionLoad(signed_transaction, self.fork).read()
+        return signed_transaction
 
     def sign_transaction(
         self, json_tx: Dict[str, Any], private_key: PrivateKey
@@ -861,29 +898,51 @@ class EELSBackend(BaseChainBackend):
     def send_raw_transaction(self, raw_transaction):
         evm_transaction = self._transactions_module.decode_transaction(raw_transaction)
         self._check_transaction(evm_transaction)
-        self._pending_block["transactions"].append(evm_transaction)
-        return self._get_tx_hash(evm_transaction)
 
-    def send_signed_transaction(self, signed_transaction, block_number="latest"):
+        tx_hash = self._get_tx_hash(evm_transaction)
+        self._pending_block["transactions"].append(evm_transaction)
+        # TODO: This will likely break (untested). We need to get the tx as json with
+        #  all fields before adding it to the _transactions_map.
+        self._transactions_map[tx_hash] = evm_transaction
+        return tx_hash
+
+    def send_signed_transaction(self, signed_json_tx, block_number="latest"):
+        eels_transaction = TransactionLoad(signed_json_tx, self.fork).read()
         self._check_transaction(
-            signed_transaction,
+            eels_transaction,
             # TODO: Stop lazily plugging in the parent block's gas limit
             self.chain.latest_block.header.gas_limit,
         )
-        self._pending_block["transactions"].append(signed_transaction)
-        return self._get_tx_hash(signed_transaction)
+
+        tx_hash = self._get_tx_hash(eels_transaction)
+        self._pending_block["transactions"].append(eels_transaction)
+        self._transactions_map[tx_hash] = serialize_transaction(
+            signed_json_tx, pending_block=True
+        )
+        return tx_hash
 
     def send_transaction(self, transaction):
-        signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
+        signed_and_normalized_json_tx = self._get_normalized_and_signed_evm_transaction(
             transaction,
         )
+        eels_tx = TransactionLoad(signed_and_normalized_json_tx, self.fork).read()
         self._check_transaction(
-            signed_evm_transaction,
+            eels_tx,
             # TODO: Stop lazily plugging in the parent block's gas limit
             self.chain.latest_block.header.gas_limit,
         )
-        self._pending_block["transactions"].append(signed_evm_transaction)
-        return self._get_tx_hash(signed_evm_transaction)
+
+        tx_hash = self._get_tx_hash(eels_tx)
+        self._transactions_map[tx_hash] = serialize_transaction_for_block(
+            self,
+            serialized_block=serialize_block(
+                self, self._pending_block, full_transaction=False, is_pending=True
+            ),
+            tx=eels_tx,
+            index=len(self._pending_block["transactions"]),
+        )
+        self._pending_block["transactions"].append(eels_tx)
+        return tx_hash
 
     def apply_withdrawals(
         self,
@@ -907,31 +966,46 @@ class EELSBackend(BaseChainBackend):
         header = self.chain.latest_block.header
         return header.gas_limit - header.gas_used
 
+    def _run_transaction_against_synthetic_state(self, transaction):
+        signed_and_normalized_json_tx = self._get_normalized_and_signed_evm_transaction(
+            transaction,
+        )
+        signed_transaction = TransactionLoad(
+            signed_and_normalized_json_tx, self.fork
+        ).read()
+        self._check_transaction(
+            signed_transaction,
+            # TODO: Stop lazily plugging in the parent block's gas limit
+            self.chain.latest_block.header.gas_limit,
+        )
+        # run the transaction against a synthetic version of the state
+        state_copy = self._create_synthetic_state()
+        env = self.environment(
+            signed_transaction, self._max_available_gas(), state=state_copy
+        )
+        return env, signed_transaction
+
     def estimate_gas(self, transaction, block_number="latest"):
-        pass
-        # evm_transaction = self._get_normalized_and_unsigned_evm_transaction(
-        #     assoc(transaction, "gas", 21000), block_number
-        # )
-        # spoofed_transaction = EVMSpoofTransaction(
-        #     evm_transaction, from_=transaction["from"]
-        # )
-        #
-        # if block_number in ("latest", "safe", "finalized"):
-        #     return self.chain.estimate_gas(spoofed_transaction)
-        # elif block_number == "earliest":
-        #     return self.chain.estimate_gas(
-        #         spoofed_transaction, self.chain.get_canonical_block_header_by_number(0)
-        #     )
-        # elif block_number == "pending":
-        #     raise NotImplementedError(
-        #         '"pending" block identifier is unsupported in eth-tester'
-        #     )
-        # else:
-        #     return self.chain.estimate_gas(
-        #         spoofed_transaction,
-        #         self.chain.get_canonical_block_header_by_number(block_number),
-        #     )
+        transaction["gas"] = MINIMUM_GAS_ESTIMATE
+        env, signed_evm_transaction = self._run_transaction_against_synthetic_state(
+            transaction
+        )
+        output = self.fork.process_transaction(env, signed_evm_transaction)
+        return output[0]  # total gas consumed
 
     def call(self, transaction, block_number="latest"):
-        # TODO: Implementation
-        raise NotImplementedError("The `call` method is not yet implemented.")
+        env, signed_evm_transaction = self._run_transaction_against_synthetic_state(
+            transaction
+        )
+        self.fork.process_transaction(env, signed_evm_transaction)
+        raise NotImplementedError("Continue implementation...")
+        # TODO
+
+    def _extract_contract_address(self, pre_state, post_state):
+        # TODO: make this more robust !!
+        for address in post_state._main_trie._data:
+            if address not in pre_state._main_trie._data:
+                if self._state_module.get_account(post_state, address).code != b"":
+                    return address
+
+        return None

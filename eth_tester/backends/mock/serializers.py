@@ -7,13 +7,11 @@ from eth_utils.toolz import (
     pipe,
 )
 
-from eth_tester.backends.mock.common import (
-    calculate_effective_gas_price,
-)
 from eth_tester.constants import (
     LEGACY_TX_TYPE,
 )
 from eth_tester.utils.transactions import (
+    calculate_effective_gas_price,
     extract_transaction_type,
 )
 

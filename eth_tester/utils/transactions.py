@@ -10,6 +10,7 @@ from eth_utils import (
 
 from eth_tester.constants import (
     DYNAMIC_FEE_TRANSACTION_PARAMS,
+    DYNAMIC_FEE_TX_TYPE,
 )
 
 VALID_TRANSACTION_PARAMS = [
@@ -40,14 +41,28 @@ def extract_valid_transaction_params(transaction_params):
 
 
 def extract_transaction_type(transaction):
-    return (
-        "0x2"
-        if "max_fee_per_gas" in transaction
-        else "0x1"
-        if "max_fee_per_gas" not in transaction and "access_list" in transaction
-        # legacy transactions being '0x0' taken from current geth version v1.10.10
-        else "0x0"
-    )
+    if isinstance(transaction, dict):
+        return (
+            "0x2"
+            if "max_fee_per_gas" in transaction
+            else (
+                "0x1"
+                if "max_fee_per_gas" not in transaction and "access_list" in transaction
+                # legacy transactions being '0x0' taken from current geth version v1.10.10
+                else "0x0"
+            )
+        )
+    else:
+        return (
+            "0x2"
+            if hasattr(transaction, "max_fee_per_gas")
+            else (
+                "0x1"
+                if not hasattr(transaction, "max_fee_per_gas")
+                and hasattr(transaction, "access_list")
+                else "0x0"
+            )
+        )
 
 
 @to_dict
@@ -115,3 +130,24 @@ def remove_matching_transaction_from_list(transaction_list, transaction):
         match = nonce_equal and from_equal
         if not match:
             yield tx
+
+
+def calculate_effective_gas_price(transaction, block):
+    transaction_type = int(extract_transaction_type(transaction), 16)
+    if isinstance(transaction, dict):
+        max_fee = transaction["max_fee_per_gas"]
+        max_priority_fee = transaction["max_priority_fee_per_gas"]
+    else:
+        max_fee = transaction.max_fee_per_gas
+        max_priority_fee = transaction.max_priority_fee_per_gas
+
+    if isinstance(block, dict):
+        base_fee = block["header"]["base_fee_per_gas"]
+    else:
+        base_fee = block.header.base_fee_per_gas
+
+    return (
+        min(max_fee, max_priority_fee + base_fee)
+        if transaction_type >= DYNAMIC_FEE_TX_TYPE
+        else transaction.gas_price
+    )

@@ -19,9 +19,10 @@ def eels_normalize_transaction(transaction: Dict[str, Any]) -> Dict[str, Any]:
         if isinstance(value, int):
             value = hex(value)
 
-        if key not in ("y_parity",):
-            normalized[snake_case_to_lower_camel_case(key)] = value
-        else:
+        if key in ("y_parity",):
+            # for some reason, y_parity is not camelCased :/
             normalized[key] = value
+        else:
+            normalized[snake_case_to_lower_camel_case(key)] = value
 
     return normalized
