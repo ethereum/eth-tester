@@ -130,6 +130,8 @@ class EELSBackend(BaseChainBackend):
     _account_keys = []
     _transactions_map = {}
     _receipts_map = {}
+    _snapshots = {}
+    _state_history = {}
 
     def __init__(
         self,
@@ -236,10 +238,10 @@ class EELSBackend(BaseChainBackend):
             )
 
         if self.fork.is_after_fork("ethereum.cancun"):
-            genesis_state[BEACON_ROOTS_CONTRACT_ADDRESS] = (
-                self._get_default_account_state(
-                    overrides={"code": BEACON_ROOTS_CONTRACT_CODE}
-                )
+            genesis_state[
+                BEACON_ROOTS_CONTRACT_ADDRESS
+            ] = self._get_default_account_state(
+                overrides={"code": BEACON_ROOTS_CONTRACT_CODE}
             )
 
         eels_state = self._fork_module.State()
@@ -254,6 +256,7 @@ class EELSBackend(BaseChainBackend):
             chain_id=U64(1),
         )
         self._build_new_pending_block()
+        self._snapshots = {}
 
     #
     # Private Accounts API
@@ -268,12 +271,15 @@ class EELSBackend(BaseChainBackend):
     # Snapshot API
     #
     def take_snapshot(self):
-        pass
-        # raise NotImplementedError("Snapshots are not supported in EELS")
+        snapshot = self._take_state_snapshot()
+        key = keccak256(os.urandom(32))
+        self._snapshots[key] = snapshot
+        return key
 
-    def revert_to_snapshot(self, snapshot):
-        pass
-        # raise NotImplementedError("Snapshots are not supported in EELS")
+    def revert_to_snapshot(self, snapshot_key):
+        snapshot = self._snapshots[snapshot_key]
+        self.chain.state._main_trie = snapshot[0]
+        self.chain.state._storage_tries = snapshot[1]
 
     #
     # Importing blocks
@@ -377,15 +383,15 @@ class EELSBackend(BaseChainBackend):
                     self.fork.encode_transaction(tx),
                 )
 
-                apply_body_output_dict["receipts_map"][self._get_tx_hash(tx)] = (
-                    serialize_pending_receipt(
-                        self,
-                        tx,
-                        process_transaction_return,
-                        i,
-                        (block_gas_limit - gas_available),
-                        contract_address,
-                    )
+                apply_body_output_dict["receipts_map"][
+                    self._get_tx_hash(tx)
+                ] = serialize_pending_receipt(
+                    self,
+                    tx,
+                    process_transaction_return,
+                    i,
+                    (block_gas_limit - gas_available),
+                    contract_address,
                 )
 
                 receipt = self.fork.make_receipt(
@@ -449,24 +455,35 @@ class EELSBackend(BaseChainBackend):
         )
         return apply_body_output_dict
 
+    def _take_state_snapshot(self):
+        return (
+            self._state_module.copy_trie(self.chain.state._main_trie),
+            {
+                k: self._state_module.copy_trie(t)
+                for (k, t) in self.chain.state._storage_tries.items()
+            },
+        )
+
     def _create_synthetic_state(self):
         state_copy = self.fork.State()
-        for address, account in self.chain.state._main_trie._data.items():
-            self.fork.set_account(
-                state_copy,
-                address,
-                self.fork.Account(
-                    balance=account.balance,
-                    nonce=account.nonce,
-                    code=account.code,
-                ),
-            )
-            if address in self.chain.state._storage_tries:
-                storage_trie = self.chain.state._storage_tries[address]
-                for slot, value in storage_trie._data.items():
-                    self.fork.set_storage(state_copy, address, slot, value)
-
+        main_trie, storage_tries = self._take_state_snapshot()
+        state_copy._main_trie = main_trie
+        state_copy._storage_tries = storage_tries
         return state_copy
+
+    def _get_state_for_block_number(self, block_number):
+        if block_number in ("latest", "safe", "finalized", "pending"):
+            return self.chain.state
+        elif block_number in self._state_history:
+            state_impl = self.fork.State()
+            state_snapshot = self._state_history[block_number]
+            state_impl._main_trie = state_snapshot[0]
+            state_impl._storage_tries = state_snapshot[1]
+            return state_impl
+
+        raise ValidationError(
+            f"No state snapshot found for block number: {block_number}."
+        )
 
     def _generate_genesis_block(self):
         return self.fork.Block(
@@ -500,13 +517,15 @@ class EELSBackend(BaseChainBackend):
     def _build_new_pending_block(
         self,
         coinbase=ZERO_ADDRESS,
-        difficulty=Uint(0),
+        difficulty=0,
         gas_limit=None,
         extra_data=ZERO_HASH32,
         prev_randao=None,
         nonce=b"\x00" * 8,
         parent_beacon_block_root=None,
     ):
+        difficulty = Uint(difficulty)
+
         if (
             self._pending_block
             and self.chain.latest_block.header.number
@@ -590,11 +609,12 @@ class EELSBackend(BaseChainBackend):
         assert self._fork_module.compute_header_hash(
             _eels_block_header
         ) == self._fork_module.compute_header_hash(self.chain.latest_block.header)
+        blocknum = block_header["number"]
         for i, tx in enumerate(block["transactions"]):
             # update saved tx data post-mining
             tx_hash = self._get_tx_hash(tx)
             updated_tx = self._transactions_map[tx_hash]
-            updated_tx["block_number"] = block_header["number"]
+            updated_tx["block_number"] = blocknum
             updated_tx["block_hash"] = self._fork_module.compute_header_hash(
                 _eels_block_header
             )
@@ -603,14 +623,14 @@ class EELSBackend(BaseChainBackend):
 
             # update receipt values in apply_body_output, post-mining
             updated_receipt = apply_body_output["receipts_map"][tx_hash]
-            updated_receipt["block_number"] = block_header["number"]
+            updated_receipt["block_number"] = blocknum
             updated_receipt["block_hash"] = self._fork_module.compute_header_hash(
                 _eels_block_header
             )
             updated_receipt["transaction_index"] = i
             updated_receipt["state_root"] = block_header["state_root"]
             for log in updated_receipt["logs"]:
-                log["block_number"] = block_header["number"]
+                log["block_number"] = blocknum
                 log["block_hash"] = self._fork_module.compute_header_hash(
                     _eels_block_header
                 )
@@ -619,6 +639,7 @@ class EELSBackend(BaseChainBackend):
                 log["type"] = "mined"
             self._receipts_map[tx_hash] = updated_receipt
 
+        self._state_history[blocknum] = self._take_state_snapshot()
         return block
 
     @to_tuple
@@ -659,7 +680,7 @@ class EELSBackend(BaseChainBackend):
         elif isinstance(block_number, int):
             # work in reverse order to find the block, since blocks are stored in
             # increasing order by block number
-            for i, blk in enumerate(reversed(self.chain.blocks)):
+            for blk in reversed(self.chain.blocks):
                 if blk.header.number == block_number:
                     block = blk
 
@@ -951,6 +972,9 @@ class EELSBackend(BaseChainBackend):
         return tx_hash
 
     def send_transaction(self, transaction):
+        if transaction.get("to") in (b"", "0x0", "0x00", None):
+            transaction["gas"] = 1234567
+
         signed_and_normalized_json_tx = self._get_normalized_and_signed_evm_transaction(
             transaction,
         )
@@ -999,6 +1023,7 @@ class EELSBackend(BaseChainBackend):
         self,
         transaction,
         synthetic_state=False,
+        state=None,
     ):
         signed_and_normalized_json_tx = self._get_normalized_and_signed_evm_transaction(
             transaction,
@@ -1014,9 +1039,12 @@ class EELSBackend(BaseChainBackend):
             self.chain.latest_block.header.gas_limit,
         )
 
-        state = self._create_synthetic_state() if synthetic_state else self.chain.state
+        if synthetic_state:
+            env_state = state or self._create_synthetic_state()
+        else:
+            env_state = self.chain.state
         env = self.environment(
-            signed_transaction, self._max_available_gas(), state=state
+            signed_transaction, self._max_available_gas(), state=env_state
         )
         return env, signed_transaction
 
@@ -1029,10 +1057,15 @@ class EELSBackend(BaseChainBackend):
         return output[0]  # total gas consumed
 
     def call(self, transaction, block_number="latest"):
-        transaction["gas"] = transaction.get("gas", MINIMUM_GAS_ESTIMATE)
+        env_state = None
+        if block_number not in ("latest", "safe", "finalized"):
+            if block_number == "earliest":
+                block_number = 0
+            env_state = self._get_state_for_block_number(block_number)
 
+        transaction["gas"] = transaction.get("gas", MINIMUM_GAS_ESTIMATE)
         env, signed_evm_transaction = self._generate_transaction_env(
-            transaction, synthetic_state=True
+            transaction, synthetic_state=True, state=env_state
         )
 
         code = self.fork.get_account(env.state, transaction["to"]).code
