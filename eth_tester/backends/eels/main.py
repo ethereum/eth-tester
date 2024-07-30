@@ -1,3 +1,4 @@
+import os
 import time
 from typing import (
     Any,
@@ -502,9 +503,9 @@ class EELSBackend(BaseChainBackend):
         difficulty=Uint(0),
         gas_limit=None,
         extra_data=ZERO_HASH32,
-        prev_randao=ZERO_HASH32,
+        prev_randao=None,
         nonce=b"\x00" * 8,
-        parent_beacon_block_root=ZERO_HASH32,
+        parent_beacon_block_root=None,
     ):
         if (
             self._pending_block
@@ -534,13 +535,15 @@ class EELSBackend(BaseChainBackend):
             "gas_limit": gas_limit,
             "timestamp": None,  # set at block finalization
             "extra_data": extra_data,
-            "prev_randao": prev_randao,
+            # the randao is probably fine for now
+            "prev_randao": prev_randao or os.urandom(32),
             "nonce": nonce,
             "parent_hash": self._fork_module.compute_header_hash(
                 self.chain.latest_block.header
             ),
             "base_fee_per_gas": base_fee_per_gas,
-            "parent_beacon_block_root": parent_beacon_block_root,
+            # TODO: can we do better than random generation for beacon parent root?
+            "parent_beacon_block_root": parent_beacon_block_root or os.urandom(32),
             "excess_blob_gas": self._vm_module.gas.calculate_excess_blob_gas(
                 self.chain.latest_block.header
             ),
