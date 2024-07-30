@@ -39,6 +39,7 @@ from eth_tester.backends.pyevm.main import (
     GENESIS_DIFFICULTY,
     GENESIS_MIX_HASH,
     GENESIS_NONCE,
+    generate_genesis_state_for_keys,
     get_default_genesis_params,
     setup_tester_chain,
 )
@@ -53,7 +54,6 @@ from eth_tester.normalization.outbound import (
     normalize_withdrawal,
 )
 from eth_tester.utils.accounts import (
-    generate_genesis_state_for_keys,
     get_default_account_keys,
 )
 from eth_tester.utils.backend_testing import (

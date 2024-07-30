@@ -210,7 +210,7 @@ def make_log(transaction, block, transaction_index, log_index, overrides=None):
 
 
 @to_dict
-def make_receipt(transaction, block, _transaction_index, overrides=None):
+def make_receipt(transaction, block_header, _transaction_index, overrides=None):
     if overrides is None:
         overrides = {}
 
@@ -220,12 +220,13 @@ def make_receipt(transaction, block, _transaction_index, overrides=None):
     yield "transaction_hash", overrides.get("transaction_hash", transaction.get("hash"))
     yield (
         "cumulative_gas_used",
-        overrides.get("cumulative_gas_used", block.get("gas_used") + gas_used),
+        overrides.get("cumulative_gas_used", block_header.get("gas_used") + gas_used),
     )
     yield (
         "effective_gas_price",
         overrides.get(
-            "effective_gas_price", calculate_effective_gas_price(transaction, block)
+            "effective_gas_price",
+            calculate_effective_gas_price(transaction, block_header),
         ),
     )
     yield (
