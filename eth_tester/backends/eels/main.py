@@ -292,7 +292,6 @@ class EELSBackend(BaseChainBackend):
         receipts_trie = self.fork.Trie(secured=False, default=None)
 
         state_copy = self._create_synthetic_state()
-
         if not self.fork.state_root(self.chain.state) == self.fork.state_root(
             state_copy
         ):
@@ -462,6 +461,11 @@ class EELSBackend(BaseChainBackend):
                     code=account.code,
                 ),
             )
+            if address in self.chain.state._storage_tries:
+                storage_trie = self.chain.state._storage_tries[address]
+                for slot, value in storage_trie._data.items():
+                    self.fork.set_storage(state_copy, address, slot, value)
+
         return state_copy
 
     def _generate_genesis_block(self):
