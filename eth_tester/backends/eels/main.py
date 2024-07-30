@@ -165,7 +165,6 @@ class EELSBackend(BaseChainBackend):
             mnemonic=mnemonic,
             hd_path=hd_path,
         )
-        self.chain.state._snapshots
 
     def time_travel(self, to_timestamp):
         pass
@@ -669,16 +668,21 @@ class EELSBackend(BaseChainBackend):
         raise BlockNotFound(f"No block found for block number: {block_number}.")
 
     def get_block_by_hash(self, block_hash, full_transaction=True):
-        # work in reverse order to find the block, since blocks are stored in
-        # increasing order by block number
         for i, bh in enumerate(self._fork_module.get_last_256_block_hashes(self.chain)):
-            if bh == block_hash:
-                block = self.chain.blocks[-1]
-                if block_hash != self._fork_module.compute_header_hash(block.header):
-                    # sanity check, we should never get here if the implementation is
-                    # correct
-                    raise ValueError("Block hash does not match the expected hash.")
+            if bh == ZERO_HASH32:
+                # `get_last_256_block_hashes()` pulls the `parentHash` of the genesis
+                # header as if it was an actual block hash, so we skip it
+                continue
 
+            if bh == block_hash:
+                # bc of the comment above, we have to use i - 1 since we skip the ghost
+                # parent of the genesis block
+                block = self.chain.blocks[i - 1]
+                if block_hash != self._fork_module.compute_header_hash(
+                    block.header
+                ):
+                    # sanity check, should not get here if the implementation is correct
+                    raise ValueError("Block hash does not match the expected hash.")
                 return serialize_block(self, block, full_transaction=full_transaction)
 
         raise BlockNotFound(f"No block found for block hash: {block_hash}.")
@@ -715,7 +719,7 @@ class EELSBackend(BaseChainBackend):
         return self._state_module.get_storage(self.chain.state, account, slot)
 
     def get_base_fee(self) -> int:
-        return self.chain.latest_block.header.base_fee_per_gas
+        return self._pending_block["header"]["base_fee_per_gas"]
 
     #
     # Transactions
