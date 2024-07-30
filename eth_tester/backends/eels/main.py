@@ -678,9 +678,7 @@ class EELSBackend(BaseChainBackend):
                 # bc of the comment above, we have to use i - 1 since we skip the ghost
                 # parent of the genesis block
                 block = self.chain.blocks[i - 1]
-                if block_hash != self._fork_module.compute_header_hash(
-                    block.header
-                ):
+                if block_hash != self._fork_module.compute_header_hash(block.header):
                     # sanity check, should not get here if the implementation is correct
                     raise ValueError("Block hash does not match the expected hash.")
                 return serialize_block(self, block, full_transaction=full_transaction)
@@ -1023,7 +1021,9 @@ class EELSBackend(BaseChainBackend):
     def call(self, transaction, block_number="latest"):
         transaction["gas"] = transaction.get("gas", MINIMUM_GAS_ESTIMATE)
 
-        env, signed_evm_transaction = self._generate_transaction_env(transaction)
+        env, signed_evm_transaction = self._generate_transaction_env(
+            transaction, synthetic_state=True
+        )
 
         code = self.fork.get_account(env.state, transaction["to"]).code
         # TODO: get accessed addresses and storage keys from tx access list
