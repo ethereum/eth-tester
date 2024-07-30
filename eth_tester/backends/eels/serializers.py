@@ -82,6 +82,7 @@ def serialize_block(
             "extra_data": block.header.extra_data,
             "gas_limit": block.header.gas_limit,
             "gas_used": block.header.gas_used,
+            "base_fee_per_gas": block.header.base_fee_per_gas,
             "timestamp": block.header.timestamp,
             "transactions": [],
             "uncles": [],
@@ -181,18 +182,32 @@ def serialize_transaction(tx, pending_block: Dict[str, Any] = None):
     return serialized
 
 
-def serialize_receipt(
-    backend_instance, tx, process_transaction_return, index, cumulative_gas_used, contract_address=None,
+def serialize_pending_receipt(
+    backend_instance,
+    tx,
+    process_transaction_return,
+    index,
+    cumulative_gas_used,
+    contract_address=None,
 ):
+    tx_hash = backend_instance._get_tx_hash(tx)
     tx_gas_consumed = process_transaction_return[0]
-    logs = process_transaction_return[1]
-    errors = process_transaction_return[2]
+
     pending_block = backend_instance._pending_block
+    block_num = pending_block["header"]["number"]
+
+    logs = (
+        serialize_pending_logs(process_transaction_return[1])
+        if process_transaction_return[1]
+        else []
+    )
+    errors = process_transaction_return[2]
+
     serialized = {
         "block_hash": None,  # updated when block is finalized
-        "transaction_hash": backend_instance._get_tx_hash(tx),
+        "transaction_hash": tx_hash,
         "transaction_index": index,
-        "block_number": pending_block["header"]["number"],
+        "block_number": block_num,
         "to": tx.to,
         "from": backend_instance._fork_module.recover_sender(tx.chain_id, tx),
         "gas_used": tx_gas_consumed,
@@ -205,3 +220,17 @@ def serialize_receipt(
         "type": extract_transaction_type(tx),
     }
     return serialized
+
+
+def serialize_pending_logs(eels_logs):
+    return [
+        {
+            "address": log.address,
+            "topics": log.topics,
+            "data": log.data,
+            "log_index": i,
+            "type": "pending",
+            # rest of the fields are added when block is finalized
+        }
+        for i, log in enumerate(eels_logs)
+    ]

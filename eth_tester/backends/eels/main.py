@@ -82,7 +82,7 @@ from .eels_normalizers import (
 )
 from .serializers import (
     serialize_block,
-    serialize_receipt,
+    serialize_pending_receipt,
     serialize_transaction,
     serialize_transaction_for_block,
 )
@@ -358,7 +358,6 @@ class EELSBackend(BaseChainBackend):
                 pre_state = self._create_synthetic_state()
                 process_transaction_return = self.fork.process_transaction(env, tx)
                 post_state = env.state
-
                 contract_address = self._extract_contract_address(pre_state, post_state)
 
                 if self.fork.is_after_fork("ethereum.cancun"):
@@ -380,7 +379,7 @@ class EELSBackend(BaseChainBackend):
                 )
 
                 apply_body_output_dict["receipts_map"][self._get_tx_hash(tx)] = (
-                    serialize_receipt(
+                    serialize_pending_receipt(
                         self,
                         tx,
                         process_transaction_return,
@@ -389,10 +388,13 @@ class EELSBackend(BaseChainBackend):
                         contract_address,
                     )
                 )
-                receipt = self.fork.make_receipt(
-                    tx, None, (block_gas_limit - gas_available), block_logs
-                )
 
+                receipt = self.fork.make_receipt(
+                    tx,
+                    process_transaction_return[2],
+                    (block_gas_limit - gas_available),
+                    process_transaction_return[1],
+                )
                 self.fork.trie_set(
                     receipts_trie,
                     rlp.encode(Uint(i)),
@@ -578,7 +580,10 @@ class EELSBackend(BaseChainBackend):
         )
 
         self.fork.state_transition(self.chain, _eels_block)
-
+        assert self.fork.state_root(self.chain.state) == block_header["state_root"]
+        assert self._fork_module.compute_header_hash(
+            _eels_block_header
+        ) == self._fork_module.compute_header_hash(self.chain.latest_block.header)
         for i, tx in enumerate(block["transactions"]):
             # update saved tx data post-mining
             tx_hash = self._get_tx_hash(tx)
@@ -598,6 +603,14 @@ class EELSBackend(BaseChainBackend):
             )
             updated_receipt["transaction_index"] = i
             updated_receipt["state_root"] = block_header["state_root"]
+            for log in updated_receipt["logs"]:
+                log["block_number"] = block_header["number"]
+                log["block_hash"] = self._fork_module.compute_header_hash(
+                    _eels_block_header
+                )
+                log["transaction_index"] = i
+                log["transaction_hash"] = tx_hash
+                log["type"] = "mined"
             self._receipts_map[tx_hash] = updated_receipt
 
         return block
@@ -656,9 +669,7 @@ class EELSBackend(BaseChainBackend):
         # increasing order by block number
         for i, bh in enumerate(self._fork_module.get_last_256_block_hashes(self.chain)):
             if bh == block_hash:
-                # minus 2 because `get_last_256_block_hashes` mistakenly classifies the
-                # genesis header parent hash as a blockhash
-                block = list(reversed(self.chain.blocks))[i - 2]
+                block = self.chain.blocks[-1]
                 if block_hash != self._fork_module.compute_header_hash(block.header):
                     # sanity check, we should never get here if the implementation is
                     # correct
@@ -1003,9 +1014,8 @@ class EELSBackend(BaseChainBackend):
 
     def call(self, transaction, block_number="latest"):
         transaction["gas"] = transaction.get("gas", MINIMUM_GAS_ESTIMATE)
-        env, signed_evm_transaction = self._generate_transaction_env(
-            transaction
-        )
+
+        env, signed_evm_transaction = self._generate_transaction_env(transaction)
 
         code = self.fork.get_account(env.state, transaction["to"]).code
         # TODO: get accessed addresses and storage keys from tx access list
