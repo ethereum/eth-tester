@@ -40,10 +40,6 @@ class BaseChainBackend(metaclass=ABCMeta):
     # Accounts
     #
     @abstractmethod
-    def _get_default_account_state(self, overrides=None):
-        raise NotImplementedError("Must be implemented by subclasses")
-
-    @abstractmethod
     def get_accounts(self):
         raise NotImplementedError("Must be implemented by subclasses")
 

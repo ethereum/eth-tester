@@ -157,7 +157,7 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
                     "gas_price": (
                         transaction.max_fee_per_gas
                         if is_pending
-                        else calculate_effective_gas_price(transaction, block)
+                        else calculate_effective_gas_price(transaction, block.header)
                     ),
                 },
             )
@@ -233,7 +233,7 @@ def serialize_transaction_receipt(
         "block_number": None if is_pending else block.number,
         "contract_address": contract_addr,
         "cumulative_gas_used": receipt.gas_used,
-        "effective_gas_price": calculate_effective_gas_price(transaction, block),
+        "effective_gas_price": calculate_effective_gas_price(transaction, block.header),
         "from": transaction.sender,
         "gas_used": receipt.gas_used - origin_gas,
         "logs": [

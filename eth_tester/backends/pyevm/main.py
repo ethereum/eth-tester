@@ -264,17 +264,17 @@ def setup_tester_chain(
 
 def _get_block_by_number(chain, block_number):
     if block_number in ("latest", "safe", "finalized"):
-        head_block = chain.latest_block()
+        head_block = chain.get_block()
         return chain.get_canonical_block_by_number(max(0, head_block.number - 1))
     elif block_number == "earliest":
         return chain.get_canonical_block_by_number(0)
     elif block_number == "pending":
-        return chain.latest_block()
+        return chain.get_block()
     elif is_integer(block_number):
         # Note: The head block is the pending block. If a block number is passed
         # explicitly here, return the block only if it is already part of the chain
         # (i.e. not pending).
-        head_block = chain.latest_block()
+        head_block = chain.get_block()
         if block_number < head_block.number:
             return chain.get_canonical_block_by_number(block_number)
 
@@ -285,7 +285,7 @@ def _get_block_by_number(chain, block_number):
 def _get_block_by_hash(chain, block_hash):
     block = chain.get_block_by_hash(block_hash)
 
-    if block.number >= chain.latest_block().number:
+    if block.number >= chain.get_block().number:
         raise BlockNotFound(f"No block found for block hash: {block_hash}")
 
     block_at_height = chain.get_canonical_block_by_number(block.number)
@@ -296,7 +296,7 @@ def _get_block_by_hash(chain, block_hash):
 
 
 def _get_transaction_by_hash(chain, transaction_hash):
-    head_block = chain.latest_block()
+    head_block = chain.get_block()
     for index, transaction in enumerate(head_block.transactions):
         if transaction.hash == transaction_hash:
             return head_block, transaction, index
@@ -402,26 +402,6 @@ class PyEVMBackend(BaseChainBackend):
     #
     # Genesis
     #
-
-    def _get_default_account_state(self, overrides=None):
-        default_account_state = {
-            "balance": to_wei(1000000, "ether"),
-            "storage": {},
-            "code": b"",
-            "nonce": 0,
-        }
-        if overrides is not None:
-            account_state = merge_genesis_overrides(
-                defaults=default_account_state, overrides=overrides
-            )
-        else:
-            account_state = default_account_state
-        return account_state
-
-    def _generate_genesis_state_for_keys(self, account_keys, overrides=None):
-        for private_key in account_keys:
-            account_state = self._get_default_account_state(overrides=overrides)
-            yield private_key.public_key.to_canonical_address(), account_state
 
     @classmethod
     def generate_genesis_params(cls, overrides=None):

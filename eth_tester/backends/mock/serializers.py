@@ -36,14 +36,16 @@ def serialize_transaction_as_hash(transaction, block, transaction_index, is_pend
     return transaction["hash"]
 
 
-def serialize_full_transaction(transaction, block, transaction_index, is_pending):
+def serialize_full_transaction(
+    transaction, block_header, transaction_index, is_pending
+):
     if is_pending:
         block_number = None
         block_hash = None
         transaction_index = None
     else:
-        block_number = block["number"]
-        block_hash = block["hash"]
+        block_number = block_header["number"]
+        block_hash = block_header["hash"]
 
     serialized_transaction = pipe(
         transaction,
@@ -72,19 +74,21 @@ def serialize_full_transaction(transaction, block, transaction_index, is_pending
         gas_price = (
             transaction["max_fee_per_gas"]
             if is_pending
-            else calculate_effective_gas_price(transaction, block)
+            else calculate_effective_gas_price(transaction, block_header)
         )
         return assoc(serialized_transaction, "gas_price", gas_price)
 
 
-def serialize_receipt(receipt, transaction, block, transaction_index, is_pending):
+def serialize_receipt(
+    receipt, transaction, block_header, transaction_index, is_pending
+):
     if is_pending:
         block_number = None
         block_hash = None
         transaction_index = None
     else:
-        block_number = block["number"]
-        block_hash = block["hash"]
+        block_number = block_header["number"]
+        block_hash = block_header["hash"]
 
     return pipe(
         receipt,
@@ -93,7 +97,7 @@ def serialize_receipt(receipt, transaction, block, transaction_index, is_pending
         partial(
             assoc,
             key="effective_gas_price",
-            value=(calculate_effective_gas_price(transaction, block)),
+            value=calculate_effective_gas_price(transaction, block_header),
         ),
         partial(assoc, key="from", value=to_bytes(transaction["from"])),
         partial(assoc, key="state_root", value=b"\x00"),

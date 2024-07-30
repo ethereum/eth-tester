@@ -218,7 +218,9 @@ def serialize_pending_receipt(
         "from": backend_instance._fork_module.recover_sender(tx.chain_id, tx),
         "gas_used": tx_gas_consumed,
         "cumulative_gas_used": cumulative_gas_used,
-        "effective_gas_price": calculate_effective_gas_price(tx, pending_block),
+        "effective_gas_price": calculate_effective_gas_price(
+            tx, pending_block["header"]
+        ),
         "contract_address": contract_address,
         "state_root": None,  # updated when block is finalized
         "logs": logs,
