@@ -156,6 +156,7 @@ class EELSBackend(BaseChainBackend):
         self._blocks_module = self.fork._module("blocks")
         self._transactions_module = self.fork._module("transactions")
         self._fork_types = self.fork._module("fork_types")
+        self._utils_module = self.fork._module("utils")
 
         self.reset_to_genesis(
             genesis_params=genesis_params,
@@ -164,6 +165,7 @@ class EELSBackend(BaseChainBackend):
             mnemonic=mnemonic,
             hd_path=hd_path,
         )
+        self.chain.state._snapshots
 
     def time_travel(self, to_timestamp):
         pass
@@ -647,7 +649,7 @@ class EELSBackend(BaseChainBackend):
                 self, block, full_transaction=full_transaction, is_pending=is_pending
             )
 
-        raise BlockNotFound(f"No block found for block number: {block_number}")
+        raise BlockNotFound(f"No block found for block number: {block_number}.")
 
     def get_block_by_hash(self, block_hash, full_transaction=True):
         # work in reverse order to find the block, since blocks are stored in
@@ -660,11 +662,11 @@ class EELSBackend(BaseChainBackend):
                 if block_hash != self._fork_module.compute_header_hash(block.header):
                     # sanity check, we should never get here if the implementation is
                     # correct
-                    raise ValueError("Block hash does not match expected hash")
+                    raise ValueError("Block hash does not match the expected hash.")
 
                 return serialize_block(self, block, full_transaction=full_transaction)
 
-        raise BlockNotFound(f"No block found for block hash: {block_hash}")
+        raise BlockNotFound(f"No block found for block hash: {block_hash}.")
 
     def get_transaction_by_hash(self, transaction_hash):
         if transaction_hash in self._transactions_map:
@@ -966,43 +968,71 @@ class EELSBackend(BaseChainBackend):
         header = self.chain.latest_block.header
         return header.gas_limit - header.gas_used
 
-    def _run_transaction_against_synthetic_state(self, transaction):
+    def _generate_transaction_env(
+        self,
+        transaction,
+        synthetic_state=False,
+    ):
         signed_and_normalized_json_tx = self._get_normalized_and_signed_evm_transaction(
             transaction,
         )
         signed_transaction = TransactionLoad(
             signed_and_normalized_json_tx, self.fork
         ).read()
+
+        # check / validate the transaction
         self._check_transaction(
             signed_transaction,
             # TODO: Stop lazily plugging in the parent block's gas limit
             self.chain.latest_block.header.gas_limit,
         )
-        # run the transaction against a synthetic version of the state
-        state_copy = self._create_synthetic_state()
+
+        state = self._create_synthetic_state() if synthetic_state else self.chain.state
         env = self.environment(
-            signed_transaction, self._max_available_gas(), state=state_copy
+            signed_transaction, self._max_available_gas(), state=state
         )
         return env, signed_transaction
 
     def estimate_gas(self, transaction, block_number="latest"):
         transaction["gas"] = MINIMUM_GAS_ESTIMATE
-        env, signed_evm_transaction = self._run_transaction_against_synthetic_state(
-            transaction
+        env, signed_evm_transaction = self._generate_transaction_env(
+            transaction, synthetic_state=True
         )
         output = self.fork.process_transaction(env, signed_evm_transaction)
         return output[0]  # total gas consumed
 
     def call(self, transaction, block_number="latest"):
-        env, signed_evm_transaction = self._run_transaction_against_synthetic_state(
+        transaction["gas"] = transaction.get("gas", MINIMUM_GAS_ESTIMATE)
+        env, signed_evm_transaction = self._generate_transaction_env(
             transaction
         )
-        self.fork.process_transaction(env, signed_evm_transaction)
-        raise NotImplementedError("Continue implementation...")
-        # TODO
+
+        code = self.fork.get_account(env.state, transaction["to"]).code
+        # TODO: get accessed addresses and storage keys from tx access list
+
+        message = self.fork.Message(
+            caller=env.caller,
+            target=transaction["to"],
+            gas=signed_evm_transaction.gas,
+            value=signed_evm_transaction.value,
+            data=signed_evm_transaction.data,
+            code=code,
+            depth=Uint(0),
+            current_target=transaction["to"],
+            code_address=transaction["to"],
+            should_transfer_value=signed_evm_transaction.value > 0
+            and transaction["to"] not in (b"", "0x0", None),
+            is_static=False,
+            accessed_addresses=set(),
+            accessed_storage_keys=set(),
+            parent_evm=None,
+        )
+        evm = self._vm_module.interpreter.process_message(message, env)
+        return evm.output
 
     def _extract_contract_address(self, pre_state, post_state):
-        # TODO: make this more robust !!
+        # TODO: make this more robust / figure out the best way to get the contract
+        #   address with execution-specs API
         for address in post_state._main_trie._data:
             if address not in pre_state._main_trie._data:
                 if self._state_module.get_account(post_state, address).code != b"":
