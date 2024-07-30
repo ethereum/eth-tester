@@ -57,6 +57,7 @@ from eth_tester.backends.common import (
 )
 from eth_tester.constants import (
     BEACON_ROOTS_CONTRACT_ADDRESS,
+    BEACON_ROOTS_CONTRACT_CODE,
     ZERO_ADDRESS,
     ZERO_HASH32,
 )
@@ -233,13 +234,12 @@ class EELSBackend(BaseChainBackend):
                 num_accounts=num_accounts, mnemonic=mnemonic, hd_path=hd_path
             )
 
-        # if self.fork.is_after_fork("ethereum.cancun"):
-        # TODO: set up beacon roots contract
-        # genesis_state[BEACON_ROOTS_CONTRACT_ADDRESS] = (
-        #     self._get_default_account_state(
-        #         overrides={"code": BEACON_ROOTS_CONTRACT_CODE}
-        #     )
-        # )
+        if self.fork.is_after_fork("ethereum.cancun"):
+            genesis_state[BEACON_ROOTS_CONTRACT_ADDRESS] = (
+                self._get_default_account_state(
+                    overrides={"code": BEACON_ROOTS_CONTRACT_CODE}
+                )
+            )
 
         eels_state = self._fork_module.State()
         for address, account in genesis_state.items():
@@ -330,7 +330,7 @@ class EELSBackend(BaseChainBackend):
                 gas_limit=block_gas_limit,
                 base_fee_per_gas=pending_block_header["base_fee_per_gas"],
                 gas_price=U256(0),
-                time=U256(int(time.time())),
+                time=pending_block_header["timestamp"],
                 prev_randao=pending_block_header["prev_randao"],
                 state=state_copy,
                 chain_id=self.chain.chain_id,
@@ -481,7 +481,7 @@ class EELSBackend(BaseChainBackend):
                 number=Uint(0),
                 gas_limit=GENESIS_GAS_LIMIT,
                 gas_used=Uint(0),
-                timestamp=Uint(int(time.time())),
+                timestamp=U256(int(time.time())),
                 extra_data=ZERO_HASH32,
                 prev_randao=ZERO_HASH32,
                 nonce=GENESIS_NONCE,
@@ -559,7 +559,7 @@ class EELSBackend(BaseChainBackend):
         # set the timestamp when mining
         parent_timestamp = self.chain.latest_block.header.timestamp
         current_time = Uint(int(time.time()))
-        block_header["timestamp"] = (
+        block_header["timestamp"] = U256(
             parent_timestamp + 1 if parent_timestamp >= current_time else current_time
         )
 
@@ -713,7 +713,14 @@ class EELSBackend(BaseChainBackend):
     def get_code(self, account, block_number="latest"):
         return self.fork.get_account(self.chain.state, account).code
 
-    def get_storage(self, account: Address, slot: int, block_number="latest") -> bytes:
+    def get_storage(
+        self, account: Address, slot: Union[int, bytes], block_number="latest"
+    ) -> bytes:
+        # TODO: block_number
+        if isinstance(slot, int):
+            slot = int_to_big_endian(slot)
+        # left pad with zero bytes to 32 bytes
+        slot = slot.rjust(32, b"\x00")
         return self._state_module.get_storage(self.chain.state, account, slot)
 
     def get_base_fee(self) -> int:
