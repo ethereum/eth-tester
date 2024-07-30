@@ -151,6 +151,7 @@ def get_default_account_state(overrides=None):
         account_state = default_account_state
     return account_state
 
+
 @to_dict
 def generate_genesis_state_for_keys(account_keys, overrides=None):
     for private_key in account_keys:
