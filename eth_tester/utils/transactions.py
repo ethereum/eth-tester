@@ -112,6 +112,8 @@ def normalize_transaction_fields(
                 "max_fee_per_gas",
                 transaction["max_priority_fee_per_gas"] + 2 * base_fee_per_gas,
             )
+    else:
+        yield "gas_price", transaction.get("gas_price", 1 * 10**9)
 
     if is_typed_transaction:
         # typed transaction
