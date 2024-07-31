@@ -80,6 +80,7 @@ from ...validation.inbound import (
     validate_inbound_withdrawals,
 )
 from .eels_normalizers import (
+    eels_normalize_inbound_raw_blob_transaction,
     eels_normalize_transaction,
 )
 from .serializers import (
@@ -443,8 +444,10 @@ class EELSBackend(BaseChainBackend):
 
         if self.fork.is_after_fork("ethereum.cancun"):
             apply_body_output_dict["blob_gas_used"] = blob_gas_used
-            apply_body_output_dict["excess_blob_gas"] = (
-                pending_block_header["excess_blob_gas"] - blob_gas_used
+            apply_body_output_dict[
+                "excess_blob_gas"
+            ] = self._vm_module.gas.calculate_excess_blob_gas(
+                self.chain.latest_block.header
             )
 
         apply_body_output_dict["state_root"] = self.fork.state_root(state_copy)
@@ -809,6 +812,7 @@ class EELSBackend(BaseChainBackend):
         The arguments to be passed are adjusted according to the fork.
         """
         if gas_available is None:
+            # TODO: stop lazily using the latest block gas limit
             gas_available = self.chain.latest_block.header.gas_limit
 
         if self.fork.is_after_fork("ethereum.cancun"):
@@ -946,29 +950,42 @@ class EELSBackend(BaseChainBackend):
             return keccak256(rlp.encode(tx))
 
     def send_raw_transaction(self, raw_transaction):
-        evm_transaction = self._transactions_module.decode_transaction(raw_transaction)
-        self._check_transaction(evm_transaction)
+        if raw_transaction[0] == 3:
+            # use eth-account to decode since EELS doesn't know how to handle blob data
+            tx_dict = eels_normalize_inbound_raw_blob_transaction(
+                self,
+                raw_transaction,
+            )
+            eels_transaction = self._transactions_module.BlobTransaction(**tx_dict)
+        else:
+            eels_transaction = self._transactions_module.decode_transaction(
+                raw_transaction
+            )
 
-        tx_hash = self._get_tx_hash(evm_transaction)
-        self._pending_block["transactions"].append(evm_transaction)
-        # TODO: This will likely break (untested). We need to get the tx as json with
-        #  all fields before adding it to the _transactions_map.
-        self._transactions_map[tx_hash] = evm_transaction
+        self._check_transaction(eels_transaction)
+        tx_hash = self._get_tx_hash(eels_transaction)
+        self._transactions_map[tx_hash] = serialize_transaction_for_block(
+            self,
+            serialized_block=serialize_block(
+                self, self._pending_block, full_transaction=False, is_pending=True
+            ),
+            tx=eels_transaction,
+            index=len(self._pending_block["transactions"]),
+        )
+        self._pending_block["transactions"].append(eels_transaction)
         return tx_hash
 
     def send_signed_transaction(self, signed_json_tx, block_number="latest"):
         eels_transaction = TransactionLoad(signed_json_tx, self.fork).read()
         self._check_transaction(
             eels_transaction,
-            # TODO: Stop lazily plugging in the parent block's gas limit
-            self.chain.latest_block.header.gas_limit,
         )
 
         tx_hash = self._get_tx_hash(eels_transaction)
-        self._pending_block["transactions"].append(eels_transaction)
         self._transactions_map[tx_hash] = serialize_transaction(
-            signed_json_tx, pending_block=True
+            signed_json_tx, pending_block=self._pending_block
         )
+        self._pending_block["transactions"].append(eels_transaction)
         return tx_hash
 
     def send_transaction(self, transaction):
@@ -979,11 +996,7 @@ class EELSBackend(BaseChainBackend):
             transaction,
         )
         eels_tx = TransactionLoad(signed_and_normalized_json_tx, self.fork).read()
-        self._check_transaction(
-            eels_tx,
-            # TODO: Stop lazily plugging in the parent block's gas limit
-            self.chain.latest_block.header.gas_limit,
-        )
+        self._check_transaction(eels_tx)
 
         tx_hash = self._get_tx_hash(eels_tx)
         self._transactions_map[tx_hash] = serialize_transaction_for_block(
