@@ -20,7 +20,6 @@ from eth_typing import (
 from eth_utils import (
     int_to_big_endian,
     logging,
-    replace_exceptions,
     to_dict,
     to_tuple,
 )
@@ -258,6 +257,7 @@ class EELSBackend(BaseChainBackend):
             state=eels_state,
             chain_id=U64(1),
         )
+        self._state_history[GENESIS_BLOCK_NUMBER] = self._generate_state_snapshot()
         self._build_new_pending_block()
         self._snapshots = {}
 
@@ -274,15 +274,14 @@ class EELSBackend(BaseChainBackend):
     # Snapshot API
     #
     def take_snapshot(self):
-        snapshot = self._take_state_snapshot()
         key = keccak256(os.urandom(32))
-        self._snapshots[key] = snapshot
+        self._snapshots[key] = self._generate_state_snapshot()
         return key
 
     def revert_to_snapshot(self, snapshot_key):
-        snapshot = self._snapshots[snapshot_key]
-        self.chain.state._main_trie = snapshot[0]
-        self.chain.state._storage_tries = snapshot[1]
+        if snapshot_key not in self._snapshots:
+            raise ValidationError(f"No snapshot found for key: {snapshot_key}.")
+        self.chain.state = self._snapshots[snapshot_key]
 
     #
     # Importing blocks
@@ -300,7 +299,7 @@ class EELSBackend(BaseChainBackend):
         transactions_trie = self.fork.Trie(secured=False, default=None)
         receipts_trie = self.fork.Trie(secured=False, default=None)
 
-        state_copy = self._create_synthetic_state()
+        state_copy = self._generate_state_snapshot()
         if not self.fork.state_root(self.chain.state) == self.fork.state_root(
             state_copy
         ):
@@ -363,7 +362,7 @@ class EELSBackend(BaseChainBackend):
             try:
                 # TODO: Handle state reversion / snapshotting appropriately
                 env = self.environment(tx, gas_available, state=state_copy)
-                pre_state = self._create_synthetic_state()
+                pre_state = self._generate_state_snapshot()
                 process_transaction_return = self.fork.process_transaction(env, tx)
                 post_state = env.state
                 contract_address = self._extract_contract_address(pre_state, post_state)
@@ -460,31 +459,27 @@ class EELSBackend(BaseChainBackend):
         )
         return apply_body_output_dict
 
-    def _take_state_snapshot(self):
-        return (
-            self._state_module.copy_trie(self.chain.state._main_trie),
-            {
-                k: self._state_module.copy_trie(t)
-                for (k, t) in self.chain.state._storage_tries.items()
-            },
-        )
-
-    def _create_synthetic_state(self):
+    def _generate_state_snapshot(self):
         state_copy = self.fork.State()
-        main_trie, storage_tries = self._take_state_snapshot()
-        state_copy._main_trie = main_trie
-        state_copy._storage_tries = storage_tries
+        state_copy._main_trie = self._state_module.copy_trie(
+            self.chain.state._main_trie
+        )
+        state_copy._storage_tries = {
+            k: self._state_module.copy_trie(t)
+            for (k, t) in self.chain.state._storage_tries.items()
+        }
         return state_copy
 
     def _get_state_for_block_number(self, block_number):
-        if block_number in ("latest", "safe", "finalized", "pending"):
-            return self.chain.state
-        elif block_number in self._state_history:
-            state_impl = self.fork.State()
-            state_snapshot = self._state_history[block_number]
-            state_impl._main_trie = state_snapshot[0]
-            state_impl._storage_tries = state_snapshot[1]
-            return state_impl
+        if block_number in ("latest", "safe", "finalized"):
+            return self._state_history[self.chain.latest_block.header.number]
+        elif block_number == "pending":
+            return self._generate_state_snapshot()
+        elif block_number == "earliest":
+            block_number = 0
+
+        if block_number in self._state_history:
+            return self._state_history[block_number]
 
         raise ValidationError(
             f"No state snapshot found for block number: {block_number}."
@@ -512,7 +507,7 @@ class EELSBackend(BaseChainBackend):
                 blob_gas_used=Uint(0),
                 excess_blob_gas=Uint(0),
                 parent_beacon_block_root=ZERO_HASH32,
-                base_fee_per_gas=Uint(0),
+                base_fee_per_gas=Uint(1000000000),
             ),
             transactions=(),
             ommers=(),
@@ -644,7 +639,7 @@ class EELSBackend(BaseChainBackend):
                 log["type"] = "mined"
             self._receipts_map[tx_hash] = updated_receipt
 
-        self._state_history[blocknum] = self._take_state_snapshot()
+        self._state_history[blocknum] = self._generate_state_snapshot()
         return block
 
     @to_tuple
@@ -671,7 +666,6 @@ class EELSBackend(BaseChainBackend):
     #
     # Chain data
     #
-    @replace_exceptions({EthereumException: BlockNotFound})
     def get_block_by_number(self, block_number, full_transaction=True):
         block = None
         is_pending = False
@@ -697,7 +691,6 @@ class EELSBackend(BaseChainBackend):
 
         raise BlockNotFound(f"No block found for block number: {block_number}.")
 
-    @replace_exceptions({EthereumException: BlockNotFound})
     def get_block_by_hash(self, block_hash, full_transaction=True):
         for i, bh in enumerate(self._fork_module.get_last_256_block_hashes(self.chain)):
             if bh == ZERO_HASH32:
@@ -993,8 +986,11 @@ class EELSBackend(BaseChainBackend):
         return tx_hash
 
     def send_transaction(self, transaction):
-        if transaction.get("to") in (b"", "0x0", "0x00", None):
-            transaction["gas"] = 1234567
+        if (
+            transaction.get("to") in (b"", "0x0", "0x00", None)
+            and "gas" not in transaction
+        ):
+            transaction["gas"] = self.estimate_gas(transaction)
 
         signed_and_normalized_json_tx = self._get_normalized_and_signed_evm_transaction(
             transaction,
@@ -1025,12 +1021,16 @@ class EELSBackend(BaseChainBackend):
         for withdrawal in withdrawals_list:
             self._pending_block["withdrawals"].append(
                 self.fork.Withdrawal(
-                    index=withdrawal["index"],
-                    validation_index=withdrawal["validator_index"],
-                    address=withdrawal["address"],
-                    amount=withdrawal["amount"],
+                    index=U64(withdrawal["index"]),
+                    validator_index=U64(withdrawal["validator_index"]),
+                    address=Address(withdrawal["address"]),
+                    amount=U256(withdrawal["amount"]),
                 )
             )
+        # TODO: Consider just adding these to the pending block without auto mining.
+        #  This would have to change not just for EELSBackend, so would be a bigger
+        #  change later down the line.
+        self.mine_blocks(1)
 
     def _max_available_gas(self):
         header = self.chain.latest_block.header
@@ -1056,38 +1056,46 @@ class EELSBackend(BaseChainBackend):
             self.chain.latest_block.header.gas_limit,
         )
 
-        if synthetic_state:
-            env_state = state or self._create_synthetic_state()
-        else:
-            env_state = self.chain.state
+        env_state = (
+            state or self._generate_state_snapshot()
+            if synthetic_state
+            else self.chain.state
+        )
         env = self.environment(
             signed_transaction, self._max_available_gas(), state=env_state
         )
         return env, signed_transaction
 
-    @replace_exceptions({EthereumException: TransactionFailed})
+    def _get_tx_and_env_for_block_number(self, transaction, block_number):
+        env_state = None
+        if block_number not in ("latest", "safe", "finalized"):
+            # if not "latest" state, we need to get the state snapshot for the block
+            if block_number == "earliest":
+                block_number = 0
+            env_state = self._get_state_for_block_number(block_number)
+        try:
+            env, signed_evm_transaction = self._generate_transaction_env(
+                transaction, synthetic_state=True, state=env_state
+            )
+            return env, signed_evm_transaction
+        except EthereumException:
+            raise TransactionFailed("Transaction failed to execute.")
+
     def estimate_gas(self, transaction, block_number="latest"):
-        transaction["gas"] = MINIMUM_GAS_ESTIMATE
-        env, signed_evm_transaction = self._generate_transaction_env(
-            transaction, synthetic_state=True
+        transaction["gas"] = self._max_available_gas()
+        env, signed_evm_transaction = self._get_tx_and_env_for_block_number(
+            transaction, block_number
         )
         output = self.fork.process_transaction(env, signed_evm_transaction)
         return output[0]  # total gas consumed
 
-    @replace_exceptions({EthereumException: TransactionFailed})
     def call(self, transaction, block_number="latest"):
-        env_state = None
-        if block_number not in ("latest", "safe", "finalized"):
-            if block_number == "earliest":
-                block_number = 0
-            env_state = self._get_state_for_block_number(block_number)
-
         transaction["gas"] = transaction.get("gas", MINIMUM_GAS_ESTIMATE)
-        env, signed_evm_transaction = self._generate_transaction_env(
-            transaction, synthetic_state=True, state=env_state
+        env, signed_evm_transaction = self._get_tx_and_env_for_block_number(
+            transaction, block_number
         )
 
-        code = self.fork.get_account(env.state, transaction["to"]).code
+        code = self.fork.get_account(env.state, signed_evm_transaction.to).code
         # TODO: get accessed addresses and storage keys from tx access list
 
         message = self.fork.Message(
@@ -1110,7 +1118,10 @@ class EELSBackend(BaseChainBackend):
         evm = self._vm_module.interpreter.process_message(message, env)
         if evm.error:
             if isinstance(evm.error, self._vm_module.exceptions.Revert):
-                msg = "Function has been reverted."
+                if evm.output == b"":
+                    msg = "Function has been reverted."
+                else:
+                    msg = str(evm.output)
             else:
                 msg = evm.error
             raise TransactionFailed(msg)

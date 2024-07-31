@@ -23,6 +23,19 @@ from eth_tester.utils.transactions import (
 )
 
 
+def _append_withdrawals_to_block(serialized_block, withdrawals):
+    for withdrawal in withdrawals:
+        serialized_block["withdrawals"].append(
+            {
+                "index": withdrawal.index,
+                "validator_index": withdrawal.validator_index,
+                "address": withdrawal.address,
+                "amount": withdrawal.amount,
+            }
+        )
+    return serialized_block
+
+
 def serialize_block(
     backend_instance,
     block: Union[Block, Dict[str, Any]],
@@ -60,12 +73,16 @@ def serialize_block(
                 "transactions_root", BLANK_ROOT_HASH
             ),
             "receipts_root": block["header"].get("receipts_root", BLANK_ROOT_HASH),
+            "withdrawals_root": block["header"].get(
+                "withdrawals_root", BLANK_ROOT_HASH
+            ),
         }
-        tx_list = enumerate(block["transactions"])
         serialized_block = _append_txs_to_block(
-            backend_instance, serialized_block, tx_list, full_transaction
+            backend_instance, serialized_block, block["transactions"], full_transaction
         )
-
+        serialized_block = _append_withdrawals_to_block(
+            serialized_block, block["withdrawals"]
+        )
     else:
         serialized_block = {
             "number": block.header.number,
@@ -86,24 +103,27 @@ def serialize_block(
             "base_fee_per_gas": block.header.base_fee_per_gas,
             "parent_beacon_block_root": block.header.parent_beacon_block_root,
             "timestamp": block.header.timestamp,
-            "transactions": [],
-            "uncles": [],
-            "withdrawals": [],
+            "transactions": [],  # serialized below
+            "uncles": [],  # TODO serialize below
+            "withdrawals": [],  # TODO serialize below
             "logs_bloom": int.from_bytes(block.header.bloom, "big"),
             "sha3_uncles": block.header.ommers_hash,
             "transactions_root": block.header.transactions_root,
             "receipts_root": block.header.receipt_root,
+            "withdrawals_root": block.header.withdrawals_root,
         }
-        tx_list = enumerate(block.transactions)
         serialized_block = _append_txs_to_block(
-            backend_instance, serialized_block, tx_list, full_transaction
+            backend_instance, serialized_block, block.transactions, full_transaction
+        )
+        serialized_block = _append_withdrawals_to_block(
+            serialized_block, block.withdrawals
         )
 
     return serialized_block
 
 
 def _append_txs_to_block(backend_instance, serialized_block, tx_list, full_transaction):
-    for i, tx in tx_list:
+    for i, tx in enumerate(tx_list):
         if full_transaction:
             json_tx = serialize_transaction_for_block(
                 backend_instance, serialized_block, tx, i
