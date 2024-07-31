@@ -20,6 +20,7 @@ from eth_typing import (
 from eth_utils import (
     int_to_big_endian,
     logging,
+    replace_exceptions,
     to_dict,
     to_tuple,
 )
@@ -65,6 +66,7 @@ from eth_tester.constants import (
 from eth_tester.exceptions import (
     BackendDistributionNotFound,
     BlockNotFound,
+    TransactionFailed,
     TransactionNotFound,
     ValidationError,
 )
@@ -102,7 +104,7 @@ if is_eels_available():
 
 
 GENESIS_BLOCK_NUMBER = Uint(0)
-GENESIS_DIFFICULTY = Uint(0)
+GENESIS_DIFFICULTY = Uint(131072)
 GENESIS_GAS_LIMIT = Uint(30029122)  # gas limit at London fork block 12965000 on mainnet
 GENESIS_NONCE = b"\x00\x00\x00\x00\x00\x00\x00*"  # 42 encoded as big-endian-integer
 GENESIS_COINBASE = ZERO_ADDRESS
@@ -669,6 +671,7 @@ class EELSBackend(BaseChainBackend):
     #
     # Chain data
     #
+    @replace_exceptions({EthereumException: BlockNotFound})
     def get_block_by_number(self, block_number, full_transaction=True):
         block = None
         is_pending = False
@@ -694,6 +697,7 @@ class EELSBackend(BaseChainBackend):
 
         raise BlockNotFound(f"No block found for block number: {block_number}.")
 
+    @replace_exceptions({EthereumException: BlockNotFound})
     def get_block_by_hash(self, block_hash, full_transaction=True):
         for i, bh in enumerate(self._fork_module.get_last_256_block_hashes(self.chain)):
             if bh == ZERO_HASH32:
@@ -1061,6 +1065,7 @@ class EELSBackend(BaseChainBackend):
         )
         return env, signed_transaction
 
+    @replace_exceptions({EthereumException: TransactionFailed})
     def estimate_gas(self, transaction, block_number="latest"):
         transaction["gas"] = MINIMUM_GAS_ESTIMATE
         env, signed_evm_transaction = self._generate_transaction_env(
@@ -1069,6 +1074,7 @@ class EELSBackend(BaseChainBackend):
         output = self.fork.process_transaction(env, signed_evm_transaction)
         return output[0]  # total gas consumed
 
+    @replace_exceptions({EthereumException: TransactionFailed})
     def call(self, transaction, block_number="latest"):
         env_state = None
         if block_number not in ("latest", "safe", "finalized"):
@@ -1102,6 +1108,12 @@ class EELSBackend(BaseChainBackend):
             parent_evm=None,
         )
         evm = self._vm_module.interpreter.process_message(message, env)
+        if evm.error:
+            if isinstance(evm.error, self._vm_module.exceptions.Revert):
+                msg = "Function has been reverted."
+            else:
+                msg = evm.error
+            raise TransactionFailed(msg)
         return evm.output
 
     def _extract_contract_address(self, pre_state, post_state):
