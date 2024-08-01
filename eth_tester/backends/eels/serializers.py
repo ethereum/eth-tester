@@ -61,7 +61,7 @@ def serialize_block(
             "blob_gas_used": 0,
             "excess_blob_gas": 0,
             "base_fee_per_gas": block["header"]["base_fee_per_gas"],
-            "timestamp": int(time.time()),
+            "timestamp": block["header"]["timestamp"] or int(time.time()),
             "transactions": block.get("transactions", []),
             "uncles": block.get("ommers", []),
             "withdrawals": block.get("withdrawals", []),
@@ -85,24 +85,24 @@ def serialize_block(
         )
     else:
         serialized_block = {
-            "number": block.header.number,
+            "number": int(block.header.number),
             "hash": backend_instance._fork_module.compute_header_hash(block.header),
             "parent_hash": block.header.parent_hash,
             "nonce": block.header.nonce,
             "state_root": block.header.state_root,
             "coinbase": block.header.coinbase,
-            "difficulty": block.header.difficulty,
+            "difficulty": int(block.header.difficulty),
             "mix_hash": block.header.prev_randao,
             "total_difficulty": block.header.difficulty,
             "size": 0,
             "extra_data": block.header.extra_data,
-            "gas_limit": block.header.gas_limit,
-            "gas_used": block.header.gas_used,
-            "blob_gas_used": block.header.blob_gas_used,
-            "excess_blob_gas": block.header.excess_blob_gas,
-            "base_fee_per_gas": block.header.base_fee_per_gas,
+            "gas_limit": int(block.header.gas_limit),
+            "gas_used": int(block.header.gas_used),
+            "blob_gas_used": int(block.header.blob_gas_used),
+            "excess_blob_gas": int(block.header.excess_blob_gas),
+            "base_fee_per_gas": int(block.header.base_fee_per_gas),
             "parent_beacon_block_root": block.header.parent_beacon_block_root,
-            "timestamp": block.header.timestamp,
+            "timestamp": int(block.header.timestamp),
             "transactions": [],  # serialized below
             "uncles": [],  # TODO serialize below
             "withdrawals": [],  # TODO serialize below
@@ -126,7 +126,11 @@ def _append_txs_to_block(backend_instance, serialized_block, tx_list, full_trans
     for i, tx in enumerate(tx_list):
         if full_transaction:
             json_tx = serialize_transaction_for_block(
-                backend_instance, serialized_block, tx, i
+                backend_instance,
+                tx,
+                i,
+                serialized_block["hash"],
+                serialized_block["number"],
             )
             serialized_block["transactions"].append(json_tx)
         else:
@@ -136,15 +140,16 @@ def _append_txs_to_block(backend_instance, serialized_block, tx_list, full_trans
 
 def serialize_transaction_for_block(
     backend_instance,
-    serialized_block: Dict[str, Any],
     tx,
     index,
+    block_number,
+    block_hash=ZERO_HASH32,
 ):
     json_tx = {
         "hash": backend_instance._get_tx_hash(tx),
         "nonce": tx.nonce,
-        "block_hash": serialized_block["hash"],
-        "block_number": serialized_block["number"],
+        "block_hash": block_hash,
+        "block_number": block_number,
         "transaction_index": index,
         "to": tx.to,
         "value": tx.value,
@@ -256,7 +261,7 @@ def serialize_pending_logs(eels_logs):
             "address": log.address,
             "topics": log.topics,
             "data": log.data,
-            "log_index": i,
+            "log_index": int(i),
             "type": "pending",
             # rest of the fields are added when block is finalized
         }
