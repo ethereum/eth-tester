@@ -414,7 +414,6 @@ class EthereumTester:
                     block_hash
                 )
                 block_filter.add(raw_block_hash)
-
             self._process_block_logs(block)
 
         return block_hashes
@@ -428,8 +427,8 @@ class EthereumTester:
     # Private mining API
     #
     def _process_block_logs(self, block):
-        for _fid, filter in self._log_filters.items():
-            self._add_log_entries_to_filter(block, filter)
+        for _fid, filter_ in self._log_filters.items():
+            self._add_log_entries_to_filter(block, filter_)
 
     def _add_log_entries_to_filter(self, block, filter_):
         for transaction_hash in block["transactions"]:
@@ -456,22 +455,13 @@ class EthereumTester:
     #
     # Transaction Sending
     #
-    def _handle_filtering_for_transaction(self, transaction_hash):
+    def _handle_pending_tx_filtering(self, transaction_hash):
         # feed the transaction hash to any pending transaction filters.
-        for _, filter in self._pending_transaction_filters.items():
+        for _, filter_ in self._pending_transaction_filters.items():
             raw_transaction_hash = self.normalizer.normalize_inbound_transaction_hash(
                 transaction_hash,
             )
-            filter.add(raw_transaction_hash)
-
-        if self._log_filters:
-            receipt = self.get_transaction_receipt(transaction_hash)
-            for log_entry in receipt["logs"]:
-                for _, filter in self._log_filters.items():
-                    raw_log_entry = self.normalizer.normalize_inbound_log_entry(
-                        log_entry
-                    )
-                    filter.add(raw_log_entry)
+            filter_.add(raw_transaction_hash)
 
     @handle_auto_mining
     def send_raw_transaction(self, raw_transaction_hex):
@@ -484,7 +474,7 @@ class EthereumTester:
         transaction_hash = self.normalizer.normalize_outbound_transaction_hash(
             raw_transaction_hash,
         )
-        self._handle_filtering_for_transaction(transaction_hash)
+        self._handle_pending_tx_filtering(transaction_hash)
         return transaction_hash
 
     @handle_auto_mining
@@ -553,8 +543,7 @@ class EthereumTester:
             raw_transaction_hash,
         )
 
-        self._handle_filtering_for_transaction(transaction_hash)
-
+        self._handle_pending_tx_filtering(transaction_hash)
         return transaction_hash
 
     #
