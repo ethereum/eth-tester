@@ -23,7 +23,7 @@ from eth_tester.utils.transactions import (
 )
 
 
-def _append_withdrawals_to_block(serialized_block, withdrawals):
+def _serialize_withdrawals_to_block(serialized_block, withdrawals):
     for withdrawal in withdrawals:
         serialized_block["withdrawals"].append(
             {
@@ -39,7 +39,7 @@ def _append_withdrawals_to_block(serialized_block, withdrawals):
 def serialize_block(
     backend_instance,
     block: Union[Block, Dict[str, Any]],
-    full_transaction: bool = False,
+    full_transactions: bool = False,
     is_pending: bool = False,
 ):
     if is_pending:
@@ -77,10 +77,10 @@ def serialize_block(
                 "withdrawals_root", BLANK_ROOT_HASH
             ),
         }
-        serialized_block = _append_txs_to_block(
-            backend_instance, serialized_block, block["transactions"], full_transaction
+        serialized_block = _serialize_txs_to_block(
+            backend_instance, serialized_block, block["transactions"], full_transactions
         )
-        serialized_block = _append_withdrawals_to_block(
+        serialized_block = _serialize_withdrawals_to_block(
             serialized_block, block["withdrawals"]
         )
     else:
@@ -112,38 +112,42 @@ def serialize_block(
             "receipts_root": block.header.receipt_root,
             "withdrawals_root": block.header.withdrawals_root,
         }
-        serialized_block = _append_txs_to_block(
-            backend_instance, serialized_block, block.transactions, full_transaction
+        serialized_block = _serialize_txs_to_block(
+            backend_instance, serialized_block, block.transactions, full_transactions
         )
-        serialized_block = _append_withdrawals_to_block(
+        serialized_block = _serialize_withdrawals_to_block(
             serialized_block, block.withdrawals
         )
 
     return serialized_block
 
 
-def _append_txs_to_block(backend_instance, serialized_block, tx_list, full_transaction):
+def _serialize_txs_to_block(
+    backend_instance, serialized_block, tx_list, full_transactions
+):
     for i, tx in enumerate(tx_list):
-        if full_transaction:
-            json_tx = serialize_transaction_for_block(
+        if full_transactions:
+            json_tx = serialize_eels_transaction_for_block(
                 backend_instance,
                 tx,
                 i,
-                serialized_block["hash"],
                 serialized_block["number"],
+                serialized_block["hash"],
             )
             serialized_block["transactions"].append(json_tx)
         else:
             serialized_block["transactions"].append(backend_instance._get_tx_hash(tx))
+
     return serialized_block
 
 
-def serialize_transaction_for_block(
+def serialize_eels_transaction_for_block(
     backend_instance,
     tx,
     index,
     block_number,
-    block_hash=ZERO_HASH32,
+    # default to pending block with no block hash
+    block_hash=None,
 ):
     json_tx = {
         "hash": backend_instance._get_tx_hash(tx),
@@ -172,7 +176,6 @@ def serialize_transaction_for_block(
         json_tx["max_fee_per_blob_gas"] = tx.max_fee_per_blob_gas
     if hasattr(tx, "chain_id"):
         json_tx["chain_id"] = tx.chain_id
-        json_tx["from"] = backend_instance._fork_module.recover_sender(tx.chain_id, tx)
     if hasattr(tx, "v"):
         json_tx["v"] = tx.v
     if hasattr(tx, "r"):
@@ -182,6 +185,10 @@ def serialize_transaction_for_block(
     if hasattr(tx, "y_parity"):
         json_tx["y_parity"] = tx.y_parity
         json_tx["v"] = tx.y_parity
+
+    json_tx["from"] = backend_instance._fork_module.recover_sender(
+        backend_instance.chain.chain_id, tx
+    )
 
     if isinstance(tx, bytes) or isinstance(
         tx, backend_instance._transactions_module.LegacyTransaction
@@ -222,7 +229,7 @@ def serialize_pending_receipt(
     contract_address=None,
 ):
     tx_hash = backend_instance._get_tx_hash(tx)
-    tx_gas_consumed = process_transaction_return[0]
+    tx_gas_consumed = int(process_transaction_return[0])
 
     pending_block = backend_instance._pending_block
     block_num = pending_block["header"]["number"]
@@ -240,7 +247,9 @@ def serialize_pending_receipt(
         "transaction_index": index,
         "block_number": block_num,
         "to": tx.to,
-        "from": backend_instance._fork_module.recover_sender(tx.chain_id, tx),
+        "from": backend_instance._fork_module.recover_sender(
+            backend_instance.chain.chain_id, tx
+        ),
         "gas_used": tx_gas_consumed,
         "cumulative_gas_used": cumulative_gas_used,
         "effective_gas_price": calculate_effective_gas_price(

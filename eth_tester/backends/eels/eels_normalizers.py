@@ -27,8 +27,11 @@ def eels_normalize_transaction(transaction: Dict[str, Any]) -> Dict[str, Any]:
     for key, value in transaction.items():
         if key == "gas":
             key = "gas_limit"
-        elif key in ("to", "from", "data", "y_parity", "r", "s", "v"):
+            value = hex(value)
+        elif isinstance(value, bytes):
             value = value.hex()
+        elif isinstance(value, int):
+            value = hex(value)
         elif key == "access_list":
             # turn back to dict
             value = [
@@ -38,9 +41,6 @@ def eels_normalize_transaction(transaction: Dict[str, Any]) -> Dict[str, Any]:
                 }
                 for entry in value
             ]
-
-        if isinstance(value, int):
-            value = hex(value)
 
         if key in ("y_parity",):
             # for some reason, y_parity is not camelCased :/

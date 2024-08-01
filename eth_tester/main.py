@@ -129,9 +129,9 @@ class EthereumTester:
         self.backend = backend
         self.validator = validator
         self.normalizer = normalizer
+        self.chain_id = lambda: int(self.backend.chain.chain_id)
 
         self.auto_mine_transactions = auto_mine_transactions
-
         self._reset_local_state()
 
     #
@@ -238,7 +238,7 @@ class EthereumTester:
 
         self._account_unlock[raw_account] = False
 
-    def get_balance(self, account, block_number="latest"):
+    def get_balance(self, account, block_number="pending"):
         self.validator.validate_inbound_account(account)
         self.validator.validate_inbound_block_number(block_number)
         raw_account = self.normalizer.normalize_inbound_account(account)
@@ -248,7 +248,7 @@ class EthereumTester:
         balance = self.normalizer.normalize_outbound_balance(raw_balance)
         return balance
 
-    def get_code(self, account, block_number="latest"):
+    def get_code(self, account, block_number="pending"):
         self.validator.validate_inbound_account(account)
         self.validator.validate_inbound_block_number(block_number)
         raw_account = self.normalizer.normalize_inbound_account(account)
@@ -263,7 +263,7 @@ class EthereumTester:
         account: HexAddress,
         slot: HexStr,
         # properly type hint once eth-typing brings in updated `BlockIdentifier`
-        block_number="latest",
+        block_number="pending",
     ) -> int:
         self.validator.validate_inbound_account(account)
         self.validator.validate_inbound_storage_slot(slot)
@@ -276,7 +276,7 @@ class EthereumTester:
         storage = self.normalizer.normalize_outbound_storage(raw_storage)
         return storage
 
-    def get_nonce(self, account, block_number="latest"):
+    def get_nonce(self, account, block_number="pending"):
         self.validator.validate_inbound_account(account)
         self.validator.validate_inbound_block_number(block_number)
         raw_account = self.normalizer.normalize_inbound_account(account)
@@ -335,7 +335,7 @@ class EthereumTester:
             )
             return transaction
 
-    def get_block_by_number(self, block_number="latest", full_transactions=False):
+    def get_block_by_number(self, block_number="pending", full_transactions=False):
         self.validator.validate_inbound_block_number(block_number)
         raw_block_number = self.normalizer.normalize_inbound_block_number(block_number)
         raw_block = self.backend.get_block_by_number(
@@ -376,9 +376,14 @@ class EthereumTester:
     #
     def enable_auto_mine_transactions(self):
         self.auto_mine_transactions = True
-        sent_transaction_hashes = self._pop_pending_transactions_to_pending_block()
-        self.mine_block()
-        return sent_transaction_hashes
+        if not self.backend.handles_pending_transactions:
+            sent_transaction_hashes = self._pop_pending_transactions_to_pending_block()
+            self.mine_block()
+            return sent_transaction_hashes
+        else:
+            pending_transactions = self.backend._pending_block["transactions"]
+            self.mine_block()
+            return [self.backend._get_tx_hash(tx) for tx in pending_transactions]
 
     def disable_auto_mine_transactions(self):
         self.auto_mine_transactions = False
@@ -387,7 +392,10 @@ class EthereumTester:
         self.validator.validate_inbound_account(coinbase)
         normalized_coinbase = self.normalizer.normalize_inbound_account(coinbase)
 
-        if not self.auto_mine_transactions:
+        if (
+            not self.auto_mine_transactions
+            and not self.backend.handles_pending_transactions
+        ):
             self._pop_pending_transactions_to_pending_block()
 
         raw_block_hashes = self.backend.mine_blocks(num_blocks, normalized_coinbase)
@@ -481,7 +489,7 @@ class EthereumTester:
     def send_transaction(self, transaction):
         return self._add_transaction_to_pending_block(transaction)
 
-    def call(self, transaction, block_number="latest"):
+    def call(self, transaction, block_number="pending"):
         self.validator.validate_inbound_transaction(
             transaction, txn_internal_type="call"
         )
@@ -493,7 +501,7 @@ class EthereumTester:
         result = self.normalizer.normalize_outbound_return_data(raw_result)
         return result
 
-    def estimate_gas(self, transaction, block_number="latest"):
+    def estimate_gas(self, transaction, block_number="pending"):
         self.validator.validate_inbound_transaction(
             transaction, txn_internal_type="estimate"
         )
@@ -577,7 +585,7 @@ class EthereumTester:
     #
     # Private filter API
     #
-    def _revert_block_filter(self, filter):
+    def _revert_block_filter(self, filter_):
         is_valid_block_hash = excepts(
             (BlockNotFound,),
             compose(
@@ -587,10 +595,10 @@ class EthereumTester:
             ),
             lambda v: False,
         )
-        values_to_remove = tuple(remove(is_valid_block_hash, filter.get_all()))
-        filter.remove(*values_to_remove)
+        values_to_remove = tuple(remove(is_valid_block_hash, filter_.get_all()))
+        filter_.remove(*values_to_remove)
 
-    def _revert_pending_transaction_filter(self, filter):
+    def _revert_pending_transaction_filter(self, filter_):
         is_valid_transaction_hash = excepts(
             (TransactionNotFound,),
             compose(
@@ -600,10 +608,10 @@ class EthereumTester:
             ),
             lambda v: False,
         )
-        values_to_remove = remove(is_valid_transaction_hash, filter.get_all())
-        filter.remove(*values_to_remove)
+        values_to_remove = remove(is_valid_transaction_hash, filter_.get_all())
+        filter_.remove(*values_to_remove)
 
-    def _revert_log_filter(self, filter):
+    def _revert_log_filter(self, filter_):
         is_valid_transaction_hash = excepts(
             (TransactionNotFound,),
             compose(
@@ -614,8 +622,8 @@ class EthereumTester:
             ),
             lambda v: False,
         )
-        values_to_remove = remove(is_valid_transaction_hash, filter.get_all())
-        filter.remove(*values_to_remove)
+        values_to_remove = remove(is_valid_transaction_hash, filter_.get_all())
+        filter_.remove(*values_to_remove)
 
     #
     # Filters
@@ -698,18 +706,18 @@ class EthereumTester:
         raw_filter_id = self.normalizer.normalize_inbound_filter_id(filter_id)
 
         if raw_filter_id in self._block_filters:
-            filter = self._block_filters[raw_filter_id]
+            filter_ = self._block_filters[raw_filter_id]
             normalize_fn = self.normalizer.normalize_outbound_block_hash
         elif raw_filter_id in self._pending_transaction_filters:
-            filter = self._pending_transaction_filters[raw_filter_id]
+            filter_ = self._pending_transaction_filters[raw_filter_id]
             normalize_fn = self.normalizer.normalize_outbound_transaction_hash
         elif raw_filter_id in self._log_filters:
-            filter = self._log_filters[raw_filter_id]
+            filter_ = self._log_filters[raw_filter_id]
             normalize_fn = self.normalizer.normalize_outbound_log_entry
         else:
             raise FilterNotFound("Unknown filter id")
 
-        for item in filter.get_changes():
+        for item in filter_.get_changes():
             yield normalize_fn(item)
 
     @to_tuple
@@ -718,18 +726,18 @@ class EthereumTester:
         raw_filter_id = self.normalizer.normalize_inbound_filter_id(filter_id)
 
         if raw_filter_id in self._block_filters:
-            filter = self._block_filters[raw_filter_id]
+            filter_ = self._block_filters[raw_filter_id]
             normalize_fn = self.normalizer.normalize_outbound_block_hash
         elif raw_filter_id in self._pending_transaction_filters:
-            filter = self._pending_transaction_filters[raw_filter_id]
+            filter_ = self._pending_transaction_filters[raw_filter_id]
             normalize_fn = self.normalizer.normalize_outbound_transaction_hash
         elif raw_filter_id in self._log_filters:
-            filter = self._log_filters[raw_filter_id]
+            filter_ = self._log_filters[raw_filter_id]
             normalize_fn = self.normalizer.normalize_outbound_log_entry
         else:
             raise FilterNotFound("Unknown filter id")
 
-        for item in filter.get_all():
+        for item in filter_.get_all():
             yield normalize_fn(item)
 
     @to_tuple
@@ -752,7 +760,7 @@ class EthereumTester:
             topics=topics,
         )
 
-        # Setup the filter object
+        # set up the filter object
         raw_filter_params = {
             "from_block": raw_from_block,
             "to_block": raw_to_block,

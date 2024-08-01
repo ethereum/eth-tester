@@ -29,6 +29,9 @@ extras_require = {
         "eth-hash[pysha3]>=0.1.4,<1.0.0;implementation_name=='cpython'",
         "eth-hash[pycryptodome]>=0.1.4,<1.0.0;implementation_name=='pypy'",
     ],
+    "eels": [
+        "ethereum>=2.3.0",
+    ],
 }
 
 extras_require["dev"] = (
