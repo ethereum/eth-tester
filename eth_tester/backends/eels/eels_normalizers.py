@@ -29,6 +29,15 @@ def eels_normalize_transaction(transaction: Dict[str, Any]) -> Dict[str, Any]:
             key = "gas_limit"
         elif key in ("to", "from", "data", "y_parity", "r", "s", "v"):
             value = value.hex()
+        elif key == "access_list":
+            # turn back to dict
+            value = [
+                {
+                    "address": entry[0].hex(),
+                    "storageKeys": [hex(key) for key in entry[1]],
+                }
+                for entry in value
+            ]
 
         if isinstance(value, int):
             value = hex(value)
