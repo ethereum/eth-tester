@@ -933,7 +933,6 @@ class EELSBackend(BaseChainBackend):
             "0x0",
         )
         tx = TransactionLoad(json_tx, self.fork).read()
-
         if isinstance(tx, bytes):
             tx_decoded = self.fork.decode_transaction(tx)
         else:
@@ -956,6 +955,8 @@ class EELSBackend(BaseChainBackend):
             else:
                 signing_hash = self.fork.signing_hash(tx_decoded)
                 v_addend = 27
+            # legacy transaction, pop out y_parity if it exists
+            json_tx.pop("y_parity", None)
         elif isinstance(tx_decoded, self.fork.AccessListTransaction):
             signing_hash = self.fork.signing_hash_2930(tx_decoded)
             v_addend = 0
@@ -1015,9 +1016,7 @@ class EELSBackend(BaseChainBackend):
 
     def send_signed_transaction(self, signed_json_tx, block_number="latest"):
         eels_transaction = TransactionLoad(signed_json_tx, self.fork).read()
-        self._check_transaction(
-            eels_transaction,
-        )
+        self._check_transaction(eels_transaction)
 
         tx_hash = self._get_tx_hash(eels_transaction)
         self._transactions_map[tx_hash] = serialize_transaction(
