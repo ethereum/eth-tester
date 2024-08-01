@@ -7,6 +7,8 @@ ZERO_ADDRESS = 20 * b"\x00"
 
 
 class BaseChainBackend(metaclass=ABCMeta):
+    handles_pending_transactions: bool = False
+
     #
     # Snapshot API
     #

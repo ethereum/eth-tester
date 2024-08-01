@@ -805,15 +805,15 @@ class PyEVMBackend(BaseChainBackend):
         )
 
         if block_number in ("latest", "safe", "finalized"):
-            return self.chain.estimate_gas(spoofed_transaction)
+            return self.chain.estimate_gas(
+                spoofed_transaction, self.chain.get_block().header
+            )
         elif block_number == "earliest":
             return self.chain.estimate_gas(
                 spoofed_transaction, self.chain.get_canonical_block_header_by_number(0)
             )
         elif block_number == "pending":
-            raise NotImplementedError(
-                '"pending" block identifier is unsupported in eth-tester'
-            )
+            return self.chain.estimate_gas(spoofed_transaction)
         else:
             return self.chain.estimate_gas(
                 spoofed_transaction,
