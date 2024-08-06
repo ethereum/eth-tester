@@ -6,12 +6,24 @@ from typing import (
 from eth_account.typed_transactions import (
     BlobTransaction,
 )
-from ethereum.base_types import (
-    U64,
-    U256,
-    Bytes32,
-    Uint,
+
+from .utils import (
+    eels_is_available,
 )
+
+if eels_is_available():
+    from ethereum.base_types import (
+        U64,
+        U256,
+        Bytes32,
+        Uint,
+    )
+else:
+    U64 = None
+    U256 = None
+    Bytes32 = None
+    Uint = None
+
 from hexbytes import (
     HexBytes,
 )

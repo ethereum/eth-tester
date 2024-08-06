@@ -30,7 +30,7 @@ extras_require = {
         "eth-hash[pycryptodome]>=0.1.4,<1.0.0;implementation_name=='pypy'",
     ],
     "eels": [
-        "ethereum>=2.3.0",
+        "ethereum@git+https://github.com/fselmo/execution-specs@bump-dependencies",
     ],
 }
 
@@ -39,6 +39,7 @@ extras_require["dev"] = (
     + extras_require["docs"]
     + extras_require["test"]
     + extras_require["py-evm"]
+    + extras_require["eels"]
 )
 # convenience in case someone leaves out the `-`
 extras_require["pyevm"] = extras_require["py-evm"]

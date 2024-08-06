@@ -31,37 +31,61 @@ from eth_utils import (
     to_tuple,
     to_wei,
 )
-from ethereum import (
-    rlp,
+
+from .utils import (
+    eels_is_available,
 )
-from ethereum.base_types import (
-    U64,
-    U256,
-    Uint,
-)
-from ethereum.cancun.fork import (
-    SYSTEM_ADDRESS,
-    SYSTEM_TRANSACTION_GAS,
-    BlockChain,
-)
-from ethereum.crypto.hash import (
-    keccak256,
-)
-from ethereum.exceptions import (
-    EthereumException,
-)
-from ethereum.utils.hexadecimal import (
-    hex_to_uint,
-)
-from ethereum_spec_tools.evm_tools.loaders.fork_loader import (
-    ForkLoad,
-)
-from ethereum_spec_tools.evm_tools.loaders.transaction_loader import (
-    TransactionLoad,
-)
-from ethereum_spec_tools.evm_tools.utils import (
-    secp256k1_sign,
-)
+
+if eels_is_available():
+    from ethereum import (
+        rlp,
+    )
+    from ethereum.base_types import (
+        U64,
+        U256,
+        Uint,
+    )
+    from ethereum.cancun.fork import (
+        SYSTEM_ADDRESS,
+        SYSTEM_TRANSACTION_GAS,
+        BlockChain,
+    )
+    from ethereum.crypto.hash import (
+        keccak256,
+    )
+    from ethereum.exceptions import (
+        EthereumException,
+    )
+    from ethereum.utils.hexadecimal import (
+        hex_to_uint,
+    )
+    from ethereum_spec_tools.evm_tools.loaders.fork_loader import (
+        ForkLoad,
+    )
+    from ethereum_spec_tools.evm_tools.loaders.transaction_loader import (
+        TransactionLoad,
+    )
+    from ethereum_spec_tools.evm_tools.utils import (
+        secp256k1_sign,
+    )
+else:
+
+    class BlockChain:
+        ...
+
+    ForkLoad = None
+    TransactionLoad = None
+    U64 = None
+    U256 = None
+    Uint = None
+    SYSTEM_ADDRESS = None
+    SYSTEM_TRANSACTION_GAS = None
+    keccak256 = None
+    EthereumException = None
+    hex_to_uint = None
+    secp256k1_sign = None
+    rlp = None
+
 
 from eth_tester.backends.base import (
     BaseChainBackend,
@@ -105,13 +129,11 @@ from .serializers import (
 )
 from .utils import (
     EELSStateContext,
-    is_eels_available,
 )
 
-GENESIS_BLOCK_NUMBER = Uint(0)
-GENESIS_DIFFICULTY = Uint(131072)
+GENESIS_DIFFICULTY = 131072
 # gas limit at London fork on mainnet (arbitrary/taken from pyevm backend)
-GENESIS_GAS_LIMIT = Uint(30029122)
+GENESIS_GAS_LIMIT = 30029122
 GENESIS_NONCE = b"\x00\x00\x00\x00\x00\x00\x00*"  # 42 encoded as big-endian-integer
 GENESIS_COINBASE = ZERO_ADDRESS
 GENESIS_MIX_HASH = ZERO_HASH32
@@ -151,7 +173,7 @@ class EELSBackend(BaseChainBackend):
         hd_path=None,
         debug_mode: bool = False,
     ):
-        if not is_eels_available():
+        if not eels_is_available():
             raise BackendDistributionNotFound(
                 "The EELS is package is not available or not up to date. "
                 "The `EELSBackend` requires ethereum/execution-specs to be installed "
@@ -234,9 +256,9 @@ class EELSBackend(BaseChainBackend):
                 transactions_root=ZERO_HASH32,
                 receipt_root=ZERO_HASH32,
                 bloom=GENESIS_LOGS_BLOOM,
-                difficulty=GENESIS_DIFFICULTY,
+                difficulty=Uint(GENESIS_DIFFICULTY),
                 number=Uint(0),
-                gas_limit=GENESIS_GAS_LIMIT,
+                gas_limit=Uint(GENESIS_GAS_LIMIT),
                 gas_used=Uint(0),
                 timestamp=U256(int(time.time())),
                 extra_data=ZERO_HASH32,
@@ -293,7 +315,7 @@ class EELSBackend(BaseChainBackend):
             receipts_map=self._receipts_map,
         )
         self._build_new_pending_block()
-        self._state_context_history[GENESIS_BLOCK_NUMBER] = self._copy_state_context()
+        self._state_context_history[Uint(0)] = self._copy_state_context()
 
     #
     # Private Accounts API
@@ -939,7 +961,7 @@ class EELSBackend(BaseChainBackend):
         if sender_address not in self._key_lookup:
             raise ValidationError(
                 'No valid "from" key was provided in the transaction '
-                "which is required for transaction signing."
+                f"which is required for transaction signing: `{sender_address}`."
             )
 
         private_key = self._key_lookup[sender_address]
@@ -1104,37 +1126,28 @@ class EELSBackend(BaseChainBackend):
         return tx_hash
 
     def estimate_gas(self, transaction, block_number="pending"):
-        pre_state_keys = self._account_keys[:]
         original_sender_address = transaction["from"]
 
         with self._state_context_manager(block_number, synthetic_state=True):
             try:
-                if original_sender_address not in self._key_lookup.keys():
-                    # for now, create a transient account with the same account state
-                    # as the sender, sign, run the transaction against the evm, delete
-                    # the transient account and return the gas consumed.
-                    transaction["from"] = self.transient_account_from_address(
-                        original_sender_address
-                    )
                 transaction["gas"] = self._max_available_gas()
-                env, signed_evm_transaction = self._generate_transaction_env(
-                    transaction
-                )
+                if original_sender_address not in self._key_lookup:
+                    with self._transient_account_from_address(
+                        original_sender_address
+                    ) as transient_account_address:
+                        transaction["from"] = transient_account_address
+                        output = self._process_synthetic_transaction(transaction)
+                else:
+                    output = self._process_synthetic_transaction(transaction)
             except EthereumException:
                 raise TransactionFailed("Transaction failed to execute.")
-            self._run_message_against_evm(env, signed_evm_transaction)
-            output = self.fork.process_transaction(env, signed_evm_transaction)
-
-        # clean up the transient account if present
-        if original_sender_address != transaction["from"]:
-            self.fork.destroy_account(self.chain.state, transaction["from"])
-            self._account_keys.pop()
-
-        if self._account_keys != pre_state_keys:
-            # sanity check
-            raise ValidationError("Account keys were not cleaned up properly.")
-
         return int(output[0])  # gas consumed
+
+    def _process_synthetic_transaction(self, transaction):
+        env, signed_evm_transaction = self._generate_transaction_env(transaction)
+        self._run_message_against_evm(env, signed_evm_transaction)
+        output = self.fork.process_transaction(env, signed_evm_transaction)
+        return output
 
     def call(self, transaction, block_number="pending"):
         with self._state_context_manager(block_number, synthetic_state=True):
@@ -1246,7 +1259,7 @@ class EELSBackend(BaseChainBackend):
         return None
 
     @contextmanager
-    def transient_account_from_address(self, sender_address):
+    def _transient_account_from_address(self, sender_address):
         """
         Create a transient account with known pkey with the same state as the sender.
         """
@@ -1264,6 +1277,6 @@ class EELSBackend(BaseChainBackend):
         if popped_key != acct_pkey:
             raise ValidationError("Account keys were not cleaned up properly.")
         assert (
-            self._fork_module.get_account_optional(self.chain.state, bytes_address)
+            self._state_module.get_account_optional(self.chain.state, bytes_address)
             is None
         ), "Transient account was not destroyed properly."

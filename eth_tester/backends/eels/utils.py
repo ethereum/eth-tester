@@ -1,6 +1,6 @@
-def is_eels_available():
+def eels_is_available():
     try:
-        pass
+        import ethereum  # noqa: F401
 
         return True
     except ImportError:
