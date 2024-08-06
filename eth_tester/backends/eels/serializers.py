@@ -5,9 +5,16 @@ from typing import (
     Union,
 )
 
-from ethereum.cancun.blocks import (
-    Block,
+from .utils import (
+    eels_is_available,
 )
+
+if eels_is_available():
+    from ethereum.cancun.blocks import (
+        Block,
+    )
+else:
+    Block = None
 
 from eth_tester.constants import (
     BLANK_ROOT_HASH,

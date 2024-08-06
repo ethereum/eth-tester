@@ -8,6 +8,7 @@ from eth_tester.utils.module_loading import (
 
 from .eels import (
     EELSBackend,
+    eels_is_available,
 )
 from .mock import (
     MockBackend,
