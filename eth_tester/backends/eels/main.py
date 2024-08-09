@@ -1127,7 +1127,6 @@ class EELSBackend(BaseChainBackend):
 
     def estimate_gas(self, transaction, block_number="pending"):
         original_sender_address = transaction["from"]
-
         with self._state_context_manager(block_number, synthetic_state=True):
             try:
                 transaction["gas"] = self._max_available_gas()
@@ -1139,8 +1138,8 @@ class EELSBackend(BaseChainBackend):
                         output = self._process_synthetic_transaction(transaction)
                 else:
                     output = self._process_synthetic_transaction(transaction)
-            except EthereumException:
-                raise TransactionFailed("Transaction failed to execute.")
+            except EthereumException as e:
+                raise TransactionFailed("Transaction failed to execute.") from e
         return int(output[0])  # gas consumed
 
     def _process_synthetic_transaction(self, transaction):
@@ -1156,8 +1155,8 @@ class EELSBackend(BaseChainBackend):
                 env, signed_evm_transaction = self._generate_transaction_env(
                     transaction
                 )
-            except EthereumException:
-                raise TransactionFailed("Transaction failed to execute.")
+            except EthereumException as e:
+                raise TransactionFailed("Transaction failed to execute.") from e
             evm = self._run_message_against_evm(env, signed_evm_transaction)
             return evm.output
 
