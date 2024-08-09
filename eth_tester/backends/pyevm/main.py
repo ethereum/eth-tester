@@ -22,6 +22,7 @@ from eth_typing import (
     Address,
 )
 from eth_utils import (
+    ValidationError as EthUtilsValidationError,
     encode_hex,
     is_integer,
     to_bytes,
@@ -709,6 +710,7 @@ class PyEVMBackend(BaseChainBackend):
             )
         return self.chain.create_unsigned_transaction(**normalized_txn)
 
+    @replace_exceptions({EthUtilsValidationError: ValidationError})
     def send_raw_transaction(self, raw_transaction):
         vm = _get_vm_for_block_number(self.chain, "latest")
 
@@ -733,6 +735,7 @@ class PyEVMBackend(BaseChainBackend):
         self.chain.apply_transaction(evm_transaction)
         return evm_transaction.hash
 
+    @replace_exceptions({EthUtilsValidationError: ValidationError})
     def send_signed_transaction(self, signed_transaction, block_number="latest"):
         normalized_transaction = self._normalize_transaction(
             signed_transaction, block_number
@@ -754,6 +757,7 @@ class PyEVMBackend(BaseChainBackend):
             )
         return self.chain.create_transaction(**normalized_txn)
 
+    @replace_exceptions({EthUtilsValidationError: ValidationError})
     def send_transaction(self, transaction):
         signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
             transaction,
@@ -794,7 +798,11 @@ class PyEVMBackend(BaseChainBackend):
         return header.gas_limit - header.gas_used
 
     @replace_exceptions(
-        {EVMInvalidInstruction: TransactionFailed, EVMRevert: TransactionFailed}
+        {
+            EVMInvalidInstruction: TransactionFailed,
+            EVMRevert: TransactionFailed,
+            EthUtilsValidationError: ValidationError,
+        }
     )
     def estimate_gas(self, transaction, block_number="latest"):
         evm_transaction = self._get_normalized_and_unsigned_evm_transaction(
@@ -831,6 +839,7 @@ class PyEVMBackend(BaseChainBackend):
         except TypeError:
             return False
 
+    @replace_exceptions({EthUtilsValidationError: ValidationError})
     def call(self, transaction, block_number="latest"):
         # TODO: move this to the VM level.
         defaulted_transaction = transaction.copy()
