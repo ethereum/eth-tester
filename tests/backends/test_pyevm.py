@@ -491,3 +491,28 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         with pytest.raises(EthUtilsValidationError):
             acct.sign_transaction(tx, blobs=[blob_data])
+
+    def test_eth_call_does_not_require_a_known_account(self, eth_tester):
+        # `eth_call` should not require the `from` address to be a known account
+        # as it does not change the state of the blockchain
+        acct = Account.create()
+
+        # fund acct
+        eth_tester.send_transaction(
+            {
+                "from": eth_tester.get_accounts()[0],
+                "to": acct.address,
+                "value": 10**18,
+                "gas": 21000,
+            }
+        )
+
+        result = eth_tester.call(
+            {
+                "from": acct.address,
+                "to": eth_tester.get_accounts()[0],
+                "data": "0x",
+            }
+        )
+
+        assert result == "0x"

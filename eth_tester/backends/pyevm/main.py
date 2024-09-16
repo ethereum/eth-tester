@@ -873,14 +873,15 @@ class PyEVMBackend(BaseChainBackend):
         if "gas" not in defaulted_transaction:
             defaulted_transaction["gas"] = self._max_available_gas()
 
-        signed_evm_transaction = self._get_normalized_and_signed_evm_transaction(
+        unsigned_tx = self._get_normalized_and_unsigned_evm_transaction(
             defaulted_transaction,
             block_number,
         )
+        evm_transaction = EVMSpoofTransaction(unsigned_tx, from_=transaction["from"])
 
         computation = _execute_and_revert_transaction(
             self.chain,
-            signed_evm_transaction,
+            evm_transaction,
             block_number,
         )
         if computation.is_error:
