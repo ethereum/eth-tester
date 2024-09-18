@@ -509,9 +509,10 @@ value from the evm.
 
 <a id="api-estimate_gas"></a>
 
-#### `EthereumTester.estimate_gas(transaction)`
+#### `EthereumTester.estimate_gas(transaction, block_number='latest')`
 
-Executes the provided `transaction` object, measuring and returning the gas
+Executes the provided `transaction` object at the evm state from the block
+denoted by the `block_number` parameter, measuring and returning the gas
 consumption.
 
 <a id="api-fee_history"></a>
