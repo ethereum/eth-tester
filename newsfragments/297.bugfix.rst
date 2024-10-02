@@ -1,1 +1,0 @@
-Fix a bug where requests for ``eth_call`` via *PyEVMBackend* fail with invalid ``from`` key. The account need not be a "known" account for signing since eth_call does not change the state of the blockchain.

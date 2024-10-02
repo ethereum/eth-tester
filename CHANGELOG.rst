@@ -3,6 +3,22 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
+eth-tester v0.12.0-beta.2 (2024-10-02)
+--------------------------------------
+
+Bugfixes
+~~~~~~~~
+
+- Fix a bug where requests for ``eth_call`` via *PyEVMBackend* fail with invalid ``from`` key. The account need not be a "known" account for signing since eth_call does not change the state of the blockchain. (`#297 <https://github.com/ethereum/eth-tester/issues/297>`__)
+- Add missing ``block_number`` arg to ``MockBackend`` ``estimate_gas`` and test. (`#298 <https://github.com/ethereum/eth-tester/issues/298>`__)
+
+
+Improved Documentation
+~~~~~~~~~~~~~~~~~~~~~~
+
+- Add missing ``block_number`` arg to ``estimate_gas`` documentation. (`#298 <https://github.com/ethereum/eth-tester/issues/298>`__)
+
+
 eth-tester v0.12.0-beta.1 (2024-05-16)
 --------------------------------------
 
