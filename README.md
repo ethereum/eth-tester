@@ -856,7 +856,7 @@ Details on implementation are beyond the scope of this document.
 
 Ethereum tester uses two formats for data.
 
-- The *normal* format is the data format the is expected as input arguments to all `EthereumTester` methods as well as the return types from all method calls.
+- The *normal* format is the data format that is expected as input arguments to all `EthereumTester` methods as well as the return types from all method calls.
 - The *canonical* format is the data format that is used internally by the backend class.
 
 Ethereum tester enforces strict validation rules on these formats.
