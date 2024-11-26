@@ -127,7 +127,7 @@ Any `block_number` parameter will accept the following string values.
 - `'safe'`: for the last block that has passed 2/3 of attestations post-merge.
 - `'finalized'`: for the last finalized block post-merge.
 
-> Note: These **must** be text strings (not byte stringS)
+> Note: These **must** be text strings (not byte strings)
 
 ## `eth_tester.EthereumTester`
 
@@ -212,7 +212,7 @@ Turns **off** auto-mining of transactions.
 ### Accounts
 
 The following API can be used to interact with account data.  The `account`
-parameter in these methods **must** be a hexadecimal encode address.
+parameter in these methods **must** be a hexadecimal encoded address.
 
 <a id="api-get_accounts"></a>
 `EthereumTester.get_accounts()`
@@ -887,7 +887,7 @@ The normal format is intended for use by end users.
 > relevant if you intend to build tooling on top of this library.
 
 The ethereum tester provides strong guarantees that backends can be swapped out
-seamlessly without effecting the data formats of both the input arguments and
+seamlessly without affecting the data formats of both the input arguments and
 return values.  This is accomplished using a two-step process of strict
 *normalization* and *validation*.
 
