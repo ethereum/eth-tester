@@ -170,45 +170,18 @@ def make_log(transaction, block, transaction_index, log_index, overrides=None):
 
     is_pending = transaction["block_number"] is None
 
-    if "type" in overrides:
-        yield "type", overrides["type"]
-    else:
-        yield "type", "pending" if is_pending else "mined"
-
-    if "transaction_index" in overrides:
-        yield "transaction_index", overrides["transaction_index"]
-    else:
-        yield "transaction_index", None if is_pending else transaction_index
-
-    if "block_number" in overrides:
-        yield "block_number", overrides["block_number"]
-    else:
-        yield "block_number", None if is_pending else block["number"]
-
-    if "block_hash" in overrides:
-        yield "block_hash", overrides["block_hash"]
-    else:
-        yield "block_hash", None if is_pending else block["hash"]
-
-    if "log_index" in overrides:
-        yield "log_index", overrides["log_index"]
-    else:
-        yield "log_index", log_index
-
-    if "address" in overrides:
-        yield "address", overrides["address"]
-    else:
-        yield "address", transaction.get("to", b"")
-
-    if "data" in overrides:
-        yield "data", overrides["data"]
-    else:
-        yield "data", b""
-
-    if "topics" in overrides:
-        yield "topics", overrides["topics"]
-    else:
-        yield "topics", []
+    defaults = {
+        "type": "pending" if is_pending else "mined",
+        "transaction_index": None if is_pending else transaction_index,
+        "block_number": None if is_pending else block["number"],
+        "block_hash": None if is_pending else block["hash"],
+        "log_index": log_index,
+        "address": transaction.get("to", b""),
+        "data": b"",
+        "topics": [],
+    }
+    result = {key: overrides.get(key, default) for key, default in defaults.items()}
+    yield from result.items()
 
 
 @to_dict
@@ -299,121 +272,33 @@ def make_block_from_parent(parent_block, overrides=None):
     if overrides is None:
         overrides = {}
 
-    if "number" in overrides:
-        yield "number", overrides["number"]
-    else:
-        yield "number", parent_block["number"] + 1
-
-    if "hash" in overrides:
-        yield "hash", overrides["hash"]
-    else:
-        yield "hash", keccak(parent_block["hash"])
-
-    if "parent_hash" in overrides:
-        yield "parent_hash", overrides["parent_hash"]
-    else:
-        yield "parent_hash", parent_block["hash"]
-
-    if "nonce" in overrides:
-        yield "nonce", overrides["nonce"]
-    else:
-        yield "nonce", parent_block["nonce"]
-
-    if "sha3_uncles" in overrides:
-        yield "sha3_uncles", overrides["sha3_uncles"]
-    else:
-        yield "sha3_uncles", EMPTY_UNCLE_HASH
-
-    if "logs_bloom" in overrides:
-        yield "logs_bloom", overrides["logs_bloom"]
-    else:
-        yield "logs_bloom", 0
-
-    if "transactions_root" in overrides:
-        yield "transactions_root", overrides["transactions_root"]
-    else:
-        yield "transactions_root", BLANK_ROOT_HASH
-
-    if "receipts_root" in overrides:
-        yield "receipts_root", overrides["receipts_root"]
-    else:
-        yield "receipts_root", BLANK_ROOT_HASH
-
-    if "state_root" in overrides:
-        yield "state_root", overrides["state_root"]
-    else:
-        yield "state_root", BLANK_ROOT_HASH
-
-    if "coinbase" in overrides:
-        yield "coinbase", overrides["coinbase"]
-    else:
-        yield "coinbase", ZERO_ADDRESS
-
-    if "difficulty" in overrides:
-        difficulty = overrides["difficulty"]
-    else:
-        difficulty = POST_MERGE_DIFFICULTY
-    yield "difficulty", difficulty
-
-    if "mix_hash" in overrides:
-        yield "mix_hash", overrides["mix_hash"]
-    else:
-        yield "mix_hash", POST_MERGE_MIX_HASH
-
-    if "total_difficulty" in overrides:
-        yield "total_difficulty", overrides["total_difficulty"]
-    else:
-        yield "total_difficulty", parent_block["difficulty"] + difficulty
-
-    if "size" in overrides:
-        yield "size", overrides["size"]
-    else:
-        yield "size", 0
-
-    if "extra_data" in overrides:
-        yield "extra_data", overrides["extra_data"]
-    else:
-        yield "extra_data", ZERO_32BYTES
-
-    if "gas_limit" in overrides:
-        yield "gas_limit", overrides["gas_limit"]
-    else:
-        yield "gas_limit", parent_block["gas_limit"]
-
-    if "gas_used" in overrides:
-        yield "gas_used", overrides["gas_used"]
-    else:
-        yield "gas_used", 0
-
-    if "timestamp" in overrides:
-        yield "timestamp", overrides["timestamp"]
-    else:
-        yield "timestamp", parent_block["timestamp"] + 1
-
-    if "transactions" in overrides:
-        yield "transactions", overrides["transactions"]
-    else:
-        yield "transactions", []
-
-    if "uncles" in overrides:
-        yield "uncles", overrides["uncles"]
-    else:
-        yield "uncles", []
-
-    if "base_fee_per_gas" in overrides:
-        yield "base_fee_per_gas", overrides["base_fee_per_gas"]
-    else:
-        yield "base_fee_per_gas", _calculate_expected_base_fee_per_gas(parent_block)
-
-    if "withdrawals" in overrides:
-        yield "withdrawals", overrides["withdrawals"]
-    else:
-        yield "withdrawals", []
-
-    if "withdrawals_root" in overrides:
-        yield "withdrawals_root", overrides["withdrawals_root"]
-    else:
-        yield "withdrawals_root", BLANK_ROOT_HASH
+    defaults = {
+        "number": parent_block["number"] + 1,
+        "hash": keccak(parent_block["hash"]),
+        "parent_hash": parent_block["hash"],
+        "nonce": parent_block["nonce"],
+        "sha3_uncles": EMPTY_UNCLE_HASH,
+        "logs_bloom": 0,
+        "transactions_root": BLANK_ROOT_HASH,
+        "receipts_root": BLANK_ROOT_HASH,
+        "state_root": BLANK_ROOT_HASH,
+        "coinbase": ZERO_ADDRESS,
+        "difficulty": POST_MERGE_DIFFICULTY,
+        "mix_hash": POST_MERGE_MIX_HASH,
+        "total_difficulty": parent_block["difficulty"] + POST_MERGE_DIFFICULTY,
+        "size": 0,
+        "extra_data": ZERO_32BYTES,
+        "gas_limit": parent_block["gas_limit"],
+        "gas_used": 0,
+        "timestamp": parent_block["timestamp"] + 1,
+        "transactions": [],
+        "uncles": [],
+        "base_fee_per_gas": _calculate_expected_base_fee_per_gas(parent_block),
+        "withdrawals": [],
+        "withdrawals_root": BLANK_ROOT_HASH,
+    }
+    result = {key: overrides.get(key, default) for key, default in defaults.items()}
+    yield from result.items()
 
 
 def _calculate_expected_base_fee_per_gas(parent_block) -> int:

@@ -1,0 +1,1 @@
+Refactor long if statements with dict in `make_log` and `make_block_from_parent`
