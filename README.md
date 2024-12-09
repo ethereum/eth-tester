@@ -101,7 +101,7 @@ python -m pip install eth-tester
 
 ## Input and output data formats
 
-The ethereum tester library strictly enforces the following input formats and
+The Ethereum Tester library strictly enforces the following input formats and
 types.
 
 - Hexadecimal values **must** be text (not byte) strings.  The `0x` prefix is optional.
@@ -109,7 +109,7 @@ types.
 - 32-byte hashes **must** be hexadecimal encoded.
 - Numeric values **must** be in their integer representation.
 
-Similarly, ethereum tester ensures that return values conform to similar rules.
+Similarly, Ethereum Tester ensures that return values conform to similar rules.
 
 - 32-byte hashes will be returned in their hexadecimal encoded representation.
 - Addresses will be returned in their hexadecimal representation and EIP55 checksummed.
@@ -686,7 +686,7 @@ Ethereum tester is written using a pluggable backend system.
 
 ### Backend Dependencies
 
-Ethereum tester does not install any of the dependencies needed to use the
+Ethereum Tester does not install any of the dependencies needed to use the
 various backends by default.  You can however install ethereum tester with the
 necessary dependencies using the following method.
 
