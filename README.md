@@ -61,7 +61,7 @@ python -m pip install eth-tester
 {'type': '0x2',
  'hash': '0xc20b90af87bc65c3d748cf0a1fa54f3a86ffc94348e0fd91a70f1c5ba6ef4109',
  'nonce': 0,
- 'block_hash': '0x28b95514984b0abbd91d88f1a542eaeeb810c24e0234e09891b7d6b3f94f47ed',
+ 'block_hash': '0x28b95514984b0abbd91d88f1a542eaeeb810c24e0234e09891b7d6b3f94f47ed',1
  'block_number': 1,
  'transaction_index': 0,
  'from': '0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf',
