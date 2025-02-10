@@ -7,13 +7,17 @@
 
 Tools for testing Ethereum applications
 
-Read more in the documentation below. [View the change log](https://github.com/ethereum/eth-tester/blob/main/CHANGELOG.rst).
+Read more in the documentation below.
 
-## Quick Start
+View the [change log](https://github.com/ethereum/eth-tester/blob/main/CHANGELOG.rst).
+
+## Installation
 
 ```sh
 python -m pip install eth-tester
 ```
+
+## Quick Start
 
 ```python
 >>> from eth_tester import EthereumTester

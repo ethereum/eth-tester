@@ -1,4 +1,4 @@
-exclude: '.project-template|docs/conf.py|.bumpversion.cfg'
+exclude: '.project-template|docs/conf.py'
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
@@ -43,11 +43,6 @@ repos:
     -   id: mdformat
         additional_dependencies:
         -   mdformat-gfm
--   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.5.1
-    hooks:
-    -   id: mypy
-        exclude: 'tests/|eth_tester/'
 -   repo: https://github.com/PrincetonUniversity/blocklint
     rev: v0.2.5
     hooks:

@@ -98,13 +98,10 @@ docs: &docs
           python -m pip install --upgrade pip
           python -m pip install tox
     - run:
-        name: install latexpdf dependencies
-        command: |
-          sudo apt-get update
-          sudo apt-get install latexmk tex-gyre texlive-fonts-extra
-    - run:
         name: run tox
         command: python -m tox run -r
+    - store_artifacts:
+          path: /home/circleci/repo/docs/_build
     - save_cache:
         paths:
           - .tox
@@ -117,7 +114,7 @@ jobs:
   docs:
     <<: *docs
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.10
         environment:
           TOXENV: docs
 
@@ -151,6 +148,12 @@ jobs:
       - image: cimg/python:3.12
         environment:
           TOXENV: py312-core
+  py313-core:
+    <<: *common
+    docker:
+      - image: cimg/python:3.13
+        environment:
+          TOXENV: py313-core
 
   py38-lint:
     <<: *common
@@ -182,6 +185,12 @@ jobs:
       - image: cimg/python:3.12
         environment:
           TOXENV: py312-lint
+  py313-lint:
+    <<: *common
+    docker:
+      - image: cimg/python:3.13
+        environment:
+          TOXENV: py313-lint
 
   py38-wheel:
     <<: *common
@@ -213,6 +222,12 @@ jobs:
       - image: cimg/python:3.12
         environment:
           TOXENV: py312-wheel
+  py313-wheel:
+    <<: *common
+    docker:
+      - image: cimg/python:3.13
+        environment:
+          TOXENV: py313-wheel
 
   py311-windows-wheel:
     <<: *windows-wheel-setup
@@ -236,6 +251,19 @@ jobs:
       - run:
           name: set minor version
           command: echo "export MINOR_VERSION='3.12'" >> $BASH_ENV
+      - <<: *install-latest-python-step
+      - <<: *run-tox-step
+      - <<: *save-cache-step
+
+  py313-windows-wheel:
+    <<: *windows-wheel-setup
+    steps:
+      - checkout
+      - <<: *restore-cache-step
+      - <<: *install-pyenv-step
+      - run:
+          name: set minor version
+          command: echo "export MINOR_VERSION='3.13'" >> $BASH_ENV
       - <<: *install-latest-python-step
       - <<: *run-tox-step
       - <<: *save-cache-step
@@ -270,6 +298,12 @@ jobs:
       - image: cimg/python:3.12
         environment:
           TOXENV: py312-pyevm
+  py313-pyevm:
+    <<: *common
+    docker:
+      - image: cimg/python:3.13
+        environment:
+          TOXENV: py313-pyevm
 
 define: &all_jobs
   - docs
@@ -278,23 +312,28 @@ define: &all_jobs
   - py310-core
   - py311-core
   - py312-core
+  - py313-core
   - py38-lint
   - py39-lint
   - py310-lint
   - py311-lint
   - py312-lint
+  - py313-lint
   - py38-wheel
   - py39-wheel
   - py310-wheel
   - py311-wheel
   - py312-wheel
+  - py313-wheel
   - py311-windows-wheel
   - py312-windows-wheel
+  - py313-windows-wheel
   - py38-pyevm
   - py39-pyevm
   - py310-pyevm
   - py311-pyevm
   - py312-pyevm
+  - py313-pyevm
 
 workflows:
   version: 2
