@@ -7,7 +7,7 @@ from setuptools import (
 extras_require = {
     "dev": [
         "build>=0.9.0",
-        "bumpversion>=0.5.3",
+        "bump_my_version>=0.19.0",
         "ipython",
         "pre-commit>=3.4.0",
         "tox>=4.0.0",
@@ -15,7 +15,7 @@ extras_require = {
         "wheel",
     ],
     "docs": [
-        "towncrier>=21,<22",
+        "towncrier>=24,<25",
     ],
     "test": [
         "pytest>=7.0.0",
@@ -45,7 +45,7 @@ with open("./README.md") as readme:
 
 setup(
     name="eth-tester",
-    # *IMPORTANT*: Don't manually change the version here. Use the 'bumpversion' utility.
+    # *IMPORTANT*: Don't manually change the version here. See `Release setup` in the `README`.
     version="0.12.0-beta.2",
     description="""eth-tester: Tools for testing Ethereum applications.""",
     long_description=long_description,
@@ -80,5 +80,6 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
     ],
 )
