@@ -137,20 +137,20 @@ def calculate_effective_gas_price(transaction, block_header):
     transaction_type = int(extract_transaction_type(transaction), 16)
 
     if transaction_type < DYNAMIC_FEE_TX_TYPE:
-        return (
+        return int(
             transaction["gas_price"]
             if isinstance(transaction, dict)
             else transaction.gas_price
         )
     else:
         if isinstance(transaction, dict):
-            max_fee = transaction["max_fee_per_gas"]
-            max_priority_fee = transaction["max_priority_fee_per_gas"]
+            max_fee = int(transaction["max_fee_per_gas"])
+            max_priority_fee = int(transaction["max_priority_fee_per_gas"])
         else:
-            max_fee = transaction.max_fee_per_gas
-            max_priority_fee = transaction.max_priority_fee_per_gas
+            max_fee = int(transaction.max_fee_per_gas)
+            max_priority_fee = int(transaction.max_priority_fee_per_gas)
 
-        base_fee = (
+        base_fee = int(
             block_header["base_fee_per_gas"]
             if isinstance(block_header, dict)
             else block_header.base_fee_per_gas
