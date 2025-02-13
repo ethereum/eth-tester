@@ -12,10 +12,12 @@ from .utils import (
 )
 
 if eels_is_available():
-    from ethereum.base_types import (
+    from ethereum_types.bytes import (
+        Bytes32,
+    )
+    from ethereum_types.numeric import (
         U64,
         U256,
-        Bytes32,
         Uint,
     )
 else:

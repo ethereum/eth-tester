@@ -609,7 +609,7 @@ class PyEVMBackend(BaseChainBackend):
         vm = _get_vm_for_block_number(self.chain, block_number)
         return vm.state.get_code(account)
 
-    def get_storage(self, account: Address, slot: int, block_number="latest") -> bytes:
+    def get_storage(self, account: Address, slot: int, block_number="latest") -> int:
         vm = _get_vm_for_block_number(self.chain, block_number)
         return vm.state.get_storage(account, slot)
 

@@ -264,7 +264,7 @@ class EthereumTester:
         slot: HexStr,
         # properly type hint once eth-typing brings in updated `BlockIdentifier`
         block_number="pending",
-    ) -> int:
+    ) -> HexStr:
         self.validator.validate_inbound_account(account)
         self.validator.validate_inbound_storage_slot(slot)
         self.validator.validate_inbound_block_number(block_number)

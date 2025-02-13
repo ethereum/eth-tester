@@ -34,10 +34,10 @@ def _serialize_withdrawals_to_block(serialized_block, withdrawals):
     for withdrawal in withdrawals:
         serialized_block["withdrawals"].append(
             {
-                "index": withdrawal.index,
-                "validator_index": withdrawal.validator_index,
+                "index": int(withdrawal.index),
+                "validator_index": int(withdrawal.validator_index),
                 "address": withdrawal.address,
-                "amount": withdrawal.amount,
+                "amount": int(withdrawal.amount),
             }
         )
     return serialized_block
@@ -52,22 +52,22 @@ def serialize_block(
     if is_pending:
         # still a dict
         serialized_block = {
-            "number": block["header"]["number"],
+            "number": int(block["header"]["number"]),
             "hash": ZERO_HASH32,
             "parent_hash": block["header"]["parent_hash"],
             "nonce": block["header"]["nonce"],
             "state_root": BLANK_ROOT_HASH,
             "coinbase": block["header"]["coinbase"],
-            "difficulty": block["header"]["difficulty"],
+            "difficulty": int(block["header"]["difficulty"]),
             "mix_hash": ZERO_HASH32,
-            "total_difficulty": block["header"]["difficulty"],  # TODO: calculate
+            "total_difficulty": int(block["header"]["difficulty"]),
             "size": 0,
             "extra_data": block["header"]["extra_data"],
-            "gas_limit": block["header"]["gas_limit"],
+            "gas_limit": int(block["header"]["gas_limit"]),
             "gas_used": 0,
             "blob_gas_used": 0,
             "excess_blob_gas": 0,
-            "base_fee_per_gas": block["header"]["base_fee_per_gas"],
+            "base_fee_per_gas": int(block["header"]["base_fee_per_gas"]),
             "timestamp": block["header"]["timestamp"] or int(time.time()),
             "transactions": block.get("transactions", []),
             "uncles": block.get("ommers", []),
@@ -100,7 +100,7 @@ def serialize_block(
             "coinbase": block.header.coinbase,
             "difficulty": int(block.header.difficulty),
             "mix_hash": block.header.prev_randao,
-            "total_difficulty": block.header.difficulty,
+            "total_difficulty": int(block.header.difficulty),
             "size": 0,
             "extra_data": block.header.extra_data,
             "gas_limit": int(block.header.gas_limit),
@@ -158,40 +158,41 @@ def serialize_eels_transaction_for_block(
 ):
     json_tx = {
         "hash": backend_instance._get_tx_hash(tx),
-        "nonce": tx.nonce,
+        "nonce": int(tx.nonce),
         "block_hash": block_hash,
-        "block_number": block_number,
-        "transaction_index": index,
+        "block_number": int(block_number),
+        "transaction_index": int(index),
         "to": tx.to,
-        "value": tx.value,
-        "gas": tx.gas,
+        "value": int(tx.value),
+        "gas": int(tx.gas),
         "data": tx.data,
     }
 
     if hasattr(tx, "gas_price"):
-        json_tx["gas_price"] = tx.gas_price
+        json_tx["gas_price"] = int(tx.gas_price)
     if hasattr(tx, "max_fee_per_gas"):
-        json_tx["max_fee_per_gas"] = tx.max_fee_per_gas
-        json_tx["gas_price"] = tx.max_fee_per_gas
+        json_tx["max_fee_per_gas"] = int(tx.max_fee_per_gas)
+        json_tx["gas_price"] = int(tx.max_fee_per_gas)
     if hasattr(tx, "max_priority_fee_per_gas"):
-        json_tx["max_priority_fee_per_gas"] = tx.max_priority_fee_per_gas
+        json_tx["max_priority_fee_per_gas"] = int(tx.max_priority_fee_per_gas)
     if hasattr(tx, "access_list"):
+        # TODO: properly serialize access list
         json_tx["access_list"] = tx.access_list
     if hasattr(tx, "blob_versioned_hashes"):
         json_tx["blob_versioned_hashes"] = tx.blob_versioned_hashes
     if hasattr(tx, "max_fee_per_blob_gas"):
-        json_tx["max_fee_per_blob_gas"] = tx.max_fee_per_blob_gas
+        json_tx["max_fee_per_blob_gas"] = int(tx.max_fee_per_blob_gas)
     if hasattr(tx, "chain_id"):
-        json_tx["chain_id"] = tx.chain_id
+        json_tx["chain_id"] = int(tx.chain_id)
     if hasattr(tx, "v"):
-        json_tx["v"] = tx.v
+        json_tx["v"] = int(tx.v)
     if hasattr(tx, "r"):
-        json_tx["r"] = tx.r
+        json_tx["r"] = int(tx.r)
     if hasattr(tx, "s"):
-        json_tx["s"] = tx.s
+        json_tx["s"] = int(tx.s)
     if hasattr(tx, "y_parity"):
-        json_tx["y_parity"] = tx.y_parity
-        json_tx["v"] = tx.y_parity
+        json_tx["y_parity"] = int(tx.y_parity)
+        json_tx["v"] = int(tx.y_parity)
 
     json_tx["from"] = backend_instance._fork_module.recover_sender(
         backend_instance.chain.chain_id, tx
@@ -214,7 +215,7 @@ def serialize_eels_transaction_for_block(
 def serialize_transaction(tx, pending_block: Dict[str, Any] = None):
     if pending_block:
         tx["block_hash"] = ZERO_HASH32
-        tx["block_number"] = pending_block["header"]["number"]
+        tx["block_number"] = int(pending_block["header"]["number"])
         tx["transaction_index"] = len(pending_block["transactions"]) - 1
 
     serialized = {
@@ -239,7 +240,7 @@ def serialize_pending_receipt(
     tx_gas_consumed = int(process_transaction_return[0])
 
     pending_block = backend_instance._pending_block
-    block_num = pending_block["header"]["number"]
+    block_num = int(pending_block["header"]["number"])
 
     logs = (
         serialize_pending_logs(process_transaction_return[1])
@@ -252,7 +253,7 @@ def serialize_pending_receipt(
         "block_hash": None,  # updated when block is finalized
         "transaction_hash": tx_hash,
         "transaction_index": index,
-        "block_number": block_num,
+        "block_number": int(block_num),
         "to": tx.to,
         "from": backend_instance._fork_module.recover_sender(
             backend_instance.chain.chain_id, tx
