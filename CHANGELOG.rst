@@ -3,6 +3,15 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
+eth-tester v0.12.1-beta.1 (2025-02-13)
+--------------------------------------
+
+Features
+~~~~~~~~
+
+- Merge template, adding py313 and replacing ``bumpversion`` with ``bump-my-version``. (`#313 <https://github.com/ethereum/eth-tester/issues/313>`__)
+
+
 eth-tester v0.12.0-beta.2 (2024-10-02)
 --------------------------------------
 
