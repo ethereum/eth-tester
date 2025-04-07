@@ -3,7 +3,7 @@
 [![Join the conversation on Discord](https://img.shields.io/discord/809793915578089484?color=blue&label=chat&logo=discord&logoColor=white)](https://discord.gg/GHryRvPB84)
 [![Build Status](https://circleci.com/gh/ethereum/eth-tester.svg?style=shield)](https://circleci.com/gh/ethereum/eth-tester)
 [![PyPI version](https://badge.fury.io/py/eth-tester.svg)](https://badge.fury.io/py/eth-tester)
-[![Python versions](https://img.shields.io/pypi/pyversions/eth-tester.svg)](https://pypi.python.org/pypi/eth-tester)
+[![Python versions](https://img.shields.io/pypi/pyversions/eth-tester.svg)](https://pypi.org/pypi/eth-tester)
 
 Tools for testing Ethereum applications
 
