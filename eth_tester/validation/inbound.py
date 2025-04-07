@@ -163,7 +163,7 @@ def validate_filter_params(from_block, to_block, address, topics):
         "Topics must be one of `None` or an array of topics. Each topic must be 32 "
         "bytes, represented as a bytestring or its hex string equivalent. A "
         'filter query of topics using "OR" can be achieved using a sub-array of '
-        "topics. See https://eth.wiki/json-rpc/API#eth_newfilter for more details."
+        "topics. See https://ethereum.org#eth_newfilter for more details."
     )
     # topics
     if topics is None:
