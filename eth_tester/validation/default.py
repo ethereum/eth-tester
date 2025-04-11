@@ -21,7 +21,6 @@ from .outbound import (
     validate_32_byte_string,
     validate_accounts as validate_outbound_accounts,
     validate_block as validate_outbound_block,
-    validate_block_hash as validate_outbound_block_hash,
     validate_bytes as validate_outbound_bytes,
     validate_log_entry as validate_outbound_log_entry,
     validate_receipt as validate_outbound_receipt,
@@ -51,7 +50,7 @@ class DefaultValidator(BaseValidator):
     validate_outbound_accounts = staticmethod(validate_outbound_accounts)
     validate_outbound_balance = staticmethod(validate_uint256)
     validate_outbound_block = staticmethod(validate_outbound_block)
-    validate_outbound_block_hash = staticmethod(validate_outbound_block_hash)
+    validate_outbound_block_hash = staticmethod(validate_32_byte_string)
     validate_outbound_code = staticmethod(validate_outbound_bytes)
     validate_outbound_gas_estimate = staticmethod(validate_uint256)
     validate_outbound_nonce = staticmethod(validate_uint256)

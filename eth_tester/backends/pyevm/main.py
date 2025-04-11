@@ -88,8 +88,8 @@ if is_supported_pyevm_version_available():
         Revert as EVMRevert,
     )
     from eth.vm.forks import (
-        CancunVM,
         ParisVM,
+        PragueVM,
         ShanghaiVM,
     )
     from eth.vm.forks.cancun import (
@@ -237,7 +237,7 @@ def setup_tester_chain(
     )
 
     if vm_configuration is None:
-        vm_config = ((0, CancunVM),)
+        vm_config = ((0, PragueVM),)
     else:
         if len(vm_configuration) > 0:
             _genesis_block_num, genesis_vm = vm_configuration[0]
@@ -531,7 +531,7 @@ class PyEVMBackend(BaseChainBackend):
                 # `prevrandao` value.
                 mine_kwargs["mix_hash"] = os.urandom(32)
 
-            if isinstance(self.chain.get_vm(), CancunVM):
+            if isinstance(self.chain.get_vm(), PragueVM):
                 transactions = self.chain.get_block().transactions
                 mine_kwargs["blob_gas_used"] = sum(
                     get_total_blob_gas(tx) for tx in transactions
@@ -740,6 +740,10 @@ class PyEVMBackend(BaseChainBackend):
                 **normalized_txn
             )
         elif all(_ in normalized_txn for _ in DYNAMIC_FEE_TRANSACTION_PARAMS):
+            if "authorization_list" in normalized_txn:
+                self.chain.get_transaction_builder().new_unsigned_set_code_transaction(
+                    **normalized_txn
+                )
             return self.chain.get_transaction_builder().new_unsigned_dynamic_fee_transaction(  # noqa: E501
                 **normalized_txn
             )

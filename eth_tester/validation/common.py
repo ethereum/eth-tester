@@ -178,7 +178,7 @@ def validate_transaction_type(value):
             f"Transaction type string must be hex string. Got: {value}"
         )
     type_int = int(value, 16) if is_hexstr(value) else int(value)
-    if type_int not in (0, 1, 2, 3):
+    if type_int not in (0, 1, 2, 3, 4):
         raise ValidationError(f"Transaction type '{value}' not recognized.")
 
 

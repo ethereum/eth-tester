@@ -283,6 +283,7 @@ def make_genesis_block(overrides=None):
         "parent_beacon_block_root": BLANK_ROOT_HASH,
         "blob_gas_used": 0,
         "excess_blob_gas": 0,
+        "requests_hash": ZERO_32BYTES,
     }
     if overrides is not None:
         genesis_block = merge_genesis_overrides(

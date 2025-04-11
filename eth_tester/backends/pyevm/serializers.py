@@ -9,6 +9,7 @@ from toolz import (
 from .utils import (
     is_cancun_block,
     is_london_block,
+    is_prague_block,
     is_shanghai_block,
     is_supported_pyevm_version_available,
 )
@@ -30,6 +31,7 @@ from eth_tester.constants import (
     DYNAMIC_FEE_TX_TYPE,
     GAS_PER_BLOB,
     LEGACY_TX_TYPE,
+    SET_CODE_TX_TYPE,
 )
 from eth_tester.exceptions import (
     ValidationError,
@@ -83,23 +85,22 @@ def serialize_block(block, full_transaction, is_pending):
         "uncles": [uncle.hash for uncle in block.uncles],
     }
 
-    # london
     if is_london_block(block):
         base_fee = block.header.base_fee_per_gas
         block_info.update({"base_fee_per_gas": base_fee})
 
-    # shanghai
     if is_shanghai_block(block):
         block_info.update({"withdrawals": serialize_block_withdrawals(block)})
         block_info.update({"withdrawals_root": block.header.withdrawals_root})
 
-    # cancun
     if is_cancun_block(block):
         block_info.update(
             {"parent_beacon_block_root": block.header.parent_beacon_block_root}
         )
         block_info.update({"blob_gas_used": block.header.blob_gas_used})
         block_info.update({"excess_blob_gas": block.header.excess_blob_gas})
+    if is_prague_block(block):
+        block_info.update({"requests_hash": block.header.requests_hash})
 
     return block_info
 
@@ -167,6 +168,23 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
                     {
                         "max_fee_per_blob_gas": transaction.max_fee_per_blob_gas,
                         "blob_versioned_hashes": transaction.blob_versioned_hashes,
+                    },
+                )
+            elif txn_type == SET_CODE_TX_TYPE:
+                type_specific_params = merge(
+                    type_specific_params,
+                    {
+                        "authorization_list": [
+                            {
+                                "chain_id": auth_list.chain_id,
+                                "address": auth_list.address,
+                                "nonce": auth_list.nonce,
+                                "y_parity": auth_list.y_parity,
+                                "r": auth_list.r,
+                                "s": auth_list.s,
+                            }
+                            for auth_list in transaction.authorization_list
+                        ],
                     },
                 )
     else:

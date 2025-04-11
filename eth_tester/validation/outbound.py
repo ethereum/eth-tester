@@ -24,6 +24,7 @@ from eth_tester.exceptions import (
 from ..backends.pyevm.utils import (
     is_cancun_block,
     is_london_block,
+    is_prague_block,
     is_shanghai_block,
 )
 from .common import (
@@ -46,9 +47,6 @@ def validate_32_byte_string(value):
         raise ValidationError(
             f"Must be of length 32.  Got: {value} of length {len(value)}"
         )
-
-
-validate_block_hash = validate_32_byte_string
 
 
 def validate_nonce(value):
@@ -131,6 +129,17 @@ def _validate_outbound_access_list(access_list):
             )
 
 
+def _validate_outbound_authorization_list(authorization_list) -> None:
+    if not is_list_like(authorization_list):
+        raise ValidationError("authorization_list is not list-like.")
+    for auth in authorization_list:
+        if not isinstance(auth, dict) and not len(auth) == 6:
+            raise ValidationError(
+                f"authorization_list entry not properly formatted: {auth}"
+            )
+        # TODO: finish validation of the authorization list
+
+
 LEGACY_TRANSACTION_VALIDATORS = {
     "type": validate_transaction_type,
     "hash": validate_32_byte_string,
@@ -191,6 +200,13 @@ BLOB_TRANSACTION_VALIDATORS = merge(
 validate_blob_transactions = partial(
     validate_dict, key_validators=BLOB_TRANSACTION_VALIDATORS
 )
+SET_CODE_TRANSACTION_VALIDATORS = merge(
+    DYNAMIC_FEE_TRANSACTION_VALIDATORS,
+    {"authorization_list": _validate_outbound_authorization_list},
+)
+validate_set_code_transaction = partial(
+    validate_dict, key_validators=SET_CODE_TRANSACTION_VALIDATORS
+)
 
 validate_transaction = partial(
     validate_any,
@@ -199,6 +215,7 @@ validate_transaction = partial(
         partial(validate_dict, key_validators=ACCESS_LIST_TRANSACTION_VALIDATORS),
         partial(validate_dict, key_validators=DYNAMIC_FEE_TRANSACTION_VALIDATORS),
         partial(validate_dict, key_validators=BLOB_TRANSACTION_VALIDATORS),
+        partial(validate_dict, key_validators=SET_CODE_TRANSACTION_VALIDATORS),
     ),
 )
 
@@ -252,8 +269,8 @@ validate_receipt = partial(
 
 BLOCK_VALIDATORS = {
     "number": validate_positive_integer,
-    "hash": validate_block_hash,
-    "parent_hash": validate_block_hash,
+    "hash": validate_32_byte_string,
+    "parent_hash": validate_32_byte_string,
     "nonce": validate_nonce,
     "sha3_uncles": validate_32_byte_string,
     "logs_bloom": validate_logs_bloom,
@@ -290,6 +307,8 @@ BLOCK_VALIDATORS = {
     "parent_beacon_block_root": identity,
     "blob_gas_used": identity,
     "excess_blob_gas": identity,
+    # Prague fork:
+    "requests_hash": identity,
 }
 
 
@@ -319,6 +338,11 @@ def _validate_fork_specific_fields(block):
         block["parent_beacon_block_root"] = None
         block["blob_gas_used"] = None
         block["excess_blob_gas"] = None
+
+    if is_prague_block(block):
+        validate_32_byte_string(block["requests_hash"])
+    else:
+        block["requests_hash"] = None
 
     return block
 
