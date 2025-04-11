@@ -44,15 +44,13 @@ to_hex_if_integer = apply_formatter_if(is_integer, hex)
 
 def _normalize_outbound_access_list(access_list):
     return tuple(
-        [
-            {
-                "address": to_checksum_address(entry[0]),
-                "storage_keys": tuple(
-                    [encode_hex(int_to_32byte_big_endian(k)) for k in entry[1]]
-                ),
-            }
-            for entry in access_list
-        ]
+        {
+            "address": to_checksum_address(entry[0]),
+            "storage_keys": tuple(
+                [encode_hex(int_to_32byte_big_endian(k)) for k in entry[1]]
+            ),
+        }
+        for entry in access_list
     )
 
 
@@ -80,6 +78,20 @@ TRANSACTION_NORMALIZERS = {
     "max_priority_fee_per_gas": identity,
     "data": encode_hex,
     "access_list": _normalize_outbound_access_list,
+    "authorization_list": partial(
+        normalize_array,
+        normalizer=partial(
+            normalize_dict,
+            normalizers={
+                "chain_id": identity,
+                "address": to_checksum_address,
+                "nonce": identity,
+                "y_parity": identity,
+                "r": identity,
+                "s": identity,
+            },
+        ),
+    ),
     "r": identity,
     "s": identity,
     "v": identity,
@@ -155,6 +167,7 @@ BLOCK_NORMALIZERS = {
     "parent_beacon_block_root": encode_hex,
     "blob_gas_used": identity,
     "excess_blob_gas": identity,
+    "requests_hash": encode_hex,
 }
 normalize_block = compose(
     partial(normalize_dict, normalizers=BLOCK_NORMALIZERS),

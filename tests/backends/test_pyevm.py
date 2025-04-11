@@ -12,6 +12,7 @@ from eth.vm.forks import (
     GrayGlacierVM,
     LondonVM,
     ParisVM,
+    PragueVM,
     ShanghaiVM,
 )
 from eth_abi import (
@@ -29,6 +30,9 @@ from eth_utils import (
     is_hexstr,
     to_hex,
     to_wei,
+)
+from eth_utils.toolz import (
+    merge,
 )
 
 from eth_tester import (
@@ -118,6 +122,8 @@ def test_custom_virtual_machines():
         (ParisVM, ShanghaiVM, "withdrawals_root"),
         (ShanghaiVM, CancunVM, "blob_gas_used"),
         (ShanghaiVM, CancunVM, "excess_blob_gas"),
+        (ShanghaiVM, CancunVM, "parent_beacon_block_root"),
+        (CancunVM, PragueVM, "requests_hash"),
     ),
 )
 def test_newly_introduced_block_fields_at_fork_transition(
@@ -456,6 +462,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         "maxFeePerBlobGas": 10**10,
         "nonce": 0,
     }
+    SET_CODE_TX_FOR_SIGNING = merge(BLOB_TX_FOR_SIGNING, {"type": 4})
 
     def test_send_raw_transaction_valid_blob_transaction(self, eth_tester):
         pkey = eth_tester.backend.account_keys[0]
@@ -491,6 +498,36 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         with pytest.raises(EthUtilsValidationError):
             acct.sign_transaction(tx, blobs=[blob_data])
+
+    def test_send_raw_transaction_valid_set_code_transaction(self, eth_tester):
+        pkey = eth_tester.backend.account_keys[0]
+        acct = Account.from_key(pkey)
+
+        contract_acct = Account.create()
+
+        pyevm: PyEVMBackend = eth_tester.backend
+        contract_code = b"`\x01`\x00U\x00"  # set 1 at storage slot 0
+        pyevm.chain.get_vm().state.set_code(contract_acct, contract_code)
+
+        auth = {
+            "chain_id": pyevm.chain.chain_id,
+            "address": contract_acct,
+            "nonce": 1,
+        }
+        tx = self.SET_CODE_TX_FOR_SIGNING.copy()
+        tx["from"] = acct.address
+        tx["to"] = eth_tester.get_accounts()[1]
+        tx["authorization_list"] = [acct.sign_authorization(auth)]
+
+        signed_tx = acct.sign_transaction(tx)
+        tx_hash = eth_tester.send_raw_transaction(to_hex(signed_tx.raw_transaction))
+        assert eth_tester.get_transaction_by_hash(tx_hash)
+        assert eth_tester.get_code(acct.address) == (
+            # assert set to delegation prefix + contract address (0xef0001...)
+            b"\xef\x00\x01"
+            + contract_acct.address
+        )
+        assert eth_tester.get_storage_at(acct.address, HexStr("0x00")) == b"\x01"
 
     def test_eth_call_does_not_require_a_known_account(self, eth_tester):
         # `eth_call` should not require the `from` address to be a known account

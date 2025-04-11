@@ -94,3 +94,16 @@ def is_cancun_block(block: Union[Dict[str, Any], BlockAPI]) -> bool:
         return True
 
     return False
+
+
+def is_prague_block(block: Union[Dict[str, Any], BlockAPI]) -> bool:
+    if isinstance(block, BlockAPI):
+        try:
+            return block.header.requests_hash is not None
+        except AttributeError:
+            return False
+
+    elif isinstance(block, dict) and "requests_hash" in block:
+        return True
+
+    return False

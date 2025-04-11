@@ -25,7 +25,7 @@ extras_require = {
     "py-evm": [
         # Pin py-evm to a minor version range to ensure compatibility with the current
         # implemented EVM version.
-        "py-evm>=0.10.0b0,<0.11.0b0",
+        "py-evm>=0.12.0b1,<0.13.0b1",
         "eth-hash[pysha3]>=0.1.4,<1.0.0;implementation_name=='cpython'",
         "eth-hash[pycryptodome]>=0.1.4,<1.0.0;implementation_name=='pypy'",
     ],
