@@ -218,6 +218,7 @@ def _make_transaction(
     data=None,
     nonce=None,
     access_list=None,
+    authorization_list=None,
     r=None,
     s=None,
     v=None,
@@ -236,6 +237,9 @@ def _make_transaction(
     yield from yield_key_value_if_value_not_none("data", data)
     yield from yield_key_value_if_value_not_none("nonce", nonce)
     yield from yield_key_value_if_value_not_none("access_list", access_list)
+    yield from yield_key_value_if_value_not_none(
+        "authorization_list", authorization_list
+    )
     yield from yield_key_value_if_value_not_none("r", r)
     yield from yield_key_value_if_value_not_none("s", s)
     yield from yield_key_value_if_value_not_none("v", v)
@@ -297,6 +301,11 @@ def _make_transaction(
         (
             "send",
             _make_transaction(_from=ADDRESS_A, to="", gas=21000, _type="0x4"),
+            True,
+        ),
+        (
+            "send",
+            _make_transaction(_from=ADDRESS_A, to="", gas=21000, _type="0x5"),
             False,
         ),
         (
@@ -467,6 +476,83 @@ def _make_transaction(
         ("send", _make_transaction(max_fee_per_blob_gas=0), False),
         ("send", _make_transaction(max_fee_per_blob_gas=1), False),
         ("send", _make_transaction(max_fee_per_blob_gas="0x0"), False),
+        # Prague
+        (
+            "send",
+            _make_transaction(
+                _from=ADDRESS_A,
+                gas=200_000,
+                authorization_list=[
+                    {
+                        "address": ADDRESS_A,
+                        "chain_id": 0,
+                        "nonce": 0,
+                        "r": 0,
+                        "s": 0,
+                        "y_parity": 0,
+                    },
+                    {
+                        "address": ADDRESS_B,
+                        "chain_id": 2**256 - 1,
+                        "nonce": 2**64 - 1,
+                        "y_parity": 2**8 - 1,
+                        "r": 2**256 - 1,
+                        "s": 2**256 - 1,
+                    },
+                ],
+            ),
+            True,
+        ),
+        (
+            "send",
+            _make_transaction(
+                _from=ADDRESS_A,
+                gas=200_000,
+                authorization_list=[
+                    {
+                        "address": ADDRESS_A,
+                        "chain_id": 1,
+                        "nonce": 2**64,
+                        "r": 1,
+                        "s": 1,
+                        "y_parity": 1,
+                    },
+                ],
+            ),
+            False,
+        ),
+        (
+            "send",
+            _make_transaction(
+                _from=ADDRESS_A,
+                gas=200_000,
+                authorization_list=[
+                    {
+                        "address": ADDRESS_A,
+                        "chain_id": 2**256,
+                        "nonce": 0,
+                        "r": 1,
+                        "s": 1,
+                        "y_parity": 1,
+                    },
+                ],
+            ),
+            False,
+        ),
+        (
+            "send",
+            # empty authorization list
+            _make_transaction(_from=ADDRESS_A, gas=200_000, authorization_list=[]),
+            False,
+        ),
+        (
+            "send_signed",
+            # empty authorization list
+            _make_transaction(
+                _from=ADDRESS_A, gas=200_000, authorization_list=[], r=1, s=1, v=1
+            ),
+            False,
+        ),
     ),
 )
 def test_transaction_input_validation(

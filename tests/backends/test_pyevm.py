@@ -28,6 +28,7 @@ from eth_utils import (
     ValidationError as EthUtilsValidationError,
     encode_hex,
     is_hexstr,
+    to_bytes,
     to_hex,
     to_wei,
 )
@@ -454,15 +455,17 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
     BLOB_TX_FOR_SIGNING = {
         "type": 3,
-        "chainId": 1337,
+        "chainId": 131277322940537,
         "value": 0,
-        "gas": 21000,
+        "gas": 200_000,
         "maxFeePerGas": 10**10,
         "maxPriorityFeePerGas": 10**10,
         "maxFeePerBlobGas": 10**10,
         "nonce": 0,
     }
-    SET_CODE_TX_FOR_SIGNING = merge(BLOB_TX_FOR_SIGNING, {"type": 4})
+    set_code_tx = merge(BLOB_TX_FOR_SIGNING, {"type": 4})
+    set_code_tx.pop("maxFeePerBlobGas", None)
+    SET_CODE_TX_FOR_SIGNING = set_code_tx
 
     def test_send_raw_transaction_valid_blob_transaction(self, eth_tester):
         pkey = eth_tester.backend.account_keys[0]
@@ -499,35 +502,70 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         with pytest.raises(EthUtilsValidationError):
             acct.sign_transaction(tx, blobs=[blob_data])
 
-    def test_send_raw_transaction_valid_set_code_transaction(self, eth_tester):
+    def test_send_raw_transaction_valid_set_code_transaction(self):
+        # set `1` at storage slot `0`
+        code = to_bytes(hexstr="0x6001600055")
+
+        genesis_state = PyEVMBackend.generate_genesis_state(num_accounts=10)
+        # grab the 10th account and make it the contract acct (set code=code)
+        contract_addr_bytes = list(genesis_state.keys())[-1]
+        genesis_state[contract_addr_bytes]["code"] = code
+
+        backend = PyEVMBackend(genesis_state=genesis_state)
+        eth_tester = EthereumTester(backend=backend)
+
+        contract_addr = f"0x{contract_addr_bytes.hex()}"
+        assert eth_tester.get_code(contract_addr) == f"0x{code.hex()}"
+
         pkey = eth_tester.backend.account_keys[0]
         acct = Account.from_key(pkey)
 
-        contract_acct = Account.create()
-
-        pyevm: PyEVMBackend = eth_tester.backend
-        contract_code = b"`\x01`\x00U\x00"  # set 1 at storage slot 0
-        pyevm.chain.get_vm().state.set_code(contract_acct, contract_code)
-
+        nonce = eth_tester.get_nonce(acct.address)
         auth = {
-            "chain_id": pyevm.chain.chain_id,
-            "address": contract_acct,
-            "nonce": 1,
+            "chainId": eth_tester.backend.chain.chain_id,
+            "address": contract_addr,
+            "nonce": nonce + 1,
         }
         tx = self.SET_CODE_TX_FOR_SIGNING.copy()
-        tx["from"] = acct.address
-        tx["to"] = eth_tester.get_accounts()[1]
-        tx["authorization_list"] = [acct.sign_authorization(auth)]
+        tx["to"] = acct.address
+        tx["nonce"] = nonce
+        tx["authorizationList"] = [acct.sign_authorization(auth)]
 
         signed_tx = acct.sign_transaction(tx)
         tx_hash = eth_tester.send_raw_transaction(to_hex(signed_tx.raw_transaction))
         assert eth_tester.get_transaction_by_hash(tx_hash)
         assert eth_tester.get_code(acct.address) == (
             # assert set to delegation prefix + contract address (0xef0001...)
-            b"\xef\x00\x01"
-            + contract_acct.address
+            "0xef0100"
+            + contract_addr[2:]
         )
-        assert eth_tester.get_storage_at(acct.address, HexStr("0x00")) == b"\x01"
+        assert (
+            # assert set `1` at storage slot `0`
+            eth_tester.get_storage_at(acct.address, HexStr("0x0"))
+            == "0x" + "00" * 31 + "01"
+        )
+
+        # clear code and send via send_transaction
+        reset_code_auth = {
+            "chainId": eth_tester.backend.chain.chain_id,
+            "address": "0x" + "00" * 20,
+            "nonce": nonce + 3,
+        }
+        auth_dict = acct.sign_authorization(reset_code_auth).model_dump(by_alias=True)
+        auth_dict.update(
+            {"chain_id": auth_dict.pop("chainId"), "y_parity": auth_dict.pop("yParity")}
+        )
+        reset_code_tx = {
+            "from": acct.address,
+            "to": acct.address,
+            "gas": 200_000,
+            "max_fee_per_gas": 10**10,
+            "max_priority_fee_per_gas": 10**10,
+            "authorization_list": [auth_dict],
+        }
+
+        eth_tester.send_transaction(reset_code_tx)
+        assert eth_tester.get_code(acct.address) == "0x"
 
     def test_eth_call_does_not_require_a_known_account(self, eth_tester):
         # `eth_call` should not require the `from` address to be a known account

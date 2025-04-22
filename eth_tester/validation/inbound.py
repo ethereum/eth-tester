@@ -197,6 +197,7 @@ TRANSACTION_KEYS = {
     "value",
     "data",
     "access_list",
+    "authorization_list",
     "nonce",
 }
 
@@ -322,6 +323,9 @@ def validate_transaction(value, txn_internal_type):
     if "access_list" in value:
         _validate_inbound_access_list(value["access_list"])
 
+    if "authorization_list" in value:
+        _validate_inbound_authorization_list(value["authorization_list"])
+
     if txn_internal_type == "send_signed":
         validate_uint256(value["r"])
         validate_uint256(value["s"])
@@ -369,6 +373,34 @@ def _validate_inbound_access_list(access_list):
                 "one or more access list storage keys not formatted "
                 f"properly: {storage_keys}"
             )
+
+
+def _validate_inbound_authorization_list(authorization_list) -> None:
+    if not is_list_like(authorization_list):
+        raise ValidationError("authorization_list is not list-like")
+    if len(authorization_list) == 0:
+        raise ValidationError("authorization_list must not be empty")
+
+    for auth in authorization_list:
+        if not is_dict(auth):
+            raise ValidationError(
+                "authorization_list entry must be a dictionary.  Got: {}".format(
+                    type(auth)
+                )
+            )
+        if not all(
+            k in auth for k in ("address", "nonce", "chain_id", "y_parity", "r", "s")
+        ):
+            raise ValidationError(
+                "authorization must be signed, containing keys: "
+                "chain_id, address, nonce, y_parity, r, s.  Got: {}".format(auth.keys())
+            )
+        validate_address(auth["address"])
+        validate_uint64(auth["nonce"])
+        validate_uint256(auth["chain_id"])
+        validate_uint8(auth["y_parity"])
+        validate_uint256(auth["r"])
+        validate_uint256(auth["s"])
 
 
 def validate_raw_transaction(raw_transaction):
