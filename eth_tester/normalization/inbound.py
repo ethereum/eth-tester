@@ -97,6 +97,17 @@ def _normalize_inbound_access_list(access_list):
     )
 
 
+def _normalize_inbound_auth_list():
+    return {
+        "chain_id": identity,
+        "address": to_empty_or_canonical_address,
+        "nonce": identity,
+        "y_parity": identity,
+        "r": identity,
+        "s": identity,
+    }
+
+
 TRANSACTION_NORMALIZERS = {
     "type": identity,
     "chain_id": identity,
@@ -110,6 +121,10 @@ TRANSACTION_NORMALIZERS = {
     "value": identity,
     "data": decode_hex,
     "access_list": _normalize_inbound_access_list,
+    "authorization_list": partial(
+        normalize_array,
+        normalizer=partial(normalize_dict, normalizers=_normalize_inbound_auth_list()),
+    ),
     "r": identity,
     "s": identity,
     "v": identity,

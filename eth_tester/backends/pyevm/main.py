@@ -741,7 +741,7 @@ class PyEVMBackend(BaseChainBackend):
             )
         elif all(_ in normalized_txn for _ in DYNAMIC_FEE_TRANSACTION_PARAMS):
             if "authorization_list" in normalized_txn:
-                self.chain.get_transaction_builder().new_unsigned_set_code_transaction(
+                return self.chain.get_transaction_builder().new_unsigned_set_code_transaction(  # noqa: E501
                     **normalized_txn
                 )
             return self.chain.get_transaction_builder().new_unsigned_dynamic_fee_transaction(  # noqa: E501
@@ -789,6 +789,10 @@ class PyEVMBackend(BaseChainBackend):
                 **normalized_txn
             )
         elif all(_ in normalized_txn for _ in DYNAMIC_FEE_TRANSACTION_PARAMS):
+            if "authorization_list" in normalized_txn:
+                return self.chain.get_transaction_builder().new_set_code_transaction(
+                    **normalized_txn
+                )
             return self.chain.get_transaction_builder().new_dynamic_fee_transaction(
                 **normalized_txn
             )
