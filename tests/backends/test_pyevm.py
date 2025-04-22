@@ -502,7 +502,11 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         with pytest.raises(EthUtilsValidationError):
             acct.sign_transaction(tx, blobs=[blob_data])
 
-    def test_send_raw_transaction_valid_set_code_transaction(self):
+    @pytest.mark.parametrize("send_raw", {True, False}, ids=lambda x: f"send_raw={x}")
+    def test_send_set_code_transaction_clear_delegation_with_send_signed(
+        self,
+        send_raw,
+    ):
         # set `1` at storage slot `0`
         code = to_bytes(hexstr="0x6001600055")
 
@@ -529,10 +533,31 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         tx = self.SET_CODE_TX_FOR_SIGNING.copy()
         tx["to"] = acct.address
         tx["nonce"] = nonce
-        tx["authorizationList"] = [acct.sign_authorization(auth)]
+        signed_auth = acct.sign_authorization(auth).model_dump(by_alias=True)
+        tx["authorizationList"] = [signed_auth]
 
-        signed_tx = acct.sign_transaction(tx)
-        tx_hash = eth_tester.send_raw_transaction(to_hex(signed_tx.raw_transaction))
+        if send_raw:
+            signed_tx = acct.sign_transaction(tx)
+            tx_hash = eth_tester.send_raw_transaction(to_hex(signed_tx.raw_transaction))
+        else:
+            signed_auth.update(
+                {
+                    "chain_id": signed_auth.pop("chainId"),
+                    "y_parity": signed_auth.pop("yParity"),
+                }
+            )
+            tx.update(
+                {
+                    # camelCase -> snake_case
+                    "chain_id": tx.pop("chainId"),
+                    "max_priority_fee_per_gas": tx.pop("maxPriorityFeePerGas"),
+                    "max_fee_per_gas": tx.pop("maxFeePerGas"),
+                    "authorization_list": tx.pop("authorizationList"),
+                    "from": acct.address,
+                }
+            )
+            tx_hash = eth_tester.send_transaction(tx)
+
         assert eth_tester.get_transaction_by_hash(tx_hash)
         assert eth_tester.get_code(acct.address) == (
             # assert set to delegation prefix + contract address (0xef0001...)
@@ -545,26 +570,42 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
             == "0x" + "00" * 31 + "01"
         )
 
-        # clear code and send via send_transaction
+        # clear code and send via ``send_signed`` to test the
+        # ``transaction_builder.new_signed_set_code_transaction()`` api
         reset_code_auth = {
             "chainId": eth_tester.backend.chain.chain_id,
             "address": "0x" + "00" * 20,
             "nonce": nonce + 3,
         }
         auth_dict = acct.sign_authorization(reset_code_auth).model_dump(by_alias=True)
+        reset_code_tx = {
+            "chainId": eth_tester.backend.chain.chain_id,
+            "to": acct.address,
+            "gas": 200_000,
+            "nonce": nonce + 2,
+            "maxFeePerGas": 10**10,
+            "maxPriorityFeePerGas": 10**10,
+            "authorizationList": [auth_dict],
+        }
+        signed_reset_code_tx = acct.sign_transaction(reset_code_tx)
         auth_dict.update(
             {"chain_id": auth_dict.pop("chainId"), "y_parity": auth_dict.pop("yParity")}
         )
-        reset_code_tx = {
-            "from": acct.address,
-            "to": acct.address,
-            "gas": 200_000,
-            "max_fee_per_gas": 10**10,
-            "max_priority_fee_per_gas": 10**10,
-            "authorization_list": [auth_dict],
-        }
+        reset_code_tx.update(
+            {
+                "chain_id": reset_code_tx.pop("chainId"),
+                "from": acct.address,
+                "max_fee_per_gas": reset_code_tx.pop("maxFeePerGas"),
+                "max_priority_fee_per_gas": reset_code_tx.pop("maxPriorityFeePerGas"),
+                "authorization_list": reset_code_tx.pop("authorizationList"),
+                "r": signed_reset_code_tx.r,
+                "s": signed_reset_code_tx.s,
+                "v": signed_reset_code_tx.v,
+            }
+        )
 
-        eth_tester.send_transaction(reset_code_tx)
+        eth_tester._add_transaction_to_pending_block(reset_code_tx, "send_signed")
+        eth_tester.mine_block()
         assert eth_tester.get_code(acct.address) == "0x"
 
     def test_eth_call_does_not_require_a_known_account(self, eth_tester):
