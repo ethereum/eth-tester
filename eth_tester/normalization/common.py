@@ -13,12 +13,21 @@ from eth_tester.utils.encoding import (
 )
 
 
+def to_lower_camel_case(key):
+    """
+    Convert a string to lower camel case.
+    """
+    return "".join(
+        word.capitalize() if i else word for i, word in enumerate(key.split("_"))
+    )
+
+
 @curry
 @to_dict
 def normalize_dict(value, normalizers):
     for key, item in value.items():
         normalizer = normalizers[key]
-        yield key, normalizer(item)
+        yield to_lower_camel_case(key), normalizer(item)
 
 
 @curry
