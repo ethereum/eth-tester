@@ -46,6 +46,9 @@ from .common import (
     validate_uint64,
     validate_uint256,
 )
+from .outbound import (
+    validate_y_parity,
+)
 
 
 def is_32_bytes(value):
@@ -398,7 +401,7 @@ def _validate_inbound_authorization_list(authorization_list) -> None:
         validate_address(auth["address"])
         validate_uint64(auth["nonce"])
         validate_uint256(auth["chain_id"])
-        validate_uint8(auth["y_parity"])
+        validate_y_parity(auth["y_parity"])
         validate_uint256(auth["r"])
         validate_uint256(auth["s"])
 

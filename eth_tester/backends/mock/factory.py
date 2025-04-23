@@ -248,6 +248,7 @@ def make_receipt(transaction, block, _transaction_index, overrides=None):
 GENESIS_NONCE = b"\x00\x00\x00\x00\x00\x00\x00*"  # 42 encoded as big-endian-integer
 BLANK_ROOT_HASH = b"V\xe8\x1f\x17\x1b\xccU\xa6\xff\x83E\xe6\x92\xc0\xf8n\x5bH\xe0\x1b\x99l\xad\xc0\x01b/\xb5\xe3c\xb4!"  # noqa: E501
 EMPTY_UNCLE_HASH = b"\x1d\xccM\xe8\xde\xc7]z\xab\x85\xb5g\xb6\xcc\xd4\x1a\xd3\x12E\x1b\x94\x8at\x13\xf0\xa1B\xfd@\xd4\x93G"  # noqa: E501
+EMPTY_SHA256 = b"\xe3\xb0\xc4B\x98\xfc\x1c\x14\x9a\xfb\xf4\xc8\x99o\xb9$'\xaeA\xe4d\x9b\x93L\xa4\x95\x99\x1bxR\xb8U"  # noqa: E501
 POST_MERGE_DIFFICULTY = 0
 POST_MERGE_MIX_HASH = Hash32(32 * b"\x00")
 POST_MERGE_NONCE = b"\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -283,7 +284,7 @@ def make_genesis_block(overrides=None):
         "parent_beacon_block_root": BLANK_ROOT_HASH,
         "blob_gas_used": 0,
         "excess_blob_gas": 0,
-        "requests_hash": ZERO_32BYTES,
+        "requests_hash": EMPTY_SHA256,
     }
     if overrides is not None:
         genesis_block = merge_genesis_overrides(

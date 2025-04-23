@@ -101,8 +101,7 @@ def validate_y_parity(value):
     validate_positive_integer(value)
     if value not in (0, 1):
         raise ValidationError(
-            "The 'v' portion (y_parity) of the signature must be either 0 or 1 for "
-            "typed transactions."
+            "The `y_parity` value of the signature must be either 0 or 1"
         )
 
 
@@ -122,7 +121,7 @@ def _validate_outbound_access_list(access_list):
             raise ValidationError(
                 f"access_list storage keys are not list-like: {storage_keys}"
             )
-        if len(storage_keys) > 0 and (not all(is_integer(k) for k in storage_keys)):
+        if len(storage_keys) > 0 and not all(is_integer(k) for k in storage_keys):
             raise ValidationError(
                 "one or more access list storage keys not formatted "
                 f"properly: {storage_keys}"
@@ -133,17 +132,25 @@ def _validate_outbound_authorization_list(authorization_list) -> None:
     if not is_list_like(authorization_list):
         raise ValidationError("authorization_list is not list-like.")
     for auth in authorization_list:
-        if not isinstance(auth, dict) and not len(auth) == 6:
+        if not isinstance(auth, dict) and not all(
+            key in auth
+            for key in {"chain_id", "address", "nonce", "y_parity", "r", "s"}
+        ):
             raise ValidationError(
                 f"authorization_list entry not properly formatted: {auth}"
             )
-        # TODO: finish validation of the authorization list
+        validate_uint256(auth["chain_id"])
+        validate_canonical_address(auth["address"])
+        validate_uint64(auth["nonce"])
+        validate_y_parity(auth["y_parity"])
+        validate_uint256(auth["r"])
+        validate_uint256(auth["s"])
 
 
 LEGACY_TRANSACTION_VALIDATORS = {
     "type": validate_transaction_type,
     "hash": validate_32_byte_string,
-    "nonce": validate_uint256,
+    "nonce": validate_uint64,
     "block_hash": if_not_null(validate_32_byte_string),
     "block_number": if_not_null(validate_positive_integer),
     "transaction_index": if_not_null(validate_positive_integer),
