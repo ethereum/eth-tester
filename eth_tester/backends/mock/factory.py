@@ -1,9 +1,6 @@
 import functools
 import time
 
-from eth_typing import (
-    Hash32,
-)
 from eth_utils import (
     apply_to_return_value,
     is_bytes,
@@ -28,7 +25,13 @@ from eth_tester.backends.mock.common import (
     calculate_effective_gas_price,
 )
 from eth_tester.constants import (
+    BLANK_ROOT_HASH,
     DYNAMIC_FEE_TRANSACTION_PARAMS,
+    EMPTY_SHA256,
+    EMPTY_UNCLE_HASH,
+    POST_MERGE_DIFFICULTY,
+    POST_MERGE_MIX_HASH,
+    POST_MERGE_NONCE,
 )
 from eth_tester.utils.address import (
     generate_contract_address,
@@ -246,12 +249,6 @@ def make_receipt(transaction, block, _transaction_index, overrides=None):
 
 
 GENESIS_NONCE = b"\x00\x00\x00\x00\x00\x00\x00*"  # 42 encoded as big-endian-integer
-BLANK_ROOT_HASH = b"V\xe8\x1f\x17\x1b\xccU\xa6\xff\x83E\xe6\x92\xc0\xf8n\x5bH\xe0\x1b\x99l\xad\xc0\x01b/\xb5\xe3c\xb4!"  # noqa: E501
-EMPTY_UNCLE_HASH = b"\x1d\xccM\xe8\xde\xc7]z\xab\x85\xb5g\xb6\xcc\xd4\x1a\xd3\x12E\x1b\x94\x8at\x13\xf0\xa1B\xfd@\xd4\x93G"  # noqa: E501
-EMPTY_SHA256 = b"\xe3\xb0\xc4B\x98\xfc\x1c\x14\x9a\xfb\xf4\xc8\x99o\xb9$'\xaeA\xe4d\x9b\x93L\xa4\x95\x99\x1bxR\xb8U"  # noqa: E501
-POST_MERGE_DIFFICULTY = 0
-POST_MERGE_MIX_HASH = Hash32(32 * b"\x00")
-POST_MERGE_NONCE = b"\x00\x00\x00\x00\x00\x00\x00\x00"
 
 
 def make_genesis_block(overrides=None):

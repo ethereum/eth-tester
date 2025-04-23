@@ -8,6 +8,10 @@ from toolz import (
     merge,
 )
 
+from eth_tester.constants import (
+    BLANK_ROOT_HASH,
+    EMPTY_SHA256,
+)
 from eth_tester.exceptions import (
     ValidationError,
 )
@@ -398,6 +402,10 @@ def _make_block(
     base_fee_per_gas=1000000000,
     withdrawals=None,
     withdrawals_root=ZERO_32BYTES,
+    blob_gas_used=0,
+    excess_blob_gas=0,
+    parent_beacon_block_root=BLANK_ROOT_HASH,
+    requests_hash=EMPTY_SHA256,
 ):
     block = {
         "number": number,
@@ -423,6 +431,10 @@ def _make_block(
         "base_fee_per_gas": base_fee_per_gas,
         "withdrawals": withdrawals or [],
         "withdrawals_root": withdrawals_root,
+        "blob_gas_used": blob_gas_used,
+        "excess_blob_gas": excess_blob_gas,
+        "parent_beacon_block_root": parent_beacon_block_root,
+        "requests_hash": requests_hash,
     }
     return block
 
@@ -517,6 +529,14 @@ def _make_withdrawal(
             ),
             False,
         ),
+        (_make_block(blob_gas_used=-1), False),
+        (_make_block(blob_gas_used=1.0), False),
+        (_make_block(excess_blob_gas=-1), False),
+        (_make_block(excess_blob_gas=1.0), False),
+        (_make_block(parent_beacon_block_root=BLANK_ROOT_HASH[:-1]), False),
+        (_make_block(parent_beacon_block_root=BLANK_ROOT_HASH + b"\x01"), False),
+        (_make_block(requests_hash=ZERO_32BYTES + b"\x01"), False),
+        (_make_block(requests_hash=ZERO_32BYTES[:-1]), False),
     ),
 )
 def test_block_output_validation(validator, block, is_valid):

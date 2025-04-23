@@ -495,7 +495,7 @@ def _make_transaction(
                         "address": ADDRESS_B,
                         "chain_id": 2**256 - 1,
                         "nonce": 2**64 - 1,
-                        "y_parity": 2**8 - 1,
+                        "y_parity": 1,
                         "r": 2**256 - 1,
                         "s": 2**256 - 1,
                     },
