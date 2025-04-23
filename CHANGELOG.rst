@@ -3,6 +3,15 @@ Eth Tester Changelog
 
 .. towncrier release notes start
 
+eth-tester v0.13.0-beta.1 (2025-04-23)
+--------------------------------------
+
+Features
+~~~~~~~~
+
+- Support for the Prague network upgrade, mainly ``requests_hash`` on blocks and ``SetCodeTransaction`` (EIP-7702) support. (`#317 <https://github.com/ethereum/eth-tester/issues/317>`__)
+
+
 eth-tester v0.12.1-beta.1 (2025-02-13)
 --------------------------------------
 
