@@ -3,7 +3,7 @@ from importlib import (
 )
 
 
-def import_string(dotted_path):
+def import_string(dotted_path: str):
     """
     Source: django.utils.module_loading
 

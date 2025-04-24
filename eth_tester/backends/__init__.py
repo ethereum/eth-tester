@@ -1,5 +1,7 @@
 import os
-import warnings
+from typing import (
+    Optional,
+)
 
 from eth_tester.utils.module_loading import (
     get_import_path,
@@ -10,36 +12,49 @@ from .eels import (
     EELSBackend,
     eels_is_available,
 )
-from .mock import (
-    MockBackend,
-)
 from .pyevm import (
     PyEVMBackend,
     is_supported_pyevm_version_available,
 )
 
 
-def get_chain_backend_class(backend_import_path=None):
-    warnings.simplefilter("default")
+def get_chain_backend_class(backend_import_path: Optional[str] = None):
+    """
+    Returns the chain backend class based on the configuration.
 
+    The configuration is determined by the following order of precedence:
+
+    1. Environment variable `ETHEREUM_TESTER_CHAIN_BACKEND`
+    2. Availability of `py-evm` backend
+    3. Availability of `eels` backend
+
+    Args
+    ----
+        backend_import_path: The import path of the backend class.
+
+    Returns
+    -------
+        The imported backend class.
+
+    Raises
+    ------
+        ImportError: If no backend is configured and no default backends are available.
+
+    """
     if backend_import_path is None:
         if "ETHEREUM_TESTER_CHAIN_BACKEND" in os.environ:
             backend_import_path = os.environ["ETHEREUM_TESTER_CHAIN_BACKEND"]
         elif is_supported_pyevm_version_available():
             backend_import_path = get_import_path(PyEVMBackend)
+        elif eels_is_available():
+            backend_import_path = get_import_path(EELSBackend)
         else:
-            warnings.warn(
-                UserWarning(
-                    "Ethereum Tester: No backend was explicitly set, and no *full* "
-                    "backends were available.  Falling back to the `MockBackend` "
-                    "which does not support all EVM functionality.  Please refer to "
-                    "the `eth-tester` documentation for information on what "
-                    "backends are available and how to set them.  Your py-evm "
-                    "package may need to be updated."
-                ),
-                stacklevel=2,
+            raise ImportError(
+                "Ethereum Tester: No backend was explicitly set, and no default "
+                "backends were available. Please refer to "
+                "the `eth-tester` documentation for information on what "
+                "backends are available and how to set them."
             )
-            backend_import_path = get_import_path(MockBackend)
     return import_string(backend_import_path)
 
 
