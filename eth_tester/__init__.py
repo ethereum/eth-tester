@@ -4,7 +4,6 @@ from importlib.metadata import (
 
 from .backends import (
     EELSBackend,
-    MockBackend,
     PyEVMBackend,
 )
 from .main import (

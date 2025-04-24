@@ -711,8 +711,8 @@ The most direct way is to manually pass in the backend instance you wish to
 use.
 
 ```python
->>> from eth_tester import EthereumTester, MockBackend
->>> t = EthereumTester(backend=MockBackend())
+>>> from eth_tester import EthereumTester, PyEVMBackend
+>>> t = EthereumTester(backend=PyEVMBackend())
 ```
 
 Ethereum tester also supports configuration using the environment variable
@@ -723,18 +723,8 @@ backend class you wish to use.
 
 Ethereum tester can be used with the following backends.
 
-- MockBackend
-- PyEVM (experimental)
-
-#### MockBackend
-
-This backend has limited functionality.  It cannot perform any VM computations.
-It mocks out all of the objects and interactions.
-
-```python
->>> from eth_tester import EthereumTester, MockBackend
->>> t = EthereumTester(MockBackend())
-```
+- [PyEVM](https://pypi.org/project/py-evm)
+- [EELS](https://pypi.org/project/ethereum-execution) **(coming soon)**
 
 #### PyEVM (experimental)
 
