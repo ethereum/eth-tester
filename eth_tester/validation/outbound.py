@@ -287,7 +287,6 @@ BLOCK_VALIDATORS = {
     "coinbase": validate_canonical_address,
     "difficulty": validate_positive_integer,
     "mix_hash": validate_32_byte_string,
-    "total_difficulty": validate_positive_integer,
     "size": validate_positive_integer,
     "extra_data": validate_32_byte_string,
     "gas_limit": validate_positive_integer,

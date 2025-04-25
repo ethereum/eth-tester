@@ -88,7 +88,6 @@ BLOCK_KEYS = {
     "coinbase",
     "difficulty",
     "mix_hash",
-    "total_difficulty",
     "size",
     "extra_data",
     "gas_limit",

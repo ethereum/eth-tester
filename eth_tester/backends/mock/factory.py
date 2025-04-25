@@ -265,7 +265,6 @@ def make_genesis_block(overrides=None):
         "coinbase": ZERO_ADDRESS,
         "difficulty": POST_MERGE_DIFFICULTY,
         "mix_hash": POST_MERGE_MIX_HASH,
-        "total_difficulty": 131072,
         "size": 0,
         "extra_data": ZERO_32BYTES,
         # gas limit at London fork block 12965000 on mainnet
@@ -358,11 +357,6 @@ def make_block_from_parent(parent_block, overrides=None):
         yield "mix_hash", overrides["mix_hash"]
     else:
         yield "mix_hash", POST_MERGE_MIX_HASH
-
-    if "total_difficulty" in overrides:
-        yield "total_difficulty", overrides["total_difficulty"]
-    else:
-        yield "total_difficulty", parent_block["difficulty"] + difficulty
 
     if "size" in overrides:
         yield "size", overrides["size"]

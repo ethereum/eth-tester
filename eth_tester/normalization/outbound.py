@@ -143,7 +143,6 @@ BLOCK_NORMALIZERS = {
     "coinbase": to_checksum_address,
     "difficulty": identity,
     "mix_hash": encode_hex,
-    "total_difficulty": identity,
     "size": identity,
     "extra_data": encode_hex,
     "gas_limit": identity,
