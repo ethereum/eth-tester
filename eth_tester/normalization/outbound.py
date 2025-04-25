@@ -27,7 +27,9 @@ from ..utils.encoding import (
 from .common import (
     normalize_array,
     normalize_dict,
+    normalize_dict_keys_recursive,
     normalize_if,
+    to_lower_camel_case,
 )
 
 normalize_account = to_checksum_address
@@ -97,7 +99,11 @@ TRANSACTION_NORMALIZERS = {
     "v": identity,
     "y_parity": identity,
 }
-normalize_transaction = partial(normalize_dict, normalizers=TRANSACTION_NORMALIZERS)
+
+normalize_transaction = compose(
+    normalize_dict_keys_recursive,
+    partial(normalize_dict, normalizers=TRANSACTION_NORMALIZERS),
+)
 
 
 WITHDRAWAL_NORMALIZERS = {
