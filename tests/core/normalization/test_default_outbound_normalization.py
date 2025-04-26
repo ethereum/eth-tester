@@ -3,6 +3,10 @@ from eth_utils import (
     to_checksum_address,
 )
 
+from eth_tester.constants import (
+    BLANK_ROOT_HASH,
+    ZERO_ADDRESS_HEX,
+)
 from eth_tester.normalization import (
     DefaultNormalizer,
 )
@@ -13,6 +17,7 @@ from tests.core.validation.test_outbound_validation import (
     _make_dynamic_fee_txn,
 )
 from tests.utils import (
+    ZERO_ADDRESS,
     make_receipt,
 )
 
@@ -120,8 +125,8 @@ def test_outbound_transaction_normalization() -> None:
         "blockHash": "0x" + "00" * 32,
         "blockNumber": 0,
         "transactionIndex": 0,
-        "from": "0x0000000000000000000000000000000000000000",
-        "to": "0x0000000000000000000000000000000000000000",
+        "from": ZERO_ADDRESS_HEX,
+        "to": ZERO_ADDRESS_HEX,
         "value": 0,
         "gas": 21000,
         "gasPrice": 1,
@@ -131,7 +136,7 @@ def test_outbound_transaction_normalization() -> None:
         "data": "0x",
         "accessList": (
             {
-                "address": "0x0000000000000000000000000000000000000000",
+                "address": ZERO_ADDRESS_HEX,
                 "storageKeys": (
                     "0x" + "00" * 31 + "01",
                     "0x" + "00" * 31 + "02",
@@ -143,7 +148,7 @@ def test_outbound_transaction_normalization() -> None:
         "authorizationList": (
             {
                 "chainId": 1,
-                "address": "0x0000000000000000000000000000000000000000",
+                "address": ZERO_ADDRESS_HEX,
                 "nonce": 0,
                 "yParity": 0,
                 "r": 0,
@@ -156,3 +161,189 @@ def test_outbound_transaction_normalization() -> None:
         "yParity": 0,
     }
     assert normalized_transaction == expected_normalized_transaction
+
+
+def test_outbound_block_normalization() -> None:
+    block = {
+        "number": 1,
+        "hash": b"\x00" * 32,
+        "parent_hash": b"\x00" * 32,
+        "nonce": b"\x00" * 8,
+        "base_fee_per_gas": 0,
+        "sha3_uncles": b"\x00" * 32,
+        "logs_bloom": 0,
+        "transactions_root": b"\x00" * 32,
+        "receipts_root": b"\x00" * 32,
+        "state_root": b"\x00" * 32,
+        "coinbase": b"\x00" * 20,
+        "difficulty": 0,
+        "mix_hash": b"\x00" * 32,
+        "total_difficulty": 0,
+        "size": 0,
+        "extra_data": b"\x00" * 32,
+        "gas_limit": 0,
+        "gas_used": 0,
+        "timestamp": 0,
+        "transactions": (
+            b"\x00" * 32,
+            b"\x00" * 32,
+        ),
+        "uncles": (
+            b"\x00" * 32,
+            b"\x00" * 32,
+        ),
+        "withdrawals": (
+            {
+                "index": 0,
+                "validator_index": 0,
+                "amount": 0,
+                "address": b"\x00" * 20,
+            },
+        ),
+        "withdrawals_root": b"\x00" * 32,
+        "parent_beacon_block_root": b"\x00" * 32,
+        "blob_gas_used": 0,
+        "excess_blob_gas": 0,
+        "requests_hash": b"\x00" * 32,
+    }
+
+    normalized_block = DefaultNormalizer.normalize_outbound_block(block)
+    expected_normalized_block = {
+        "number": 1,
+        "hash": "0x" + "00" * 32,
+        "parentHash": "0x" + "00" * 32,
+        "nonce": "0x" + "00" * 8,
+        "baseFeePerGas": 0,
+        "sha3Uncles": "0x" + "00" * 32,
+        "logsBloom": 0,
+        "transactionsRoot": "0x" + "00" * 32,
+        "receiptsRoot": "0x" + "00" * 32,
+        "stateRoot": "0x" + "00" * 32,
+        "coinbase": ZERO_ADDRESS_HEX,
+        "difficulty": 0,
+        "mixHash": "0x" + "00" * 32,
+        "totalDifficulty": 0,
+        "size": 0,
+        "extraData": "0x" + "00" * 32,
+        "gasLimit": 0,
+        "gasUsed": 0,
+        "timestamp": 0,
+        "transactions": (
+            "0x" + "00" * 32,
+            "0x" + "00" * 32,
+        ),
+        "uncles": (
+            "0x" + "00" * 32,
+            "0x" + "00" * 32,
+        ),
+        "withdrawals": (
+            {
+                "index": 0,
+                "validatorIndex": 0,
+                "amount": 0,
+                "address": ZERO_ADDRESS_HEX,
+            },
+        ),
+        "withdrawalsRoot": "0x" + "00" * 32,
+        "parentBeaconBlockRoot": "0x" + "00" * 32,
+        "blobGasUsed": 0,
+        "excessBlobGas": 0,
+        "requestsHash": "0x" + "00" * 32,
+    }
+    assert normalized_block == expected_normalized_block
+
+
+def test_outbound_log_entry_normalization() -> None:
+    log_entry = {
+        "type": 1,
+        "log_index": 0,
+        "transaction_index": 0,
+        "transaction_hash": b"\x00" * 32,
+        "block_hash": b"\x00" * 32,
+        "block_number": 0,
+        "address": b"\x00" * 20,
+        "data": b"\x00" * 32,
+        "topics": (
+            b"\x00" * 32,
+            b"\x00" * 32,
+        ),
+    }
+
+    normalized_log_entry = DefaultNormalizer.normalize_outbound_log_entry(log_entry)
+    expected_normalized_log_entry = {
+        "type": 1,
+        "logIndex": 0,
+        "transactionIndex": 0,
+        "transactionHash": "0x" + "00" * 32,
+        "blockHash": "0x" + "00" * 32,
+        "blockNumber": 0,
+        "address": ZERO_ADDRESS_HEX,
+        "data": "0x" + "00" * 32,
+        "topics": (
+            "0x" + "00" * 32,
+            "0x" + "00" * 32,
+        ),
+    }
+    assert normalized_log_entry == expected_normalized_log_entry
+
+
+def test_outbound_receipt_normalization() -> None:
+    receipt = {
+        "transaction_hash": b"\x00" * 32,
+        "transaction_index": 0,
+        "block_number": 0,
+        "block_hash": b"\x00" * 32,
+        "cumulative_gas_used": 21000,
+        "effective_gas_price": 1,
+        "from": b"\x00" * 20,
+        "gas_used": 21000,
+        "contract_address": b"\x00" * 20,
+        "logs": (
+            {
+                "address": b"\x00" * 20,
+                "data": b"\x00" * 32,
+                "topics": (
+                    b"\x00" * 32,
+                    b"\x00" * 32,
+                ),
+            },
+        ),
+        "state_root": BLANK_ROOT_HASH,
+        "status": 1,
+        "to": b"\x00" * 20,
+        "type": 1,
+        "base_fee_per_gas": 1,
+        "blob_gas_used": 1,
+        "blob_gas_price": 1,
+    }
+
+    normalized_receipt = DefaultNormalizer.normalize_outbound_receipt(receipt)
+    expected_normalized_receipt = {
+        "transactionHash": "0x" + "00" * 32,
+        "transactionIndex": 0,
+        "blockNumber": 0,
+        "blockHash": "0x" + "00" * 32,
+        "cumulativeGasUsed": 21000,
+        "effectiveGasPrice": 1,
+        "from": ZERO_ADDRESS_HEX,
+        "gasUsed": 21000,
+        "contractAddress": ZERO_ADDRESS_HEX,
+        "logs": (
+            {
+                "address": ZERO_ADDRESS_HEX,
+                "data": "0x" + "00" * 32,
+                "topics": (
+                    "0x" + "00" * 32,
+                    "0x" + "00" * 32,
+                ),
+            },
+        ),
+        "stateRoot": BLANK_ROOT_HASH,
+        "status": 1,
+        "to": ZERO_ADDRESS_HEX,
+        "type": "0x1",
+        "baseFeePerGas": 1,
+        "blobGasUsed": 1,
+        "blobGasPrice": 1,
+    }
+    assert normalized_receipt == expected_normalized_receipt
