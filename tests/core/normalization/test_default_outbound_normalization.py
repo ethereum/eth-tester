@@ -77,7 +77,6 @@ def test_outbound_transaction_keys_normalization(transaction: Transaction) -> No
         "maxPriorityFeePerGas",
         "data",
         "accessList",
-        "authorizationList",
         "r",
         "s",
         "v",
@@ -101,25 +100,6 @@ def test_outbound_transaction_access_list_keys_normalization(
     assert sorted(list(dict(normalized_transaction["accessList"][0]).keys())) == sorted(
         expected_access_list_keys
     )
-
-
-def test_outbound_transaction_auth_list_keys_normalization(
-    transaction_with_auth_list: Transaction,
-) -> None:
-    normalized_transaction = DefaultNormalizer.normalize_outbound_transaction(
-        transaction_with_auth_list
-    )
-    expected_auth_list_keys = [
-        "chainId",
-        "address",
-        "nonce",
-        "yParity",
-        "r",
-        "s",
-    ]
-    assert sorted(
-        list(dict(normalized_transaction["authorizationList"][0]).keys())
-    ) == sorted(expected_auth_list_keys)
 
 
 def test_outbound_block_keys_normalization(block: Block) -> None:
@@ -152,7 +132,6 @@ def test_outbound_block_keys_normalization(block: Block) -> None:
         "parentBeaconBlockRoot",
         "blobGasUsed",
         "excessBlobGas",
-        "requestsHash",
     ]
     assert sorted(list(dict(normalized_block).keys())) == sorted(expected_block_keys)
 
@@ -183,7 +162,6 @@ def test_outbound_block_transaction_object_keys_normalization(
         "maxPriorityFeePerGas",
         "data",
         "accessList",
-        "authorizationList",
         "r",
         "s",
         "v",

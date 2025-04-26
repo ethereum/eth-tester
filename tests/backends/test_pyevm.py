@@ -1,5 +1,4 @@
 import pytest
-
 from eth.constants import (
     POST_MERGE_DIFFICULTY,
     POST_MERGE_MIX_HASH,
@@ -25,6 +24,8 @@ from eth_typing import (
 )
 from eth_utils import (
     ValidationError as EthUtilsValidationError,
+)
+from eth_utils import (
     encode_hex,
     is_hexstr,
     to_hex,
@@ -113,19 +114,20 @@ def test_custom_virtual_machines():
 
 
 @pytest.mark.parametrize(
-    "vm_class_missing_the_field,vm_class_with_new_field,new_field",
+    "vm_class_missing_the_field,vm_class_with_new_field,new_field,new_field_camel_case",
     (
-        (BerlinVM, LondonVM, "base_fee_per_gas"),
-        (ParisVM, ShanghaiVM, "withdrawals"),
-        (ParisVM, ShanghaiVM, "withdrawals_root"),
-        (ShanghaiVM, CancunVM, "blob_gas_used"),
-        (ShanghaiVM, CancunVM, "excess_blob_gas"),
+        (BerlinVM, LondonVM, "base_fee_per_gas", "baseFeePerGas"),
+        (ParisVM, ShanghaiVM, "withdrawals", "withdrawals"),
+        (ParisVM, ShanghaiVM, "withdrawals_root", "withdrawalsRoot"),
+        (ShanghaiVM, CancunVM, "blob_gas_used", "blobGasUsed"),
+        (ShanghaiVM, CancunVM, "excess_blob_gas", "excessBlobGas"),
     ),
 )
 def test_newly_introduced_block_fields_at_fork_transition(
     vm_class_missing_the_field,
     vm_class_with_new_field,
     new_field,
+    new_field_camel_case,
 ):
     if not is_supported_pyevm_version_available():
         pytest.skip("PyEVM is not available")
@@ -149,7 +151,7 @@ def test_newly_introduced_block_fields_at_fork_transition(
     # test that the field exists at fork transition
     backend.get_block_by_number("pending")[new_field]
     post_fork_block = tester.get_block_by_number("pending")
-    assert post_fork_block[new_field] is not None
+    assert post_fork_block[new_field_camel_case] is not None
 
 
 def test_london_configuration():
@@ -194,12 +196,10 @@ def test_apply_withdrawals():
     )
     # withdrawal amounts are in gwei, balance is measured in wei
     assert backend.get_balance(b"\x01" * 20) == 100 * 10**9  # 100 gwei
-    assert (
-        backend.get_balance(b"\x02" * 20) == (2**64 - 1) * 10**9
-    )  # 2**64 - 1 gwei
+    assert backend.get_balance(b"\x02" * 20) == (2**64 - 1) * 10**9  # 2**64 - 1 gwei
 
     assert (
-        mined_block["withdrawals_root"]
+        mined_block["withdrawalsRoot"]
         == "0xbb49834f60c98815399dfb1a3303cc0f80984c4c7533ecf326bc343d8109127e"
     )
 
@@ -354,9 +354,9 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         # Integrate with EthereumTester
         tester = EthereumTester(backend=pyevm_backend)
         genesis_block = tester.get_block_by_number(0)
-        assert genesis_block["gas_limit"] == param_overrides["gas_limit"]
+        assert genesis_block["gasLimit"] == param_overrides["gas_limit"]
         pending_block_one = tester.get_block_by_number("pending")
-        assert pending_block_one["gas_limit"] == block_one_gas_limit
+        assert pending_block_one["gasLimit"] == block_one_gas_limit
 
     def test_send_transaction_invalid_from(self, eth_tester):
         accounts = eth_tester.get_accounts()
@@ -395,7 +395,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         assert genesis_block["difficulty"] == GENESIS_DIFFICULTY
         assert genesis_block["nonce"] == encode_hex(GENESIS_NONCE)
-        assert genesis_block["mix_hash"] == encode_hex(GENESIS_MIX_HASH)
+        assert genesis_block["mixHash"] == encode_hex(GENESIS_MIX_HASH)
 
         tester.mine_blocks(3)
 
@@ -405,7 +405,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         assert third_block["nonce"] == encode_hex(POST_MERGE_NONCE)
 
         # assert not empty mix_hash
-        third_block_mix_hash = third_block["mix_hash"]
+        third_block_mix_hash = third_block["mixHash"]
         assert is_hexstr(third_block_mix_hash)
         assert third_block_mix_hash != encode_hex(POST_MERGE_MIX_HASH)
 

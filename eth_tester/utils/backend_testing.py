@@ -1,5 +1,5 @@
 import pytest
-
+import rlp
 from eth_keys import (
     keys,
 )
@@ -17,7 +17,6 @@ from eth_utils.toolz import (
     dissoc,
     merge,
 )
-import rlp
 
 from eth_tester.constants import (
     BURN_ADDRESS,
@@ -78,21 +77,21 @@ CONTRACT_TRANSACTION_MISSING_TO = dissoc(CONTRACT_TRANSACTION_EMPTY_TO, "to")
 BLOCK_KEYS = {
     "number",
     "hash",
-    "parent_hash",
+    "parentHash",
     "nonce",
-    "sha3_uncles",
-    "logs_bloom",
-    "transactions_root",
-    "receipts_root",
-    "state_root",
+    "sha3Uncles",
+    "logsBloom",
+    "transactionsRoot",
+    "receiptsRoot",
+    "stateRoot",
     "coinbase",
     "difficulty",
-    "mix_hash",
-    "total_difficulty",
+    "mixHash",
+    "totalDifficulty",
     "size",
-    "extra_data",
-    "gas_limit",
-    "gas_used",
+    "extraData",
+    "gasLimit",
+    "gasUsed",
     "timestamp",
     "transactions",
     "uncles",
@@ -131,14 +130,14 @@ class BaseTestBackendDirect:
         assert actual_transaction["value"] == sent_transaction["value"]
 
         if sent_transaction.get("gas_price") is not None:
-            assert actual_transaction["gas_price"] == sent_transaction["gas_price"]
+            assert actual_transaction["gasPrice"] == sent_transaction["gas_price"]
         else:
             assert (
-                actual_transaction["max_fee_per_gas"]
+                actual_transaction["maxFeePerGas"]
                 == sent_transaction["max_fee_per_gas"]
             )
             assert (
-                actual_transaction["max_priority_fee_per_gas"]
+                actual_transaction["maxPriorityFeePerGas"]
                 == sent_transaction["max_priority_fee_per_gas"]
             )
 
@@ -360,9 +359,9 @@ class BaseTestBackendDirect:
 
     def test_gas_limit_constant(self, eth_tester):
         eth_tester.mine_blocks()
-        before_gas_limit = eth_tester.get_block_by_number("latest")["gas_limit"]
+        before_gas_limit = eth_tester.get_block_by_number("latest")["gasLimit"]
         eth_tester.mine_blocks()
-        after_gas_limit = eth_tester.get_block_by_number("latest")["gas_limit"]
+        after_gas_limit = eth_tester.get_block_by_number("latest")["gasLimit"]
         assert before_gas_limit == after_gas_limit
 
     #
@@ -400,7 +399,7 @@ class BaseTestBackendDirect:
 
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
         # assert that the raw transaction is confirmed and successful
-        assert receipt["transaction_hash"] == transaction_hash
+        assert receipt["transactionHash"] == transaction_hash
 
     def test_send_raw_transaction_invalid_rlp_transaction(self, eth_tester):
         self.skip_if_no_evm_execution()
@@ -470,10 +469,10 @@ class BaseTestBackendDirect:
         sent_transaction = eth_tester.get_transaction_by_hash(txn_hash)
 
         assert sent_transaction.get("type") == "0x2"
-        assert sent_transaction.get("max_fee_per_gas") == 1000000000
-        assert sent_transaction.get("max_priority_fee_per_gas") == 1000000000
-        assert sent_transaction.get("access_list") == ()
-        assert sent_transaction.get("gas_price") == 1000000000
+        assert sent_transaction.get("maxFeePerGas") == 1000000000
+        assert sent_transaction.get("maxPriorityFeePerGas") == 1000000000
+        assert sent_transaction.get("accessList") == ()
+        assert sent_transaction.get("gasPrice") == 1000000000
 
     def test_send_access_list_transaction(self, eth_tester):
         accounts = eth_tester.get_accounts()
@@ -492,7 +491,7 @@ class BaseTestBackendDirect:
         txn = eth_tester.get_transaction_by_hash(txn_hash)
 
         assert txn.get("type") == "0x1"
-        assert txn.get("access_list") == ()
+        assert txn.get("accessList") == ()
         self._check_transactions(access_list_transaction, txn)
 
         # with non-empty access list
@@ -533,7 +532,7 @@ class BaseTestBackendDirect:
         txn = eth_tester.get_transaction_by_hash(txn_hash)
 
         assert txn.get("type") == "0x2"
-        assert txn.get("access_list") == ()
+        assert txn.get("accessList") == ()
         self._check_transactions(dynamic_fee_transaction, txn)
 
         # with non-empty access list
@@ -554,7 +553,7 @@ class BaseTestBackendDirect:
         txn = eth_tester.get_transaction_by_hash(txn_hash)
 
         assert txn.get("type") == "0x2"
-        assert txn.get("access_list") != ()
+        assert txn.get("accessList") != ()
         self._check_transactions(dynamic_fee_transaction, txn)
 
     def test_block_number_auto_mine_transactions_enabled(self, eth_tester):
@@ -759,7 +758,7 @@ class BaseTestBackendDirect:
         )
         transaction = eth_tester.get_transaction_by_hash(transaction_hash)
         block = eth_tester.get_block_by_number(
-            transaction["block_number"],
+            transaction["blockNumber"],
             full_transactions=True,
         )
         assert is_dict(block["transactions"][0])
@@ -775,7 +774,7 @@ class BaseTestBackendDirect:
         )
         transaction = eth_tester.get_transaction_by_hash(transaction_hash)
         block = eth_tester.get_block_by_number(
-            transaction["block_number"],
+            transaction["blockNumber"],
             full_transactions=False,
         )
         assert is_hex(block["transactions"][0])
@@ -801,7 +800,7 @@ class BaseTestBackendDirect:
         )
         transaction = eth_tester.get_transaction_by_hash(transaction_hash)
         block = eth_tester.get_block_by_hash(
-            transaction["block_hash"],
+            transaction["blockHash"],
             full_transactions=True,
         )
         assert is_dict(block["transactions"][0])
@@ -817,7 +816,7 @@ class BaseTestBackendDirect:
         )
         transaction = eth_tester.get_transaction_by_hash(transaction_hash)
         block = eth_tester.get_block_by_hash(
-            transaction["block_hash"],
+            transaction["blockHash"],
             full_transactions=False,
         )
         assert is_hex(block["transactions"][0])
@@ -876,7 +875,7 @@ class BaseTestBackendDirect:
         )
         transaction = eth_tester.get_transaction_by_hash(transaction_hash)
         assert transaction["hash"] == transaction_hash
-        assert transaction["block_hash"] is None
+        assert transaction["blockHash"] is None
 
     def test_get_transaction_receipt_for_mined_transaction(self, eth_tester):
         transaction_hash = eth_tester.send_transaction(
@@ -888,9 +887,9 @@ class BaseTestBackendDirect:
         )
 
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
-        assert receipt["transaction_hash"] == transaction_hash
+        assert receipt["transactionHash"] == transaction_hash
         assert receipt["type"] == "0x2"
-        assert receipt["effective_gas_price"] == 1000000000
+        assert receipt["effectiveGasPrice"] == 1000000000
 
     @pytest.mark.parametrize(
         "type_specific_params,_type",
@@ -942,7 +941,7 @@ class BaseTestBackendDirect:
             )
         )
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
-        assert receipt["transaction_hash"] == transaction_hash
+        assert receipt["transactionHash"] == transaction_hash
         assert receipt["type"] == _type
 
     def test_receipt_effective_gas_price_for_mined_transaction_legacy(self, eth_tester):
@@ -957,9 +956,9 @@ class BaseTestBackendDirect:
             }
         )
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
-        assert receipt["transaction_hash"] == transaction_hash
+        assert receipt["transactionHash"] == transaction_hash
         assert receipt["type"] == "0x0"
-        assert receipt["effective_gas_price"] == gas_price
+        assert receipt["effectiveGasPrice"] == gas_price
 
     def test_receipt_effective_gas_price_for_mined_transaction_base_fee_minimum(
         self, eth_tester
@@ -977,18 +976,18 @@ class BaseTestBackendDirect:
         )
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
 
-        base_fee = eth_tester.get_block_by_number(receipt["block_number"])[
-            "base_fee_per_gas"
+        base_fee = eth_tester.get_block_by_number(receipt["blockNumber"])[
+            "baseFeePerGas"
         ]
 
         # base fee should be 875000000 since genesis was 1000000000
         assert base_fee == 875000000
 
-        assert receipt["transaction_hash"] == transaction_hash
+        assert receipt["transactionHash"] == transaction_hash
         assert receipt["type"] == "0x2"
         # the max fee is higher than (base fee + priority fee) so the latter should be
         # the effective gas price
-        assert receipt["effective_gas_price"] == base_fee + priority_fee
+        assert receipt["effectiveGasPrice"] == base_fee + priority_fee
 
     def test_receipt_effective_gas_price_for_mined_transaction_max_fee_minimum(
         self, eth_tester
@@ -1007,18 +1006,18 @@ class BaseTestBackendDirect:
         )
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
 
-        base_fee = eth_tester.get_block_by_number(receipt["block_number"])[
-            "base_fee_per_gas"
+        base_fee = eth_tester.get_block_by_number(receipt["blockNumber"])[
+            "baseFeePerGas"
         ]
 
         # base fee should be 875000000 since genesis was 1000000000
         assert base_fee == 875000000
 
-        assert receipt["transaction_hash"] == transaction_hash
+        assert receipt["transactionHash"] == transaction_hash
         assert receipt["type"] == "0x2"
         # the max fee is lower than (base fee + priority fee) so the former should be
         # the effective gas price
-        assert receipt["effective_gas_price"] == max_fee
+        assert receipt["effectiveGasPrice"] == max_fee
 
     def test_get_transaction_receipt_for_unmined_transaction_raises(self, eth_tester):
         eth_tester.disable_auto_mine_transactions()
@@ -1100,11 +1099,11 @@ class BaseTestBackendDirect:
         )
         transaction_hash = eth_tester.send_transaction(call_math_transaction)
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
-        assert receipt["gas_used"] <= gas_estimation
+        assert receipt["gasUsed"] <= gas_estimation
         # Tolerance set to the default py-evm tolerance:
         # https://github.com/ethereum/py-evm/blob/f0276e684edebd7cd9e84cd04b3229ab9dd958b9/evm/estimators/gas.py#L77
         # https://github.com/ethereum/py-evm/blob/f0276e684edebd7cd9e84cd04b3229ab9dd958b9/evm/estimators/__init__.py#L11
-        assert receipt["gas_used"] >= gas_estimation - 21000
+        assert receipt["gasUsed"] >= gas_estimation - 21000
 
     def test_estimate_gas_with_block_identifier(self, eth_tester):
         self.skip_if_no_evm_execution()
@@ -1268,7 +1267,7 @@ class BaseTestBackendDirect:
         )
         fork_a_transaction_block_hash = eth_tester.get_transaction_by_hash(
             fork_a_transaction_hash,
-        )["block_hash"]
+        )["blockHash"]
         fork_a_blocks = eth_tester.mine_blocks(2)
 
         before_revert_changes_logs_a = eth_tester.get_only_filter_changes(filter_a_id)
@@ -1305,7 +1304,7 @@ class BaseTestBackendDirect:
         )
         fork_b_transaction_block_hash = eth_tester.get_transaction_by_hash(
             fork_b_transaction_hash,
-        )["block_hash"]
+        )["blockHash"]
         fork_b_blocks = eth_tester.mine_blocks(2)
 
         # check that are blocks don't intersect
@@ -1795,9 +1794,9 @@ class BaseTestBackendDirect:
         cumulative_gas_used = 0
         for tx_hash in tx_hashes:
             receipt = eth_tester.get_transaction_receipt(tx_hash)
-            cumulative_gas_used += receipt["gas_used"]
-            assert receipt["gas_used"] == 21000
-            assert receipt["cumulative_gas_used"] == cumulative_gas_used
+            cumulative_gas_used += receipt["gasUsed"]
+            assert receipt["gasUsed"] == 21000
+            assert receipt["cumulativeGasUsed"] == cumulative_gas_used
 
     #
     # Time Travel

@@ -1,3 +1,9 @@
+from typing import (
+    Any,
+    Dict,
+    Generator,
+)
+
 from eth_utils import (
     encode_hex,
     is_hex,
@@ -22,9 +28,10 @@ def to_lower_camel_case(value: str) -> str:
     )
 
 
-@curry
 @to_dict
-def normalize_dict_keys_recursive(value):
+def normalize_dict_keys_recursive(
+    value: Dict[str, Any],
+) -> Generator[Dict[str, Any], None, None]:
     """
     Normalize the keys of a dictionary using the provided normalizer.
     """

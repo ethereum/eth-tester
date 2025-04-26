@@ -84,7 +84,6 @@ class Transaction:
         max_priority_fee_per_gas: int = 1000000000,
         data: bytes = b"",
         access_list: tuple[tuple[bytes, ...], ...] = (),
-        authorization_list: tuple[Dict[str, Any], ...] = (),
         r: int = 0,
         s: int = 0,
         v: int = 0,
@@ -108,7 +107,6 @@ class Transaction:
         self.max_priority_fee_per_gas = max_priority_fee_per_gas
         self.data = data
         self.access_list = access_list
-        self.authorization_list = authorization_list
         self.r = r
         self.s = s
         self.v = v
@@ -161,7 +159,6 @@ class Block:
         parent_beacon_block_root: bytes = b"",
         blob_gas_used: int = 0,
         excess_blob_gas: int = 0,
-        requests_hash: bytes = b"",
     ):
         self.number = number
         self.hash = hash
@@ -189,7 +186,6 @@ class Block:
         self.parent_beacon_block_root = parent_beacon_block_root
         self.blob_gas_used = blob_gas_used
         self.excess_blob_gas = excess_blob_gas
-        self.requests_hash = requests_hash
 
     def __iter__(self) -> Generator[Tuple[str, Any], None, None]:
         """
