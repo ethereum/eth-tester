@@ -13,7 +13,7 @@ from eth_tester.utils.encoding import (
 )
 
 
-def to_lower_camel_case(value):
+def to_lower_camel_case(value: str) -> str:
     """
     Convert a string to lower camel case.
     """
