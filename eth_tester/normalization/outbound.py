@@ -29,7 +29,6 @@ from .common import (
     normalize_dict,
     normalize_dict_keys_recursive,
     normalize_if,
-    to_lower_camel_case,
 )
 
 normalize_account = to_checksum_address
@@ -176,6 +175,7 @@ BLOCK_NORMALIZERS = {
     "requests_hash": encode_hex,
 }
 normalize_block = compose(
+    normalize_dict_keys_recursive,
     partial(normalize_dict, normalizers=BLOCK_NORMALIZERS),
     _remove_fork_specific_fields_if_none,
 )
@@ -200,7 +200,10 @@ LOG_ENTRY_NORMALIZERS = {
     "data": encode_hex,
     "topics": partial(normalize_array, normalizer=encode_hex),
 }
-normalize_log_entry = partial(normalize_dict, normalizers=LOG_ENTRY_NORMALIZERS)
+normalize_log_entry = compose(
+    normalize_dict_keys_recursive,
+    partial(normalize_dict, normalizers=LOG_ENTRY_NORMALIZERS),
+)
 
 
 def _normalize_contract_address(receipt):
@@ -240,6 +243,7 @@ RECEIPT_NORMALIZERS = {
     "blob_gas_price": identity,
 }
 normalize_receipt = compose(
+    normalize_dict_keys_recursive,
     partial(normalize_dict, normalizers=RECEIPT_NORMALIZERS),
     _normalize_contract_address,
 )
