@@ -1,5 +1,5 @@
 import pytest
-
+import rlp
 from eth_keys import (
     keys,
 )
@@ -17,7 +17,6 @@ from eth_utils.toolz import (
     dissoc,
     merge,
 )
-import rlp
 
 from eth_tester.constants import (
     BURN_ADDRESS,
@@ -78,21 +77,21 @@ CONTRACT_TRANSACTION_MISSING_TO = dissoc(CONTRACT_TRANSACTION_EMPTY_TO, "to")
 BLOCK_KEYS = {
     "number",
     "hash",
-    "parent_hash",
+    "parentHash",
     "nonce",
-    "sha3_uncles",
-    "logs_bloom",
-    "transactions_root",
-    "receipts_root",
-    "state_root",
+    "sha3Uncles",
+    "logsBloom",
+    "transactionsRoot",
+    "receiptsRoot",
+    "stateRoot",
     "coinbase",
     "difficulty",
-    "mix_hash",
-    "total_difficulty",
+    "mixHash",
+    "totalDifficulty",
     "size",
-    "extra_data",
-    "gas_limit",
-    "gas_used",
+    "extraData",
+    "gasLimit",
+    "gasUsed",
     "timestamp",
     "transactions",
     "uncles",

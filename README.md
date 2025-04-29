@@ -695,13 +695,14 @@ various backends by default.  You can however install ethereum tester with the
 necessary dependencies using the following method.
 
 ```bash
-$ python -m pip install eth-tester[<backend-name>]
+$ python -m pip install "eth-tester[<backend-name>]"
 ```
 
 You should replace `<backend-name>` with the name of the desired testing
 backend.  Available backends are:
 
 - `py-evm`: [PyEVM (alpha)](https://pypi.python.org/pypi/py-evm) **(experimental)**
+- `eels`: [EELS](https://pypi.org/project/ethereum-execution/)
 
 ### Selecting a Backend
 

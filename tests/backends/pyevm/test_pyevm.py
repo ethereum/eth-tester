@@ -1,5 +1,4 @@
 import pytest
-
 from eth.constants import (
     POST_MERGE_DIFFICULTY,
     POST_MERGE_MIX_HASH,
@@ -25,6 +24,8 @@ from eth_typing import (
 )
 from eth_utils import (
     ValidationError as EthUtilsValidationError,
+)
+from eth_utils import (
     encode_hex,
     is_hexstr,
     to_hex,
@@ -46,6 +47,9 @@ from eth_tester.backends.pyevm.main import (
 from eth_tester.backends.pyevm.utils import (
     is_supported_pyevm_version_available,
 )
+from eth_tester.constants import (
+    ZERO_ADDRESS_HEX,
+)
 from eth_tester.exceptions import (
     BlockNotFound,
     ValidationError,
@@ -61,25 +65,7 @@ from eth_tester.utils.backend_testing import (
     BaseTestBackendDirect,
 )
 
-ZERO_ADDRESS_HEX = "0x0000000000000000000000000000000000000000"
 MNEMONIC = "test test test test test test test test test test test junk"
-
-
-@pytest.fixture
-def eth_tester():
-    if not is_supported_pyevm_version_available():
-        pytest.skip("PyEVM is not available")
-    backend = PyEVMBackend()
-    return EthereumTester(backend=backend)
-
-
-@pytest.fixture
-def accounts_from_mnemonic():
-    return [
-        "0x1e59ce931B4CFea3fe4B875411e280e173cB7A9C",
-        "0xc89D42189f0450C2b2c3c61f58Ec5d628176A1E7",
-        "0x318b469BBa396AEc2C60342F9441be36A1945174",
-    ]
 
 
 def test_custom_virtual_machines():
@@ -113,13 +99,13 @@ def test_custom_virtual_machines():
 
 
 @pytest.mark.parametrize(
-    "vm_class_missing_the_field,vm_class_with_new_field,new_field",
+    "vm_class_missing_the_field,vm_class_with_new_field,new_field,",
     (
-        (BerlinVM, LondonVM, "base_fee_per_gas"),
+        (BerlinVM, LondonVM, "baseFeePerGas"),
         (ParisVM, ShanghaiVM, "withdrawals"),
-        (ParisVM, ShanghaiVM, "withdrawals_root"),
-        (ShanghaiVM, CancunVM, "blob_gas_used"),
-        (ShanghaiVM, CancunVM, "excess_blob_gas"),
+        (ParisVM, ShanghaiVM, "withdrawalsRoot"),
+        (ShanghaiVM, CancunVM, "blobGasUsed"),
+        (ShanghaiVM, CancunVM, "excessBlobGas"),
     ),
 )
 def test_newly_introduced_block_fields_at_fork_transition(
@@ -158,7 +144,7 @@ def test_london_configuration():
 
     backend = PyEVMBackend(vm_configuration=((0, LondonVM),))
 
-    assert backend.get_block_by_number(0)["base_fee_per_gas"] == 1000000000
+    assert backend.get_block_by_number(0)["baseFeePerGas"] == 1000000000
 
     EthereumTester(backend=backend)
 
@@ -194,12 +180,10 @@ def test_apply_withdrawals():
     )
     # withdrawal amounts are in gwei, balance is measured in wei
     assert backend.get_balance(b"\x01" * 20) == 100 * 10**9  # 100 gwei
-    assert (
-        backend.get_balance(b"\x02" * 20) == (2**64 - 1) * 10**9
-    )  # 2**64 - 1 gwei
+    assert backend.get_balance(b"\x02" * 20) == (2**64 - 1) * 10**9  # 2**64 - 1 gwei
 
     assert (
-        mined_block["withdrawals_root"]
+        mined_block["withdrawalsRoot"]
         == "0xbb49834f60c98815399dfb1a3303cc0f80984c4c7533ecf326bc343d8109127e"
     )
 
@@ -439,9 +423,9 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         assert len(accounts) == 3
 
         for acct in accounts:
-            assert tester.get_storage_at(acct, HexStr("0x0")) == f"0x{'00'*32}"
-            assert tester.get_storage_at(acct, HexStr("0x1")) == f"0x{'00'*31}01"
-            assert tester.get_storage_at(acct, HexStr("0x2")) == f"0x{'00'*31}02"
+            assert tester.get_storage_at(acct, HexStr("0x0")) == f"0x{'00' * 32}"
+            assert tester.get_storage_at(acct, HexStr("0x1")) == f"0x{'00' * 31}01"
+            assert tester.get_storage_at(acct, HexStr("0x2")) == f"0x{'00' * 31}02"
 
     # --- cancun network upgrade --- #
 

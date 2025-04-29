@@ -1,7 +1,7 @@
+import rlp
 from eth_utils import (
     to_int,
 )
-import rlp
 from toolz import (
     merge,
 )
@@ -66,21 +66,21 @@ def serialize_block(block, full_transaction, is_pending):
     block_info = {
         "number": block.header.block_number,
         "hash": block.header.hash,
-        "parent_hash": block.header.parent_hash,
+        "parentHash": block.header.parent_hash,
         "nonce": block.header.nonce,
-        "sha3_uncles": block.header.uncles_hash,
-        "logs_bloom": block.header.bloom,
-        "transactions_root": block.header.transaction_root,
-        "receipts_root": block.header.receipt_root,
-        "state_root": block.header.state_root,
+        "sha3Uncles": block.header.uncles_hash,
+        "logsBloom": block.header.bloom,
+        "transactionsRoot": block.header.transaction_root,
+        "receiptsRoot": block.header.receipt_root,
+        "stateRoot": block.header.state_root,
         "coinbase": block.header.coinbase,
         "difficulty": block.header.difficulty,
-        "total_difficulty": block.header.difficulty,  # TODO: actual total difficulty
-        "mix_hash": block.header.mix_hash,
+        "totalDifficulty": block.header.difficulty,  # TODO: actual total difficulty
+        "mixHash": block.header.mix_hash,
         "size": len(rlp.encode(block)),
-        "extra_data": pad32(block.header.extra_data),
-        "gas_limit": block.header.gas_limit,
-        "gas_used": block.header.gas_used,
+        "extraData": pad32(block.header.extra_data),
+        "gasLimit": block.header.gas_limit,
+        "gasUsed": block.header.gas_used,
         "timestamp": block.header.timestamp,
         "transactions": transactions,
         "uncles": [uncle.hash for uncle in block.uncles],
@@ -89,20 +89,20 @@ def serialize_block(block, full_transaction, is_pending):
     # london
     if is_london_block(block):
         base_fee = block.header.base_fee_per_gas
-        block_info.update({"base_fee_per_gas": base_fee})
+        block_info.update({"baseFeePerGas": base_fee})
 
     # shanghai
     if is_shanghai_block(block):
         block_info.update({"withdrawals": serialize_block_withdrawals(block)})
-        block_info.update({"withdrawals_root": block.header.withdrawals_root})
+        block_info.update({"withdrawalsRoot": block.header.withdrawals_root})
 
     # cancun
     if is_cancun_block(block):
         block_info.update(
-            {"parent_beacon_block_root": block.header.parent_beacon_block_root}
+            {"parentBeaconBlockRoot": block.header.parent_beacon_block_root}
         )
-        block_info.update({"blob_gas_used": block.header.blob_gas_used})
-        block_info.update({"excess_blob_gas": block.header.excess_blob_gas})
+        block_info.update({"blobGasUsed": block.header.blob_gas_used})
+        block_info.update({"excessBlobGas": block.header.excess_blob_gas})
 
     return block_info
 
@@ -118,9 +118,9 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
         "type": txn_type,
         "hash": transaction.hash,
         "nonce": transaction.nonce,
-        "block_hash": None if is_pending else block.hash,
-        "block_number": None if is_pending else block.number,
-        "transaction_index": None if is_pending else transaction_index,
+        "blockHash": None if is_pending else block.hash,
+        "blockNumber": None if is_pending else block.number,
+        "transactionIndex": None if is_pending else transaction_index,
         "from": transaction.sender,
         "to": transaction.to,
         "value": transaction.value,
@@ -131,7 +131,7 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
     type_specific_params = {}
     if txn_type in (LEGACY_TX_TYPE, ACCESS_LIST_TX_TYPE):
         type_specific_params = {
-            "gas_price": transaction.gas_price,
+            "gasPrice": transaction.gas_price,
         }
 
     if txn_type > LEGACY_TX_TYPE:
@@ -139,8 +139,8 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
         type_specific_params = merge(
             type_specific_params,
             {
-                "chain_id": transaction.chain_id,
-                "access_list": transaction.access_list or (),
+                "chainId": transaction.chain_id,
+                "accessList": transaction.access_list or (),
             },
         )
 
@@ -149,12 +149,12 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
             type_specific_params = merge(
                 type_specific_params,
                 {
-                    "max_fee_per_gas": transaction.max_fee_per_gas,
-                    "max_priority_fee_per_gas": transaction.max_priority_fee_per_gas,
+                    "maxFeePerGas": transaction.max_fee_per_gas,
+                    "maxPriorityFeePerGas": transaction.max_priority_fee_per_gas,
                     # TODO: Sometime in 2022 the inclusion of gas_price may be removed
                     #  from dynamic fee transactions and we can get rid of this
                     #  behavior. https://github.com/ethereum/execution-specs/pull/251
-                    "gas_price": (
+                    "gasPrice": (
                         transaction.max_fee_per_gas
                         if is_pending
                         else calculate_effective_gas_price(transaction, block.header)
@@ -166,8 +166,8 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
                 type_specific_params = merge(
                     type_specific_params,
                     {
-                        "max_fee_per_blob_gas": transaction.max_fee_per_blob_gas,
-                        "blob_versioned_hashes": transaction.blob_versioned_hashes,
+                        "maxFeePerBlobGas": transaction.max_fee_per_blob_gas,
+                        "blobVersionedHashes": transaction.blob_versioned_hashes,
                     },
                 )
     else:
@@ -187,7 +187,7 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
     if txn_type > LEGACY_TX_TYPE:
         # If anything other than a legacy tx, `y_parity` is the correct signature field.
         # Clients commonly return both `v` and `y_parity` for these transactions.
-        signed_tx_params["y_parity"] = signed_tx_params["v"]
+        signed_tx_params["yParity"] = signed_tx_params["v"]
 
     return merge(common_transaction_params, type_specific_params, signed_tx_params)
 
@@ -229,32 +229,32 @@ def serialize_transaction_receipt(
         origin_gas = receipts[transaction_index - 1].gas_used
 
     receipt_fields = {
-        "block_hash": None if is_pending else block.hash,
-        "block_number": None if is_pending else block.number,
-        "contract_address": contract_addr,
-        "cumulative_gas_used": receipt.gas_used,
-        "effective_gas_price": calculate_effective_gas_price(transaction, block.header),
+        "blockHash": None if is_pending else block.hash,
+        "blockNumber": None if is_pending else block.number,
+        "contractAddress": contract_addr,
+        "cumulativeGasUsed": receipt.gas_used,
+        "effectiveGasPrice": calculate_effective_gas_price(transaction, block.header),
         "from": transaction.sender,
-        "gas_used": receipt.gas_used - origin_gas,
+        "gasUsed": receipt.gas_used - origin_gas,
         "logs": [
             serialize_log(
                 block, transaction, transaction_index, log, log_index, is_pending
             )
             for log_index, log in enumerate(receipt.logs)
         ],
-        "state_root": state_root,
+        "stateRoot": state_root,
         "status": to_int(state_root),
         "to": transaction.to,
-        "transaction_hash": transaction.hash,
-        "transaction_index": None if is_pending else transaction_index,
+        "transactionHash": transaction.hash,
+        "transactionIndex": None if is_pending else transaction_index,
         "type": _txn_type,
     }
 
     if _txn_type == BLOB_TX_TYPE:
         # blob transaction
         blob_gas_used = GAS_PER_BLOB * len(transaction.blob_versioned_hashes)
-        receipt_fields["blob_gas_used"] = blob_gas_used
-        receipt_fields["blob_gas_price"] = vm.state.blob_base_fee * blob_gas_used
+        receipt_fields["blobGasUsed"] = blob_gas_used
+        receipt_fields["blobGasPrice"] = vm.state.blob_base_fee * blob_gas_used
 
     return receipt_fields
 
@@ -262,11 +262,11 @@ def serialize_transaction_receipt(
 def serialize_log(block, transaction, transaction_index, log, log_index, is_pending):
     return {
         "type": "pending" if is_pending else "mined",
-        "log_index": log_index,
-        "transaction_index": None if is_pending else transaction_index,
-        "transaction_hash": transaction.hash,
-        "block_hash": None if is_pending else block.hash,
-        "block_number": None if is_pending else block.number,
+        "logIndex": log_index,
+        "transactionIndex": None if is_pending else transaction_index,
+        "transactionHash": transaction.hash,
+        "blockHash": None if is_pending else block.hash,
+        "blockNumber": None if is_pending else block.number,
         "address": log.address,
         "data": log.data,
         "topics": [int_to_32byte_big_endian(topic) for topic in log.topics],
@@ -285,7 +285,7 @@ def serialize_block_withdrawals(block):
     return [
         {
             "index": withdrawal.index,
-            "validator_index": withdrawal.validator_index,
+            "validatorIndex": withdrawal.validator_index,
             "address": withdrawal.address,
             "amount": withdrawal.amount,
         }
