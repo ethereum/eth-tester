@@ -563,7 +563,7 @@ def accounts_from_mnemonic() -> List[str]:
     params=[
         "legacy_transactions",
         "blob_transactions",
-        "fee_market_transactions",
+        "dynamic_fee_transactions",
         "access_list_transactions",
     ]
 )
@@ -572,7 +572,7 @@ def transaction(
 ) -> FakeTransaction:
     if request.param == "access_list_transactions":
         return FakeTransaction(type_id=1, hash=Hash32(ZERO_HASH32))
-    elif request.param == "fee_market_transactions":
+    elif request.param == "dynamic_fee_transactions":
         return FakeTransaction(type_id=2, hash=Hash32(ZERO_HASH32))
     elif request.param == "blob_transactions":
         return FakeTransaction(type_id=3, hash=Hash32(ZERO_HASH32))
@@ -596,7 +596,7 @@ def withdrawals(request: pytest.FixtureRequest) -> Tuple[FakeWithdrawal, ...]:
         "no_transactions",
         "legacy_transactions",
         "blob_transactions",
-        "fee_market_transactions",
+        "dynamic_fee_transactions",
         "access_list_transactions",
     ]
 )
@@ -611,7 +611,7 @@ def block_transactions(
         return tuple(
             [FakeTransaction(type_id=1, hash=Hash32(ZERO_HASH32)) for _ in range(3)]
         )
-    elif request.param == "fee_market_transactions":
+    elif request.param == "dynamic_fee_transactions":
         return tuple(
             [FakeTransaction(type_id=2, hash=Hash32(ZERO_HASH32)) for _ in range(3)]
         )

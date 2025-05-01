@@ -197,7 +197,7 @@ def pending_block_header() -> Dict[str, Any]:
         "no_transactions",
         "legacy_transactions",
         "blob_transactions",
-        "fee_market_transactions",
+        "dynamic_fee_transactions",
         "access_list_transactions",
     )
 )
@@ -245,7 +245,7 @@ def block_transactions(
                 s=U256(2),
             ),
         ]
-    elif request.param == "fee_market_transactions":
+    elif request.param == "dynamic_fee_transactions":
         return [
             FeeMarketTransaction(
                 chain_id=U64(0),

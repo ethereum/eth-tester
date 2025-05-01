@@ -1,5 +1,4 @@
 import pytest
-
 from eth_utils import (
     decode_hex,
     encode_hex,
@@ -18,12 +17,6 @@ from eth_tester.validation.inbound import (
 from tests.utils import (
     yield_key_value_if_value_not_none,
 )
-
-
-@pytest.fixture
-def validator():
-    _validator = DefaultValidator()
-    return _validator
 
 
 @pytest.mark.parametrize(
