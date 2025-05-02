@@ -1,5 +1,4 @@
 import pytest
-
 from eth.constants import (
     POST_MERGE_DIFFICULTY,
     POST_MERGE_MIX_HASH,
@@ -25,6 +24,8 @@ from eth_typing import (
 )
 from eth_utils import (
     ValidationError as EthUtilsValidationError,
+)
+from eth_utils import (
     encode_hex,
     is_hexstr,
     to_hex,
@@ -49,6 +50,9 @@ from eth_tester.backends.pyevm.utils import (
 from eth_tester.exceptions import (
     BlockNotFound,
     ValidationError,
+)
+from eth_tester.models import (
+    Account as AccountModel,
 )
 from eth_tester.normalization.outbound import (
     normalize_withdrawal,
@@ -194,9 +198,7 @@ def test_apply_withdrawals():
     )
     # withdrawal amounts are in gwei, balance is measured in wei
     assert backend.get_balance(b"\x01" * 20) == 100 * 10**9  # 100 gwei
-    assert (
-        backend.get_balance(b"\x02" * 20) == (2**64 - 1) * 10**9
-    )  # 2**64 - 1 gwei
+    assert backend.get_balance(b"\x02" * 20) == (2**64 - 1) * 10**9  # 2**64 - 1 gwei
 
     assert (
         mined_block["withdrawals_root"]

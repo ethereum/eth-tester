@@ -5,6 +5,7 @@ import operator
 import time
 from typing import (
     List,
+    Union,
 )
 
 from eth_typing import (
@@ -29,6 +30,12 @@ from eth_utils.toolz import (
 from eth_tester.backends import (
     get_chain_backend,
 )
+from eth_tester.backends.eels.main import (
+    EELSBackend,
+)
+from eth_tester.backends.pyevm.main import (
+    PyEVMBackend,
+)
 from eth_tester.constants import (
     ZERO_ADDRESS_HEX,
 )
@@ -39,6 +46,9 @@ from eth_tester.exceptions import (
     SnapshotNotFound,
     TransactionNotFound,
     ValidationError,
+)
+from eth_tester.models import (
+    Account,
 )
 from eth_tester.normalization import (
     get_normalizer_backend,
@@ -105,7 +115,7 @@ def handle_auto_mining(func):
 
 
 class EthereumTester:
-    backend = None
+    backend: Union[PyEVMBackend, EELSBackend] = None
 
     validator = None
     normalizer = None
@@ -186,10 +196,16 @@ class EthereumTester:
     #
     # Accounts
     #
-    def get_accounts(self):
-        raw_accounts = self.backend.get_accounts()
-        self.validator.validate_outbound_accounts(raw_accounts)
-        accounts = self.normalizer.normalize_outbound_account_list(raw_accounts)
+    # def get_accounts(self):
+    #     raw_accounts = self.backend.get_accounts()
+    #     self.validator.validate_outbound_accounts(raw_accounts)
+    #     accounts = self.normalizer.normalize_outbound_account_list(raw_accounts)
+    #     return accounts
+
+    def get_accounts(self) -> List[Account]:
+        accounts = [
+            Account(address=account).address for account in self.backend.get_accounts()
+        ]
         return accounts
 
     def add_account(self, private_key, password=None):
