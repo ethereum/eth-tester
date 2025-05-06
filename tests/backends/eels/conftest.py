@@ -8,9 +8,6 @@ from typing import (
 )
 
 import pytest
-from eth.abc import (
-    Hash32,
-)
 from ethereum.cancun.blocks import (
     Block,
     Header,

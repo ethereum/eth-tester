@@ -305,18 +305,7 @@ jobs:
         environment:
           TOXENV: py313-pyevm
 
-  py38-eels:
-    <<: *common
-    docker:
-      - image: cimg/python:3.8
-        environment:
-          TOXENV: py38-eels
-  py39-eels:
-    <<: *common
-    docker:
-      - image: cimg/python:3.9
-        environment:
-          TOXENV: py39-eels
+  # eels only supported on Python 3.10+
   py310-eels:
     <<: *common
     docker:
@@ -371,8 +360,6 @@ define: &all_jobs
   - py311-pyevm
   - py312-pyevm
   - py313-pyevm
-  - py38-eels
-  - py39-eels
   - py310-eels
   - py311-eels
   - py312-eels

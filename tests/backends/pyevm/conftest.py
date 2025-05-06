@@ -9,15 +9,6 @@ from typing import (
 )
 
 import pytest
-from eth.abc import (
-    BlockAPI,
-    BlockHeaderAPI,
-    BlockNumber,
-    Hash32,
-    LogAPI,
-    ReceiptAPI,
-    WithdrawalAPI,
-)
 from eth.vm.forks.cancun.transactions import (
     TypedTransaction,
 )
@@ -36,6 +27,39 @@ from eth_tester.constants import (
     ZERO_ADDRESS,
     ZERO_HASH32,
 )
+
+if is_supported_pyevm_version_available():
+    from eth.abc import (
+        BlockAPI,
+        BlockHeaderAPI,
+        BlockNumber,
+        Hash32,
+        LogAPI,
+        ReceiptAPI,
+        WithdrawalAPI,
+    )
+else:
+
+    class BlockAPI:
+        pass
+
+    class BlockHeaderAPI:
+        pass
+
+    class BlockNumber:
+        pass
+
+    class Hash32:
+        pass
+
+    class LogAPI:
+        pass
+
+    class ReceiptAPI:
+        pass
+
+    class WithdrawalAPI:
+        pass
 
 
 class FakeState:
