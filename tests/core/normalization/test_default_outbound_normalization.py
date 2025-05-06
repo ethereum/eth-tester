@@ -20,19 +20,25 @@ from tests.utils import (
     (
         (b"\x01" * 20, f"0x{'01' * 20}"),
         (f"0x{'01' * 20}", f"0x{'01' * 20}"),
-        (b"\x01" * 32, None),
-        (b"\x01" * 21, None),
-        (b"\x01" * 19, None),
-        (b"\x01" * 0, None),
-        (b"\x01" * 1, None),
     ),
 )
 def test_outbound_account_normalization(value: Any, expected: Any) -> None:
-    if expected:
-        assert DefaultNormalizer.normalize_outbound_account(value) == expected
-    else:
-        with pytest.raises(ValueError):
-            DefaultNormalizer.normalize_outbound_account(value)
+    assert DefaultNormalizer.normalize_outbound_account(value) == expected
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        b"\x01" * 32,
+        b"\x01" * 21,
+        b"\x01" * 19,
+        b"\x01" * 0,
+        b"\x01" * 1,
+    ),
+)
+def test_outbound_account_normalization_invalid(value: Any) -> None:
+    with pytest.raises(ValueError):
+        DefaultNormalizer.normalize_outbound_account(value)
 
 
 def test_outbound_block_normalization() -> None:
@@ -154,13 +160,21 @@ def test_outbound_receipt_contract_address_status_based_normalization(
         (0, f"0x{'00'*32}"),
         (1, f"0x{'00'*31}01"),
         (2, f"0x{'00'*31}02"),
-        (None, None),
-        ("invalid-value", None),
     ),
 )
 def test_outbound_storage_normalization(value: Any, expected: Any) -> None:
-    if expected:
-        assert DefaultNormalizer.normalize_outbound_storage(value) == expected
-    else:
-        with pytest.raises(AttributeError):
-            DefaultNormalizer.normalize_outbound_storage(value)
+    assert DefaultNormalizer.normalize_outbound_storage(value) == expected
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        b"\x01" * 32,
+        b"\x01" * 31,
+        None,
+        "invalid-value",
+    ),
+)
+def test_outbound_storage_normalization_invalid(value: Any) -> None:
+    with pytest.raises(AttributeError):
+        DefaultNormalizer.normalize_outbound_storage(value)
