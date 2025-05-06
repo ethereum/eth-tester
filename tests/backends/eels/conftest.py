@@ -41,6 +41,86 @@ from eth_tester.constants import (
     ZERO_HASH32,
 )
 
+AnyTransaction = Union[
+    Bytes,
+    LegacyTransaction,
+    BlobTransaction,
+    FeeMarketTransaction,
+    AccessListTransaction,
+]
+
+
+@pytest.fixture()
+def block_keys() -> List[str]:
+    """
+    Returns a list of keys that are expected to be present in a block.
+    This is used to validate the serialization of blocks.
+    """
+    return [
+        "number",
+        "hash",
+        "parentHash",
+        "nonce",
+        "stateRoot",
+        "coinbase",
+        "transactionsRoot",
+        "receiptsRoot",
+        "logsBloom",
+        "gasLimit",
+        "gasUsed",
+        "timestamp",
+        "withdrawalsRoot",
+        "baseFeePerGas",
+        "blobGasUsed",
+        "excessBlobGas",
+        "transactions",
+        "uncles",
+        "withdrawals",
+        "sha3Uncles",
+        "difficulty",
+        "totalDifficulty",
+        "mixHash",
+        "size",
+        "extraData",
+    ]
+
+
+@pytest.fixture
+def finalized_block_keys(block_keys: List[str]) -> List[str]:
+    """
+    Returns a list of keys that are expected to be present in a finalized block.
+    This is used to validate the serialization of finalized blocks.
+    """
+    return block_keys + ["parentBeaconBlockRoot"]
+
+
+@pytest.fixture
+def block_transaction_keys() -> List[str]:
+    return [
+        "type",
+        "hash",
+        "nonce",
+        "blockHash",
+        "blockNumber",
+        "transactionIndex",
+        "gas",
+        "to",
+        "from",
+        "value",
+        "data",
+        "r",
+        "s",
+        "v",
+        "gasPrice",
+        "chainId",
+        "maxPriorityFeePerGas",
+        "maxFeePerGas",
+        "accessList",
+        "maxFeePerBlobGas",
+        "blobVersionedHashes",
+        "yParity",
+    ]
+
 
 @pytest.fixture
 def transaction() -> LegacyTransaction:
@@ -121,7 +201,7 @@ def block(
 def parameterized_pending_block(
     request: pytest.FixtureRequest,
     pending_block_header: Dict[str, Any],
-    block_transactions: Sequence[Union[Bytes, LegacyTransaction]],
+    block_transactions: Sequence[AnyTransaction],
     withdrawals: Tuple[Withdrawal, ...],
 ) -> Union[None, Dict[str, Any]]:
     if request.param == "pending_block":
@@ -139,7 +219,7 @@ def parameterized_pending_block(
 @pytest.fixture
 def pending_block(
     pending_block_header: Dict[str, Any],
-    block_transactions: Sequence[Union[Bytes, LegacyTransaction]],
+    block_transactions: Sequence[AnyTransaction],
     withdrawals: Tuple[Withdrawal, ...],
 ) -> Dict[str, Any]:
     return {
@@ -153,7 +233,7 @@ def pending_block(
 @pytest.fixture
 def finalized_block(
     block_header: Header,
-    block_transactions: Tuple[Union[Bytes, LegacyTransaction]],
+    block_transactions: Tuple[Union[Bytes, LegacyTransaction], ...],
     withdrawals: Tuple[Withdrawal],
 ) -> Block:
     return Block(
@@ -200,15 +280,7 @@ def pending_block_header() -> Dict[str, Any]:
 )
 def block_transactions(
     request: pytest.FixtureRequest,
-) -> Sequence[
-    Union[
-        Bytes,
-        LegacyTransaction,
-        BlobTransaction,
-        FeeMarketTransaction,
-        AccessListTransaction,
-    ]
-]:
+) -> Sequence[AnyTransaction]:
     if request.param == "legacy_transactions":
         return [
             LegacyTransaction(

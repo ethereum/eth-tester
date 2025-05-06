@@ -1,3 +1,4 @@
+import pytest
 from typing import (
     Any,
     Dict,
@@ -9,6 +10,7 @@ from typing import (
 from ethereum.cancun.blocks import (
     Block,
     Log,
+    Withdrawal,
 )
 from ethereum.cancun.transactions import (
     LegacyTransaction,
@@ -19,120 +21,81 @@ from eth_tester.backends.eels.main import (
 )
 from eth_tester.backends.eels.serializers import (
     serialize_block,
+    serialize_eels_transaction_for_block,
+    serialize_eels_withdrawal_for_block,
     serialize_pending_logs,
     serialize_pending_receipt,
     serialize_transaction,
 )
+from tests.backends.eels.conftest import (
+    AnyTransaction,
+)
 
 
-def test_serialize_block_returns_camel_case_keys(
-    block: Union[Block, Dict[str, Any]],
+@pytest.mark.parametrize(
+    "full_transactions", [True, False], ids=["full_txns", "hash_txns"]
+)
+def test_serialize_pending_block_returns_camel_case_keys(
+    pending_block: Dict[str, Any],
+    full_transactions: bool,
+    block_keys: List[str],
 ) -> None:
-    is_pending = isinstance(block, dict)
-    if isinstance(block, Block):
-        # Finalized blocks
-        num_transactions = len(block.transactions)
-        num_withdrawals = len(block.withdrawals)
-        transaction = block.transactions[0] if num_transactions > 0 else None
-    elif isinstance(block, dict):
-        # Pending blocks
-        num_transactions = len(block["transactions"])
-        num_withdrawals = len(block["withdrawals"])
-        transaction = block["transactions"][0] if num_transactions > 0 else None
-
-    full_transactions = False if isinstance(transaction, bytes) else True
-
     serialized_block = serialize_block(
         EELSBackend(),
-        block,
+        pending_block,
         full_transactions=full_transactions,
-        is_pending=is_pending,
+        is_pending=True,
     )
 
-    expected_keys = [
-        "number",
-        "hash",
-        "parentHash",
-        "nonce",
-        "stateRoot",
-        "coinbase",
-        "transactionsRoot",
-        "receiptsRoot",
-        "logsBloom",
-        "gasLimit",
-        "gasUsed",
-        "timestamp",
-        "withdrawalsRoot",
-        "baseFeePerGas",
-        "blobGasUsed",
-        "excessBlobGas",
-        "transactions",
-        "uncles",
-        "withdrawals",
-        "sha3Uncles",
-        "difficulty",
-        "totalDifficulty",
-        "mixHash",
-        "size",
-        "extraData",
-    ]
+    assert sorted(list(serialized_block.keys())) == sorted(block_keys)
 
-    if not is_pending:
-        expected_keys.append("parentBeaconBlockRoot")
 
-    assert sorted(list(serialized_block.keys())) == sorted(expected_keys)
+@pytest.mark.parametrize(
+    "full_transactions", [True, False], ids=["full_txns", "hash_txns"]
+)
+def test_serialize_finalized_block_returns_camel_case_keys(
+    finalized_block: Block,
+    full_transactions: bool,
+    finalized_block_keys: List[str],
+) -> None:
+    serialized_block = serialize_block(
+        EELSBackend(),
+        finalized_block,
+        full_transactions=full_transactions,
+        is_pending=False,
+    )
 
-    if num_transactions > 0 and full_transactions:
-        txns: List[Dict[str, Any]] = serialized_block["transactions"]
+    assert sorted(list(serialized_block.keys())) == sorted(finalized_block_keys)
 
-        for txn in txns:
-            valid_transaction_keys = [
-                "type",
-                "hash",
-                "nonce",
-                "blockHash",
-                "blockNumber",
-                "transactionIndex",
-                "gas",
-                "to",
-                "from",
-                "value",
-                "data",
-                "r",
-                "s",
-                "v",
-                "gasPrice",
-                "chainId",
-                "maxPriorityFeePerGas",
-                "maxFeePerGas",
-                "accessList",
-                "maxFeePerBlobGas",
-                "blobVersionedHashes",
-                "yParity",
-            ]
 
-            # Check all transaction keys are valid
-            for key in txn.keys():
-                assert (
-                    key in valid_transaction_keys
-                ), f"Invalid transaction key found: {key}"
+def test_serialize_block_transactions_returns_camel_case_keys(
+    block_transactions: List[AnyTransaction],
+    block_transaction_keys: List[str],
+) -> None:
+    for txn in block_transactions:
+        # Check all transaction keys are valid
+        serialized_txn = serialize_eels_transaction_for_block(
+            EELSBackend(), txn, 0, 0, "0x12345"
+        )
+        for key in serialized_txn.keys():
+            assert (
+                key in block_transaction_keys
+            ), f"Invalid transaction key found: {key}"
 
-    if num_withdrawals > 0:
-        withdrawals = serialized_block["withdrawals"]
 
-        for withdrawal in withdrawals:
-            valid_withdrawal_keys = [
-                "index",
-                "validatorIndex",
-                "address",
-                "amount",
-            ]
+def test_serialize_block_withdrawals(withdrawals: List[Withdrawal]) -> None:
+    for withdrawal in withdrawals:
+        valid_withdrawal_keys = [
+            "index",
+            "validatorIndex",
+            "address",
+            "amount",
+        ]
 
-            # Check all withdrawal keys are valid
-            for key in withdrawal.keys():
-                assert (
-                    key in valid_withdrawal_keys
-                ), f"Invalid withdrawal key found: {key}"
+        serialized_withdrawal = serialize_eels_withdrawal_for_block(withdrawal)
+        # Check all withdrawal keys are valid
+        for key in serialized_withdrawal.keys():
+            assert key in valid_withdrawal_keys, f"Invalid withdrawal key found: {key}"
 
 
 def test_serialize_transaction_returns_camel_case_keys(

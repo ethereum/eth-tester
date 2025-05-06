@@ -36,17 +36,19 @@ from eth_tester.utils.transactions import (
 def _serialize_withdrawals_to_block(serialized_block, withdrawals):
     txn_withdrawals = []
     for withdrawal in withdrawals:
-        txn_withdrawals.append(
-            {
-                "index": int(withdrawal.index),
-                "validatorIndex": int(withdrawal.validator_index),
-                "address": withdrawal.address,
-                "amount": int(withdrawal.amount),
-            }
-        )
+        txn_withdrawals.append(serialize_eels_withdrawal_for_block(withdrawal))
 
     serialized_block["withdrawals"] = txn_withdrawals
     return serialized_block
+
+
+def serialize_eels_withdrawal_for_block(withdrawal):
+    return {
+        "index": int(withdrawal.index),
+        "validatorIndex": int(withdrawal.validator_index),
+        "address": withdrawal.address,
+        "amount": int(withdrawal.amount),
+    }
 
 
 def serialize_block(
