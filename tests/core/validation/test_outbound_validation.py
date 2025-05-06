@@ -1,8 +1,8 @@
+import pytest
 from typing import (
     Any,
 )
 
-import pytest
 from eth_utils import (
     encode_hex,
 )

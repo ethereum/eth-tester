@@ -1,7 +1,7 @@
-import rlp
 from eth_utils import (
     to_int,
 )
+import rlp
 from toolz import (
     merge,
 )

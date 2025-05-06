@@ -1,8 +1,7 @@
+import pytest
 from typing import (
     Any,
 )
-
-import pytest
 
 from eth_tester.normalization import (
     DefaultNormalizer,
@@ -33,7 +32,7 @@ def test_outbound_account_normalization(value: Any, expected: Any) -> None:
         assert DefaultNormalizer.normalize_outbound_account(value) == expected
     else:
         with pytest.raises(ValueError):
-            DefaultNormalizer.normalize_outbound_account(value) == expected
+            DefaultNormalizer.normalize_outbound_account(value)
 
 
 def test_outbound_block_normalization() -> None:

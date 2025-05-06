@@ -1,9 +1,9 @@
-import copy
-import os
-import time
 from contextlib import (
     contextmanager,
 )
+import copy
+import os
+import time
 from typing import (
     Any,
     Dict,
@@ -70,7 +70,8 @@ if eels_is_available():
     )
 else:
 
-    class BlockChain: ...
+    class BlockChain:
+        ...
 
     ForkLoad = None
     TransactionLoad = None
@@ -293,10 +294,10 @@ class EELSBackend(BaseChainBackend):
             )
 
         if self.fork.is_after_fork("ethereum.cancun"):
-            genesis_state[BEACON_ROOTS_CONTRACT_ADDRESS] = (
-                self._get_default_account_state(
-                    overrides={"code": BEACON_ROOTS_CONTRACT_CODE}
-                )
+            genesis_state[
+                BEACON_ROOTS_CONTRACT_ADDRESS
+            ] = self._get_default_account_state(
+                overrides={"code": BEACON_ROOTS_CONTRACT_CODE}
             )
 
         eels_state = self._fork_module.State()
@@ -535,15 +536,15 @@ class EELSBackend(BaseChainBackend):
                         self.fork.encode_transaction(tx),
                     )
 
-                    apply_body_output_dict["receipts_map"][self._get_tx_hash(tx)] = (
-                        serialize_pending_receipt(
-                            self,
-                            tx,
-                            process_transaction_return,
-                            i,
-                            int(block_gas_limit - gas_available),
-                            contract_address,
-                        )
+                    apply_body_output_dict["receipts_map"][
+                        self._get_tx_hash(tx)
+                    ] = serialize_pending_receipt(
+                        self,
+                        tx,
+                        process_transaction_return,
+                        i,
+                        int(block_gas_limit - gas_available),
+                        contract_address,
                     )
 
                     receipt = self.fork.make_receipt(
@@ -594,9 +595,9 @@ class EELSBackend(BaseChainBackend):
 
             if self.fork.is_after_fork("ethereum.cancun"):
                 apply_body_output_dict["blob_gas_used"] = blob_gas_used
-                apply_body_output_dict["excess_blob_gas"] = (
-                    self._vm_module.gas.calculate_excess_blob_gas(latest_block_header)
-                )
+                apply_body_output_dict[
+                    "excess_blob_gas"
+                ] = self._vm_module.gas.calculate_excess_blob_gas(latest_block_header)
 
             apply_body_output_dict["state_root"] = self.fork.state_root(current_state)
             apply_body_output_dict["tx_root"] = self.fork.root(transactions_trie)

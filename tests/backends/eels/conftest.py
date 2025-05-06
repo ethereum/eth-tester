@@ -1,3 +1,4 @@
+import pytest
 from typing import (
     Any,
     Dict,
@@ -7,7 +8,6 @@ from typing import (
     Union,
 )
 
-import pytest
 from ethereum.cancun.blocks import (
     Block,
     Header,

@@ -1,3 +1,4 @@
+import pytest
 from typing import (
     Any,
     Dict,
@@ -8,7 +9,6 @@ from typing import (
     Tuple,
 )
 
-import pytest
 from eth.vm.forks.cancun.transactions import (
     TypedTransaction,
 )
@@ -62,14 +62,19 @@ else:
         pass
 
 
+DEFAULT_ZERO_ADDRESS = Address(ZERO_ADDRESS)
+DEFAULT_ZERO_HASH32 = Hash32(ZERO_HASH32)
+DEFAULT_BLOCK_NUMBER = BlockNumber(0)
+
+
 class FakeState:
-    def __init__(self, blob_base_fee: int) -> None:
+    def __init__(self, blob_base_fee: int = 1) -> None:
         self.blob_base_fee = blob_base_fee
 
 
 class FakeVM:
-    def __init__(self, state: FakeState = FakeState(1)) -> None:
-        self.state = state
+    def __init__(self, state: FakeState) -> None:
+        self.state = state if state else FakeState(1)
 
 
 class FakeWithdrawal(WithdrawalAPI):
@@ -77,7 +82,7 @@ class FakeWithdrawal(WithdrawalAPI):
         self,
         index: int = 0,
         validator_index: int = 0,
-        address: Address = Address(ZERO_ADDRESS),
+        address: Address = DEFAULT_ZERO_ADDRESS,
         amount: int = 0,
     ) -> None:
         self._index = index
@@ -118,7 +123,7 @@ def withdrawal() -> FakeWithdrawal:
     return FakeWithdrawal(
         index=0,
         validator_index=0,
-        address=Address(ZERO_ADDRESS),
+        address=DEFAULT_ZERO_ADDRESS,
         amount=0,
     )
 
@@ -126,15 +131,15 @@ def withdrawal() -> FakeWithdrawal:
 class FakeBlockHeader(BlockHeaderAPI):
     def __init__(
         self,
-        block_number: BlockNumber = BlockNumber(0),
+        block_number: BlockNumber = DEFAULT_BLOCK_NUMBER,
         hash: bytes = b"",
-        parent_hash: Hash32 = Hash32(ZERO_HASH32),
-        uncles_hash: Hash32 = Hash32(ZERO_HASH32),
-        mix_hash: Hash32 = Hash32(ZERO_HASH32),
-        coinbase: Address = Address(ZERO_ADDRESS),
-        transaction_root: Hash32 = Hash32(ZERO_HASH32),
-        receipt_root: Hash32 = Hash32(ZERO_HASH32),
-        state_root: Hash32 = Hash32(ZERO_HASH32),
+        parent_hash: Hash32 = DEFAULT_ZERO_HASH32,
+        uncles_hash: Hash32 = DEFAULT_ZERO_HASH32,
+        mix_hash: Hash32 = DEFAULT_ZERO_HASH32,
+        coinbase: Address = DEFAULT_ZERO_ADDRESS,
+        transaction_root: Hash32 = DEFAULT_ZERO_HASH32,
+        receipt_root: Hash32 = DEFAULT_ZERO_HASH32,
+        state_root: Hash32 = DEFAULT_ZERO_HASH32,
         nonce: bytes = b"",
         bloom: int = 0,
         difficulty: int = 0,
@@ -244,7 +249,7 @@ class FakeBlockHeader(BlockHeaderAPI):
 class FakeLog(LogAPI):
     def __init__(
         self,
-        address: Address = Address(ZERO_ADDRESS),
+        address: Address = DEFAULT_ZERO_ADDRESS,
         data: bytes = b"",
         topics: Sequence[int] = (),
     ) -> None:
@@ -310,7 +315,7 @@ class FakeSetCodeAuthorization:
     def __init__(
         self,
         chain_id: int = 0,
-        address: Address = Address(ZERO_ADDRESS),
+        address: Address = DEFAULT_ZERO_ADDRESS,
         nonce: int = 0,
         y_parity: int = 0,
         s: int = 0,
@@ -330,15 +335,18 @@ class FakeSetCodeAuthorization:
         return
 
 
+DEFAULT_AUTHORIZATION_LIST = FakeSetCodeAuthorization()
+
+
 class FakeTransaction(TypedTransaction):
     def __init__(
         self,
         type_id: Optional[int] = 0,
-        hash: Hash32 = Hash32(ZERO_HASH32),
+        hash: Hash32 = DEFAULT_ZERO_HASH32,
         nonce: int = 0,
-        to: Address = Address(ZERO_ADDRESS),
-        _from: Address = Address(ZERO_ADDRESS),
-        sender: Address = Address(ZERO_ADDRESS),
+        to: Address = DEFAULT_ZERO_ADDRESS,
+        _from: Address = DEFAULT_ZERO_ADDRESS,
+        sender: Address = DEFAULT_ZERO_ADDRESS,
         value: int = 0,
         gas: int = 0,
         data: bytes = b"",
@@ -346,7 +354,7 @@ class FakeTransaction(TypedTransaction):
         r: int = 0,
         v: int = 0,
         authorization_list: Sequence[FakeSetCodeAuthorization] = (
-            FakeSetCodeAuthorization(),
+            DEFAULT_AUTHORIZATION_LIST,
         ),
         y_parity: int = 0,
         chain_id: Optional[int] = None,
@@ -515,10 +523,13 @@ class FakeTransaction(TypedTransaction):
         return FakeTransaction()
 
 
+DEFAULT_BLOCK_HEADER = FakeBlockHeader()
+
+
 class FakeBlock(BlockAPI):
     def __init__(
         self,
-        header: FakeBlockHeader = FakeBlockHeader(),
+        header: FakeBlockHeader = DEFAULT_BLOCK_HEADER,
         transactions: Tuple[TypedTransaction, ...] = (),
         uncles: Tuple[FakeBlockHeader, ...] = (),
         withdrawals: Tuple[FakeWithdrawal, ...] = (),
@@ -595,13 +606,13 @@ def transaction(
     request: pytest.FixtureRequest,
 ) -> FakeTransaction:
     if request.param == "access_list_transactions":
-        return FakeTransaction(type_id=1, hash=Hash32(ZERO_HASH32))
+        return FakeTransaction(type_id=1, hash=DEFAULT_ZERO_HASH32)
     elif request.param == "dynamic_fee_transactions":
-        return FakeTransaction(type_id=2, hash=Hash32(ZERO_HASH32))
+        return FakeTransaction(type_id=2, hash=DEFAULT_ZERO_HASH32)
     elif request.param == "blob_transactions":
-        return FakeTransaction(type_id=3, hash=Hash32(ZERO_HASH32))
+        return FakeTransaction(type_id=3, hash=DEFAULT_ZERO_HASH32)
 
-    return FakeTransaction(type_id=0, hash=Hash32(ZERO_HASH32))
+    return FakeTransaction(type_id=0, hash=DEFAULT_ZERO_HASH32)
 
 
 # Block fixtures
@@ -629,19 +640,19 @@ def block_transactions(
 ) -> Tuple[FakeTransaction, ...]:
     if request.param == "legacy_transactions":
         return tuple(
-            [FakeTransaction(type_id=0, hash=Hash32(ZERO_HASH32)) for _ in range(3)]
+            [FakeTransaction(type_id=0, hash=DEFAULT_ZERO_HASH32) for _ in range(3)]
         )
     elif request.param == "access_list_transactions":
         return tuple(
-            [FakeTransaction(type_id=1, hash=Hash32(ZERO_HASH32)) for _ in range(3)]
+            [FakeTransaction(type_id=1, hash=DEFAULT_ZERO_HASH32) for _ in range(3)]
         )
     elif request.param == "dynamic_fee_transactions":
         return tuple(
-            [FakeTransaction(type_id=2, hash=Hash32(ZERO_HASH32)) for _ in range(3)]
+            [FakeTransaction(type_id=2, hash=DEFAULT_ZERO_HASH32) for _ in range(3)]
         )
     elif request.param == "blob_transactions":
         return tuple(
-            [FakeTransaction(type_id=3, hash=Hash32(ZERO_HASH32)) for _ in range(3)]
+            [FakeTransaction(type_id=3, hash=DEFAULT_ZERO_HASH32) for _ in range(3)]
         )
 
     return ()
@@ -651,11 +662,11 @@ def block_transactions(
     params=[
         {},
         {"base_fee_per_gas": 1},
-        {"withdrawals_root": Hash32(ZERO_HASH32)},
+        {"withdrawals_root": DEFAULT_ZERO_HASH32},
         {
             "base_fee_per_gas": 1,
-            "withdrawals_root": Hash32(ZERO_HASH32),
-            "parent_beacon_block_root": Hash32(ZERO_HASH32),
+            "withdrawals_root": DEFAULT_ZERO_HASH32,
+            "parent_beacon_block_root": DEFAULT_ZERO_HASH32,
         },
     ],
     ids=[
@@ -693,8 +704,8 @@ def block(
 def transaction_receipts() -> List[FakeReceipt]:
     return [
         FakeReceipt(
-            state_root=Hash32(ZERO_HASH32),
+            state_root=DEFAULT_ZERO_HASH32,
             gas_used=0,
-            logs=[FakeLog(Address(ZERO_ADDRESS), b"", ())],
+            logs=[FakeLog(DEFAULT_ZERO_ADDRESS, b"", ())],
         )
     ]

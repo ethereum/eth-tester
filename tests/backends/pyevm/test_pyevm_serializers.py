@@ -1,9 +1,9 @@
+import pytest
 from typing import (
     List,
     Tuple,
 )
 
-import pytest
 from eth.vm.forks.berlin.transactions import (
     TypedTransaction,
 )
