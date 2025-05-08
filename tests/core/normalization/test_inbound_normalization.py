@@ -7,15 +7,15 @@ def test_inbound_access_list_normalization():
     inbound_access_list = [
         {
             "address": "0x52908400098527886E0F7030069857D2E4169EE7",
-            "storage_keys": [f"0x{'00' * 30}3039", f"0x{'00' * 30}0539"],
+            "storageKeys": [f"0x{'00' * 30}3039", f"0x{'00' * 30}0539"],
         },
         {
             "address": "0x8617E340B3D01FA5F11F306F4090FD50E238070D",
-            "storage_keys": [],
+            "storageKeys": [],
         },
         {
             "address": f"0x{'00' * 20}",
-            "storage_keys": [f"0x{'00' * 28}499602d2"],
+            "storageKeys": [f"0x{'00' * 28}499602d2"],
         },
     ]
     expected = (

@@ -63,6 +63,9 @@ from eth_tester.utils.backend_testing import (
     SIMPLE_TRANSACTION,
     BaseTestBackendDirect,
 )
+from eth_tester.utils.casing import (
+    dict_keys_to_snake_case,
+)
 
 MNEMONIC = "test test test test test test test test test test test junk"
 
@@ -159,13 +162,13 @@ def test_apply_withdrawals():
     withdrawals = [
         {
             "index": 0,
-            "validator_index": 0,
+            "validatorIndex": 0,
             "address": f"0x{'01' * 20}",
             "amount": 100,
         },
         {
             "index": 2**64 - 1,
-            "validator_index": 2**64 - 1,
+            "validatorIndex": 2**64 - 1,
             "address": b"\x02" * 20,
             "amount": 2**64 - 1,
         },
@@ -179,9 +182,7 @@ def test_apply_withdrawals():
     )
     # withdrawal amounts are in gwei, balance is measured in wei
     assert backend.get_balance(b"\x01" * 20) == 100 * 10**9  # 100 gwei
-    assert (
-        backend.get_balance(b"\x02" * 20) == (2**64 - 1) * 10**9
-    )  # 2**64 - 1 gwei
+    assert backend.get_balance(b"\x02" * 20) == (2**64 - 1) * 10**9  # 2**64 - 1 gwei
 
     assert (
         mined_block["withdrawalsRoot"]
@@ -306,15 +307,15 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
     def test_generate_custom_genesis_parameters(self):
         # Establish parameter overrides, for example a custom genesis gas limit
-        param_overrides = {"gas_limit": 4750000}
+        param_overrides = {"gasLimit": 4750000}
 
         # Test the underlying default parameter merging functionality
         genesis_params = get_default_genesis_params(overrides=param_overrides)
-        assert genesis_params["gas_limit"] == param_overrides["gas_limit"]
+        assert genesis_params["gasLimit"] == param_overrides["gasLimit"]
 
         # Use the staticmethod to generate custom genesis parameters
         genesis_params = PyEVMBackend.generate_genesis_params(param_overrides)
-        assert genesis_params["gas_limit"] == param_overrides["gas_limit"]
+        assert genesis_params["gasLimit"] == param_overrides["gasLimit"]
 
         # Only existing default genesis parameter keys can be overridden
         invalid_overrides = {"gato": "con botas"}
@@ -324,24 +325,26 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
     def test_override_genesis_parameters(self):
         # Establish a custom gas limit
         param_overrides = {
-            "gas_limit": 4750000,
+            "gasLimit": 4750000,
         }
-        block_one_gas_limit = param_overrides["gas_limit"]
+        block_one_gas_limit = param_overrides["gasLimit"]
 
         # Initialize PyEVM backend with custom genesis parameters
         genesis_params = PyEVMBackend.generate_genesis_params(overrides=param_overrides)
-        pyevm_backend = PyEVMBackend(genesis_parameters=genesis_params)
+        pyevm_backend = PyEVMBackend(
+            genesis_parameters=dict_keys_to_snake_case(genesis_params)
+        )
         genesis_block = pyevm_backend.get_block_by_number(0)
-        assert genesis_block["gas_limit"] == param_overrides["gas_limit"]
+        assert genesis_block["gasLimit"] == param_overrides["gasLimit"]
         pending_block_one = pyevm_backend.get_block_by_number("pending")
-        assert pending_block_one["gas_limit"] == block_one_gas_limit
+        assert pending_block_one["gasLimit"] == block_one_gas_limit
 
         # Integrate with EthereumTester
         tester = EthereumTester(backend=pyevm_backend)
         genesis_block = tester.get_block_by_number(0)
-        assert genesis_block["gas_limit"] == param_overrides["gas_limit"]
+        assert genesis_block["gasLimit"] == param_overrides["gasLimit"]
         pending_block_one = tester.get_block_by_number("pending")
-        assert pending_block_one["gas_limit"] == block_one_gas_limit
+        assert pending_block_one["gasLimit"] == block_one_gas_limit
 
     def test_send_transaction_invalid_from(self, eth_tester):
         accounts = eth_tester.get_accounts()
@@ -380,7 +383,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         assert genesis_block["difficulty"] == GENESIS_DIFFICULTY
         assert genesis_block["nonce"] == encode_hex(GENESIS_NONCE)
-        assert genesis_block["mix_hash"] == encode_hex(GENESIS_MIX_HASH)
+        assert genesis_block["mixHash"] == encode_hex(GENESIS_MIX_HASH)
 
         tester.mine_blocks(3)
 
@@ -390,7 +393,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         assert third_block["nonce"] == encode_hex(POST_MERGE_NONCE)
 
         # assert not empty mix_hash
-        third_block_mix_hash = third_block["mix_hash"]
+        third_block_mix_hash = third_block["mixHash"]
         assert is_hexstr(third_block_mix_hash)
         assert third_block_mix_hash != encode_hex(POST_MERGE_MIX_HASH)
 
