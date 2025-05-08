@@ -840,15 +840,17 @@ class EELSBackend(BaseChainBackend):
     #
     def get_nonce(self, account, block_number="pending"):
         with self._state_context_manager(block_number):
-            return int(self.fork.get_account(self.chain.state, account).nonce)
+            return int(self._state_module.get_account(self.chain.state, account).nonce)
 
     def get_balance(self, account, block_number="pending"):
         with self._state_context_manager(block_number):
-            return int(self.fork.get_account(self.chain.state, account).balance)
+            return int(
+                self._state_module.get_account(self.chain.state, account).balance
+            )
 
     def get_code(self, account, block_number="pending"):
         with self._state_context_manager(block_number):
-            return self.fork.get_account(self.chain.state, account).code
+            return self._state_module.get_account(self.chain.state, account).code
 
     def get_storage(
         self, account: Address, slot: Union[int, bytes], block_number="pending"
