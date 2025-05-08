@@ -151,7 +151,7 @@ def serialize_transaction(block, transaction, transaction_index, is_pending):
                 {
                     "maxFeePerGas": transaction.max_fee_per_gas,
                     "maxPriorityFeePerGas": transaction.max_priority_fee_per_gas,
-                    # TODO: Sometime in 2022 the inclusion of gas_price may be removed
+                    # TODO: Sometime in 2022 the inclusion of gasPrice may be removed
                     #  from dynamic fee transactions and we can get rid of this
                     #  behavior. https://github.com/ethereum/execution-specs/pull/251
                     "gasPrice": (
