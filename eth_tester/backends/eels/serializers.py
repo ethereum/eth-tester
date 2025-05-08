@@ -24,9 +24,6 @@ from eth_tester.constants import (
     EMPTY_RLP_LIST_HASH,
     ZERO_HASH32,
 )
-from eth_tester.utils.casing import (
-    dict_keys_to_lower_camel_case,
-)
 from eth_tester.utils.transactions import (
     calculate_effective_gas_price,
     extract_transaction_type,

@@ -182,7 +182,9 @@ def test_apply_withdrawals():
     )
     # withdrawal amounts are in gwei, balance is measured in wei
     assert backend.get_balance(b"\x01" * 20) == 100 * 10**9  # 100 gwei
-    assert backend.get_balance(b"\x02" * 20) == (2**64 - 1) * 10**9  # 2**64 - 1 gwei
+    assert (
+        backend.get_balance(b"\x02" * 20) == (2**64 - 1) * 10**9
+    )  # 2**64 - 1 gwei
 
     assert (
         mined_block["withdrawalsRoot"]
