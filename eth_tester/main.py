@@ -399,6 +399,7 @@ class EthereumTester:
             self._pop_pending_transactions_to_pending_block()
 
         raw_block_hashes = self.backend.mine_blocks(num_blocks, normalized_coinbase)
+        breakpoint()
 
         if len(raw_block_hashes) != num_blocks:
             raise ValidationError(
