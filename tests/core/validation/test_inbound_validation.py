@@ -20,12 +20,6 @@ from tests.utils import (
 )
 
 
-@pytest.fixture
-def validator():
-    _validator = DefaultValidator()
-    return _validator
-
-
 @pytest.mark.parametrize(
     "timestamp,is_valid",
     (

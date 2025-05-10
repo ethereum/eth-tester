@@ -1,0 +1,3 @@
+Tests have been added for backend serializers in py-evm and EELS. Additional validation and normalization tests have been implemented. Refactored tests with helper functions and better parametrization.
+
+Backend EELS tests run as part of separate CI jobs for Python 3.10+. The ethereum-execution package is now pinned at ``1.17.0rc6.dev1``.

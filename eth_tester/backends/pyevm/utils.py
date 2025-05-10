@@ -54,7 +54,7 @@ def is_london_block(block: Union[Dict[str, Any], BlockAPI]) -> bool:
         except AttributeError:
             return False
 
-    elif isinstance(block, dict) and "base_fee_per_gas" in block:
+    elif isinstance(block, dict) and "baseFeePerGas" in block:
         return True
 
     return False
@@ -68,7 +68,7 @@ def is_shanghai_block(block: Union[Dict[str, Any], BlockAPI]) -> bool:
             return block.header.withdrawals_root is not None
         except AttributeError:
             return False
-    elif isinstance(block, dict) and "withdrawals_root" in block:
+    elif isinstance(block, dict) and "withdrawalsRoot" in block:
         return True
 
     return False
@@ -86,9 +86,9 @@ def is_cancun_block(block: Union[Dict[str, Any], BlockAPI]) -> bool:
     elif isinstance(block, dict) and all(
         cancun_field in block
         for cancun_field in (
-            "parent_beacon_block_root",
-            "blob_gas_used",
-            "excess_blob_gas",
+            "parentBeaconBlockRoot",
+            "blobGasUsed",
+            "excessBlobGas",
         )
     ):
         return True
