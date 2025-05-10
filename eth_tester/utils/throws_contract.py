@@ -112,7 +112,7 @@ def _deploy_throws(eth_tester, contract_name):
         }
     )
     deploy_receipt = eth_tester.get_transaction_receipt(deploy_hash)
-    throws_address = deploy_receipt["contract_address"]
+    throws_address = deploy_receipt["contractAddress"]
     assert throws_address
     throws_code = eth_tester.get_code(throws_address)
     assert len(throws_code) > 2

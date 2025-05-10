@@ -1,0 +1,1 @@
+Inbound calls require using camelCase keys when passing a dictionary. This is a breaking change.

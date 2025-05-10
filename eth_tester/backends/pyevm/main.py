@@ -58,6 +58,9 @@ from eth_tester.exceptions import (
     TransactionNotFound,
     ValidationError,
 )
+from eth_tester.utils.casing import (
+    dict_keys_to_snake_case,
+)
 
 from ...utils.accounts import (
     get_account_keys_from_mnemonic,
@@ -168,16 +171,16 @@ def get_default_genesis_params(overrides=None):
         # "bloom": 0,
         "coinbase": GENESIS_COINBASE,
         "difficulty": POST_MERGE_DIFFICULTY,
-        "extra_data": GENESIS_EXTRA_DATA,
-        "gas_limit": GENESIS_GAS_LIMIT,
+        "extraData": GENESIS_EXTRA_DATA,
+        "gasLimit": GENESIS_GAS_LIMIT,
         # "gas_used": 0,
-        "mix_hash": POST_MERGE_MIX_HASH,
+        "mixHash": POST_MERGE_MIX_HASH,
         "nonce": POST_MERGE_NONCE,
         # "block_number": GENESIS_BLOCK_NUMBER,
         # "parent_hash": GENESIS_PARENT_HASH,
-        "receipt_root": BLANK_ROOT_HASH,
+        "receiptRoot": BLANK_ROOT_HASH,
         "timestamp": int(time.time()),
-        "transaction_root": BLANK_ROOT_HASH,
+        "transactionRoot": BLANK_ROOT_HASH,
         # "uncles_hash": EMPTY_RLP_LIST_HASH,
     }
     if overrides is not None:
@@ -241,7 +244,7 @@ def setup_tester_chain(
         if not genesis_is_post_merge:
             overrides["difficulty"] = GENESIS_DIFFICULTY
             overrides["nonce"] = GENESIS_NONCE
-            overrides["mix_hash"] = GENESIS_MIX_HASH
+            overrides["mixHash"] = GENESIS_MIX_HASH
         genesis_params = get_default_genesis_params(overrides=overrides)
 
     if genesis_state:
@@ -259,7 +262,9 @@ def setup_tester_chain(
 
     base_db = get_db_backend()
 
-    chain = MainnetTesterPosChain.from_genesis(base_db, genesis_params, genesis_state)
+    chain = MainnetTesterPosChain.from_genesis(
+        base_db, dict_keys_to_snake_case(genesis_params), genesis_state
+    )
     return account_keys, chain
 
 
@@ -627,21 +632,18 @@ class PyEVMBackend(BaseChainBackend):
             or
             # if no fee params exist, default to dynamic fee transaction:
             not any(
-                _ in transaction
-                for _ in DYNAMIC_FEE_TRANSACTION_PARAMS + ("gas_price",)
+                _ in transaction for _ in DYNAMIC_FEE_TRANSACTION_PARAMS + ("gasPrice",)
             )
         )
-        is_typed_transaction = (
-            is_dynamic_fee_transaction or "access_list" in transaction
-        )
+        is_typed_transaction = is_dynamic_fee_transaction or "accessList" in transaction
 
         for key in transaction:
             if key in ("from", "type"):
                 continue
             if key == "v" and is_typed_transaction:
-                yield "y_parity", transaction[
+                yield "yParity", transaction[
                     "v"
-                ]  # use y_parity for typed txns, internally
+                ]  # use yParity for typed txns, internally
                 continue
             yield key, transaction[key]
 
@@ -656,24 +658,24 @@ class PyEVMBackend(BaseChainBackend):
 
         if is_dynamic_fee_transaction:
             if not any(_ in transaction for _ in DYNAMIC_FEE_TRANSACTION_PARAMS):
-                yield "max_fee_per_gas", 1 * 10**9
-                yield "max_priority_fee_per_gas", 1 * 10**9
+                yield "maxFeePerGas", 1 * 10**9
+                yield "maxPriorityFeePerGas", 1 * 10**9
             elif (
-                "max_priority_fee_per_gas" in transaction
-                and "max_fee_per_gas" not in transaction
+                "maxPriorityFeePerGas" in transaction
+                and "maxFeePerGas" not in transaction
             ):
                 yield (
-                    "max_fee_per_gas",
-                    transaction["max_priority_fee_per_gas"]
+                    "maxFeePerGas",
+                    transaction["maxPriorityFeePerGas"]
                     + 2 * self.get_base_fee(block_number),
                 )
 
         if is_typed_transaction:
             # typed transaction
-            if "access_list" not in transaction:
-                yield "access_list", ()
-            if "chain_id" not in transaction:
-                yield "chain_id", self.chain.chain_id
+            if "accessList" not in transaction:
+                yield "accessList", ()
+            if "chainId" not in transaction:
+                yield "chainId", self.chain.chain_id
 
     def _get_normalized_and_unsigned_evm_transaction(
         self, transaction, block_number="latest"
@@ -700,15 +702,18 @@ class PyEVMBackend(BaseChainBackend):
         return evm_transaction.as_signed_transaction(signing_key)
 
     def _create_type_aware_unsigned_transaction(self, normalized_txn):
-        if all(_ in normalized_txn for _ in ("access_list", "gas_price")):
+        if all(_ in normalized_txn for _ in ("accessList", "gasPrice")):
             return self.chain.get_transaction_builder().new_unsigned_access_list_transaction(  # noqa: E501
-                **normalized_txn
+                **dict_keys_to_snake_case(normalized_txn)
             )
         elif all(_ in normalized_txn for _ in DYNAMIC_FEE_TRANSACTION_PARAMS):
-            return self.chain.get_transaction_builder().new_unsigned_dynamic_fee_transaction(  # noqa: E501
-                **normalized_txn
-            )
-        return self.chain.create_unsigned_transaction(**normalized_txn)
+            test = self.chain.get_transaction_builder()
+            txn = dict_keys_to_snake_case(normalized_txn)
+            result = test.new_unsigned_dynamic_fee_transaction(**txn)  # noqa: E501
+            return result
+        return self.chain.create_unsigned_transaction(
+            **dict_keys_to_snake_case(normalized_txn)
+        )
 
     @replace_exceptions({EthUtilsValidationError: ValidationError})
     def send_raw_transaction(self, raw_transaction):
@@ -747,15 +752,15 @@ class PyEVMBackend(BaseChainBackend):
         return signed_evm_transaction.hash
 
     def _create_type_aware_signed_transaction(self, normalized_txn):
-        if all(_ in normalized_txn for _ in ("access_list", "gas_price")):
+        if all(_ in normalized_txn for _ in ("accessList", "gasPrice")):
             return self.chain.get_transaction_builder().new_access_list_transaction(
-                **normalized_txn
+                **dict_keys_to_snake_case(normalized_txn)
             )
         elif all(_ in normalized_txn for _ in DYNAMIC_FEE_TRANSACTION_PARAMS):
             return self.chain.get_transaction_builder().new_dynamic_fee_transaction(
-                **normalized_txn
+                **dict_keys_to_snake_case(normalized_txn)
             )
-        return self.chain.create_transaction(**normalized_txn)
+        return self.chain.create_transaction(**dict_keys_to_snake_case(normalized_txn))
 
     @replace_exceptions({EthUtilsValidationError: ValidationError})
     def send_transaction(self, transaction):
@@ -783,7 +788,7 @@ class PyEVMBackend(BaseChainBackend):
         withdrawals = [
             Withdrawal(
                 index=withdrawal_dict["index"],
-                validator_index=withdrawal_dict["validator_index"],
+                validator_index=withdrawal_dict["validatorIndex"],
                 address=to_bytes(
                     hexstr=to_checksum_address(withdrawal_dict["address"])
                 ),

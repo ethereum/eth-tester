@@ -78,11 +78,11 @@ def validate_log_entry_type(value):
 
 LOG_ENTRY_VALIDATORS = {
     "type": validate_log_entry_type,
-    "log_index": validate_positive_integer,
-    "transaction_index": if_not_null(validate_positive_integer),
-    "transaction_hash": validate_32_byte_string,
-    "block_hash": if_not_null(validate_32_byte_string),
-    "block_number": if_not_null(validate_positive_integer),
+    "logIndex": validate_positive_integer,
+    "transactionIndex": if_not_null(validate_positive_integer),
+    "transactionHash": validate_32_byte_string,
+    "blockHash": if_not_null(validate_32_byte_string),
+    "blockNumber": if_not_null(validate_positive_integer),
     "address": validate_canonical_address,
     "data": validate_bytes,
     "topics": partial(validate_array, validator=validate_32_byte_string),
@@ -135,14 +135,14 @@ LEGACY_TRANSACTION_VALIDATORS = {
     "type": validate_transaction_type,
     "hash": validate_32_byte_string,
     "nonce": validate_uint256,
-    "block_hash": if_not_null(validate_32_byte_string),
-    "block_number": if_not_null(validate_positive_integer),
-    "transaction_index": if_not_null(validate_positive_integer),
+    "blockHash": if_not_null(validate_32_byte_string),
+    "blockNumber": if_not_null(validate_positive_integer),
+    "transactionIndex": if_not_null(validate_positive_integer),
     "from": validate_canonical_address,
     "to": if_not_create_address(validate_canonical_address),
     "value": validate_uint256,
     "gas": validate_uint256,
-    "gas_price": validate_uint256,
+    "gasPrice": validate_uint256,
     "data": validate_bytes,
     "v": validate_signature_v,
     "r": validate_uint256,
@@ -157,21 +157,20 @@ ACCESS_LIST_TRANSACTION_VALIDATORS = merge(
     LEGACY_TRANSACTION_VALIDATORS,
     {
         "v": validate_y_parity,
-        "y_parity": validate_y_parity,
-        "chain_id": validate_uint256,
-        "access_list": _validate_outbound_access_list,
+        "yParity": validate_y_parity,
+        "chainId": validate_uint256,
+        "accessList": _validate_outbound_access_list,
     },
 )
 validate_access_list_transaction = partial(
     validate_dict, key_validators=ACCESS_LIST_TRANSACTION_VALIDATORS
 )
 
-
 DYNAMIC_FEE_TRANSACTION_VALIDATORS = merge(
     ACCESS_LIST_TRANSACTION_VALIDATORS,
     {
-        "max_fee_per_gas": validate_uint256,
-        "max_priority_fee_per_gas": validate_uint256,
+        "maxFeePerGas": validate_uint256,
+        "maxPriorityFeePerGas": validate_uint256,
     },
 )
 validate_dynamic_fee_transaction = partial(
@@ -181,8 +180,8 @@ validate_dynamic_fee_transaction = partial(
 BLOB_TRANSACTION_VALIDATORS = merge(
     DYNAMIC_FEE_TRANSACTION_VALIDATORS,
     {
-        "max_fee_per_blob_gas": validate_uint256,
-        "blob_versioned_hashes": partial(
+        "maxFeePerBlobGas": validate_uint256,
+        "blobVersionedHashes": partial(
             validate_array,
             validator=validate_32_byte_string,
         ),
@@ -205,7 +204,7 @@ validate_transaction = partial(
 
 WITHDRAWAL_VALIDATORS = {
     "index": validate_uint64,
-    "validator_index": validate_uint64,
+    "validatorIndex": validate_uint64,
     "address": validate_canonical_address,
     "amount": validate_uint64,
 }
@@ -219,17 +218,17 @@ def validate_status(value):
 
 
 RECEIPT_VALIDATORS = {
-    "transaction_hash": validate_32_byte_string,
-    "transaction_index": if_not_null(validate_positive_integer),
-    "block_number": if_not_null(validate_positive_integer),
-    "block_hash": if_not_null(validate_32_byte_string),
-    "cumulative_gas_used": validate_positive_integer,
-    "effective_gas_price": if_not_null(validate_positive_integer),
+    "transactionHash": validate_32_byte_string,
+    "transactionIndex": if_not_null(validate_positive_integer),
+    "blockNumber": if_not_null(validate_positive_integer),
+    "blockHash": if_not_null(validate_32_byte_string),
+    "cumulativeGasUsed": validate_positive_integer,
+    "effectiveGasPrice": if_not_null(validate_positive_integer),
     "from": validate_canonical_address,
-    "gas_used": validate_positive_integer,
-    "contract_address": if_not_null(validate_canonical_address),
+    "gasUsed": validate_positive_integer,
+    "contractAddress": if_not_null(validate_canonical_address),
     "logs": partial(validate_array, validator=validate_log_entry),
-    "state_root": validate_bytes,
+    "stateRoot": validate_bytes,
     "status": validate_status,
     "to": if_not_create_address(validate_canonical_address),
     "type": validate_transaction_type,
@@ -237,10 +236,12 @@ RECEIPT_VALIDATORS = {
 CANCUN_RECEIPT_VALIDATORS = merge(
     RECEIPT_VALIDATORS,
     {
-        "blob_gas_used": validate_positive_integer,
-        "blob_gas_price": validate_positive_integer,
+        "blobGasUsed": validate_positive_integer,
+        "blobGasPrice": validate_positive_integer,
     },
 )
+
+
 validate_receipt = partial(
     validate_any,
     validators=(
@@ -253,21 +254,21 @@ validate_receipt = partial(
 BLOCK_VALIDATORS = {
     "number": validate_positive_integer,
     "hash": validate_block_hash,
-    "parent_hash": validate_block_hash,
+    "parentHash": validate_block_hash,
     "nonce": validate_nonce,
-    "sha3_uncles": validate_32_byte_string,
-    "logs_bloom": validate_logs_bloom,
-    "transactions_root": validate_32_byte_string,
-    "receipts_root": validate_32_byte_string,
-    "state_root": validate_32_byte_string,
+    "sha3Uncles": validate_32_byte_string,
+    "logsBloom": validate_logs_bloom,
+    "transactionsRoot": validate_32_byte_string,
+    "receiptsRoot": validate_32_byte_string,
+    "stateRoot": validate_32_byte_string,
     "coinbase": validate_canonical_address,
     "difficulty": validate_positive_integer,
-    "mix_hash": validate_32_byte_string,
-    "total_difficulty": validate_positive_integer,
+    "mixHash": validate_32_byte_string,
+    "totalDifficulty": validate_positive_integer,
     "size": validate_positive_integer,
-    "extra_data": validate_32_byte_string,
-    "gas_limit": validate_positive_integer,
-    "gas_used": validate_positive_integer,
+    "extraData": validate_32_byte_string,
+    "gasLimit": validate_positive_integer,
+    "gasUsed": validate_positive_integer,
     "timestamp": validate_positive_integer,
     "transactions": partial(
         validate_any,
@@ -282,14 +283,14 @@ BLOCK_VALIDATORS = {
     "uncles": partial(validate_array, validator=validate_32_byte_string),
     # fork-specific fields, validated separately in `_validate_fork_specific_fields()`
     # London fork:
-    "base_fee_per_gas": identity,
+    "baseFeePerGas": identity,
     # Shanghai fork:
     "withdrawals": identity,
-    "withdrawals_root": identity,
+    "withdrawalsRoot": identity,
     # Cancun fork:
-    "parent_beacon_block_root": identity,
-    "blob_gas_used": identity,
-    "excess_blob_gas": identity,
+    "parentBeaconBlockRoot": identity,
+    "blobGasUsed": identity,
+    "excessBlobGas": identity,
 }
 
 
@@ -300,25 +301,25 @@ def _validate_fork_specific_fields(block):
     value to `None` during validation and pop it back out during normalization.
     """
     if is_london_block(block):
-        validate_positive_integer(block["base_fee_per_gas"])
+        validate_positive_integer(block["baseFeePerGas"])
     else:
-        block["base_fee_per_gas"] = None
+        block["baseFeePerGas"] = None
 
     if is_shanghai_block(block):
         partial(validate_array, validator=validate_withdrawal)(block["withdrawals"])
-        validate_32_byte_string(block["withdrawals_root"])
+        validate_32_byte_string(block["withdrawalsRoot"])
     else:
         block["withdrawals"] = None
-        block["withdrawals_root"] = None
+        block["withdrawalsRoot"] = None
 
     if is_cancun_block(block):
-        validate_32_byte_string(block["parent_beacon_block_root"])
-        validate_positive_integer(block["blob_gas_used"])
-        validate_positive_integer(block["excess_blob_gas"])
+        validate_32_byte_string(block["parentBeaconBlockRoot"])
+        validate_positive_integer(block["blobGasUsed"])
+        validate_positive_integer(block["excessBlobGas"])
     else:
-        block["parent_beacon_block_root"] = None
-        block["blob_gas_used"] = None
-        block["excess_blob_gas"] = None
+        block["parentBeaconBlockRoot"] = None
+        block["blobGasUsed"] = None
+        block["excessBlobGas"] = None
 
     return block
 

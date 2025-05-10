@@ -47,7 +47,7 @@ def _normalize_outbound_access_list(access_list):
         [
             {
                 "address": to_checksum_address(entry[0]),
-                "storage_keys": tuple(
+                "storageKeys": tuple(
                     [encode_hex(int_to_32byte_big_endian(k)) for k in entry[1]]
                 ),
             }
@@ -58,39 +58,39 @@ def _normalize_outbound_access_list(access_list):
 
 TRANSACTION_NORMALIZERS = {
     "type": to_hex_if_integer,
-    "blob_versioned_hashes": partial(
+    "blobVersionedHashes": partial(
         normalize_array,
         normalizer=partial(
             normalize_if, conditional_fn=is_bytes, normalizer=encode_hex
         ),
     ),
-    "chain_id": identity,
+    "chainId": identity,
     "hash": encode_hex,
     "nonce": identity,
-    "block_hash": partial(normalize_if, conditional_fn=is_bytes, normalizer=encode_hex),
-    "block_number": identity,
-    "transaction_index": identity,
+    "blockHash": partial(normalize_if, conditional_fn=is_bytes, normalizer=encode_hex),
+    "blockNumber": identity,
+    "transactionIndex": identity,
     "from": to_checksum_address,
     "to": to_empty_or_checksum_address,
     "value": identity,
     "gas": identity,
-    "gas_price": identity,
-    "max_fee_per_blob_gas": identity,
-    "max_fee_per_gas": identity,
-    "max_priority_fee_per_gas": identity,
+    "gasPrice": identity,
+    "maxFeePerBlobGas": identity,
+    "maxFeePerGas": identity,
+    "maxPriorityFeePerGas": identity,
     "data": encode_hex,
-    "access_list": _normalize_outbound_access_list,
+    "accessList": _normalize_outbound_access_list,
     "r": identity,
     "s": identity,
     "v": identity,
-    "y_parity": identity,
+    "yParity": identity,
 }
 normalize_transaction = partial(normalize_dict, normalizers=TRANSACTION_NORMALIZERS)
 
 
 WITHDRAWAL_NORMALIZERS = {
     "index": identity,
-    "validator_index": identity,
+    "validatorIndex": identity,
     "address": to_checksum_address,
     "amount": identity,
 }
@@ -120,22 +120,22 @@ def _remove_fork_specific_fields_if_none(block):
 BLOCK_NORMALIZERS = {
     "number": identity,
     "hash": encode_hex,
-    "parent_hash": encode_hex,
+    "parentHash": encode_hex,
     "nonce": encode_hex,
-    "base_fee_per_gas": identity,
-    "sha3_uncles": encode_hex,
-    "logs_bloom": identity,
-    "transactions_root": encode_hex,
-    "receipts_root": encode_hex,
-    "state_root": encode_hex,
+    "baseFeePerGas": identity,
+    "sha3Uncles": encode_hex,
+    "logsBloom": identity,
+    "transactionsRoot": encode_hex,
+    "receiptsRoot": encode_hex,
+    "stateRoot": encode_hex,
     "coinbase": to_checksum_address,
     "difficulty": identity,
-    "mix_hash": encode_hex,
-    "total_difficulty": identity,
+    "mixHash": encode_hex,
+    "totalDifficulty": identity,
     "size": identity,
-    "extra_data": encode_hex,
-    "gas_limit": identity,
-    "gas_used": identity,
+    "extraData": encode_hex,
+    "gasLimit": identity,
+    "gasUsed": identity,
     "timestamp": identity,
     "transactions": compose(
         partial(
@@ -151,10 +151,10 @@ BLOCK_NORMALIZERS = {
     ),
     "uncles": partial(normalize_array, normalizer=encode_hex),
     "withdrawals": partial(normalize_array, normalizer=normalize_withdrawal),
-    "withdrawals_root": encode_hex,
-    "parent_beacon_block_root": encode_hex,
-    "blob_gas_used": identity,
-    "excess_blob_gas": identity,
+    "withdrawalsRoot": encode_hex,
+    "parentBeaconBlockRoot": encode_hex,
+    "blobGasUsed": identity,
+    "excessBlobGas": identity,
 }
 normalize_block = compose(
     partial(normalize_dict, normalizers=BLOCK_NORMALIZERS),
@@ -164,19 +164,19 @@ normalize_block = compose(
 
 LOG_ENTRY_NORMALIZERS = {
     "type": identity,
-    "log_index": identity,
-    "transaction_index": partial(
+    "logIndex": identity,
+    "transactionIndex": partial(
         normalize_if,
         conditional_fn=is_bytes,
         normalizer=encode_hex,
     ),
-    "transaction_hash": encode_hex,
-    "block_hash": partial(
+    "transactionHash": encode_hex,
+    "blockHash": partial(
         normalize_if,
         conditional_fn=is_bytes,
         normalizer=encode_hex,
     ),
-    "block_number": identity,
+    "blockNumber": identity,
     "address": to_checksum_address,
     "data": encode_hex,
     "topics": partial(normalize_array, normalizer=encode_hex),
@@ -186,39 +186,39 @@ normalize_log_entry = partial(normalize_dict, normalizers=LOG_ENTRY_NORMALIZERS)
 
 def _normalize_contract_address(receipt):
     if receipt["status"] == 0:
-        return assoc(receipt, "contract_address", None)
-    elif is_address(receipt["contract_address"]):
+        return assoc(receipt, "contractAddress", None)
+    elif is_address(receipt["contractAddress"]):
         return assoc(
             receipt,
-            "contract_address",
-            to_checksum_address(receipt["contract_address"]),
+            "contractAddress",
+            to_checksum_address(receipt["contractAddress"]),
         )
     else:
         return receipt
 
 
 RECEIPT_NORMALIZERS = {
-    "transaction_hash": encode_hex,
-    "transaction_index": identity,
-    "block_number": identity,
-    "block_hash": partial(
+    "transactionHash": encode_hex,
+    "transactionIndex": identity,
+    "blockNumber": identity,
+    "blockHash": partial(
         normalize_if,
         conditional_fn=is_bytes,
         normalizer=encode_hex,
     ),
-    "cumulative_gas_used": identity,
-    "effective_gas_price": identity,
+    "cumulativeGasUsed": identity,
+    "effectiveGasPrice": identity,
     "from": to_checksum_address,
-    "gas_used": identity,
-    "contract_address": identity,  # special case, see ``_normalize_contract_address()``
+    "gasUsed": identity,
+    "contractAddress": identity,  # special case, see ``_normalize_contract_address()``
     "logs": partial(normalize_array, normalizer=normalize_log_entry),
-    "state_root": identity,
+    "stateRoot": identity,
     "status": identity,
     "to": to_empty_or_checksum_address,
     "type": to_hex_if_integer,
-    "base_fee_per_gas": identity,
-    "blob_gas_used": identity,
-    "blob_gas_price": identity,
+    "baseFeePerGas": identity,
+    "blobGasUsed": identity,
+    "blobGasPrice": identity,
 }
 normalize_receipt = compose(
     partial(normalize_dict, normalizers=RECEIPT_NORMALIZERS),

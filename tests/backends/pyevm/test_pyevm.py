@@ -46,6 +46,9 @@ from eth_tester.backends.pyevm.main import (
 from eth_tester.backends.pyevm.utils import (
     is_supported_pyevm_version_available,
 )
+from eth_tester.constants import (
+    ZERO_ADDRESS_HEX,
+)
 from eth_tester.exceptions import (
     BlockNotFound,
     ValidationError,
@@ -60,26 +63,11 @@ from eth_tester.utils.backend_testing import (
     SIMPLE_TRANSACTION,
     BaseTestBackendDirect,
 )
+from eth_tester.utils.casing import (
+    dict_keys_to_snake_case,
+)
 
-ZERO_ADDRESS_HEX = "0x0000000000000000000000000000000000000000"
 MNEMONIC = "test test test test test test test test test test test junk"
-
-
-@pytest.fixture
-def eth_tester():
-    if not is_supported_pyevm_version_available():
-        pytest.skip("PyEVM is not available")
-    backend = PyEVMBackend()
-    return EthereumTester(backend=backend)
-
-
-@pytest.fixture
-def accounts_from_mnemonic():
-    return [
-        "0x1e59ce931B4CFea3fe4B875411e280e173cB7A9C",
-        "0xc89D42189f0450C2b2c3c61f58Ec5d628176A1E7",
-        "0x318b469BBa396AEc2C60342F9441be36A1945174",
-    ]
 
 
 def test_custom_virtual_machines():
@@ -113,13 +101,13 @@ def test_custom_virtual_machines():
 
 
 @pytest.mark.parametrize(
-    "vm_class_missing_the_field,vm_class_with_new_field,new_field",
+    "vm_class_missing_the_field,vm_class_with_new_field,new_field,",
     (
-        (BerlinVM, LondonVM, "base_fee_per_gas"),
+        (BerlinVM, LondonVM, "baseFeePerGas"),
         (ParisVM, ShanghaiVM, "withdrawals"),
-        (ParisVM, ShanghaiVM, "withdrawals_root"),
-        (ShanghaiVM, CancunVM, "blob_gas_used"),
-        (ShanghaiVM, CancunVM, "excess_blob_gas"),
+        (ParisVM, ShanghaiVM, "withdrawalsRoot"),
+        (ShanghaiVM, CancunVM, "blobGasUsed"),
+        (ShanghaiVM, CancunVM, "excessBlobGas"),
     ),
 )
 def test_newly_introduced_block_fields_at_fork_transition(
@@ -158,7 +146,7 @@ def test_london_configuration():
 
     backend = PyEVMBackend(vm_configuration=((0, LondonVM),))
 
-    assert backend.get_block_by_number(0)["base_fee_per_gas"] == 1000000000
+    assert backend.get_block_by_number(0)["baseFeePerGas"] == 1000000000
 
     EthereumTester(backend=backend)
 
@@ -174,13 +162,13 @@ def test_apply_withdrawals():
     withdrawals = [
         {
             "index": 0,
-            "validator_index": 0,
+            "validatorIndex": 0,
             "address": f"0x{'01' * 20}",
             "amount": 100,
         },
         {
             "index": 2**64 - 1,
-            "validator_index": 2**64 - 1,
+            "validatorIndex": 2**64 - 1,
             "address": b"\x02" * 20,
             "amount": 2**64 - 1,
         },
@@ -199,7 +187,7 @@ def test_apply_withdrawals():
     )  # 2**64 - 1 gwei
 
     assert (
-        mined_block["withdrawals_root"]
+        mined_block["withdrawalsRoot"]
         == "0xbb49834f60c98815399dfb1a3303cc0f80984c4c7533ecf326bc343d8109127e"
     )
 
@@ -321,15 +309,15 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
     def test_generate_custom_genesis_parameters(self):
         # Establish parameter overrides, for example a custom genesis gas limit
-        param_overrides = {"gas_limit": 4750000}
+        param_overrides = {"gasLimit": 4750000}
 
         # Test the underlying default parameter merging functionality
         genesis_params = get_default_genesis_params(overrides=param_overrides)
-        assert genesis_params["gas_limit"] == param_overrides["gas_limit"]
+        assert genesis_params["gasLimit"] == param_overrides["gasLimit"]
 
         # Use the staticmethod to generate custom genesis parameters
         genesis_params = PyEVMBackend.generate_genesis_params(param_overrides)
-        assert genesis_params["gas_limit"] == param_overrides["gas_limit"]
+        assert genesis_params["gasLimit"] == param_overrides["gasLimit"]
 
         # Only existing default genesis parameter keys can be overridden
         invalid_overrides = {"gato": "con botas"}
@@ -339,24 +327,26 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
     def test_override_genesis_parameters(self):
         # Establish a custom gas limit
         param_overrides = {
-            "gas_limit": 4750000,
+            "gasLimit": 4750000,
         }
-        block_one_gas_limit = param_overrides["gas_limit"]
+        block_one_gas_limit = param_overrides["gasLimit"]
 
         # Initialize PyEVM backend with custom genesis parameters
         genesis_params = PyEVMBackend.generate_genesis_params(overrides=param_overrides)
-        pyevm_backend = PyEVMBackend(genesis_parameters=genesis_params)
+        pyevm_backend = PyEVMBackend(
+            genesis_parameters=dict_keys_to_snake_case(genesis_params)
+        )
         genesis_block = pyevm_backend.get_block_by_number(0)
-        assert genesis_block["gas_limit"] == param_overrides["gas_limit"]
+        assert genesis_block["gasLimit"] == param_overrides["gasLimit"]
         pending_block_one = pyevm_backend.get_block_by_number("pending")
-        assert pending_block_one["gas_limit"] == block_one_gas_limit
+        assert pending_block_one["gasLimit"] == block_one_gas_limit
 
         # Integrate with EthereumTester
         tester = EthereumTester(backend=pyevm_backend)
         genesis_block = tester.get_block_by_number(0)
-        assert genesis_block["gas_limit"] == param_overrides["gas_limit"]
+        assert genesis_block["gasLimit"] == param_overrides["gasLimit"]
         pending_block_one = tester.get_block_by_number("pending")
-        assert pending_block_one["gas_limit"] == block_one_gas_limit
+        assert pending_block_one["gasLimit"] == block_one_gas_limit
 
     def test_send_transaction_invalid_from(self, eth_tester):
         accounts = eth_tester.get_accounts()
@@ -395,7 +385,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
 
         assert genesis_block["difficulty"] == GENESIS_DIFFICULTY
         assert genesis_block["nonce"] == encode_hex(GENESIS_NONCE)
-        assert genesis_block["mix_hash"] == encode_hex(GENESIS_MIX_HASH)
+        assert genesis_block["mixHash"] == encode_hex(GENESIS_MIX_HASH)
 
         tester.mine_blocks(3)
 
@@ -405,7 +395,7 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         assert third_block["nonce"] == encode_hex(POST_MERGE_NONCE)
 
         # assert not empty mix_hash
-        third_block_mix_hash = third_block["mix_hash"]
+        third_block_mix_hash = third_block["mixHash"]
         assert is_hexstr(third_block_mix_hash)
         assert third_block_mix_hash != encode_hex(POST_MERGE_MIX_HASH)
 
@@ -439,9 +429,9 @@ class TestPyEVMBackendDirect(BaseTestBackendDirect):
         assert len(accounts) == 3
 
         for acct in accounts:
-            assert tester.get_storage_at(acct, HexStr("0x0")) == f"0x{'00'*32}"
-            assert tester.get_storage_at(acct, HexStr("0x1")) == f"0x{'00'*31}01"
-            assert tester.get_storage_at(acct, HexStr("0x2")) == f"0x{'00'*31}02"
+            assert tester.get_storage_at(acct, HexStr("0x0")) == f"0x{'00' * 32}"
+            assert tester.get_storage_at(acct, HexStr("0x1")) == f"0x{'00' * 31}01"
+            assert tester.get_storage_at(acct, HexStr("0x2")) == f"0x{'00' * 31}02"
 
     # --- cancun network upgrade --- #
 
