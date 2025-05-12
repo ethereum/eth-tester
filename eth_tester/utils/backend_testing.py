@@ -137,7 +137,6 @@ class BaseTestBackendDirect:
                 "gas_price": NON_DEFAULT_GAS_PRICE,
             }
         )
-        breakpoint()
 
         self._send_and_check_transaction(eth_tester, SIMPLE_TRANSACTION, account)
 
@@ -263,7 +262,6 @@ class BaseTestBackendDirect:
         self.skip_if_no_evm_execution()
 
         eth_tester.mine_blocks(10)
-        breakpoint()
         fee_history = eth_tester.get_fee_history(
             block_count, newest_block, reward_percentiles
         )

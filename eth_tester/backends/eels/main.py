@@ -202,8 +202,6 @@ class EELSBackend(BaseChainBackend):
         )
         self._debug_mode = debug_mode
 
-        # breakpoint()
-
     @property
     def _pending_block(self):
         return self.chain.pending_block
@@ -465,7 +463,6 @@ class EELSBackend(BaseChainBackend):
                     current_state, BEACON_ROOTS_CONTRACT_ADDRESS
                 ).code
 
-                # breakpoint()
                 block_env = self._vm_module.BlockEnvironment(
                     chain_id=self.chain.chain_id,
                     state=current_state,
@@ -482,25 +479,6 @@ class EELSBackend(BaseChainBackend):
                     parent_beacon_block_root=pending_block_header[
                         "parent_beacon_block_root"
                     ],
-                )
-
-                system_tx_message = self._vm_module.Message(
-                    caller=SYSTEM_ADDRESS,
-                    target=BEACON_ROOTS_CONTRACT_ADDRESS,
-                    gas=SYSTEM_TRANSACTION_GAS,
-                    value=U256(0),
-                    data=pending_block_header["parent_beacon_block_root"],
-                    code=beacon_block_roots_contract_code,
-                    depth=Uint(0),
-                    current_target=BEACON_ROOTS_CONTRACT_ADDRESS,
-                    code_address=BEACON_ROOTS_CONTRACT_ADDRESS,
-                    should_transfer_value=False,
-                    is_static=False,
-                    accessed_addresses=set(),
-                    accessed_storage_keys=set(),
-                    parent_evm=None,
-                    block_env=block_env,
-                    tx_env=None,
                 )
 
                 system_tx_env = self._vm_module.TransactionEnvironment(
@@ -534,12 +512,33 @@ class EELSBackend(BaseChainBackend):
                     # transient_storage=self._state_module.TransientStorage(),
                 )
 
+                system_tx_message = self._vm_module.Message(
+                    caller=SYSTEM_ADDRESS,
+                    target=BEACON_ROOTS_CONTRACT_ADDRESS,
+                    gas=SYSTEM_TRANSACTION_GAS,
+                    value=U256(0),
+                    data=pending_block_header["parent_beacon_block_root"],
+                    code=beacon_block_roots_contract_code,
+                    depth=Uint(0),
+                    current_target=BEACON_ROOTS_CONTRACT_ADDRESS,
+                    code_address=BEACON_ROOTS_CONTRACT_ADDRESS,
+                    should_transfer_value=False,
+                    is_static=False,
+                    accessed_addresses=set(),
+                    accessed_storage_keys=set(),
+                    parent_evm=None,
+                    block_env=block_env,
+                    tx_env=system_tx_env,
+                )
+
                 system_tx_output = self._vm_module.interpreter.process_message_call(
                     # system_tx_message, system_tx_env
                     system_tx_message
                 )
                 self._state_module.destroy_touched_empty_accounts(
-                    system_tx_env.state, system_tx_output.touched_accounts
+                    # system_tx_env.state, system_tx_output.touched_accounts
+                    current_state,
+                    system_tx_output.touched_accounts,
                 )
 
             apply_body_output_dict = {"receipts_map": {}}
@@ -940,12 +939,14 @@ class EELSBackend(BaseChainBackend):
                 sender_address,
                 effective_gas_price,
                 blob_versioned_hashes,
+                tx_blob_gas_used,
             ) = check_tx_return
             kw_arguments["base_fee_per_gas"] = block_header["base_fee_per_gas"]
             kw_arguments["gas_price"] = effective_gas_price
             kw_arguments["blob_versioned_hashes"] = blob_versioned_hashes
             kw_arguments["excess_blob_gas"] = U64(block_header["excess_blob_gas"])
             kw_arguments["transient_storage"] = self._state_module.TransientStorage()
+            kw_arguments["blob_gas_used"] = tx_blob_gas_used
         elif self.fork.is_after_fork("ethereum.london"):
             sender_address, effective_gas_price = check_tx_return
             kw_arguments["base_fee_per_gas"] = block_header["base_fee_per_gas"]
@@ -969,7 +970,6 @@ class EELSBackend(BaseChainBackend):
 
         base_fee = self._pending_block["header"]["base_fee_per_gas"]
         if self.fork.is_after_fork("ethereum.cancun"):
-            # breakpoint()
             block_env = self._vm_module.BlockEnvironment(
                 chain_id=U64(self.chain.chain_id),
                 state=self.chain.state,
