@@ -1,0 +1,1 @@
+EELS and py-evm backends now convert dictionary keys from snake_case to camelCase. Outbound normalizers and validators have been updated to reflect this change. This is a breaking change that affects response payloads. The change is necessary to ensure compatibility with the EELS spec and to maintain consistency across clients.

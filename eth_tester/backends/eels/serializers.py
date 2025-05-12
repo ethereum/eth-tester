@@ -2,6 +2,7 @@ import time
 from typing import (
     Any,
     Dict,
+    Sequence,
     Union,
 )
 
@@ -12,9 +13,11 @@ from .utils import (
 if eels_is_available():
     from ethereum.cancun.blocks import (
         Block,
+        Log,
     )
 else:
     Block = None
+    Log = None
 
 from eth_tester.constants import (
     BLANK_ROOT_HASH,
@@ -22,7 +25,7 @@ from eth_tester.constants import (
     ZERO_HASH32,
 )
 from eth_tester.utils.casing import (
-    lower_camel_case_to_snake_case,
+    dict_keys_to_lower_camel_case,
 )
 from eth_tester.utils.transactions import (
     calculate_effective_gas_price,
@@ -31,16 +34,21 @@ from eth_tester.utils.transactions import (
 
 
 def _serialize_withdrawals_to_block(serialized_block, withdrawals):
+    txn_withdrawals = []
     for withdrawal in withdrawals:
-        serialized_block["withdrawals"].append(
-            {
-                "index": int(withdrawal.index),
-                "validator_index": int(withdrawal.validator_index),
-                "address": withdrawal.address,
-                "amount": int(withdrawal.amount),
-            }
-        )
+        txn_withdrawals.append(serialize_eels_withdrawal_for_block(withdrawal))
+
+    serialized_block["withdrawals"] = txn_withdrawals
     return serialized_block
+
+
+def serialize_eels_withdrawal_for_block(withdrawal):
+    return {
+        "index": int(withdrawal.index),
+        "validatorIndex": int(withdrawal.validator_index),
+        "address": withdrawal.address,
+        "amount": int(withdrawal.amount),
+    }
 
 
 def serialize_block(
@@ -126,12 +134,13 @@ def serialize_block(
             serialized_block, block.withdrawals
         )
 
-    return serialized_block
+    return dict_keys_to_lower_camel_case(serialized_block)
 
 
 def _serialize_txs_to_block(
     backend_instance, serialized_block, tx_list, full_transactions
 ):
+    txns = []
     for i, tx in enumerate(tx_list):
         if full_transactions:
             json_tx = serialize_eels_transaction_for_block(
@@ -141,10 +150,11 @@ def _serialize_txs_to_block(
                 serialized_block["number"],
                 serialized_block["hash"],
             )
-            serialized_block["transactions"].append(json_tx)
+            txns.append(json_tx)
         else:
-            serialized_block["transactions"].append(backend_instance._get_tx_hash(tx))
+            txns.append(backend_instance._get_tx_hash(tx))
 
+    serialized_block["transactions"] = txns
     return serialized_block
 
 
@@ -209,7 +219,7 @@ def serialize_eels_transaction_for_block(
     elif isinstance(tx, backend_instance._transactions_module.BlobTransaction):
         json_tx["type"] = "0x03"
 
-    return json_tx
+    return dict_keys_to_lower_camel_case(json_tx)
 
 
 def serialize_transaction(tx, pending_block: Dict[str, Any] = None):
@@ -218,14 +228,11 @@ def serialize_transaction(tx, pending_block: Dict[str, Any] = None):
         tx["block_number"] = int(pending_block["header"]["number"])
         tx["transaction_index"] = len(pending_block["transactions"]) - 1
 
-    serialized = {
-        lower_camel_case_to_snake_case(key): value for key, value in tx.items()
-    }
-
+    serialized = tx.copy()
     if "gas_limit" in serialized and "gas" not in serialized:
         serialized["gas"] = serialized.pop("gas_limit")
 
-    return serialized
+    return dict_keys_to_lower_camel_case(serialized)
 
 
 def serialize_pending_receipt(
@@ -235,7 +242,7 @@ def serialize_pending_receipt(
     index,
     cumulative_gas_used,
     contract_address=None,
-):
+) -> Dict[str, Any]:
     tx_hash = backend_instance._get_tx_hash(tx)
     tx_gas_consumed = int(process_transaction_return[0])
 
@@ -269,18 +276,21 @@ def serialize_pending_receipt(
         "status": 0 if errors else 1,
         "type": extract_transaction_type(tx),
     }
-    return serialized
+
+    return dict_keys_to_lower_camel_case(serialized)
 
 
-def serialize_pending_logs(eels_logs):
+def serialize_pending_logs(eels_logs: Sequence["Log"]) -> Sequence[Dict[str, Any]]:
     return [
-        {
-            "address": log.address,
-            "topics": log.topics,
-            "data": log.data,
-            "log_index": int(i),
-            "type": "pending",
-            # rest of the fields are added when block is finalized
-        }
+        dict_keys_to_lower_camel_case(
+            {
+                "address": log.address,
+                "topics": log.topics,
+                "data": log.data,
+                "log_index": int(i),
+                "type": "pending",
+                # rest of the fields are added when block is finalized
+            }
+        )
         for i, log in enumerate(eels_logs)
     ]
