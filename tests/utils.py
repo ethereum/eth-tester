@@ -72,7 +72,7 @@ def make_transaction(
     v: Any = None,
 ) -> Generator[Tuple[str, Any], None, None]:
     yield from yield_key_value_if_value_not_none("type", _type)
-    yield from yield_key_value_if_value_not_none("chain_id", chain_id)
+    yield from yield_key_value_if_value_not_none("chainId", chain_id)
     yield from yield_key_value_if_value_not_none("from", _from)
     yield from yield_key_value_if_value_not_none("to", to)
     yield from yield_key_value_if_value_not_none("gas", gas)
@@ -89,7 +89,7 @@ def make_transaction(
     yield from yield_key_value_if_value_not_none("s", s)
     yield from yield_key_value_if_value_not_none("v", v)
     yield from yield_key_value_if_value_not_none(
-        "blob_versioned_hashes", blob_versioned_hashes
+        "blobVersionedHashes", blob_versioned_hashes
     )
     yield from yield_key_value_if_value_not_none(
         "maxFeePerBlobGas", max_fee_per_blob_gas

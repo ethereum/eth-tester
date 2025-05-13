@@ -1,8 +1,8 @@
-import pytest
 from typing import (
     Any,
 )
 
+import pytest
 from eth_utils import (
     encode_hex,
 )
@@ -51,20 +51,41 @@ def test_block_hash_output_validation(
 
 
 @pytest.mark.parametrize(
-    "block_hash",
+    "block_hash,error_message",
     (
-        pytest.param(b"\x00", id="invalid_bytes_short"),
-        pytest.param("\x00" * 32, id="invalid_str"),
-        pytest.param(encode_hex(ZERO_32BYTES), id="invalid_hex"),
-        pytest.param(1, id="invalid_int"),
-        pytest.param(True, id="invalid_bool"),
+        pytest.param(
+            b"\x00",
+            "Must be of length 32.  Got: b'\\x00' of length 1",
+            id="invalid_bytes_short",
+        ),
+        pytest.param(
+            "\x00" * 32,
+            "Value must be a byte string.  Got type: <class 'str'>",
+            id="invalid_str",
+        ),
+        pytest.param(
+            encode_hex(ZERO_32BYTES),
+            "Value must be a byte string.  Got type: <class 'str'>",
+            id="invalid_hex",
+        ),
+        pytest.param(
+            1,
+            "Value must be a byte string.  Got type: <class 'int'>",
+            id="invalid_int",
+        ),
+        pytest.param(
+            True,
+            "Value must be a byte string.  Got type: <class 'bool'>",
+            id="invalid_bool",
+        ),
     ),
 )
 def test_block_hash_output_validation_invalid(
-    validator: DefaultValidator, block_hash: Any
+    validator: DefaultValidator, block_hash: Any, error_message: str
 ) -> None:
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as e:
         validator.validate_outbound_block_hash(block_hash)
+    assert e.value.args[0] == error_message
 
 
 @pytest.mark.parametrize(
@@ -78,22 +99,46 @@ def test_validate_outbound_transaction_hash(
 
 
 @pytest.mark.parametrize(
-    "hash",
+    "hash,error_message",
     (
-        pytest.param(b"\x00", id="invalid_bytes_short"),
-        pytest.param(b"\xff" * 31, id="invalid_bytes_short_ff"),
-        pytest.param(f"0x{'00' * 32}", id="invalid_hex_string"),
-        pytest.param("0x0", id="invalid_hex_string_short"),
-        pytest.param(1, id="invalid_int"),
-        pytest.param(True, id="invalid_bool"),
+        pytest.param(
+            b"\x00",
+            "Must be of length 32.  Got: b'\\x00' of length 1",
+            id="invalid_bytes_short",
+        ),
+        pytest.param(
+            b"\xff" * 31,
+            "Must be of length 32.  Got: b'\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff' of length 31",  # noqa: E501
+            id="invalid_bytes_short_ff",
+        ),
+        pytest.param(
+            f"0x{'00' * 32}",
+            "Value must be a byte string.  Got type: <class 'str'>",
+            id="invalid_hex_string",
+        ),
+        pytest.param(
+            "0x0",
+            "Value must be a byte string.  Got type: <class 'str'>",
+            id="invalid_hex_string_short",
+        ),
+        pytest.param(
+            1, "Value must be a byte string.  Got type: <class 'int'>", id="invalid_int"
+        ),
+        pytest.param(
+            True,
+            "Value must be a byte string.  Got type: <class 'bool'>",
+            id="invalid_bool",
+        ),
     ),
 )
 def test_validate_outbound_transaction_hash_invalid(
     validator: DefaultValidator,
     hash: Any,
+    error_message: str,
 ) -> None:
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as e:
         validator.validate_outbound_transaction_hash(hash)
+    assert e.value.args[0] == error_message
 
 
 @pytest.mark.parametrize(
@@ -363,8 +408,9 @@ def test_transaction_output_validation_invalid(
     validator: DefaultValidator,
     transaction: Any,
 ) -> None:
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as e:
         validator.validate_outbound_transaction(transaction)
+    assert "Value did not pass any of the provided validators" in e.value.args[0]
 
 
 @pytest.mark.parametrize(
@@ -400,41 +446,86 @@ def test_log_entry_output_validation(
 
 
 @pytest.mark.parametrize(
-    "log_entry",
+    "log_entry,error_message",
     (
-        pytest.param(make_log(_type="invalid-type"), id="invalid_log_type"),
+        pytest.param(
+            make_log(_type="invalid-type"),
+            "The following keys failed to validate\n- type: Log entry type must be one of 'pending' or 'mined'",  # noqa: E501
+            id="invalid_log_type",
+        ),
         pytest.param(
             make_log(transaction_index=-1),
+            "The following keys failed to validate\n- transactionIndex: Value must be a positive integer.  Got: -1",  # noqa: E501
             id="invalid_negative_transaction_index",
         ),
-        pytest.param(make_log(block_number=-1), id="invalid_negative_block_number"),
+        pytest.param(
+            make_log(block_number=-1),
+            "The following keys failed to validate\n- blockNumber: Value must be a positive integer.  Got: -1",  # noqa: E501
+            id="invalid_negative_block_number",
+        ),
         pytest.param(
             make_log(transaction_hash=HASH31),
+            "The following keys failed to validate\n- transactionHash: Must be of length 32.  Got: b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00' of length 31",  # noqa: E501
             id="invalid_short_transaction_hash",
         ),
         pytest.param(
             make_log(transaction_hash=HASH32_AS_TEXT),
+            "The following keys failed to validate\n- transactionHash: Value must be a byte string.  Got type: <class 'str'>",  # noqa: E501
             id="invalid_text_transaction_hash",
         ),
-        pytest.param(make_log(block_hash=HASH31), id="invalid_short_block_hash"),
-        pytest.param(make_log(block_hash=HASH32_AS_TEXT), id="invalid_text_block_hash"),
-        pytest.param(make_log(address=encode_hex(ADDRESS_A)), id="invalid_hex_address"),
-        pytest.param(make_log(data=""), id="invalid_empty_string_data"),
-        pytest.param(make_log(data=None), id="invalid_none_data"),
-        pytest.param(make_log(topics=[HASH32_AS_TEXT]), id="invalid_text_topic"),
-        pytest.param(make_log(topics=[HASH31]), id="invalid_short_topic"),
+        pytest.param(
+            make_log(block_hash=HASH31),
+            "The following keys failed to validate\n- blockHash: Must be of length 32.  Got: b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00' of length 31",  # noqa: E501
+            id="invalid_short_block_hash",
+        ),
+        pytest.param(
+            make_log(block_hash=HASH32_AS_TEXT),
+            "The following keys failed to validate\n- blockHash: Value must be a byte string.  Got type: <class 'str'>",  # noqa: E501
+            id="invalid_text_block_hash",
+        ),
+        pytest.param(
+            make_log(address=encode_hex(ADDRESS_A)),
+            "The following keys failed to validate\n- address: Value must be a byte string.  Got type: <class 'str'>",  # noqa: E501
+            id="invalid_hex_address",
+        ),
+        pytest.param(
+            make_log(data=""),
+            "The following keys failed to validate\n- data: Value must be a byte string.  Got type: <class 'str'>",  # noqa: E501
+            id="invalid_empty_string_data",
+        ),
+        pytest.param(
+            make_log(data=None),
+            "The following keys failed to validate\n- data: Value must be a byte string.  Got type: <class 'NoneType'>",  # noqa: E501
+            id="invalid_none_data",
+        ),
+        pytest.param(
+            make_log(topics=[HASH32_AS_TEXT]),
+            "The following keys failed to validate\n- topics: The following items failed to validate\n- [0]: Value must be a byte string.  Got type: <class 'str'>",  # noqa: E501
+            id="invalid_text_topic",
+        ),
+        pytest.param(
+            make_log(topics=[HASH31]),
+            "The following keys failed to validate\n- topics: The following items failed to validate\n- [0]: Must be of length 32.  Got: b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00' of length 31",  # noqa: E501
+            id="invalid_short_topic",
+        ),
         pytest.param(
             make_log(topics="invalid-topics"),  # type: ignore[arg-type]
+            "The following keys failed to validate\n- topics: Value must be a sequence type.  Got: <class 'str'>",  # noqa: E501
             id="invalid_string_topics",
         ),
-        pytest.param(merge(make_log(), {"invalid-key": 1}), id="invalid_extra_key"),
+        pytest.param(
+            merge(make_log(), {"invalid-key": 1}),
+            "Only the keys 'address/blockHash/blockNumber/data/logIndex/topics/transactionHash/transactionIndex/type' are allowed.  Got extra keys: 'invalid-key'",  # noqa: E501
+            id="invalid_extra_key",
+        ),
     ),
 )
 def test_log_entry_output_validation_invalid(
-    validator: DefaultValidator, log_entry: Any
+    validator: DefaultValidator, log_entry: Any, error_message: str
 ) -> None:
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as e:
         validator.validate_outbound_log_entry(log_entry)
+    assert e.value.args[0] == error_message
 
 
 @pytest.mark.parametrize(
@@ -571,8 +662,9 @@ def test_receipt_output_validation(validator: DefaultValidator, receipt: Any) ->
 def test_receipt_output_validation_invalid(
     validator: DefaultValidator, receipt: Any
 ) -> None:
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as e:
         validator.validate_outbound_receipt(receipt)
+    assert "Value did not pass any of the provided validators" in e.value.args[0]
 
 
 @pytest.mark.parametrize(
@@ -614,88 +706,111 @@ def test_block_output_validation(validator: DefaultValidator, block: Any) -> Non
 
 
 @pytest.mark.parametrize(
-    "block",
+    "block,error_message",
     (
         pytest.param(
             make_block(base_fee_per_gas=-1000000000),
+            "Value must be a positive integer.",
             id="invalid_negative_base_fee",
         ),
         pytest.param(
             make_block(base_fee_per_gas=1000000000.0),
+            "Value must be a positive integer.",
             id="invalid_float_base_fee",
         ),
         pytest.param(
             make_block(base_fee_per_gas="1000000000"),
+            "Value must be a positive integer.",
             id="invalid_string_base_fee",
         ),
         pytest.param(
             make_block(uncles=[ZERO_32BYTES, HASH32_AS_TEXT]),
+            "The following keys failed to validate",
             id="invalid_uncles_with_text",
         ),
         pytest.param(
             make_block(transactions="invalid"),  # type: ignore[arg-type]
+            "The following keys failed to validate",
             id="invalid_transactions_string",
         ),
         pytest.param(
             make_block(transactions=[ZERO_32BYTES, make_legacy_txn()]),
+            "The following keys failed to validate",
             id="invalid_mixed_transactions",
         ),
         pytest.param(
             make_block(transactions=[ZERO_32BYTES, make_access_list_txn()]),
+            "The following keys failed to validate",
             id="invalid_mixed_with_access_list",
         ),
         pytest.param(
             make_block(transactions=[ZERO_32BYTES, make_dynamic_fee_txn()]),
+            "The following keys failed to validate",
             id="invalid_mixed_with_dynamic_fee",
         ),
         pytest.param(
             make_block(transactions=[ZERO_32BYTES, make_blob_txn()]),
+            "The following keys failed to validate",
             id="invalid_mixed_with_blob",
         ),
         pytest.param(
             make_block(transactions=[ZERO_32BYTES, HASH32_AS_TEXT]),
+            "The following keys failed to validate",
             id="invalid_transactions_with_text",
         ),
         pytest.param(
             make_block(withdrawals=[make_withdrawal(index=-1)]),
+            "The following keys failed to validate",
             id="invalid_withdrawal_negative_index",
         ),
         pytest.param(
             make_block(withdrawals=[make_withdrawal(index=2**64)]),
+            "The following keys failed to validate",
             id="invalid_withdrawal_index_too_large",
         ),
         pytest.param(
             make_block(withdrawals=[make_withdrawal(validator_index=-1)]),
+            "Value must be a positive integer.  Got: -1",
             id="invalid_withdrawal_negative_validator_index",
         ),
         pytest.param(
             make_block(withdrawals=[make_withdrawal(validator_index=2**64)]),
+            "The following keys failed to validate",
             id="invalid_withdrawal_validator_index_too_large",
         ),
         pytest.param(
             make_block(withdrawals=[make_withdrawal(amount=-1)]),
+            "Value must be a positive integer.  Got: -1",
             id="invalid_withdrawal_negative_amount",
         ),
         pytest.param(
             make_block(withdrawals=[make_withdrawal(amount=2**64)]),
+            "The following keys failed to validate",
             id="invalid_withdrawal_amount_too_large",
         ),
         pytest.param(
             make_block(withdrawals=[make_withdrawal(address="1")]),
+            "The following keys failed to validate",
             id="invalid_withdrawal_string_address",
         ),
         pytest.param(
             make_block(withdrawals=[make_withdrawal(address=encode_hex(ZERO_ADDRESS))]),
+            "The following keys failed to validate",
             id="invalid_withdrawal_hex_address",
         ),
-        pytest.param(merge(make_block(), {"invalid-key": 1}), id="invalid_extra_key"),
+        pytest.param(
+            merge(make_block(), {"invalid-key": 1}),
+            "Only the keys 'baseFeePerGas/blobGasUsed/coinbase/difficulty/excessBlobGas/extraData/gasLimit/gasUsed/hash/logsBloom/mixHash/nonce/number/parentBeaconBlockRoot/parentHash/receiptsRoot/sha3Uncles/size/stateRoot/timestamp/totalDifficulty/transactions/transactionsRoot/uncles/withdrawals/withdrawalsRoot' are allowed.  Got extra keys: 'invalid-key'",  # noqa: E501
+            id="invalid_extra_key",
+        ),
     ),
 )
 def test_block_output_validation_invalid(
-    validator: DefaultValidator, block: Any
+    validator: DefaultValidator, block: Any, error_message: str
 ) -> None:
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as e:
         validator.validate_outbound_block(block)
+    assert error_message in e.value.args[0]
 
 
 @pytest.mark.parametrize(
@@ -707,19 +822,36 @@ def test_accounts_output_validation(validator: DefaultValidator, accounts: Any) 
 
 
 @pytest.mark.parametrize(
-    "accounts",
+    "accounts,error_message",
     (
-        pytest.param([ADDRESS_A, encode_hex(ADDRESS_A)], id="invalid_hex"),
-        pytest.param(ADDRESS_A, id="invalid_not_list"),
-        pytest.param([b"0x"], id="invalid_bytes"),
-        pytest.param([1], id="invalid_int"),
+        pytest.param(
+            [ADDRESS_A, encode_hex(ADDRESS_A)],
+            "The following items failed to validate\n- [1]: Value must be a byte string.  Got type: <class 'str'>",
+            id="invalid_hex",
+        ),
+        pytest.param(
+            ADDRESS_A,
+            "Value must be a sequence type.  Got: <class 'bytes'>",
+            id="invalid_not_list",
+        ),
+        pytest.param(
+            [b"0x"],
+            "The following items failed to validate\n- [0]: Value must be a 20 byte string",  # noqa: E501
+            id="invalid_bytes",
+        ),
+        pytest.param(
+            [1],
+            "The following items failed to validate\n- [0]: Value must be a byte string.  Got type: <class 'int'>",  # noqa: E501
+            id="invalid_int",
+        ),
     ),
 )
 def test_accounts_output_validation_invalid(
-    validator: DefaultValidator, accounts: Any
+    validator: DefaultValidator, accounts: Any, error_message: str
 ) -> None:
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as e:
         validator.validate_outbound_accounts(accounts)
+    assert e.value.args[0] == error_message
 
 
 @pytest.mark.parametrize(
@@ -744,7 +876,14 @@ def test_validate_outbound_value_bytes(
     getattr(validator, validator_name)(value)
 
 
-@pytest.mark.parametrize("value", (pytest.param(1, id="invalid_int"),))
+@pytest.mark.parametrize(
+    "value,error_message",
+    (
+        pytest.param(
+            1, "Value must be a byte string.  Got type: <class 'int'>", id="invalid_int"
+        ),
+    ),
+)
 @pytest.mark.parametrize(
     "validator_name",
     [
@@ -753,12 +892,14 @@ def test_validate_outbound_value_bytes(
     ],
 )
 def test_validate_outbound_value_bytes_invalid(
-    value: Any,
     validator: DefaultValidator,
     validator_name: str,
+    value: Any,
+    error_message: str,
 ) -> None:
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as e:
         getattr(validator, validator_name)(value)
+    assert e.value.args[0] == error_message
 
 
 @pytest.mark.parametrize(
@@ -788,12 +929,24 @@ def test_validate_outbound_value_uint256(
 
 
 @pytest.mark.parametrize(
-    "value",
+    "value,error_message",
     [
-        pytest.param(2**256, id="invalid_too_large"),
-        pytest.param(2**256 + 1, id="invalid_too_large_plus_one"),
-        pytest.param(-1, id="invalid_negative"),
-        pytest.param("abc", id="invalid_string"),
+        pytest.param(
+            2**256,
+            "Value exceeds maximum 256 bit integer size:  115792089237316195423570985008687907853269984665640564039457584007913129639936",  # noqa: E501
+            id="invalid_too_large",
+        ),
+        pytest.param(
+            2**256 + 1,
+            "Value exceeds maximum 256 bit integer size:  115792089237316195423570985008687907853269984665640564039457584007913129639937",  # noqa: E501
+            id="invalid_too_large_plus_one",
+        ),
+        pytest.param(
+            -1, "Value must be a positive integer.  Got: -1", id="invalid_negative"
+        ),
+        pytest.param(
+            "abc", "Value must be a positive integer.  Got: abc", id="invalid_string"
+        ),
     ],
 )
 @pytest.mark.parametrize(
@@ -809,6 +962,8 @@ def test_validate_outbound_value_uint256_invalid(
     validator: DefaultValidator,
     validator_name: str,
     value: Any,
+    error_message: str,
 ) -> None:
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as e:
         getattr(validator, validator_name)(value)
+    assert e.value.args[0] == error_message
