@@ -87,10 +87,10 @@ BLOB_TX_TYPE = 3
 # -- EIP CONSTANTS -- #
 
 # EIP-1559
-DYNAMIC_FEE_TRANSACTION_PARAMS = ("max_fee_per_gas", "max_priority_fee_per_gas")
+DYNAMIC_FEE_TRANSACTION_PARAMS = ("maxFeePerGas", "maxPriorityFeePerGas")
 
 # EIP-4844
-BLOB_TRANSACTION_PARAMS = ("max_fee_per_blob_gas", "blob_versioned_hashes")
+BLOB_TRANSACTION_PARAMS = ("maxFeePerBlobGas", "blobVersionedHashes")
 GAS_PER_BLOB = 2**17
 
 # EIP-4788

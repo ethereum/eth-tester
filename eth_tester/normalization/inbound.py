@@ -89,7 +89,7 @@ def _normalize_inbound_access_list(access_list):
             tuple(
                 [
                     to_bytes(hexstr=entry["address"]),
-                    tuple([int(k, 16) for k in entry["storage_keys"]]),
+                    tuple([int(k, 16) for k in entry["storageKeys"]]),
                 ]
             )
             for entry in access_list
@@ -99,17 +99,17 @@ def _normalize_inbound_access_list(access_list):
 
 TRANSACTION_NORMALIZERS = {
     "type": identity,
-    "chain_id": identity,
+    "chainId": identity,
     "from": to_canonical_address,
     "to": to_empty_or_canonical_address,
     "gas": identity,
-    "gas_price": identity,
-    "max_fee_per_gas": identity,
-    "max_priority_fee_per_gas": identity,
+    "gasPrice": identity,
+    "maxFeePerGas": identity,
+    "maxPriorityFeePerGas": identity,
     "nonce": identity,
     "value": identity,
     "data": decode_hex,
-    "access_list": _normalize_inbound_access_list,
+    "accessList": _normalize_inbound_access_list,
     "r": identity,
     "s": identity,
     "v": identity,
@@ -119,13 +119,11 @@ normalize_transaction = partial(normalize_dict, normalizers=TRANSACTION_NORMALIZ
 
 LOG_ENTRY_NORMALIZERS = {
     "type": identity,
-    "log_index": identity,
-    "transaction_index": identity,
-    "transaction_hash": decode_hex,
-    "block_hash": partial(
-        normalize_if, conditional_fn=is_string, normalizer=decode_hex
-    ),
-    "block_number": identity,
+    "logIndex": identity,
+    "transactionIndex": identity,
+    "transactionHash": decode_hex,
+    "blockHash": partial(normalize_if, conditional_fn=is_string, normalizer=decode_hex),
+    "blockNumber": identity,
     "address": to_canonical_address,
     "data": decode_hex,
     "topics": partial(normalize_array, normalizer=decode_hex),

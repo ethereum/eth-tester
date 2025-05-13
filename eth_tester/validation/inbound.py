@@ -187,16 +187,16 @@ def validate_private_key(value):
 
 TRANSACTION_KEYS = {
     "type",
-    "chain_id",
+    "chainId",
     "from",
     "to",
     "gas",
-    "gas_price",
-    "max_fee_per_gas",
-    "max_priority_fee_per_gas",
+    "gasPrice",
+    "maxFeePerGas",
+    "maxPriorityFeePerGas",
     "value",
     "data",
-    "access_list",
+    "accessList",
     "nonce",
 }
 
@@ -265,6 +265,9 @@ def validate_transaction(value, txn_internal_type):
             )
         )
 
+    if "chainId" in value:
+        validate_uint256(value["chainId"])
+
     if "type" in value:
         # type is validated but not required. If this value exists, it will be popped
         # out of the dict and the type will instead be inferred from the
@@ -281,19 +284,18 @@ def validate_transaction(value, txn_internal_type):
 
     if "gas" in value:
         validate_uint256(value["gas"])
+        if "gasPrice" in value:
+            validate_uint256(value["gasPrice"])
 
-    if "gas_price" in value:
-        validate_uint256(value["gas_price"])
+        if "maxFeePerGas" in value:
+            validate_uint256(value["maxFeePerGas"])
+            if "gasPrice" in value:
+                raise ValidationError("Mixed legacy and dynamic fee transaction values")
 
-    if "max_fee_per_gas" in value:
-        validate_uint256(value["max_fee_per_gas"])
-        if "gas_price" in value:
-            raise ValidationError("Mixed legacy and dynamic fee transaction values")
-
-    if "max_priority_fee_per_gas" in value:
-        validate_uint256(value["max_priority_fee_per_gas"])
-        if "gas_price" in value:
-            raise ValidationError("Mixed legacy and dynamic fee transaction values")
+        if "maxPriorityFeePerGas" in value:
+            validate_uint256(value["maxPriorityFeePerGas"])
+            if "gasPrice" in value:
+                raise ValidationError("Mixed legacy and dynamic fee transaction values")
 
     if "value" in value:
         validate_uint256(value["value"])
@@ -319,8 +321,8 @@ def validate_transaction(value, txn_internal_type):
             # binascii.Error is for python3
             raise ValidationError(bad_data_message)
 
-    if "access_list" in value:
-        _validate_inbound_access_list(value["access_list"])
+    if "accessList" in value:
+        _validate_inbound_access_list(value["accessList"])
 
     if txn_internal_type == "send_signed":
         validate_uint256(value["r"])
@@ -348,19 +350,19 @@ def _validate_inbound_access_list(access_list):
     ... )
     """
     if not is_list_like(access_list):
-        raise ValidationError("access_list is not list-like")
+        raise ValidationError("accessList is not list-like")
     for entry in access_list:
         if not is_dict(entry) and len(entry) != 2:
-            raise ValidationError(f"access_list entry not properly formatted: {entry}")
+            raise ValidationError(f"accessList entry not properly formatted: {entry}")
         address = entry.get("address")
-        storage_keys = entry.get("storage_keys")
+        storage_keys = entry.get("storageKeys")
         if not is_hex_address(address):
             raise ValidationError(
-                f"access_list address must be a hexadecimal address: {address}"
+                f"accessList address must be a hexadecimal address: {address}"
             )
         if not is_list_like(storage_keys):
             raise ValidationError(
-                f"access_list storage keys are not list-like: {storage_keys}"
+                f"accessList storage keys are not list-like: {storage_keys}"
             )
         if len(storage_keys) > 0 and not all(
             is_32byte_hex_string(k) for k in storage_keys
@@ -381,7 +383,7 @@ def validate_raw_transaction(raw_transaction):
 
 INBOUND_WITHDRAWAL_VALIDATORS = {
     "index": validate_uint64,
-    "validator_index": validate_uint64,
+    "validatorIndex": validate_uint64,
     "address": validate_address,
     "amount": validate_uint64,
 }

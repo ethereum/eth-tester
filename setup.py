@@ -30,7 +30,7 @@ extras_require = {
         "eth-hash[pycryptodome]>=0.1.4,<1.0.0;implementation_name=='pypy'",
     ],
     "eels": [
-        "ethereum-execution",
+        "ethereum-execution==1.17.0rc6.dev1",
     ],
 }
 

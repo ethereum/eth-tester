@@ -1,9 +1,11 @@
 import pytest
+from typing import (
+    Any,
+    Dict,
+)
 
 from eth_utils import (
     decode_hex,
-    encode_hex,
-    to_dict,
 )
 
 from eth_tester.exceptions import (
@@ -15,348 +17,658 @@ from eth_tester.validation import (
 from eth_tester.validation.inbound import (
     validate_inbound_withdrawals,
 )
+from tests.constants import (
+    ADDRESS_A_HEX,
+    ADDRESS_B_HEX,
+    TOPIC_A_HEX,
+    TOPIC_B_HEX,
+    TOPIC_C_HEX,
+    TOPIC_D_HEX,
+)
+from tests.core.validation.constants import (
+    INVALID_ADDRESS_PARAM,
+    INVALID_BLOCK_NUMBER,
+    INVALID_BLOCK_NUMBER_VALUE_TYPE,
+    INVALID_INTEGER_VALUE,
+    INVALID_TRANSACTION_BLOB_PARAMS,
+    INVALID_TRANSACTION_DATA_PARAM,
+    INVALID_TRANSACTION_MISSING_KEYS,
+)
 from tests.utils import (
-    yield_key_value_if_value_not_none,
+    make_filter_params,
+    make_transaction,
 )
-
-
-@pytest.fixture
-def validator():
-    _validator = DefaultValidator()
-    return _validator
 
 
 @pytest.mark.parametrize(
-    "timestamp,is_valid",
+    "account",
     (
-        (4000001, True),
-        (4000010, True),
-        ("4000001", False),
-        ("4000010", False),
-        (4000001.0, False),
-        (4000010.0, False),
-        (True, False),
-        (False, False),
+        pytest.param(f"0x{'01' * 20}", id="valid_20_byte_hex_address"),
+        pytest.param(f"{'01' * 20}", id="valid_string_address"),
     ),
 )
-def test_time_travel_input_timestamp_validation(validator, timestamp, is_valid):
-    if is_valid:
-        validator.validate_inbound_timestamp(timestamp)
-    else:
-        with pytest.raises(ValidationError):
-            validator.validate_inbound_timestamp(timestamp)
+def test_inbound_account_valid(validator: DefaultValidator, account: Any) -> None:
+    validator.validate_inbound_account(account)
 
 
 @pytest.mark.parametrize(
-    "block_number,is_valid",
+    "account,error_message",
     (
-        (0, True),
-        (1, True),
-        (-1, False),
-        (False, False),
-        (True, False),
-        ("latest", True),
-        ("pending", True),
-        ("earliest", True),
-        ("safe", True),
-        ("finalized", True),
-        (2**256, True),
-        (b"latest", False),
-        (b"pending", False),
-        (b"earliest", False),
-        (b"safe", False),
-        (b"finalized", False),
+        pytest.param(
+            f"0x{'01' * 32}",
+            INVALID_ADDRESS_PARAM.format(f"0x{'01' * 32}"),
+            id="invalid_32_byte_hex_address",
+        ),
+        pytest.param(
+            b"\x01" * 20,
+            INVALID_ADDRESS_PARAM.format(b"\x01" * 20),
+            id="invalid_bytes_address",
+        ),
+        pytest.param(
+            None,
+            INVALID_ADDRESS_PARAM.format(None),
+            id="invalid_none_address",
+        ),
     ),
 )
-def test_block_number_input_validation(validator, block_number, is_valid):
-    if is_valid:
-        validator.validate_inbound_block_number(block_number)
-    else:
-        with pytest.raises(ValidationError):
-            validator.validate_inbound_block_number(block_number)
+def test_inbound_account_invalid(
+    validator: DefaultValidator, account: Any, error_message: str
+) -> None:
+    with pytest.raises(ValidationError) as e:
+        validator.validate_inbound_account(account)
+    assert e.value.args[0] == error_message
 
 
 @pytest.mark.parametrize(
-    "block_hash,is_valid",
+    "block_hash",
     (
-        (0, False),
-        (1, False),
-        (-1, False),
-        (False, False),
-        (True, False),
-        (b"", False),
-        ("", False),
-        ("0" * 32, False),
-        ("0x" + "0" * 32, False),
-        ("\x00" * 32, False),
-        (b"\x00" * 32, False),
-        ("0" * 64, True),
-        ("0x" + "0" * 64, True),
-        (b"0x" + b"0" * 64, False),
+        pytest.param("0" * 64, id="valid_hash_string"),
+        pytest.param("0x" + "0" * 64, id="valid_hash_hex_string"),
     ),
 )
-def test_block_hash_input_validation(validator, block_hash, is_valid):
-    if is_valid:
+def test_block_hash_input_validation(
+    validator: DefaultValidator, block_hash: Any
+) -> None:
+    validator.validate_inbound_block_hash(block_hash)
+
+
+VALIDATION_ERROR_MESSAGE_BLOCK_HASH = (
+    "Block hash must be a hexadecimal encoded 32 byte string.  Got: {}"
+)
+
+
+@pytest.mark.parametrize(
+    "block_hash,error_message",
+    (
+        pytest.param(
+            0,
+            VALIDATION_ERROR_MESSAGE_BLOCK_HASH.format("0"),
+            id="invalid_int_zero",
+        ),
+        pytest.param(
+            1,
+            VALIDATION_ERROR_MESSAGE_BLOCK_HASH.format("1"),
+            id="invalid_int_one",
+        ),
+        pytest.param(
+            -1,
+            VALIDATION_ERROR_MESSAGE_BLOCK_HASH.format("-1"),
+            id="invalid_negative_int",
+        ),
+        pytest.param(
+            False,
+            VALIDATION_ERROR_MESSAGE_BLOCK_HASH.format("False"),
+            id="invalid_bool_false",
+        ),
+        pytest.param(
+            True,
+            VALIDATION_ERROR_MESSAGE_BLOCK_HASH.format("True"),
+            id="invalid_bool_true",
+        ),
+        pytest.param(
+            b"",
+            VALIDATION_ERROR_MESSAGE_BLOCK_HASH.format("b''"),
+            id="invalid_empty_bytes",
+        ),
+        pytest.param(
+            "",
+            VALIDATION_ERROR_MESSAGE_BLOCK_HASH.format(""),
+            id="invalid_empty_string",
+        ),
+        pytest.param(
+            "0" * 32,
+            VALIDATION_ERROR_MESSAGE_BLOCK_HASH.format(
+                "00000000000000000000000000000000"
+            ),
+            id="invalid_hash_string",
+        ),
+        pytest.param(
+            "0x" + "0" * 32,
+            VALIDATION_ERROR_MESSAGE_BLOCK_HASH.format(
+                "0x00000000000000000000000000000000"
+            ),
+            id="invalid_hash_hex_string",
+        ),
+        pytest.param(
+            "\x00" * 32,
+            VALIDATION_ERROR_MESSAGE_BLOCK_HASH.format(
+                "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"  # noqa: E501
+            ),
+            id="invalid_32_bytes_string",
+        ),
+        pytest.param(
+            b"\x00" * 32,
+            VALIDATION_ERROR_MESSAGE_BLOCK_HASH.format(
+                "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'"  # noqa: E501
+            ),
+            id="invalid_32_bytes",
+        ),
+        pytest.param(
+            b"0x" + b"0" * 64,
+            VALIDATION_ERROR_MESSAGE_BLOCK_HASH.format(
+                "b'0x0000000000000000000000000000000000000000000000000000000000000000'"
+            ),
+            id="invalid_bytes_hex_string",
+        ),
+    ),
+)
+def test_block_hash_input_validation_invalid(
+    validator: DefaultValidator, block_hash: Any, error_message: str
+) -> None:
+    with pytest.raises(ValidationError) as e:
         validator.validate_inbound_block_hash(block_hash)
-    else:
-        with pytest.raises(ValidationError):
-            validator.validate_inbound_block_hash(block_hash)
-
-
-def _make_filter_params(from_block=None, to_block=None, address=None, topics=None):
-    return {
-        "from_block": from_block,
-        "to_block": to_block,
-        "address": address,
-        "topics": topics,
-    }
+    assert e.value.args[0] == error_message
 
 
 @pytest.mark.parametrize(
-    "filter_id,is_valid",
+    "block_number",
     (
-        (-1, False),
-        (0, True),
-        (1, True),
-        ("0x0", False),
-        ("0x00", False),
-        ("0x1", False),
-        ("0x01", False),
-        ("0", False),
-        ("1", False),
+        pytest.param(0, id="valid_zero"),
+        pytest.param(1, id="valid_positive_int"),
+        pytest.param("latest", id="valid_latest_string"),
+        pytest.param("pending", id="valid_pending_string"),
+        pytest.param("earliest", id="valid_earliest_string"),
+        pytest.param("safe", id="valid_safe_string"),
+        pytest.param("finalized", id="valid_finalized_string"),
+        pytest.param(2**256, id="valid_large_int"),
     ),
 )
-def test_filter_id_input_validation(validator, filter_id, is_valid):
-    if is_valid:
+def test_block_number_input_validation(
+    validator: DefaultValidator, block_number: Any
+) -> None:
+    validator.validate_inbound_block_number(block_number)
+
+
+@pytest.mark.parametrize(
+    "block_number,error_message",
+    (
+        pytest.param(
+            -1,
+            INVALID_BLOCK_NUMBER.format("-1"),
+            id="invalid_negative_int",
+        ),
+        pytest.param(
+            False,
+            INVALID_BLOCK_NUMBER.format("False"),
+            id="invalid_bool_false",
+        ),
+        pytest.param(
+            True,
+            INVALID_BLOCK_NUMBER.format("True"),
+            id="invalid_bool_true",
+        ),
+        pytest.param(
+            b"latest",
+            INVALID_BLOCK_NUMBER_VALUE_TYPE,
+            id="invalid_latest_bytes",
+        ),
+        pytest.param(
+            b"pending",
+            INVALID_BLOCK_NUMBER_VALUE_TYPE,
+            id="invalid_pending_bytes",
+        ),
+        pytest.param(
+            b"earliest",
+            INVALID_BLOCK_NUMBER_VALUE_TYPE,
+            id="invalid_earliest_bytes",
+        ),
+        pytest.param(
+            b"safe",
+            INVALID_BLOCK_NUMBER_VALUE_TYPE,
+            id="invalid_safe_bytes",
+        ),
+        pytest.param(
+            b"finalized",
+            INVALID_BLOCK_NUMBER_VALUE_TYPE,
+            id="invalid_finalized_bytes",
+        ),
+    ),
+)
+def test_block_number_input_validation_invalid(
+    validator: DefaultValidator, block_number: Any, error_message: str
+) -> None:
+    with pytest.raises(ValidationError) as e:
+        validator.validate_inbound_block_number(block_number)
+    assert e.value.args[0] == error_message
+
+
+@pytest.mark.parametrize(
+    "filter_id",
+    (
+        pytest.param(0, id="valid_zero"),
+        pytest.param(1, id="valid_positive_int"),
+    ),
+)
+def test_filter_id_input_validation(
+    validator: DefaultValidator, filter_id: Any
+) -> None:
+    validator.validate_inbound_filter_id(filter_id)
+
+
+@pytest.mark.parametrize(
+    "filter_id,error_message",
+    (
+        pytest.param(
+            -1,
+            INVALID_INTEGER_VALUE.format("-1"),
+            id="invalid_negative_int",
+        ),
+        pytest.param(
+            "0x0",
+            INVALID_INTEGER_VALUE.format("0x0"),
+            id="invalid_hex_string_0x0",
+        ),
+        pytest.param(
+            "0x00",
+            INVALID_INTEGER_VALUE.format("0x00"),
+            id="invalid_hex_string_0x00",
+        ),
+        pytest.param(
+            "0x1",
+            INVALID_INTEGER_VALUE.format("0x1"),
+            id="invalid_hex_string_0x1",
+        ),
+        pytest.param(
+            "0x01",
+            INVALID_INTEGER_VALUE.format("0x01"),
+            id="invalid_hex_string_0x01",
+        ),
+        pytest.param(
+            "0",
+            INVALID_INTEGER_VALUE.format("0"),
+            id="invalid_string_0",
+        ),
+        pytest.param(
+            "1",
+            INVALID_INTEGER_VALUE.format("1"),
+            id="invalid_string_1",
+        ),
+    ),
+)
+def test_filter_id_input_validation_invalid(
+    validator: DefaultValidator, filter_id: Any, error_message: str
+) -> None:
+    with pytest.raises(ValidationError) as e:
         validator.validate_inbound_filter_id(filter_id)
-    else:
-        with pytest.raises(ValidationError):
-            validator.validate_inbound_filter_id(filter_id)
-
-
-ADDRESS_A = encode_hex(b"\x00" * 19 + b"\x01")
-ADDRESS_B = encode_hex(b"\x00" * 19 + b"\x02")
-TOPIC_A = encode_hex(b"\x00" * 31 + b"\x01")
-TOPIC_B = encode_hex(b"\x00" * 31 + b"\x02")
-TOPIC_C = encode_hex(b"\x00" * 30 + b"\x01")
-TOPIC_D = encode_hex(b"\x00" * 32 + b"\x01")
+    assert e.value.args[0] == error_message
 
 
 @pytest.mark.parametrize(
-    "filter_params,is_valid",
+    "filter_params",
     (
-        (_make_filter_params(), True),
-        (_make_filter_params(from_block=0), True),
-        (_make_filter_params(to_block=0), True),
-        (_make_filter_params(from_block=-1), False),
-        (_make_filter_params(to_block=-1), False),
-        (_make_filter_params(from_block=True), False),
-        (_make_filter_params(to_block=False), False),
-        (_make_filter_params(from_block="0x0"), False),
-        (_make_filter_params(to_block="0x0"), False),
-        (_make_filter_params(from_block="0x1"), False),
-        (_make_filter_params(to_block="0x1"), False),
-        (_make_filter_params(address=ADDRESS_A), True),
-        (_make_filter_params(address=decode_hex(ADDRESS_A)), False),
-        (_make_filter_params(address=[ADDRESS_A, ADDRESS_B]), True),
-        (_make_filter_params(address=TOPIC_A), False),
-        (_make_filter_params(address=decode_hex(TOPIC_A)), False),
-        (_make_filter_params(address=[TOPIC_A, ADDRESS_B]), False),
-        (_make_filter_params(topics=[TOPIC_A]), True),
-        (_make_filter_params(topics=[TOPIC_A, TOPIC_B]), True),
-        (_make_filter_params(topics=[TOPIC_A, None]), True),
-        (_make_filter_params(topics=[[TOPIC_A], [TOPIC_B]]), True),
-        (_make_filter_params(topics=[TOPIC_A, [TOPIC_B, TOPIC_A]]), True),
-        (_make_filter_params(topics=[[TOPIC_A], [TOPIC_B, None]]), True),
-        (_make_filter_params(topics=[decode_hex(TOPIC_A)]), True),
-        (_make_filter_params(topics=[decode_hex(TOPIC_A), decode_hex(TOPIC_B)]), True),
-        (_make_filter_params(topics=[decode_hex(TOPIC_A), None]), True),
-        (
-            _make_filter_params(topics=[[decode_hex(TOPIC_A)], [decode_hex(TOPIC_B)]]),
-            True,
+        pytest.param(make_filter_params(), id="empty_filter"),
+        pytest.param(make_filter_params(from_block=0), id="valid_from_block_zero"),
+        pytest.param(make_filter_params(to_block=0), id="valid_to_block_zero"),
+        pytest.param(
+            make_filter_params(address=ADDRESS_A_HEX), id="valid_single_address"
         ),
-        (
-            _make_filter_params(
-                topics=[decode_hex(TOPIC_A), [decode_hex(TOPIC_B), decode_hex(TOPIC_A)]]
+        pytest.param(
+            make_filter_params(address=[ADDRESS_A_HEX, ADDRESS_B_HEX]),
+            id="valid_multiple_addresses",
+        ),
+        pytest.param(make_filter_params(topics=[TOPIC_A_HEX]), id="valid_single_topic"),
+        pytest.param(
+            make_filter_params(topics=[TOPIC_A_HEX, TOPIC_B_HEX]),
+            id="valid_multiple_topics",
+        ),
+        pytest.param(
+            make_filter_params(topics=[TOPIC_A_HEX, None]),
+            id="valid_topic_with_none",
+        ),
+        pytest.param(
+            make_filter_params(topics=[[TOPIC_A_HEX], [TOPIC_B_HEX]]),
+            id="valid_nested_topics",
+        ),
+        pytest.param(
+            make_filter_params(topics=[TOPIC_A_HEX, [TOPIC_B_HEX, TOPIC_A_HEX]]),
+            id="valid_mixed_topic_structure",
+        ),
+        pytest.param(
+            make_filter_params(topics=[[TOPIC_A_HEX], [TOPIC_B_HEX, None]]),
+            id="valid_nested_topics_with_none",
+        ),
+        pytest.param(
+            make_filter_params(topics=[decode_hex(TOPIC_A_HEX)]),
+            id="valid_TOPIC_B_HEXytes",
+        ),
+        pytest.param(
+            make_filter_params(
+                topics=[decode_hex(TOPIC_A_HEX), decode_hex(TOPIC_B_HEX)]
             ),
-            True,
+            id="valid_multiple_TOPIC_B_HEXytes",
         ),
-        (
-            _make_filter_params(
-                topics=[[decode_hex(TOPIC_A)], [decode_hex(TOPIC_B), None]]
+        pytest.param(
+            make_filter_params(topics=[decode_hex(TOPIC_A_HEX), None]),
+            id="valid_TOPIC_B_HEXytes_with_none",
+        ),
+        pytest.param(
+            make_filter_params(
+                topics=[[decode_hex(TOPIC_A_HEX)], [decode_hex(TOPIC_B_HEX)]]
             ),
-            True,
+            id="valid_nested_TOPIC_B_HEXytes",
         ),
-        (_make_filter_params(topics=[decode_hex(TOPIC_C)]), False),
-        (_make_filter_params(topics=[decode_hex(TOPIC_D)]), False),
-        (_make_filter_params(topics=[ADDRESS_A]), False),
-        (_make_filter_params(topics=[ADDRESS_A, TOPIC_B]), False),
-        (_make_filter_params(topics=[[ADDRESS_A], [TOPIC_B]]), False),
+        pytest.param(
+            make_filter_params(
+                topics=[
+                    decode_hex(TOPIC_A_HEX),
+                    [decode_hex(TOPIC_B_HEX), decode_hex(TOPIC_A_HEX)],
+                ]
+            ),
+            id="valid_mixed_TOPIC_B_HEXytes",
+        ),
+        pytest.param(
+            make_filter_params(
+                topics=[
+                    [decode_hex(TOPIC_A_HEX)],
+                    [decode_hex(TOPIC_B_HEX), None],
+                ]
+            ),
+            id="valid_nested_TOPIC_B_HEXytes_with_none",
+        ),
     ),
 )
-def test_filter_params_input_validation(validator, filter_params, is_valid):
-    if is_valid:
-        validator.validate_inbound_filter_params(**filter_params)
-    else:
-        with pytest.raises(ValidationError):
-            validator.validate_inbound_filter_params(**filter_params)
-
-
-@to_dict
-def _make_transaction(
-    blob_versioned_hashes=None,
-    chain_id=None,
-    _type=None,
-    _from=None,
-    to=None,
-    gas=None,
-    gas_price=None,
-    max_fee_per_blob_gas=None,
-    max_fee_per_gas=None,
-    max_priority_fee_per_gas=None,
-    value=None,
-    data=None,
-    nonce=None,
-    access_list=None,
-    r=None,
-    s=None,
-    v=None,
-):
-    yield from yield_key_value_if_value_not_none("type", _type)
-    yield from yield_key_value_if_value_not_none("chain_id", chain_id)
-    yield from yield_key_value_if_value_not_none("from", _from)
-    yield from yield_key_value_if_value_not_none("to", to)
-    yield from yield_key_value_if_value_not_none("gas", gas)
-    yield from yield_key_value_if_value_not_none("gas_price", gas_price)
-    yield from yield_key_value_if_value_not_none("max_fee_per_gas", max_fee_per_gas)
-    yield from yield_key_value_if_value_not_none(
-        "max_priority_fee_per_gas", max_priority_fee_per_gas
-    )
-    yield from yield_key_value_if_value_not_none("value", value)
-    yield from yield_key_value_if_value_not_none("data", data)
-    yield from yield_key_value_if_value_not_none("nonce", nonce)
-    yield from yield_key_value_if_value_not_none("access_list", access_list)
-    yield from yield_key_value_if_value_not_none("r", r)
-    yield from yield_key_value_if_value_not_none("s", s)
-    yield from yield_key_value_if_value_not_none("v", v)
-    yield from yield_key_value_if_value_not_none(
-        "blob_versioned_hashes", blob_versioned_hashes
-    )
-    yield from yield_key_value_if_value_not_none(
-        "max_fee_per_blob_gas", max_fee_per_blob_gas
-    )
+def test_filter_params_input_validation(
+    validator: DefaultValidator, filter_params: Dict[str, Any]
+) -> None:
+    validator.validate_inbound_filter_params(**filter_params)
 
 
 @pytest.mark.parametrize(
-    "txn_internal_type, transaction, is_valid",
+    "filter_params,error_message",
     (
-        ("send", {}, False),
-        ("send", _make_transaction(to=ADDRESS_B, gas=21000), False),
-        ("send", _make_transaction(_from=ADDRESS_A, gas=21000), True),
-        ("send", _make_transaction(_from=ADDRESS_A, to=ADDRESS_B), False),
-        ("send", _make_transaction(_from=ADDRESS_A, to=ADDRESS_B, gas=21000), True),
-        ("send", _make_transaction(_from="", to=ADDRESS_B, gas=21000), False),
-        ("send", _make_transaction(_from=ADDRESS_A, to="", gas=21000), True),
-        ("send", _make_transaction(_from=ADDRESS_A, to=b"", gas=21000), False),
-        (
-            "send",
-            _make_transaction(_from=decode_hex(ADDRESS_A), to=ADDRESS_B, gas=21000),
+        pytest.param(
+            make_filter_params(from_block=-1),
+            INVALID_BLOCK_NUMBER.format("-1"),
+            id="invalid_from_block_negative",
+        ),
+        pytest.param(
+            make_filter_params(to_block=-1),
+            INVALID_BLOCK_NUMBER.format("-1"),
+            id="invalid_to_block_negative",
+        ),
+        pytest.param(
+            make_filter_params(from_block=True),
+            INVALID_BLOCK_NUMBER.format("True"),
+            id="invalid_from_block_bool",
+        ),
+        pytest.param(
+            make_filter_params(to_block=False),
+            INVALID_BLOCK_NUMBER.format("False"),
+            id="invalid_to_block_bool",
+        ),
+        pytest.param(
+            make_filter_params(from_block="0x0"),
+            INVALID_BLOCK_NUMBER.format("0x0"),
+            id="invalid_from_block_hex_string",
+        ),
+        pytest.param(
+            make_filter_params(to_block="0x0"),
+            INVALID_BLOCK_NUMBER.format("0x0"),
+            id="invalid_to_block_hex_string",
+        ),
+        pytest.param(
+            make_filter_params(from_block="0x1"),
+            INVALID_BLOCK_NUMBER.format("0x1"),
+            id="invalid_from_block_hex_one",
+        ),
+        pytest.param(
+            make_filter_params(address=decode_hex(ADDRESS_A_HEX)),
+            INVALID_ADDRESS_PARAM.format(
+                "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01'"  # noqa: E501
+            ),
+            id="invalid_address_decode_hex",
+        ),
+        pytest.param(
+            make_filter_params(address=TOPIC_A_HEX),
+            INVALID_ADDRESS_PARAM.format(
+                "0x0000000000000000000000000000000000000000000000000000000000000001"
+            ),
+            id="invalid_address_topic",
+        ),
+        pytest.param(
+            make_filter_params(address=decode_hex(TOPIC_A_HEX)),
+            INVALID_ADDRESS_PARAM.format(
+                "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01'"  # noqa: E501
+            ),
+            id="invalid_address_decode_hex_topic",
+        ),
+        pytest.param(
+            make_filter_params(address=[TOPIC_A_HEX, ADDRESS_B_HEX]),
+            INVALID_ADDRESS_PARAM.format(
+                "0x0000000000000000000000000000000000000000000000000000000000000001"
+            ),
+            id="invalid_mixed_address_topic",
+        ),
+        pytest.param(
+            make_filter_params(topics=[decode_hex(TOPIC_C_HEX)]),
+            'Topics must be one of `None` or an array of topics. Each topic must be 32 bytes, represented as a bytestring or its hex string equivalent. A filter query of topics using "OR" can be achieved using a sub-array of topics. See https://eth.wiki/json-rpc/API#eth_newfilter for more details.',  # noqa: E501
+            id="invalid_topic_length_short",
+        ),
+        pytest.param(
+            make_filter_params(topics=[decode_hex(TOPIC_D_HEX)]),
+            'Topics must be one of `None` or an array of topics. Each topic must be 32 bytes, represented as a bytestring or its hex string equivalent. A filter query of topics using "OR" can be achieved using a sub-array of topics. See https://eth.wiki/json-rpc/API#eth_newfilter for more details.',  # noqa: E501
+            id="invalid_topic_length_long",
+        ),
+        pytest.param(
+            make_filter_params(topics=[ADDRESS_A_HEX]),
+            'Topics must be one of `None` or an array of topics. Each topic must be 32 bytes, represented as a bytestring or its hex string equivalent. A filter query of topics using "OR" can be achieved using a sub-array of topics. See https://eth.wiki/json-rpc/API#eth_newfilter for more details.',  # noqa: E501
+            id="invalid_topic_is_address",
+        ),
+        pytest.param(
+            make_filter_params(topics=[ADDRESS_A_HEX, TOPIC_B_HEX]),
+            'Topics must be one of `None` or an array of topics. Each topic must be 32 bytes, represented as a bytestring or its hex string equivalent. A filter query of topics using "OR" can be achieved using a sub-array of topics. See https://eth.wiki/json-rpc/API#eth_newfilter for more details.',  # noqa: E501
+            id="invalid_topic_mix_address",
+        ),
+        pytest.param(
+            make_filter_params(topics=[[ADDRESS_A_HEX], [TOPIC_B_HEX]]),
+            'Topics must be one of `None` or an array of topics. Each topic must be 32 bytes, represented as a bytestring or its hex string equivalent. A filter query of topics using "OR" can be achieved using a sub-array of topics. See https://eth.wiki/json-rpc/API#eth_newfilter for more details.',  # noqa: E501
+            id="invalid_nested_topic_with_address",
+        ),
+    ),
+)
+def test_filter_params_input_validation_invalid(
+    validator: DefaultValidator, filter_params: Dict[str, Any], error_message: str
+) -> None:
+    with pytest.raises(ValidationError) as e:
+        validator.validate_inbound_filter_params(**filter_params)
+    assert e.value.args[0] == error_message
+
+
+@pytest.mark.parametrize(
+    "private_key",
+    (
+        pytest.param(f"0x{'01' * 32}", id="valid_hex_private_key"),
+        pytest.param(f"{'01' * 32}", id="valid_string_private_key"),
+    ),
+)
+def test_private_key_input_validation(private_key: Any) -> None:
+    DefaultValidator.validate_inbound_private_key(private_key)
+
+
+@pytest.mark.parametrize(
+    "private_key,error_message",
+    (
+        pytest.param(
+            f"0x{'01' * 20}",
+            "Private keys must be 32 bytes encoded as hexadecimal",
+            id="invalid_20_byte_hex_private_key",
+        ),
+        pytest.param(
+            b"\x01" * 32,
+            "Private keys must be 32 bytes encoded as hexadecimal",
+            id="invalid_32_byte_private_key",
+        ),
+        pytest.param(
+            None,
+            "Private keys must be 32 bytes encoded as hexadecimal",
+            id="none_private_key",
+        ),
+    ),
+)
+def test_private_key_input_validation_invalid(
+    validator: DefaultValidator, private_key: Any, error_message: str
+) -> None:
+    with pytest.raises(ValidationError) as e:
+        validator.validate_inbound_private_key(private_key)
+    assert e.value.args[0] == error_message
+
+
+@pytest.mark.parametrize(
+    "raw_transaction",
+    (
+        pytest.param(f"0x{'01' * 32}", id="valid_raw_transaction"),
+        pytest.param("0x", id="valid_empty_raw_transaction"),
+        pytest.param("12345", id="valid_raw_transaction"),
+    ),
+)
+def test_inbound_raw_transaction(
+    validator: DefaultValidator, raw_transaction: Any
+) -> None:
+    validator.validate_inbound_raw_transaction(raw_transaction)
+
+
+@pytest.mark.parametrize(
+    "raw_transaction,error_message",
+    (
+        pytest.param(
+            "",
+            "Raw Transaction must be a hexadecimal encoded string.  Got: ",
+            id="invalid_empty_raw_transaction_string",
+        ),
+        pytest.param(
+            b"\x01" * 32,
+            "Raw Transaction must be a hexadecimal encoded string.  Got: b'\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01'",  # noqa: E501
+            id="invalid_raw_transaction_bytes",
+        ),
+        pytest.param(
             False,
+            "Raw Transaction must be a hexadecimal encoded string.  Got: False",
+            id="invalid_raw_transaction_bool_false",
         ),
-        (
+        pytest.param(
+            1,
+            "Raw Transaction must be a hexadecimal encoded string.  Got: 1",
+            id="invalid_raw_transaction_int",
+        ),
+    ),
+)
+def test_inbound_raw_transaction_invalid(
+    validator: DefaultValidator, raw_transaction: Any, error_message: str
+) -> None:
+    with pytest.raises(ValidationError) as e:
+        validator.validate_inbound_raw_transaction(raw_transaction)
+    assert e.value.args[0] == error_message
+
+
+@pytest.mark.parametrize(
+    "txn_internal_type,transaction",
+    (
+        pytest.param(
             "send",
-            _make_transaction(_from=ADDRESS_A, to=decode_hex(ADDRESS_B), gas=21000),
-            False,
+            make_transaction(_from=ADDRESS_A_HEX, gas=21000),
+            id="valid_from_and_gas",
         ),
-        (
+        pytest.param(
             "send",
-            _make_transaction(_from=ADDRESS_A, to="", gas=21000, _type="0x0"),
-            True,
+            make_transaction(_from=ADDRESS_A_HEX, to=ADDRESS_B_HEX, gas=21000),
+            id="valid_complete_transaction",
         ),
-        (
+        pytest.param(
             "send",
-            _make_transaction(_from=ADDRESS_A, to="", gas=21000, _type="0x1"),
-            True,
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000),
+            id="empty_to_string",
         ),
-        (
+        pytest.param(
             "send",
-            _make_transaction(_from=ADDRESS_A, to="", gas=21000, _type="0x01"),
-            True,
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, _type="0x0"),
+            id="valid_type_0x0",
         ),
-        (
+        pytest.param(
             "send",
-            _make_transaction(_from=ADDRESS_A, to="", gas=21000, _type="0x2"),
-            True,
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, _type="0x1"),
+            id="valid_type_0x1",
         ),
-        (
+        pytest.param(
             "send",
-            _make_transaction(_from=ADDRESS_A, to="", gas=21000, _type="0x02"),
-            True,
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, _type="0x01"),
+            id="valid_type_0x01",
         ),
-        ("send", _make_transaction(_from=ADDRESS_A, to="", gas=21000, _type=1), True),
-        (
+        pytest.param(
             "send",
-            _make_transaction(_from=ADDRESS_A, to="", gas=21000, _type="0x4"),
-            False,
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, _type="0x2"),
+            id="valid_type_0x2",
         ),
-        (
+        pytest.param(
             "send",
-            _make_transaction(_from=ADDRESS_A, to="", gas=21000, _type="1"),
-            False,
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, _type="0x02"),
+            id="valid_type_0x02",
         ),
-        (
+        pytest.param(
             "send",
-            _make_transaction(_from=ADDRESS_A, to="", gas=21000, _type="x1"),
-            False,
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, _type=1),
+            id="valid_type_int_1",
         ),
-        ("send", _make_transaction(_from=ADDRESS_A, to="", gas=21000, value=0), True),
-        ("send", _make_transaction(_from=ADDRESS_A, to="", gas=21000, value=-1), False),
-        ("send", _make_transaction(_from=ADDRESS_A, to="", gas=21000, data=""), True),
-        ("send", _make_transaction(_from=ADDRESS_A, to="", gas=21000, data="0x"), True),
-        (
+        pytest.param(
             "send",
-            _make_transaction(_from=ADDRESS_A, to="", gas=21000, data="0x0"),
-            False,
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, value=0),
+            id="valid_zero_value",
         ),
-        ("send", _make_transaction(_from=ADDRESS_A, to="", gas=21000, nonce=0), True),
-        ("send", _make_transaction(_from=ADDRESS_A, to="", gas=21000, nonce=1), True),
-        ("send", _make_transaction(_from=ADDRESS_A, to="", gas=21000, nonce=-1), False),
-        (
+        pytest.param(
             "send",
-            _make_transaction(_from=ADDRESS_A, to="", gas=21000, nonce="0x1"),
-            False,
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, data=""),
+            id="valid_empty_data",
         ),
-        (
+        pytest.param(
             "send",
-            _make_transaction(_from=ADDRESS_A, to="", gas=21000, nonce="arst"),
-            False,
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, data="0x"),
+            id="valid_0x_data",
         ),
-        (
+        pytest.param(
             "send",
-            _make_transaction(_from=ADDRESS_A, to="", gas=21000, nonce=True),
-            False,
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, nonce=0),
+            id="valid_zero_nonce",
         ),
-        (
+        pytest.param(
             "send",
-            _make_transaction(_from=ADDRESS_A, to="", gas=21000, nonce=1.0),
-            False,
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, nonce=1),
+            id="valid_positive_nonce",
         ),
-        ("send", _make_transaction(_from=ADDRESS_A, to="", gas=21000, nonce=-1), False),
-        ("send_signed", _make_transaction(_from=ADDRESS_A, gas=21000), False),
-        (
+        pytest.param(
+            "send",
+            make_transaction(
+                _from=ADDRESS_A_HEX, to="", gas=21000, gas_price=1000000000000000000
+            ),
+            id="valid_large_gas_price",
+        ),
+        pytest.param(
             "send_signed",
-            _make_transaction(_from=ADDRESS_A, gas=21000, r=1, s=1, v=1),
-            True,
+            make_transaction(_from=ADDRESS_A_HEX, gas=21000, r=1, s=1, v=1),
+            id="valid_signed_transaction",
         ),
-        (
+        pytest.param(
             "send_signed",
-            _make_transaction(_from=ADDRESS_A, gas=21000, r=1, s=1, v=256),
-            False,
-        ),
-        (
-            "send_signed",
-            _make_transaction(
-                _from=ADDRESS_A,
+            make_transaction(
+                _from=ADDRESS_A_HEX,
                 gas=21000,
                 max_fee_per_gas=1000000000,
                 max_priority_fee_per_gas=1000000000,
@@ -364,12 +676,12 @@ def _make_transaction(
                 s=1,
                 v=1,
             ),
-            True,
+            id="valid_signed_eip1559_transaction",
         ),
-        (  # access list txn
+        pytest.param(  # access list txn
             "send",
-            _make_transaction(
-                _from=ADDRESS_A,
+            make_transaction(
+                _from=ADDRESS_A_HEX,
                 to="",
                 gas=21000,
                 gas_price=10000,
@@ -377,23 +689,199 @@ def _make_transaction(
                 access_list=(
                     {
                         "address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
-                        "storage_keys": (
+                        "storageKeys": (
                             "0x0000000000000000000000000000000000000000000000000000000000000003",  # noqa: E501
                             "0x0000000000000000000000000000000000000000000000000000000000000007",  # noqa: E501
                         ),
                     },
                     {
                         "address": "0xbb9bc244d798123fde783fcc1c72d3bb8c189413",
-                        "storage_keys": (),
+                        "storageKeys": (),
                     },
                 ),
             ),
-            True,
+            id="valid_access_list_transaction",
         ),
-        (
+        pytest.param(  # dynamic fee txn
             "send",
-            _make_transaction(
-                _from=ADDRESS_A,
+            make_transaction(
+                _from=ADDRESS_A_HEX,
+                to="",
+                gas=21000,
+                max_fee_per_gas=1000000000,
+                max_priority_fee_per_gas=1000000000,
+                # properly formatted access list
+                access_list=(
+                    {
+                        "address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
+                        "storageKeys": (
+                            "0x0000000000000000000000000000000000000000000000000000000000000003",  # noqa: E501
+                            "0x0000000000000000000000000000000000000000000000000000000000000007",  # noqa: E501
+                        ),
+                    },
+                    {
+                        "address": "0xbb9bc244d798123fde783fcc1c72d3bb8c189413",
+                        "storageKeys": (),
+                    },
+                ),
+            ),
+            id="valid_dynamic_fee_transaction",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, gas=1, data="0x1234567890"),
+            id="valid_data_transaction",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(chain_id=1, _from=ADDRESS_A_HEX, gas=1),
+            id="valid_chain_id_transaction",
+        ),
+    ),
+)
+def test_transaction_input_validation(
+    validator: DefaultValidator,
+    txn_internal_type: str,
+    transaction: Dict[str, Any],
+) -> None:
+    validator.validate_inbound_transaction(transaction, txn_internal_type)
+
+
+@pytest.mark.parametrize(
+    "txn_internal_type,transaction,validation_error_message",
+    (
+        pytest.param(
+            "send",
+            {},
+            INVALID_TRANSACTION_MISSING_KEYS.format("from/gas"),
+            id="empty_transaction",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(to=ADDRESS_B_HEX, gas=21000),
+            INVALID_TRANSACTION_MISSING_KEYS.format("from"),
+            id="missing_from",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, to=ADDRESS_B_HEX),
+            INVALID_TRANSACTION_MISSING_KEYS.format("gas"),
+            id="missing_gas",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from="", to=ADDRESS_B_HEX, gas=21000),
+            INVALID_ADDRESS_PARAM.format(""),
+            id="empty_from",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, to=b"", gas=21000),
+            INVALID_ADDRESS_PARAM.format(b""),
+            id="empty_to_bytes",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(
+                _from=decode_hex(ADDRESS_A_HEX), to=ADDRESS_B_HEX, gas=21000
+            ),
+            INVALID_ADDRESS_PARAM.format(
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"  # noqa: E501
+            ),
+            id="from_as_bytes",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(
+                _from=ADDRESS_A_HEX, to=decode_hex(ADDRESS_B_HEX), gas=21000
+            ),
+            INVALID_ADDRESS_PARAM.format(
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02"  # noqa: E501
+            ),
+            id="to_as_bytes",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, _type="0x4"),
+            "Transaction type '0x4' not recognized.",
+            id="invalid_type_0x4",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, _type="1"),
+            "Transaction type string must be hex string. Got: 1",
+            id="invalid_type_string_1",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, _type="x1"),
+            "Transaction type must be hexadecimal or integer. Got x1",
+            id="invalid_type_x1",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, value=-1),
+            INVALID_INTEGER_VALUE.format("-1"),
+            id="invalid_negative_value",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, data="0x0"),
+            "Transaction 'data' must be a hexadecimal encoded string.  Got: 0x0",
+            id="invalid_odd_length_data",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, nonce=-1),
+            INVALID_INTEGER_VALUE.format("-1"),
+            id="invalid_negative_nonce",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, nonce="0x1"),
+            INVALID_INTEGER_VALUE.format("0x1"),
+            id="invalid_hex_nonce",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, nonce="arst"),
+            INVALID_INTEGER_VALUE.format("arst"),
+            id="invalid_string_nonce",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, nonce=True),
+            INVALID_INTEGER_VALUE.format("True"),
+            id="invalid_bool_nonce",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, nonce=1.0),
+            INVALID_INTEGER_VALUE.format("1.0"),
+            id="invalid_float_nonce",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, nonce=-1),
+            INVALID_INTEGER_VALUE.format("-1"),
+            id="invalid_negative_nonce_2",
+        ),
+        pytest.param(
+            "send_signed",
+            make_transaction(_from=ADDRESS_A_HEX, gas=21000),
+            INVALID_TRANSACTION_MISSING_KEYS.format("r/s/v"),
+            id="signed_missing_signature",
+        ),
+        pytest.param(
+            "send_signed",
+            make_transaction(_from=ADDRESS_A_HEX, gas=21000, r=1, s=1, v=256),
+            "Value exceeds maximum 7 bit integer size:  256",
+            id="invalid_v_value",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(
+                _from=ADDRESS_A_HEX,
                 to="",
                 gas=21000,
                 gas_price=10000,
@@ -412,12 +900,13 @@ def _make_transaction(
                     },
                 ),
             ),
-            False,
+            "accessList storage keys are not list-like: None",
+            id="invalid_access_list_storage_key",
         ),
-        (
+        pytest.param(
             "send",
-            _make_transaction(
-                _from=ADDRESS_A,
+            make_transaction(
+                _from=ADDRESS_A_HEX,
                 to="",
                 gas=21000,
                 # improperly formatted access list address
@@ -432,274 +921,606 @@ def _make_transaction(
                     {"address": b"", "storage_keys": ()},
                 ),
             ),
-            False,
+            "accessList storage keys are not list-like: None",
+            id="invalid_access_list_address",
         ),
-        (  # dynamic fee txn
+        pytest.param(
             "send",
-            _make_transaction(
-                _from=ADDRESS_A,
-                to="",
-                gas=21000,
-                max_fee_per_gas=1000000000,
-                max_priority_fee_per_gas=1000000000,
-                # properly formatted access list
-                access_list=(
-                    {
-                        "address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
-                        "storage_keys": (
-                            "0x0000000000000000000000000000000000000000000000000000000000000003",  # noqa: E501
-                            "0x0000000000000000000000000000000000000000000000000000000000000007",  # noqa: E501
-                        ),
-                    },
-                    {
-                        "address": "0xbb9bc244d798123fde783fcc1c72d3bb8c189413",
-                        "storage_keys": (),
-                    },
-                ),
-            ),
-            True,
+            make_transaction(blob_versioned_hashes=[]),
+            INVALID_TRANSACTION_BLOB_PARAMS,
+            id="invalid_empty_blob_hashes",
         ),
-        # Cancun
-        # `eth_sendTransaction` does not support blob transactions:
-        ("send", _make_transaction(blob_versioned_hashes=[]), False),
-        ("send", _make_transaction(blob_versioned_hashes=[b""]), False),
-        ("send", _make_transaction(blob_versioned_hashes=[b"0x"]), False),
-        ("send", _make_transaction(max_fee_per_blob_gas=0), False),
-        ("send", _make_transaction(max_fee_per_blob_gas=1), False),
-        ("send", _make_transaction(max_fee_per_blob_gas="0x0"), False),
+        pytest.param(
+            "send",
+            make_transaction(blob_versioned_hashes=[b""]),
+            INVALID_TRANSACTION_BLOB_PARAMS,
+            id="invalid_empty_bytes_blob_hash",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(blob_versioned_hashes=[b"0x"]),
+            INVALID_TRANSACTION_BLOB_PARAMS,
+            id="invalid_0x_bytes_blob_hash",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(max_fee_per_blob_gas=0),
+            INVALID_TRANSACTION_BLOB_PARAMS,
+            id="invalid_zero_max_fee_per_blob_gas",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(max_fee_per_blob_gas=1),
+            INVALID_TRANSACTION_BLOB_PARAMS,
+            id="invalid_positive_max_fee_per_blob_gas",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(max_fee_per_blob_gas="0x0"),
+            INVALID_TRANSACTION_BLOB_PARAMS,
+            id="invalid_hex_max_fee_per_blob_gas",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(
+                _from=ADDRESS_A_HEX, gas=1, gas_price=1, max_fee_per_gas=1
+            ),
+            "Mixed legacy and dynamic fee transaction values",
+            id="invalid_mixed_legacy_and_max_fee_per_gas",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(
+                _from=ADDRESS_A_HEX, gas=1, gas_price=1, max_priority_fee_per_gas=1
+            ),
+            "Mixed legacy and dynamic fee transaction values",
+            id="invalid_mixed_legacy_and_max_priority_fee_per_gas",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, gas=1, data="0x0"),
+            "Transaction 'data' must be a hexadecimal encoded string.  Got: 0x0",
+            id="invalid_0x_data_string",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, gas=1, data=False),
+            "Transaction 'data' must be a hexadecimal encoded string.  Got: False",
+            id="invalid_data_boolean",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(_from=ADDRESS_A_HEX, gas=1, data="0x12345"),
+            "Transaction 'data' must be a hexadecimal encoded string.  Got: 0x12345",
+            id="invalid_data_string",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(chain_id="abc", _from=ADDRESS_A_HEX, gas=1),
+            "Value must be a positive integer.  Got: abc",
+            id="invalid_chain_id_transaction",
+        ),
     ),
 )
-def test_transaction_input_validation(
-    validator, txn_internal_type, transaction, is_valid
-):
-    if is_valid:
+def test_transaction_input_validation_invalid(
+    validator: DefaultValidator,
+    txn_internal_type: str,
+    transaction: Dict[str, Any],
+    validation_error_message: str,
+) -> None:
+    with pytest.raises(ValidationError) as e:
         validator.validate_inbound_transaction(transaction, txn_internal_type)
-    else:
-        with pytest.raises(ValidationError):
-            validator.validate_inbound_transaction(transaction, txn_internal_type)
+    assert e.value.args[0] == validation_error_message  # noqa: E501
 
 
 @pytest.mark.parametrize(
-    "transaction,is_valid",
+    "transaction",
     (
-        ({}, False),
-        (_make_transaction(to=ADDRESS_B), False),
-        (_make_transaction(gas=21000), False),
-        (_make_transaction(_from=ADDRESS_A), True),
-        (_make_transaction(_from=ADDRESS_A, nonce=1), True),
-        (_make_transaction(_from=ADDRESS_A, gas=21000), True),
-        (_make_transaction(_from=ADDRESS_A, gas=True), False),
-        (_make_transaction(_from=ADDRESS_A, to=ADDRESS_B), True),
-        (_make_transaction(_from=ADDRESS_A, to=ADDRESS_B, gas=21000), True),
-        (_make_transaction(_from=""), False),
-        (_make_transaction(_from="", to=ADDRESS_B), False),
-        (_make_transaction(_from="", gas=21000), False),
-        (_make_transaction(_from="", to=ADDRESS_B, gas=21000), False),
-        (_make_transaction(_from=ADDRESS_A, to="", gas=21000), True),
-        (_make_transaction(_from=ADDRESS_A, to=""), True),
-        (_make_transaction(_from=ADDRESS_A, to=b""), False),
-        (
-            _make_transaction(_from=decode_hex(ADDRESS_A), to=ADDRESS_B, gas=21000),
-            False,
+        pytest.param(make_transaction(_from=ADDRESS_A_HEX), id="only_from"),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, nonce=1), id="from_and_nonce"
         ),
-        (_make_transaction(_from=decode_hex(ADDRESS_A), to=ADDRESS_B), False),
-        (
-            _make_transaction(_from=ADDRESS_A, to=decode_hex(ADDRESS_B), gas=21000),
-            False,
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, gas=21000), id="from_and_gas"
         ),
-        (_make_transaction(_from=ADDRESS_A, to=decode_hex(ADDRESS_B)), False),
-        (_make_transaction(_from=ADDRESS_A, to="", value=0), True),
-        (_make_transaction(_from=ADDRESS_A, to="", value=-1), False),
-        (_make_transaction(_from=ADDRESS_A, to="", data=""), True),
-        (_make_transaction(_from=ADDRESS_A, to="", data=b""), False),
-        (_make_transaction(_from=ADDRESS_A, to="", data="0x"), True),
-        (_make_transaction(_from=ADDRESS_A, to="", data=b"0x"), False),
-        (_make_transaction(_from=ADDRESS_A, to="", data="0x0"), False),
-        (_make_transaction(_from=ADDRESS_A, to="", gas=21000, value=0), True),
-        (_make_transaction(_from=ADDRESS_A, to="", gas=21000, value=-1), False),
-        (_make_transaction(_from=ADDRESS_A, to="", gas=21000, data=""), True),
-        (_make_transaction(_from=ADDRESS_A, to="", gas=21000, data="0x"), True),
-        (_make_transaction(_from=ADDRESS_A, to="", gas=21000, data="0x0"), False),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to=ADDRESS_B_HEX), id="from_and_to"
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to=ADDRESS_B_HEX, gas=21000),
+            id="complete_transaction",
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000),
+            id="empty_to_with_gas",
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to=""), id="empty_to_string"
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to="", value=0), id="zero_value"
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to="", data=""),
+            id="empty_data_string",
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to="", data="0x"),
+            id="0x_data_string",
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, value=0),
+            id="valid_with_zero_value",
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, data=""),
+            id="valid_with_empty_data",
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, data="0x"),
+            id="valid_with_0x_data",
+        ),
     ),
 )
 def test_transaction_call_and_estimate_gas_input_validation(
-    validator, transaction, is_valid
-):
-    if is_valid:
-        validator.validate_inbound_transaction(transaction, txn_internal_type="call")
-        validator.validate_inbound_transaction(
-            transaction, txn_internal_type="estimate"
-        )
-    else:
-        with pytest.raises(ValidationError):
-            validator.validate_inbound_transaction(
-                transaction, txn_internal_type="call"
-            )
-            validator.validate_inbound_transaction(
-                transaction, txn_internal_type="estimate"
-            )
+    validator: DefaultValidator,
+    transaction: Dict[str, Any],
+) -> None:
+    validator.validate_inbound_transaction(transaction, txn_internal_type="call")
+    validator.validate_inbound_transaction(transaction, txn_internal_type="estimate")
 
 
 @pytest.mark.parametrize(
-    "withdrawals,is_valid",
+    "txn_internal_type",
+    ("call", "estimate"),
+)
+@pytest.mark.parametrize(
+    "transaction,error_message",
     (
-        (
-            # valid cases all together
+        pytest.param(
+            {},
+            INVALID_TRANSACTION_MISSING_KEYS.format("from"),
+            id="empty_transaction",
+        ),
+        pytest.param(
+            make_transaction(to=ADDRESS_B_HEX),
+            INVALID_TRANSACTION_MISSING_KEYS.format("from"),
+            id="missing_from",
+        ),
+        pytest.param(
+            make_transaction(gas=21000),
+            INVALID_TRANSACTION_MISSING_KEYS.format("from"),
+            id="only_gas",
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, gas=True),
+            "Value must be a positive integer.  Got: True",
+            id="invalid_gas_type",
+        ),
+        pytest.param(
+            make_transaction(_from=""),
+            INVALID_ADDRESS_PARAM.format(""),
+            id="empty_from_string",
+        ),
+        pytest.param(
+            make_transaction(_from="", to=ADDRESS_B_HEX),
+            INVALID_ADDRESS_PARAM.format(""),
+            id="empty_from_with_to",
+        ),
+        pytest.param(
+            make_transaction(_from="", gas=21000),
+            INVALID_ADDRESS_PARAM.format(""),
+            id="empty_from_with_gas",
+        ),
+        pytest.param(
+            make_transaction(_from="", to=ADDRESS_B_HEX, gas=21000),
+            INVALID_ADDRESS_PARAM.format(""),
+            id="empty_from_complete",
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to=b""),
+            INVALID_ADDRESS_PARAM.format(b""),
+            id="empty_to_bytes",
+        ),
+        pytest.param(
+            make_transaction(
+                _from=decode_hex(ADDRESS_A_HEX), to=ADDRESS_B_HEX, gas=21000
+            ),
+            INVALID_ADDRESS_PARAM.format(b"\x00" * 19 + b"\x01"),
+            id="from_as_bytes_with_gas",
+        ),
+        pytest.param(
+            make_transaction(_from=decode_hex(ADDRESS_A_HEX), to=ADDRESS_B_HEX),
+            INVALID_ADDRESS_PARAM.format(b"\x00" * 19 + b"\x01"),
+            id="from_as_bytes",
+        ),
+        pytest.param(
+            make_transaction(
+                _from=ADDRESS_A_HEX, to=decode_hex(ADDRESS_B_HEX), gas=21000
+            ),
+            INVALID_ADDRESS_PARAM.format(b"\x00" * 19 + b"\x02"),
+            id="to_as_bytes_with_gas",
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to=decode_hex(ADDRESS_B_HEX)),
+            INVALID_ADDRESS_PARAM.format(b"\x00" * 19 + b"\x02"),
+            id="to_as_bytes",
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to="", value=-1),
+            INVALID_INTEGER_VALUE.format(-1),
+            id="negative_value",
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to="", data=b""),
+            INVALID_TRANSACTION_DATA_PARAM.format(b""),
+            id="empty_data_bytes",
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to="", data=b"0x"),
+            INVALID_TRANSACTION_DATA_PARAM.format(b"0x"),
+            id="0x_data_bytes",
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to="", data="0x0"),
+            INVALID_TRANSACTION_DATA_PARAM.format("0x0"),
+            id="invalid_odd_length_data",
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, value=-1),
+            INVALID_INTEGER_VALUE.format(-1),
+            id="invalid_with_negative_value",
+        ),
+        pytest.param(
+            make_transaction(_from=ADDRESS_A_HEX, to="", gas=21000, data="0x0"),
+            INVALID_TRANSACTION_DATA_PARAM.format("0x0"),
+            id="invalid_with_odd_length_data",
+        ),
+    ),
+)
+def test_transaction_call_and_estimate_gas_input_validation_invalid(
+    validator: DefaultValidator,
+    txn_internal_type: str,
+    transaction: Dict[str, Any],
+    error_message: str,
+) -> None:
+    with pytest.raises(ValidationError) as e:
+        validator.validate_inbound_transaction(
+            transaction, txn_internal_type=txn_internal_type
+        )
+    assert e.value.args[0] == error_message
+
+
+@pytest.mark.parametrize(
+    "withdrawals",
+    (
+        pytest.param(
             [
                 {
                     "index": 0,
-                    "validator_index": 0,
+                    "validatorIndex": 0,
                     "address": b"\x00" * 20,  # bytes address
                     "amount": 0,
-                },
+                }
+            ],
+            id="valid_single_withdrawal",
+        ),
+        pytest.param(
+            [
                 {
                     # limit case for uint64 fields
                     "index": 2**64 - 1,
-                    "validator_index": 2**64 - 1,
+                    "validatorIndex": 2**64 - 1,
                     "address": b"\x22" * 20,
                     "amount": 2**64 - 1,
                 },
                 {
                     "index": 0,
-                    "validator_index": 0,
+                    "validatorIndex": 0,
                     "address": f"0x{'22' * 20}",  # hexstr address
                     "amount": 0,
                 },
             ],
-            True,
+            id="valid_multiple_withdrawals",
         ),
-        ({}, False),
-        (
-            {"index": 0, "validator_index": 0, "address": b"\x00" * 20, "amount": 0},
-            False,
+    ),
+)
+def test_apply_withdrawals_inbound_dict_validation(withdrawals: Any) -> None:
+    validate_inbound_withdrawals(withdrawals)
+
+
+@pytest.mark.parametrize(
+    "withdrawals,error_message",
+    (
+        pytest.param(
+            {}, "Withdrawals list must not be empty.", id="invalid_dict_instead_of_list"
         ),
-        ([{}], False),
-        (
+        pytest.param(
+            {"index": 0, "validatorIndex": 0, "address": b"\x00" * 20, "amount": 0},
+            "Value must be a dictionary.  Got: <class 'str'>",
+            id="invalid_single_dict",
+        ),
+        pytest.param(
+            [{}],
+            "dict must contain all of the keys 'address/amount/index/validatorIndex'.  Missing the keys: 'address/amount/index/validatorIndex'",  # noqa: E501
+            id="invalid_empty_dict_in_list",
+        ),
+        pytest.param(
             [  # mixed valid and invalid cases
                 {  # valid case
                     "index": 0,
-                    "validator_index": 0,
+                    "validatorIndex": 0,
                     "address": b"\x00" * 20,
                     "amount": 0,
                 },
                 {  # invalid case
                     "index": -1,  # negative index
-                    "validator_index": 0,
+                    "validatorIndex": 0,
                     "address": b"\x00" * 20,
                     "amount": 0,
                 },
             ],
-            False,
+            "The following keys failed to validate\n- index: Value must be a positive integer.  Got: -1",  # noqa: E501
+            id="invalid_negative_index",
         ),
-        (
+        pytest.param(
             [
                 {
                     "index": 2**64,  # out of range
-                    "validator_index": 0,
+                    "validatorIndex": 0,
                     "address": b"\x00" * 20,
                     "amount": 0,
                 },
             ],
-            False,
+            "The following keys failed to validate\n- index: Value exceeds maximum 64 bit integer size:  18446744073709551616",  # noqa: E501
+            id="invalid_index_overflow",
         ),
-        (
+        pytest.param(
             [
                 {
                     "index": 0,
-                    "validator_index": 2**64,  # out of range
+                    "validatorIndex": 2**64,  # out of range
                     "address": b"\x00" * 20,
                     "amount": 0,
                 },
             ],
-            False,
+            "The following keys failed to validate\n- validatorIndex: Value exceeds maximum 64 bit integer size:  18446744073709551616",  # noqa: E501
+            id="invalid_validator_index_overflow",
         ),
-        (
+        pytest.param(
             [
                 {
                     "index": 0,
-                    "validator_index": 0,
+                    "validatorIndex": 0,
                     "address": b"\x00" * 20,
                     "amount": 2**64,  # out of range
                 },
             ],
-            False,
+            "The following keys failed to validate\n- amount: Value exceeds maximum 64 bit integer size:  18446744073709551616",  # noqa: E501
+            id="invalid_amount_overflow",
         ),
-        (
+        pytest.param(
             [
                 {
                     "index": 0,
-                    "validator_index": 0,
+                    "validatorIndex": 0,
                     "address": b"\x00" * 21,  # not 20 bytes
                     "amount": 0,
                 },
             ],
-            False,
+            "The following keys failed to validate\n- address: Value must be a valid address. Got: b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'",  # noqa: E501
+            id="invalid_address_too_long",
         ),
-        (
+        pytest.param(
             [
                 {
                     "index": 0,
-                    "validator_index": 0,
+                    "validatorIndex": 0,
                     "address": f"0x{'22' * 19}",  # not 20 bytes
                     "amount": 0,
                 },
             ],
-            False,
+            "The following keys failed to validate\n- address: Value must be a valid address. Got: 0x22222222222222222222222222222222222222",  # noqa: E501
+            id="invalid_hex_address_too_short",
         ),
     ),
 )
-def test_apply_withdrawals_inbound_dict_validation(withdrawals, is_valid):
-    if not is_valid:
-        with pytest.raises(ValidationError):
-            validate_inbound_withdrawals(withdrawals)
-
-    else:
+def test_apply_withdrawals_inbound_dict_validation_invalid(
+    withdrawals: Any,
+    error_message: str,
+) -> None:
+    with pytest.raises(ValidationError) as e:
         validate_inbound_withdrawals(withdrawals)
+    assert e.value.args[0] == error_message
 
 
 @pytest.mark.parametrize(
-    "value,is_valid",
+    "slot",
     (
-        ("0x0", True),
-        ("0x1", True),
-        ("0x22", True),
-        ("0x4d2", True),
-        (0, False),
-        (1, False),
-        (-1, False),
-        ("1", False),
-        ("-0x1", False),
-        ("test", False),
-        (b"test", False),
+        pytest.param("0x0", id="valid_0x0"),
+        pytest.param("0x1", id="valid_0x1"),
+        pytest.param("0x22", id="valid_0x22"),
+        pytest.param("0x4d2", id="valid_0x4d2"),
     ),
 )
-def test_validate_inbound_storage_slot(value, is_valid):
-    if not is_valid:
-        with pytest.raises(
-            ValidationError,
-            match=(
-                "Storage slot must be a hex string representation of a positive "
-                f"integer - slot: {value}"
-            ),
-        ):
-            DefaultValidator.validate_inbound_storage_slot(value)
-    else:
-        DefaultValidator.validate_inbound_storage_slot(value)
+def test_validate_inbound_storage_slot(slot: Any) -> None:
+    DefaultValidator.validate_inbound_storage_slot(slot)
 
 
 @pytest.mark.parametrize(
-    "value,is_valid",
+    "slot,error_message",
     (
-        (hex(2**256 - 1), True),
-        (hex(2**256), False),
+        pytest.param(
+            0,
+            "Storage slot must be a hex string representation of a positive integer - slot: 0",  # noqa: E501
+            id="invalid_int_zero",
+        ),
+        pytest.param(
+            1,
+            "Storage slot must be a hex string representation of a positive integer - slot: 1",  # noqa: E501
+            id="invalid_int_one",
+        ),
+        pytest.param(
+            -1,
+            "Storage slot must be a hex string representation of a positive integer - slot: -1",  # noqa: E501
+            id="invalid_negative_int",
+        ),
+        pytest.param(
+            "1",
+            "Storage slot must be a hex string representation of a positive integer - slot: 1",  # noqa: E501
+            id="invalid_string_1",
+        ),
+        pytest.param(
+            "-0x1",
+            "Storage slot must be a hex string representation of a positive integer - slot: -0x1",  # noqa: E501
+            id="invalid_negative_hex",
+        ),
+        pytest.param(
+            "test",
+            "Storage slot must be a hex string representation of a positive integer - slot: test",  # noqa: E501
+            id="invalid_string",
+        ),
+        pytest.param(
+            b"test",
+            "Storage slot must be a hex string representation of a positive integer - slot: b'test'",  # noqa: E501
+            id="invalid_bytes",
+        ),
     ),
 )
-def test_validate_inbound_storage_slot_integer_value_at_limit(value, is_valid):
-    if not is_valid:
-        with pytest.raises(
-            ValidationError,
-            match="Value exceeds maximum 256 bit integer size",
-        ):
-            DefaultValidator.validate_inbound_storage_slot(value)
-    else:
-        DefaultValidator.validate_inbound_storage_slot(value)
+def test_validate_inbound_storage_slot_invalid(slot: Any, error_message: str) -> None:
+    with pytest.raises(
+        ValidationError,
+        match=(
+            "Storage slot must be a hex string representation of a positive "
+            f"integer - slot: {slot}"
+        ),
+    ) as e:
+        DefaultValidator.validate_inbound_storage_slot(slot)
+    assert e.value.args[0] == error_message
+
+
+@pytest.mark.parametrize(
+    "slot",
+    (pytest.param(hex(2**256 - 1), id="valid_at_max_limit"),),
+)
+def test_validate_inbound_storage_slot_integer_value_at_limit(slot: Any) -> None:
+    DefaultValidator.validate_inbound_storage_slot(slot)
+
+
+@pytest.mark.parametrize(
+    "slot,error_message",
+    (
+        pytest.param(
+            hex(2**256),
+            "Value exceeds maximum 256 bit integer size:  115792089237316195423570985008687907853269984665640564039457584007913129639936",  # noqa: E501
+            id="invalid_exceeds_max_limit",
+        ),
+    ),
+)
+def test_validate_inbound_storage_slot_integer_value_at_limit_invalid(
+    slot: Any,
+    error_message: str,
+) -> None:
+    with pytest.raises(
+        ValidationError,
+        match="Value exceeds maximum 256 bit integer size",
+    ) as e:
+        DefaultValidator.validate_inbound_storage_slot(slot)
+    assert e.value.args[0] == error_message
+
+
+@pytest.mark.parametrize(
+    "timestamp",
+    (
+        pytest.param(4000001, id="valid_integer_timestamp"),
+        pytest.param(4000010, id="valid_another_integer_timestamp"),
+    ),
+)
+def test_time_travel_input_timestamp_validation(
+    validator: DefaultValidator, timestamp: Any
+) -> None:
+    validator.validate_inbound_timestamp(timestamp)
+
+
+@pytest.mark.parametrize(
+    "timestamp,error_message",
+    (
+        pytest.param(
+            "4000001",
+            INVALID_INTEGER_VALUE.format("4000001"),
+            id="invalid_string_timestamp",
+        ),
+        pytest.param(
+            "4000010",
+            INVALID_INTEGER_VALUE.format("4000010"),
+            id="invalid_another_string_timestamp",
+        ),
+        pytest.param(
+            4000001.0,
+            INVALID_INTEGER_VALUE.format("4000001.0"),
+            id="invalid_float_timestamp",
+        ),
+        pytest.param(
+            4000010.0,
+            INVALID_INTEGER_VALUE.format("4000010.0"),
+            id="invalid_another_float_timestamp",
+        ),
+        pytest.param(
+            True,
+            INVALID_INTEGER_VALUE.format("True"),
+            id="invalid_true_boolean_timestamp",
+        ),
+        pytest.param(
+            False,
+            INVALID_INTEGER_VALUE.format("False"),
+            id="invalid_false_boolean_timestamp",
+        ),
+    ),
+)
+def test_time_travel_input_timestamp_validation_invalid(
+    validator: DefaultValidator, timestamp: Any, error_message: str
+) -> None:
+    with pytest.raises(ValidationError) as e:
+        validator.validate_inbound_timestamp(timestamp)
+    assert e.value.args[0] == error_message
+
+
+@pytest.mark.parametrize(
+    "txn_hash",
+    (
+        pytest.param(f"0x{'01' * 32}", id="valid_hex_txn_hash"),
+        pytest.param(f"{'01' * 32}", id="valid_string_txn_hash"),
+    ),
+)
+def test_inbound_txn_hash_validation(
+    validator: DefaultValidator, txn_hash: Any
+) -> None:
+    validator.validate_inbound_transaction_hash(txn_hash)
+
+
+@pytest.mark.parametrize(
+    "txn_hash,error_message",
+    (
+        pytest.param(
+            f"0x{'01' * 20}",
+            "Transaction hash must be a hexadecimal encoded 32 byte string.  Got: 0x0101010101010101010101010101010101010101",  # noqa: E501
+            id="invalid_20_byte_hex_txn_hash",
+        ),
+        pytest.param(
+            b"\x01" * 32,
+            "Transaction hash must be a hexadecimal encoded 32 byte string.  Got: b'\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01'",  # noqa: E501
+            id="invalid_32_byte_txn_hash",
+        ),
+        pytest.param(
+            None,
+            "Transaction hash must be a hexadecimal encoded 32 byte string.  Got: None",
+            id="none_txn_hash",
+        ),
+    ),
+)
+def test_inbound_txn_hash_validation_invalid(
+    validator: DefaultValidator, txn_hash: Any, error_message: str
+) -> None:
+    with pytest.raises(ValidationError) as e:
+        validator.validate_inbound_transaction_hash(txn_hash)
+    assert e.value.args[0] == error_message
