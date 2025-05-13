@@ -265,6 +265,9 @@ def validate_transaction(value, txn_internal_type):
             )
         )
 
+    if "chainId" in value:
+        validate_uint256(value["chainId"])
+
     if "type" in value:
         # type is validated but not required. If this value exists, it will be popped
         # out of the dict and the type will instead be inferred from the

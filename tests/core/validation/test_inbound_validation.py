@@ -1,9 +1,9 @@
+import pytest
 from typing import (
     Any,
     Dict,
 )
 
-import pytest
 from eth_utils import (
     decode_hex,
 )
@@ -714,6 +714,11 @@ def test_inbound_raw_transaction_invalid(
             make_transaction(_from=ADDRESS_A_HEX, gas=1, data="0x1234567890"),
             id="valid_data_transaction",
         ),
+        pytest.param(
+            "send",
+            make_transaction(chain_id=1, _from=ADDRESS_A_HEX, gas=1),
+            id="valid_chain_id_transaction",
+        ),
     ),
 )
 def test_transaction_input_validation(
@@ -970,6 +975,12 @@ def test_transaction_input_validation(
             make_transaction(_from=ADDRESS_A_HEX, gas=1, data="0x12345"),
             "Transaction 'data' must be a hexadecimal encoded string.  Got: 0x12345",
             id="invalid_data_string",
+        ),
+        pytest.param(
+            "send",
+            make_transaction(chain_id="abc", _from=ADDRESS_A_HEX, gas=1),
+            "Value must be a positive integer.  Got: abc",
+            id="invalid_chain_id_transaction",
         ),
     ),
 )
