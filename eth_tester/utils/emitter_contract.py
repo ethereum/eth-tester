@@ -248,7 +248,7 @@ def _deploy_emitter(eth_tester):
         }
     )
     deploy_receipt = eth_tester.get_transaction_receipt(deploy_hash)
-    emitter_address = deploy_receipt["contract_address"]
+    emitter_address = deploy_receipt["contractAddress"]
     assert emitter_address
     return emitter_address
 

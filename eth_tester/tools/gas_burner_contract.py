@@ -49,7 +49,7 @@ def _deploy_gas_burner(eth_tester):
         }
     )
     deploy_receipt = eth_tester.get_transaction_receipt(deploy_hash)
-    gas_burner_address = deploy_receipt["contract_address"]
+    gas_burner_address = deploy_receipt["contractAddress"]
     assert gas_burner_address
     gas_burner_code = eth_tester.get_code(gas_burner_address)
     assert len(gas_burner_code) > 2

@@ -12,6 +12,10 @@ from eth_utils import (
     to_tuple,
 )
 
+from eth_tester.utils.casing import (
+    dict_keys_to_lower_camel_case,
+)
+
 
 class Filter:
     filter_params = None
@@ -170,12 +174,13 @@ def check_if_address_match(address, addresses):
 
 
 def check_if_log_matches(log_entry, from_block, to_block, addresses, topics):
+    log_entry = dict_keys_to_lower_camel_case(log_entry)
     if not check_if_from_block_match(
-        log_entry["block_number"], log_entry["type"], from_block
+        log_entry["blockNumber"], log_entry["type"], from_block
     ):
         return False
     elif not check_if_to_block_match(
-        log_entry["block_number"], log_entry["type"], to_block
+        log_entry["blockNumber"], log_entry["type"], to_block
     ):
         return False
     elif not check_if_address_match(log_entry["address"], addresses):

@@ -18,6 +18,14 @@ def lower_camel_case_to_snake_case(lower_camel_case_string: str) -> str:
     )
 
 
+def dict_keys_to_snake_case(d: Dict[str, Any]) -> Dict[str, Any]:
+    serialized = {}
+    for key in d:
+        serialized[lower_camel_case_to_snake_case(key)] = d[key]
+
+    return serialized
+
+
 def dict_keys_to_lower_camel_case(d: Dict[str, Any]) -> Dict[str, Any]:
     serialized = {}
     for key in d:

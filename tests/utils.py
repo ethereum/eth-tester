@@ -1,6 +1,7 @@
 from typing import (
     Any,
     Dict,
+    Generator,
     Iterator,
     List,
     Optional,
@@ -34,6 +35,65 @@ def yield_key_value_if_value_not_none(
 ) -> Iterator[Tuple[str, Any]]:
     if value is not None:
         yield key, value
+
+
+def make_filter_params(
+    from_block: Any = None,
+    to_block: Any = None,
+    address: Any = None,
+    topics: Any = None,
+) -> Dict[str, Any]:
+    return {
+        "from_block": from_block,
+        "to_block": to_block,
+        "address": address,
+        "topics": topics,
+    }
+
+
+@to_dict
+def make_transaction(
+    blob_versioned_hashes: Any = None,
+    chain_id: Any = None,
+    _type: Any = None,
+    _from: Any = None,
+    to: Any = None,
+    gas: Any = None,
+    gas_price: Any = None,
+    max_fee_per_blob_gas: Any = None,
+    max_fee_per_gas: Any = None,
+    max_priority_fee_per_gas: Any = None,
+    value: Any = None,
+    data: Any = None,
+    nonce: Any = None,
+    access_list: Any = None,
+    r: Any = None,
+    s: Any = None,
+    v: Any = None,
+) -> Generator[Tuple[str, Any], None, None]:
+    yield from yield_key_value_if_value_not_none("type", _type)
+    yield from yield_key_value_if_value_not_none("chainId", chain_id)
+    yield from yield_key_value_if_value_not_none("from", _from)
+    yield from yield_key_value_if_value_not_none("to", to)
+    yield from yield_key_value_if_value_not_none("gas", gas)
+    yield from yield_key_value_if_value_not_none("gasPrice", gas_price)
+    yield from yield_key_value_if_value_not_none("maxFeePerGas", max_fee_per_gas)
+    yield from yield_key_value_if_value_not_none(
+        "maxPriorityFeePerGas", max_priority_fee_per_gas
+    )
+    yield from yield_key_value_if_value_not_none("value", value)
+    yield from yield_key_value_if_value_not_none("data", data)
+    yield from yield_key_value_if_value_not_none("nonce", nonce)
+    yield from yield_key_value_if_value_not_none("accessList", access_list)
+    yield from yield_key_value_if_value_not_none("r", r)
+    yield from yield_key_value_if_value_not_none("s", s)
+    yield from yield_key_value_if_value_not_none("v", v)
+    yield from yield_key_value_if_value_not_none(
+        "blobVersionedHashes", blob_versioned_hashes
+    )
+    yield from yield_key_value_if_value_not_none(
+        "maxFeePerBlobGas", max_fee_per_blob_gas
+    )
 
 
 def make_legacy_txn(
@@ -90,9 +150,9 @@ def make_access_list_txn(
     )
 
 
-# This is an outbound transaction so we still keep the gas_price for now since the
-# gas_price is the min(max_fee_per_gas, base_fee_per_gas + max_priority_fee_per_gas).
-# TODO: Sometime in 2022 the inclusion of gas_price may be removed from dynamic fee
+# This is an outbound transaction so we still keep the gasPrice for now since the
+# gasPrice is the min(maxFeePerGas, baseFeePerGas + maxPriorityFeePerGas).
+# TODO: Sometime in 2022 the inclusion of gasPrice may be removed from dynamic fee
 #  transactions and we can get rid of this behavior.
 #  https://github.com/ethereum/execution-specs/pull/251
 def make_dynamic_fee_txn(

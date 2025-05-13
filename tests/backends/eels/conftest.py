@@ -141,7 +141,7 @@ def transaction() -> LegacyTransaction:
 def transaction_dict() -> Dict[str, Any]:
     return {
         "nonce": 0,
-        "gas_price": 0,
+        "gasPrice": 0,
         "gas": 0,
         "to": b"\x00" * 20,
         "value": 0,
