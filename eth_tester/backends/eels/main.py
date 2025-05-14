@@ -492,24 +492,6 @@ class EELSBackend(BaseChainBackend):
                     index_in_block=None,
                     tx_hash=None,
                     traces=[],
-                    # caller=SYSTEM_ADDRESS,
-                    # origin=SYSTEM_ADDRESS,
-                    # block_hashes=self._fork_module.get_last_256_block_hashes(
-                    #     self.chain
-                    # ),
-                    # coinbase=pending_block_header["coinbase"],
-                    # number=pending_block_header["number"],
-                    # gas_limit=block_gas_limit,
-                    # base_fee_per_gas=pending_block_header["base_fee_per_gas"],
-                    # gas_price=U256(0),
-                    # time=pending_block_header["timestamp"],
-                    # prev_randao=pending_block_header["prev_randao"],
-                    # state=current_state,
-                    # chain_id=self.chain.chain_id,
-                    # traces=[],
-                    # excess_blob_gas=pending_block_header["excess_blob_gas"],
-                    # blob_versioned_hashes=(),
-                    # transient_storage=self._state_module.TransientStorage(),
                 )
 
                 system_tx_message = self._vm_module.Message(
@@ -532,11 +514,13 @@ class EELSBackend(BaseChainBackend):
                 )
 
                 system_tx_output = self._vm_module.interpreter.process_message_call(
-                    # system_tx_message, system_tx_env
                     system_tx_message
                 )
+                # TODO: this is removed in the latest forks/prague branch of eels
+                # https://github.com/ethereum/execution-specs/pull/1160
+                # will need to be updated
+
                 self._state_module.destroy_touched_empty_accounts(
-                    # system_tx_env.state, system_tx_output.touched_accounts
                     current_state,
                     system_tx_output.touched_accounts,
                 )
@@ -641,6 +625,19 @@ class EELSBackend(BaseChainBackend):
             apply_body_output_dict["ommers_hash"] = keccak256(
                 rlp.encode(self._pending_block["ommers"])
             )
+
+            # what I return needs to contain:
+            # "block_logs_bloom"
+            # "block_gas_used"
+            # "state_root"
+            # "receipt_root"
+            # "tx_root"
+            # "withdrawals_root"
+            # "blob_gas_used"
+            # "excess_blob_gas"
+            # "ommers_hash"
+            # "receipts_map"
+
             return apply_body_output_dict
 
     def _build_new_pending_block(
@@ -731,6 +728,7 @@ class EELSBackend(BaseChainBackend):
             )
 
         apply_body_output = self._internal_apply_body_validation()
+        breakpoint()
         block_header["bloom"] = apply_body_output["block_logs_bloom"]
         block_header["gas_used"] = apply_body_output["block_gas_used"]
         block_header["state_root"] = apply_body_output["state_root"]
@@ -876,17 +874,15 @@ class EELSBackend(BaseChainBackend):
     #
     def get_nonce(self, account, block_number="pending"):
         with self._state_context_manager(block_number):
-            return int(self._state_module.get_account(self.chain.state, account).nonce)
+            return int(self._fork_module.get_account(self.chain.state, account).nonce)
 
     def get_balance(self, account, block_number="pending"):
         with self._state_context_manager(block_number):
-            return int(
-                self._state_module.get_account(self.chain.state, account).balance
-            )
+            return int(self._fork_module.get_account(self.chain.state, account).balance)
 
     def get_code(self, account, block_number="pending"):
         with self._state_context_manager(block_number):
-            return self._state_module.get_account(self.chain.state, account).code
+            return self._fork_module.get_account(self.chain.state, account).code
 
     def get_storage(
         self, account: Address, slot: Union[int, bytes], block_number="pending"
@@ -896,7 +892,7 @@ class EELSBackend(BaseChainBackend):
         # left pad with zero bytes to 32 bytes
         slot = slot.rjust(32, b"\x00")
         with self._state_context_manager(block_number):
-            return self._state_module.get_storage(self.chain.state, account, slot)
+            return int(self._state_module.get_storage(self.chain.state, account, slot))
 
     def get_base_fee(self) -> int:
         return self._pending_block["header"]["base_fee_per_gas"]
@@ -945,8 +941,7 @@ class EELSBackend(BaseChainBackend):
             kw_arguments["gas_price"] = effective_gas_price
             kw_arguments["blob_versioned_hashes"] = blob_versioned_hashes
             kw_arguments["excess_blob_gas"] = U64(block_header["excess_blob_gas"])
-            kw_arguments["transient_storage"] = self._state_module.TransientStorage()
-            kw_arguments["blob_gas_used"] = tx_blob_gas_used
+            kw_arguments["transient_storage"] = self._vm_module.TransientStorage()
         elif self.fork.is_after_fork("ethereum.london"):
             sender_address, effective_gas_price = check_tx_return
             kw_arguments["base_fee_per_gas"] = block_header["base_fee_per_gas"]
@@ -957,7 +952,7 @@ class EELSBackend(BaseChainBackend):
 
         kw_arguments["caller"] = kw_arguments["origin"] = sender_address
         kw_arguments["traces"] = []
-        return self._vm_module.TransactionEnvironment(**kw_arguments)
+        return self._vm_module.Environment(**kw_arguments)
 
     def _check_transaction(self, tx: Any, gas_available: Any = None) -> Any:
         """
@@ -998,22 +993,13 @@ class EELSBackend(BaseChainBackend):
                 withdrawals_trie=self._trie_module.Trie(secured=False, default=None),
                 blob_gas_used=U64(0),
             )
+
             return self._fork_module.check_transaction(
                 block_env,
                 block_output,
                 tx,
             )
 
-            # return self._fork_module.check_transaction(
-            #     self.chain.state,
-            #     tx,
-            #     gas_available,
-            #     self.chain.chain_id,
-            #     base_fee,
-            #     self._vm_module.gas.calculate_excess_blob_gas(
-            #         self.chain.latest_block.header
-            #     ),
-            # )
         arguments = [tx]
 
         if self.fork.is_after_fork("ethereum.london"):
@@ -1296,8 +1282,8 @@ class EELSBackend(BaseChainBackend):
                 accessed_addresses.add(addr)
                 accessed_storage_keys.update(keys)
 
-        code = self._state_module.get_account(env.state, signed_evm_transaction.to).code
-        message = self._vm_module.Message(
+        code = self.fork.get_account(env.state, signed_evm_transaction.to).code
+        message = self.fork.Message(
             caller=env.caller,
             target=signed_evm_transaction.to,
             gas=signed_evm_transaction.gas,
@@ -1313,8 +1299,6 @@ class EELSBackend(BaseChainBackend):
             accessed_addresses=accessed_addresses,
             accessed_storage_keys=accessed_storage_keys,
             parent_evm=None,
-            block_env=env,
-            tx_env=env,
         )
         evm = self._vm_module.interpreter.process_message(message, env)
         if evm.error:
@@ -1344,9 +1328,7 @@ class EELSBackend(BaseChainBackend):
         """
         Create a transient account with known pkey with the same state as the sender.
         """
-        sender_address_account = self._state_module.get_account(
-            self.chain.state, sender_address
-        )
+        sender_address_account = self.fork.get_account(self.chain.state, sender_address)
         acct = Account.create()
         bytes_address = to_canonical_address(acct.address)
         acct_pkey = KeyAPI.PrivateKey(acct.key)
