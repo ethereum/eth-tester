@@ -531,7 +531,81 @@ class EELSBackend(BaseChainBackend):
                 try:
                     env = self._synthetic_tx_environment(tx)
                     pre_state = self._copy_state_context().chain.state
-                    process_transaction_return = self.fork.process_transaction(env, tx)
+                    # process_transaction_return = self.fork.process_transaction(env, tx)
+                    # breakpoint()
+
+                    """
+                    BlockEnvironment keys
+                        chain_id: U64
+                        state: State
+                        block_gas_limit: Uint
+                        block_hashes: List[Hash32]
+                        coinbase: Address
+                        number: Uint
+                        base_fee_per_gas: Uint
+                        time: U256
+                        prev_randao: Bytes32
+                        excess_blob_gas: U64
+                        parent_beacon_block_root: Hash32
+
+                    """
+                    block_env = self._vm_module.BlockEnvironment(
+                        chain_id=self.chain.chain_id,
+                        state=self.chain.state,
+                        block_gas_limit=latest_block_header.gas_limit,
+                        block_hashes=self._fork_module.get_last_256_block_hashes(
+                            self.chain
+                        ),
+                        coinbase=latest_block_header.coinbase,
+                        number=latest_block_header.number,
+                        base_fee_per_gas=latest_block_header.base_fee_per_gas,
+                        time=latest_block_header.timestamp,
+                        prev_randao=latest_block_header.prev_randao,
+                        excess_blob_gas=latest_block_header.excess_blob_gas,
+                        parent_beacon_block_root=latest_block_header.parent_beacon_block_root,
+                    )
+
+                    """
+
+                    BlockOutput keys
+                    block_gas_used : `ethereum.base_types.Uint`
+                        Gas used for executing all transactions.
+                    transactions_trie : `ethereum.fork_types.Root`
+                        Trie of all the transactions in the block.
+                    receipts_trie : `ethereum.fork_types.Root`
+                        Trie root of all the receipts in the block.
+                    receipt_keys :
+                        Key of all the receipts in the block.
+                    block_logs : `Bloom`
+                        Logs bloom of all the logs included in all the transactions of the
+                        block.
+                    withdrawals_trie : `ethereum.fork_types.Root`
+                        Trie root of all the withdrawals in the block.
+                    blob_gas_used : `ethereum.base_types.U64`
+                        Total blob gas used in the block.
+                    """
+                    # breakpoint()
+                    block_output = self._vm_module.BlockOutput(
+                        block_gas_used=latest_block_header.gas_used,
+                        transactions_trie=self._fork_types.Root(
+                            latest_block_header.transactions_root
+                        ),
+                        receipts_trie=self._fork_types.Root(
+                            latest_block_header.receipt_root
+                        ),
+                        receipt_keys=(),
+                        block_logs=self._fork_types.Bloom(latest_block_header.bloom),
+                        withdrawals_trie=self._fork_types.Root(
+                            latest_block_header.withdrawals_root
+                        ),
+                        blob_gas_used=latest_block_header.blob_gas_used,
+                    )
+                    # TODO: this is not correct, where should it come from?
+                    index = Uint(0)
+
+                    process_transaction_return = self.fork.process_transaction(
+                        block_env, block_output, tx, index
+                    )
                     post_state = env.state
                     contract_address = self._extract_contract_address(
                         pre_state, post_state
@@ -952,7 +1026,55 @@ class EELSBackend(BaseChainBackend):
 
         kw_arguments["caller"] = kw_arguments["origin"] = sender_address
         kw_arguments["traces"] = []
-        return self._vm_module.Environment(**kw_arguments)
+        # breakpoint()
+
+        """
+
+        Right now, kw_arguments contains:
+        'base_fee_per_gas',
+        'blob_versioned_hashes',
+        'block_hashes',
+        'caller',
+        'chain_id',
+        'coinbase',
+        'excess_blob_gas',
+        'gas_limit',
+        'gas_price',
+        'number',
+        'origin',
+        'prev_randao',
+        'state',
+        'time',
+        'traces'
+        'transient_storage',
+
+        Class TransactionEnvironment contains:
+            access_list_addresses: Set[Address]
+            access_list_storage_keys: Set[Tuple[Address, Bytes32]]
+            blob_versioned_hashes: Tuple[VersionedHash, ...]
+            gas: Uint
+            gas_price: Uint
+            index_in_block: Optional[Uint]
+            origin": Address
+            traces: List[dict]
+            transient_storage: TransientStorage
+            tx_hash: Optional[Hash32]
+
+        """
+        tx_env = {
+            "origin": sender_address,
+            "gas_price": kw_arguments["gas_price"],
+            "gas": kw_arguments["gas_limit"],
+            "access_list_addresses": set(),
+            "access_list_storage_keys": set(),
+            "transient_storage": kw_arguments["transient_storage"],
+            "blob_versioned_hashes": kw_arguments["blob_versioned_hashes"],
+            "index_in_block": None,
+            "tx_hash": None,
+            "traces": [],
+        }
+        # return self._vm_module.TransactionEnvironment(**kw_arguments)
+        return self._vm_module.TransactionEnvironment(**tx_env)
 
     def _check_transaction(self, tx: Any, gas_available: Any = None) -> Any:
         """
