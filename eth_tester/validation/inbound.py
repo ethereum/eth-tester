@@ -239,7 +239,7 @@ def validate_transaction(value, txn_internal_type):
         if any(k in value for k in BLOB_TRANSACTION_PARAMS):
             raise ValidationError(
                 "Transaction contains blob-specific parameters. Blob transactions are "
-                "only supported via `eth_sendRawTransaction`, rlp encoding the blob "
+                "only supported via `eth_send_raw_transaction`, rlp encoding the blob "
                 "sidecar data along with the transaction as per the EIP-4844 "
                 "`PooledTransaction` model."
             )
