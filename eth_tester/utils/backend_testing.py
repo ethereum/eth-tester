@@ -3,6 +3,7 @@ import pytest
 from eth_utils import (
     denoms,
     is_address,
+    is_integer,
     is_same_address,
 )
 from eth_utils.toolz import (
@@ -12,6 +13,15 @@ from eth_utils.toolz import (
 
 from eth_tester.constants import (
     BURN_ADDRESS,
+    UINT256_MAX,
+    UINT256_MIN,
+)
+from eth_tester.exceptions import (
+    AccountLocked,
+)
+
+from .emitter_contract import (
+    _deploy_emitter,
 )
 
 PK_A = "0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d"
@@ -139,8 +149,6 @@ class BaseTestBackendDirect:
 
         self._send_and_check_transaction(eth_tester, SIMPLE_TRANSACTION, account)
 
-
-'''
     def test_add_account_with_password(self, eth_tester):
         account = eth_tester.add_account(PK_A, "test-password")
         assert is_address(account)
@@ -190,6 +198,8 @@ class BaseTestBackendDirect:
         code = eth_tester.get_code(BURN_ADDRESS)
         assert code == "0x"
 
+
+'''
     def test_get_nonce(self, eth_tester):
         for account in eth_tester.get_accounts():
             nonce = eth_tester.get_nonce(account)
