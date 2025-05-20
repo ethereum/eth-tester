@@ -531,7 +531,6 @@ class EELSBackend(BaseChainBackend):
                 try:
                     env = self._synthetic_tx_environment(tx)
                     pre_state = self._copy_state_context().chain.state
-                    # process_transaction_return = self.fork.process_transaction(env, tx)
                     # breakpoint()
 
                     """
@@ -562,7 +561,7 @@ class EELSBackend(BaseChainBackend):
                         time=latest_block_header.timestamp,
                         prev_randao=latest_block_header.prev_randao,
                         excess_blob_gas=latest_block_header.excess_blob_gas,
-                        parent_beacon_block_root=latest_block_header.parent_beacon_block_root,
+                        parent_beacon_block_root=latest_block_header.parent_beacon_block_root,  # noqa: E501
                     )
 
                     """
@@ -577,35 +576,33 @@ class EELSBackend(BaseChainBackend):
                     receipt_keys :
                         Key of all the receipts in the block.
                     block_logs : `Bloom`
-                        Logs bloom of all the logs included in all the transactions of the
-                        block.
+                        Logs bloom of all the logs included in all the transactions of
+                        the block.
                     withdrawals_trie : `ethereum.fork_types.Root`
                         Trie root of all the withdrawals in the block.
                     blob_gas_used : `ethereum.base_types.U64`
                         Total blob gas used in the block.
                     """
-                    # breakpoint()
+                    # block_output = self._vm_module.BlockOutput()
+
                     block_output = self._vm_module.BlockOutput(
                         block_gas_used=latest_block_header.gas_used,
-                        transactions_trie=self._fork_types.Root(
-                            latest_block_header.transactions_root
-                        ),
-                        receipts_trie=self._fork_types.Root(
-                            latest_block_header.receipt_root
-                        ),
-                        receipt_keys=(),
+                        transactions_trie=transactions_trie,
+                        receipts_trie=receipts_trie,
+                        # receipt_keys=(),
                         block_logs=self._fork_types.Bloom(latest_block_header.bloom),
-                        withdrawals_trie=self._fork_types.Root(
-                            latest_block_header.withdrawals_root
+                        withdrawals_trie=self._trie_module.Trie(
+                            secured=False, default=None
                         ),
                         blob_gas_used=latest_block_header.blob_gas_used,
                     )
-                    # TODO: this is not correct, where should it come from?
-                    index = Uint(0)
+
+                    index = Uint(i)
 
                     process_transaction_return = self.fork.process_transaction(
                         block_env, block_output, tx, index
                     )
+                    breakpoint()
                     post_state = env.state
                     contract_address = self._extract_contract_address(
                         pre_state, post_state

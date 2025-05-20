@@ -45,7 +45,7 @@ class TestEELSBackendBasics:
         block = self.tester.get_block_by_number(0)
         assert block["number"] == 0
         assert "hash" in block
-        assert "parent_hash" in block
+        assert "parentHash" in block
 
 
 class TestEELSBackendAccountState(BaseTestBackendDirect):
