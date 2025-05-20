@@ -6,6 +6,9 @@ from typing import (
     Union,
 )
 
+from ethereum.crypto.hash import keccak256
+from ethereum_rlp import rlp
+
 from .utils import (
     eels_is_available,
 )
@@ -96,7 +99,7 @@ def serialize_block(
     else:
         serialized_block = {
             "number": int(block.header.number),
-            "hash": backend_instance._fork_module.compute_header_hash(block.header),
+            "hash": keccak256(rlp.encode(block.header)),
             "parentHash": block.header.parent_hash,
             "nonce": block.header.nonce,
             "stateRoot": block.header.state_root,
@@ -172,32 +175,31 @@ def serialize_eels_transaction_for_block(
         "gas": int(tx.gas),
         "data": tx.data,
     }
-
-    if hasattr(tx, "gasPrice"):
-        json_tx["gasPrice"] = int(tx.gasPrice)
-    if hasattr(tx, "maxFeePerGas"):
-        json_tx["maxFeePerGas"] = int(tx.maxFeePerGas)
-        json_tx["gasPrice"] = int(tx.maxFeePerGas)
-    if hasattr(tx, "maxPriorityFeePerGas"):
-        json_tx["maxPriorityFeePerGas"] = int(tx.maxPriorityFeePerGas)
-    if hasattr(tx, "accessList"):
+    if hasattr(tx, "gas_price"):
+        json_tx["gasPrice"] = int(tx.gas_price)
+    if hasattr(tx, "max_fee_per_gas"):
+        json_tx["maxFeePerGas"] = int(tx.max_fee_per_gas)
+        json_tx["gasPrice"] = int(tx.max_fee_per_gas)
+    if hasattr(tx, "max_priority_fee_per_gas"):
+        json_tx["maxPriorityFeePerGas"] = int(tx.max_priority_fee_per_gas)
+    if hasattr(tx, "access_list"):
         # TODO: properly serialize access list
-        json_tx["accessList"] = tx.accessList
-    if hasattr(tx, "blobVersionedHashes"):
-        json_tx["blobVersionedHashes"] = tx.blobVersionedHashes
-    if hasattr(tx, "maxFeePerBlobGas"):
-        json_tx["maxFeePerBlobGas"] = int(tx.maxFeePerBlobGas)
-    if hasattr(tx, "chainId"):
-        json_tx["chainId"] = int(tx.chainId)
+        json_tx["accessList"] = tx.access_list
+    if hasattr(tx, "blob_versioned_hashes"):
+        json_tx["blobVersionedHashes"] = tx.blob_versioned_hashes
+    if hasattr(tx, "max_fee_per_blob_gas"):
+        json_tx["maxFeePerBlobGas"] = int(tx.max_fee_per_blob_gas)
+    if hasattr(tx, "chain_id"):
+        json_tx["chainId"] = int(tx.chain_id)
     if hasattr(tx, "v"):
         json_tx["v"] = int(tx.v)
     if hasattr(tx, "r"):
         json_tx["r"] = int(tx.r)
     if hasattr(tx, "s"):
         json_tx["s"] = int(tx.s)
-    if hasattr(tx, "yParity"):
-        json_tx["yParity"] = int(tx.yParity)
-        json_tx["v"] = int(tx.yParity)
+    if hasattr(tx, "y_parity"):
+        json_tx["yParity"] = int(tx.y_parity)
+        json_tx["v"] = int(tx.y_parity)
 
     json_tx["from"] = backend_instance._fork_module.recover_sender(
         backend_instance.chain.chain_id, tx
