@@ -41,12 +41,14 @@ if eels_is_available():
     from ethereum.cancun.fork import (
         BlockChain,
     )
-    from ethereum.prague.requests import compute_requests_hash
     from ethereum.crypto.hash import (
         keccak256,
     )
     from ethereum.exceptions import (
         EthereumException,
+    )
+    from ethereum.prague.requests import (
+        compute_requests_hash,
     )
     from ethereum.utils.hexadecimal import (
         hex_to_uint,
@@ -125,7 +127,6 @@ from .eels_normalizers import (
 from .serializers import (
     serialize_block,
     serialize_eels_transaction_for_block,
-    serialize_pending_receipt,
     serialize_transaction,
 )
 from .utils import (
@@ -602,6 +603,7 @@ class EELSBackend(BaseChainBackend):
             updated_receipt["blockHash"] = blockhash
             updated_receipt["transactionIndex"] = i
             updated_receipt["stateRoot"] = block_header["state_root"]
+            breakpoint()
             for log in trie_receipt.logs:
                 updated_receipt["logs"].append(
                     {
@@ -1003,6 +1005,9 @@ class EELSBackend(BaseChainBackend):
         """
         Get the transaction hash of a transaction.
         """
+        if isinstance(tx, bytes):
+            tx = self.fork.decode_transaction(tx)
+
         if self.fork.is_after_fork("ethereum.berlin") and not isinstance(
             tx, self.fork.LegacyTransaction
         ):
