@@ -6,6 +6,8 @@ from eth_utils import (
     function_abi_to_4byte_selector,
 )
 
+NON_DEFAULT_GAS_PRICE = 1000000000
+
 EMITTER_BYTECODE = (
     "60606040526104ae806100126000396000f3606060405236156100615760e060020a60003504630b"
     "b563d6811461006357806317c0c1801461013657806320f0256e1461017057806390b41d8b146101"
@@ -244,9 +246,11 @@ def _deploy_emitter(eth_tester):
         {
             "from": eth_tester.get_accounts()[0],
             "gas": 500000,
+            "gasPrice": NON_DEFAULT_GAS_PRICE,
             "data": EMITTER_BYTECODE,
         }
     )
+    # breakpoint()
     deploy_receipt = eth_tester.get_transaction_receipt(deploy_hash)
     # breakpoint()
     emitter_address = deploy_receipt["contractAddress"]

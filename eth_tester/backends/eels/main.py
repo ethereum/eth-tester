@@ -162,7 +162,6 @@ class EELSBackend(BaseChainBackend):
     handles_pending_transactions = True
 
     _state_context = None
-    _account_keys = []
     _state_context_history = {}
 
     def __init__(
@@ -196,6 +195,7 @@ class EELSBackend(BaseChainBackend):
         self._utils_module = self.fork._module("utils")
         self._trie_module = self.fork._module("trie")
         self._bloom_module = self.fork._module("bloom")
+        self._account_keys = []
         self.reset_to_genesis(
             genesis_params=genesis_params,
             genesis_state=genesis_state,
@@ -603,7 +603,7 @@ class EELSBackend(BaseChainBackend):
             updated_receipt["blockHash"] = blockhash
             updated_receipt["transactionIndex"] = i
             updated_receipt["stateRoot"] = block_header["state_root"]
-            breakpoint()
+            # breakpoint()
             for log in trie_receipt.logs:
                 updated_receipt["logs"].append(
                     {
@@ -698,6 +698,7 @@ class EELSBackend(BaseChainBackend):
         )
 
     def get_transaction_receipt(self, transaction_hash):
+        # breakpoint()
         if transaction_hash in self._receipts_map:
             return self._receipts_map[transaction_hash]
 
@@ -849,6 +850,7 @@ class EELSBackend(BaseChainBackend):
 
         base_fee = self._pending_block["header"]["base_fee_per_gas"]
         if self.fork.is_after_fork("ethereum.cancun"):
+            # breakpoint()
             block_env = self._vm_module.BlockEnvironment(
                 chain_id=U64(self.chain.chain_id),
                 state=self.chain.state,

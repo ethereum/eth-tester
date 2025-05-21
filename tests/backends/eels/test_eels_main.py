@@ -14,10 +14,9 @@ from eth_tester.utils.backend_testing import (
 )
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def eth_tester():
-    backend = EELSBackend()
-    return EthereumTester(backend=backend)
+    return EthereumTester(backend=EELSBackend())
 
 
 class TestEELSBackendBasics:
