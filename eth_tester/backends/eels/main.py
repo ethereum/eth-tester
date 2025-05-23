@@ -96,9 +96,6 @@ from eth_tester.backends.base import (
 from eth_tester.backends.common import (
     merge_genesis_overrides,
 )
-from eth_tester.backends.eels.serializers import (
-    serialize_pending_receipt,
-)
 from eth_tester.constants import (
     BEACON_ROOTS_CONTRACT_ADDRESS,
     BEACON_ROOTS_CONTRACT_CODE,
@@ -118,6 +115,7 @@ from ...utils.accounts import (
     get_default_account_keys,
 )
 from ...utils.transactions import (
+    calculate_effective_gas_price,
     normalize_transaction_fields,
 )
 from ...validation.inbound import (
@@ -446,6 +444,7 @@ class EELSBackend(BaseChainBackend):
             block_env_args["time"] = block_env_args.pop("timestamp")
             block_env_args["block_gas_limit"] = block_env_args.pop("gas_limit")
 
+            # remove any fields that are not in the fork's BlockEnvironment
             for prop in dict(block_env_args):
                 if prop not in self._vm_module.BlockEnvironment.__annotations__:
                     block_env_args.pop(prop)
@@ -530,6 +529,7 @@ class EELSBackend(BaseChainBackend):
         }
 
     def _mine_pending_block(self, timestamp: U256 = None) -> Dict[str, Any]:
+        # initial validation
         block = self._pending_block
         block_header = block["header"]
 
@@ -540,6 +540,7 @@ class EELSBackend(BaseChainBackend):
                 f"{self.chain.latest_block.header.number}."
             )
 
+        # timestamp validation
         block_header["difficulty"] = block_header["difficulty"]
         if block_header["timestamp"] is None:
             # set the timestamp when mining unless already set by time_travel
@@ -551,8 +552,10 @@ class EELSBackend(BaseChainBackend):
                 else current_time
             )
 
+        # process block
         (synthetic_state_context, block_output) = self._internal_apply_body_validation()
 
+        # build the header
         block_header["state_root"] = self._state_module.state_root(
             synthetic_state_context.chain.state
         )
@@ -574,6 +577,7 @@ class EELSBackend(BaseChainBackend):
             block_header["requests_hash"] = compute_requests_hash(block_output.requests)
         block_header["ommers_hash"] = keccak256(rlp.encode(block["ommers"]))
 
+        # build the block
         _eels_block_header = self.fork.Header(**block_header)
         _eels_block = self.fork.Block(
             header=_eels_block_header,
@@ -582,11 +586,13 @@ class EELSBackend(BaseChainBackend):
             withdrawals=tuple(block["withdrawals"]),
         )
 
+        # apply the block
         self.fork.state_transition(self.chain, _eels_block)
         assert self.fork.state_root(self.chain.state) == block_header["state_root"]
         blockhash = keccak256(rlp.encode(_eels_block_header))
         assert blockhash == keccak256(rlp.encode(self.chain.latest_block.header))
 
+        # update transactions in the block post-mining
         blocknum = int(block_header["number"])
         for i, (trie_key, tx) in enumerate(
             block_output.transactions_trie._data.items()
@@ -601,71 +607,74 @@ class EELSBackend(BaseChainBackend):
 
             # update trie_receipt values in apply_body_output, post-mining
             trie_receipt = block_output.receipts_trie._data[trie_key]
-            # updated_receipt = {"logs": []}
-            # updated_receipt["blockNumber"] = blocknum
-            # updated_receipt["blockHash"] = blockhash
-            # updated_receipt["transactionIndex"] = i
-            # updated_receipt["stateRoot"] = block_header["state_root"]
-            # # breakpoint()
-            # for log in trie_receipt.logs:
-            #     updated_receipt["logs"].append(
-            #         {
-            #             "address": log.address,
-            #             "topics": log.topics,
-            #             "data": log.data,
-            #             "blockNumber": blocknum,
-            #             "blockHash": blockhash,
-            #             "transactionIndex": i,
-            #             "transactionHash": tx_hash,
-            #             "type": "mined",
-            #         }
-            #     )
+            updated_receipt = {"logs": []}
 
-            # breakpoint()
+            # transaction references
+            updated_receipt["transactionHash"] = tx_hash
+            updated_receipt["transactionIndex"] = i
+            updated_receipt["blockNumber"] = blocknum
+            updated_receipt["blockHash"] = blockhash
 
-            # we are missing:
-            #
-            # "contractAddress",
-            # "cumulativeGasUsed",
-            # "effectiveGasPrice",
-            # "from",
-            # "gasUsed",
-            # "status",
-            # "to",
-            # "transactionHash",
-            # "type",
+            # execution result
+            updated_receipt["status"] = int(trie_receipt.succeeded)
 
-            # process_transaction_return is a tuple of (gas_used, logs, errors)
-            # logs is a list of Log objects
-            # errors is an int
-            # breakpoint()
-            # breakpoint()
-            process_transaction_return = (
-                updated_tx["gas"],
-                trie_receipt.logs,
-                # TODO:hardcode this for now - is "status" of transaction?
-                1,
+            # TODO: not sure where to get gasUsed, using cumulative for now
+            updated_receipt["gasUsed"] = int(trie_receipt.cumulative_gas_used)
+            updated_receipt["cumulativeGasUsed"] = int(trie_receipt.cumulative_gas_used)
+            updated_receipt["effectiveGasPrice"] = calculate_effective_gas_price(
+                updated_tx,
+                block_header,
             )
 
-            updated_receipt = serialize_pending_receipt(
-                self,
-                tx=tx,
-                process_transaction_return=process_transaction_return,
-                index=i,
-                cumulative_gas_used=trie_receipt.cumulative_gas_used,
-                contract_address=None,
+            # address information
+            updated_receipt["from"] = updated_tx["from"]
+            updated_receipt["to"] = updated_tx["to"]
+
+            # TODO move this somewhere
+            def calculate_contract_address(sender_address, nonce):
+                # Contract address = keccak256(rlp([sender, nonce]))[-20:]
+                rlp_encoded = rlp.encode([sender_address, nonce])
+                hash_result = keccak256(rlp_encoded)
+                return hash_result[-20:]  # Last 20 bytes = address
+
+            updated_receipt["contractAddress"] = (
+                calculate_contract_address(
+                    updated_tx["from"], Uint(updated_tx["nonce"])
+                )
+                if not updated_tx["to"]
+                else None
             )
 
-            # updated_receipt["blobGasUsed"] = block_header["blob_gas_used"]
+            updated_receipt["stateRoot"] = block_header["state_root"]
             # breakpoint()
+            for log in trie_receipt.logs:
+                updated_receipt["logs"].append(
+                    {
+                        "address": log.address,
+                        "topics": log.topics,
+                        "data": log.data,
+                        "blockNumber": blocknum,
+                        "blockHash": blockhash,
+                        "transactionIndex": i,
+                        "transactionHash": tx_hash,
+                        "type": "mined",
+                    }
+                )
 
-            # blob_gas_price = self._vm_module.gas.calculate_blob_gas_price(
-            #     block_header["excess_blob_gas"]
-            # )
-            # updated_receipt["blobGasPrice"] = blob_gas_price
+            updated_receipt["type"] = updated_tx["type"]
+
+            updated_receipt["blobGasUsed"] = int(block_header["blob_gas_used"])
+
+            blob_gas_price = self._vm_module.gas.calculate_blob_gas_price(
+                block_header["excess_blob_gas"]
+            )
+            updated_receipt["blobGasPrice"] = int(blob_gas_price)
+
+            # breakpoint()
 
             self._receipts_map[tx_hash] = updated_receipt
 
+        # update saved block data post-mining
         self._build_new_pending_block()
         self._state_context_history[blocknum] = self._copy_state_context()
         return block
