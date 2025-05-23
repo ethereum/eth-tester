@@ -96,6 +96,9 @@ from eth_tester.backends.base import (
 from eth_tester.backends.common import (
     merge_genesis_overrides,
 )
+from eth_tester.backends.eels.serializers import (
+    serialize_pending_receipt,
+)
 from eth_tester.constants import (
     BEACON_ROOTS_CONTRACT_ADDRESS,
     BEACON_ROOTS_CONTRACT_CODE,
@@ -598,25 +601,69 @@ class EELSBackend(BaseChainBackend):
 
             # update trie_receipt values in apply_body_output, post-mining
             trie_receipt = block_output.receipts_trie._data[trie_key]
-            updated_receipt = {"logs": []}
-            updated_receipt["blockNumber"] = blocknum
-            updated_receipt["blockHash"] = blockhash
-            updated_receipt["transactionIndex"] = i
-            updated_receipt["stateRoot"] = block_header["state_root"]
+            # updated_receipt = {"logs": []}
+            # updated_receipt["blockNumber"] = blocknum
+            # updated_receipt["blockHash"] = blockhash
+            # updated_receipt["transactionIndex"] = i
+            # updated_receipt["stateRoot"] = block_header["state_root"]
+            # # breakpoint()
+            # for log in trie_receipt.logs:
+            #     updated_receipt["logs"].append(
+            #         {
+            #             "address": log.address,
+            #             "topics": log.topics,
+            #             "data": log.data,
+            #             "blockNumber": blocknum,
+            #             "blockHash": blockhash,
+            #             "transactionIndex": i,
+            #             "transactionHash": tx_hash,
+            #             "type": "mined",
+            #         }
+            #     )
+
             # breakpoint()
-            for log in trie_receipt.logs:
-                updated_receipt["logs"].append(
-                    {
-                        "address": log.address,
-                        "topics": log.topics,
-                        "data": log.data,
-                        "blockNumber": blocknum,
-                        "blockHash": blockhash,
-                        "transactionIndex": i,
-                        "transactionHash": tx_hash,
-                        "type": "mined",
-                    }
-                )
+
+            # we are missing:
+            #
+            # "contractAddress",
+            # "cumulativeGasUsed",
+            # "effectiveGasPrice",
+            # "from",
+            # "gasUsed",
+            # "status",
+            # "to",
+            # "transactionHash",
+            # "type",
+
+            # process_transaction_return is a tuple of (gas_used, logs, errors)
+            # logs is a list of Log objects
+            # errors is an int
+            # breakpoint()
+            # breakpoint()
+            process_transaction_return = (
+                updated_tx["gas"],
+                trie_receipt.logs,
+                # TODO:hardcode this for now - is "status" of transaction?
+                1,
+            )
+
+            updated_receipt = serialize_pending_receipt(
+                self,
+                tx=tx,
+                process_transaction_return=process_transaction_return,
+                index=i,
+                cumulative_gas_used=trie_receipt.cumulative_gas_used,
+                contract_address=None,
+            )
+
+            # updated_receipt["blobGasUsed"] = block_header["blob_gas_used"]
+            # breakpoint()
+
+            # blob_gas_price = self._vm_module.gas.calculate_blob_gas_price(
+            #     block_header["excess_blob_gas"]
+            # )
+            # updated_receipt["blobGasPrice"] = blob_gas_price
+
             self._receipts_map[tx_hash] = updated_receipt
 
         self._build_new_pending_block()
@@ -1100,7 +1147,9 @@ class EELSBackend(BaseChainBackend):
     def _process_synthetic_transaction(self, transaction):
         env, signed_evm_transaction = self._generate_transaction_env(transaction)
         self._run_message_against_evm(env, signed_evm_transaction)
+
         output = self.fork.process_transaction(env, signed_evm_transaction)
+        breakpoint()
         return output
 
     def call(self, transaction, block_number="pending"):

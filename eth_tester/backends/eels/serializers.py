@@ -2,12 +2,22 @@ import time
 from typing import (
     Any,
     Dict,
+    List,
     Sequence,
+    Tuple,
     Union,
 )
 
-from ethereum.crypto.hash import keccak256
-from ethereum_rlp import rlp
+from ethereum.crypto.hash import (
+    keccak256,
+)
+from ethereum_rlp import (
+    rlp,
+)
+
+from eth_tester.backends.base import (
+    BaseChainBackend,
+)
 
 from .utils import (
     eels_is_available,
@@ -17,6 +27,7 @@ if eels_is_available():
     from ethereum.cancun.blocks import (
         Block,
         Log,
+        Transaction,
     )
 else:
     Block = None
@@ -233,13 +244,14 @@ def serialize_transaction(tx, pending_block: Dict[str, Any] = None):
 
 
 def serialize_pending_receipt(
-    backend_instance,
-    tx,
-    process_transaction_return,
-    index,
-    cumulative_gas_used,
+    backend_instance: BaseChainBackend,
+    tx: Transaction,
+    process_transaction_return: Tuple[int, List[Log], int],
+    index: int,
+    cumulative_gas_used: int,
     contract_address=None,
 ) -> Dict[str, Any]:
+    # breakpoint()
     tx_hash = backend_instance._get_tx_hash(tx)
     tx_gas_consumed = int(process_transaction_return[0])
 
