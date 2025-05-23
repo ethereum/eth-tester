@@ -1,15 +1,23 @@
 import pytest
 
+from eth_keys import (
+    keys,
+)
 from eth_utils import (
     denoms,
+    encode_hex,
     is_address,
+    is_dict,
+    is_hex,
     is_integer,
     is_same_address,
 )
 from eth_utils.toolz import (
     assoc,
     dissoc,
+    merge,
 )
+import rlp
 
 from eth_tester.constants import (
     BURN_ADDRESS,
@@ -18,10 +26,31 @@ from eth_tester.constants import (
 )
 from eth_tester.exceptions import (
     AccountLocked,
+    BlockNotFound,
+    FilterNotFound,
+    TransactionFailed,
+    TransactionNotFound,
+    ValidationError,
+)
+from eth_tester.tools.gas_burner_contract import (
+    _deploy_gas_burner,
+    _make_call_gas_burner_transaction,
 )
 
 from .emitter_contract import (
+    EMITTER_ENUM,
+    _call_emitter,
     _deploy_emitter,
+)
+from .math_contract import (
+    _decode_math_result,
+    _deploy_math,
+    _make_call_math_transaction,
+)
+from .throws_contract import (
+    _decode_throws_result,
+    _deploy_throws,
+    _make_call_throws_transaction,
 )
 
 PK_A = "0x58d23b55bc9cdce1f18c2500f40ff4ab7245df9a89505e9b1fa4851f623d241d"
@@ -121,6 +150,10 @@ class BaseTestBackendDirect:
         if not self.supports_evm_execution:
             pytest.skip("EVM Execution is not supported.")
 
+    def skip_if_eels_execution(self):
+        if "EELS" in self.__class__.__name__:
+            pytest.skip("Not supported in EELS.")
+
     #
     # Accounts
     #
@@ -198,8 +231,6 @@ class BaseTestBackendDirect:
         code = eth_tester.get_code(BURN_ADDRESS)
         assert code == "0x"
 
-
-'''
     def test_get_nonce(self, eth_tester):
         for account in eth_tester.get_accounts():
             nonce = eth_tester.get_nonce(account)
@@ -269,6 +300,7 @@ class BaseTestBackendDirect:
         self, eth_tester, block_count, newest_block, reward_percentiles, expected
     ):
         self.skip_if_no_evm_execution()
+        self.skip_if_eels_execution()
 
         eth_tester.mine_blocks(10)
         fee_history = eth_tester.get_fee_history(
@@ -303,7 +335,7 @@ class BaseTestBackendDirect:
         self, eth_tester, block_count, newest_block, reward_percentiles, error, message
     ):
         self.skip_if_no_evm_execution()
-
+        self.skip_if_eels_execution()
         eth_tester.mine_blocks(10)
 
         with pytest.raises(error, match=message):
@@ -1843,5 +1875,3 @@ class BaseTestBackendDirect:
         filter_id_2 = eth_tester.create_log_filter(from_block=0)
         assert len(eth_tester.get_all_filter_logs(filter_id_1)) == 2
         assert len(eth_tester.get_all_filter_logs(filter_id_2)) == 2
-
-'''
