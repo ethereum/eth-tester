@@ -150,6 +150,10 @@ class BaseTestBackendDirect:
         if not self.supports_evm_execution:
             pytest.skip("EVM Execution is not supported.")
 
+    def skip_if_eels_execution(self):
+        if "EELS" in self.__class__.__name__:
+            pytest.skip("Not supported in EELS.")
+
     #
     # Accounts
     #
@@ -296,6 +300,7 @@ class BaseTestBackendDirect:
         self, eth_tester, block_count, newest_block, reward_percentiles, expected
     ):
         self.skip_if_no_evm_execution()
+        self.skip_if_eels_execution()
 
         eth_tester.mine_blocks(10)
         fee_history = eth_tester.get_fee_history(
@@ -330,7 +335,7 @@ class BaseTestBackendDirect:
         self, eth_tester, block_count, newest_block, reward_percentiles, error, message
     ):
         self.skip_if_no_evm_execution()
-
+        self.skip_if_eels_execution()
         eth_tester.mine_blocks(10)
 
         with pytest.raises(error, match=message):
