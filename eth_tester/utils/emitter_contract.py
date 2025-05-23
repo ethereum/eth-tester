@@ -250,9 +250,7 @@ def _deploy_emitter(eth_tester):
             "data": EMITTER_BYTECODE,
         }
     )
-    # breakpoint()
     deploy_receipt = eth_tester.get_transaction_receipt(deploy_hash)
-    # breakpoint()
     emitter_address = deploy_receipt["contractAddress"]
     assert emitter_address
     return emitter_address
@@ -267,6 +265,7 @@ def _call_emitter(eth_tester, contract_address, fn_name, fn_args):
             "from": eth_tester.get_accounts()[0],
             "to": contract_address,
             "gas": 500000,
+            "gasPrice": NON_DEFAULT_GAS_PRICE,
             "data": encode_hex(fn_selector + abi.encode(arg_types, fn_args)),
         }
     )
