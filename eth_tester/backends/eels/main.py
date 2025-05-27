@@ -611,6 +611,13 @@ class EELSBackend(BaseChainBackend):
 
             # update trie_receipt values in apply_body_output, post-mining
             trie_receipt = block_output.receipts_trie._data[trie_key]
+
+            # decode receipt if necessary
+            if isinstance(trie_receipt, bytes):
+                trie_receipt = rlp.decode_to(
+                    self._blocks_module.Receipt, trie_receipt[1:]
+                )
+
             updated_receipt = {"logs": []}
 
             # transaction references
@@ -1228,7 +1235,7 @@ class EELSBackend(BaseChainBackend):
                 accessed_addresses.add(addr)
                 accessed_storage_keys.update(keys)
 
-        code = self.fork.get_account(env.state, signed_evm_transaction.to).code
+        code = self._fork_module.get_account(env.state, signed_evm_transaction.to).code
         message = self.fork.Message(
             caller=env.caller,
             target=signed_evm_transaction.to,
@@ -1274,7 +1281,9 @@ class EELSBackend(BaseChainBackend):
         """
         Create a transient account with known pkey with the same state as the sender.
         """
-        sender_address_account = self.fork.get_account(self.chain.state, sender_address)
+        sender_address_account = self._fork_module.get_account(
+            self.chain.state, sender_address
+        )
         acct = Account.create()
         bytes_address = to_canonical_address(acct.address)
         acct_pkey = KeyAPI.PrivateKey(acct.key)
