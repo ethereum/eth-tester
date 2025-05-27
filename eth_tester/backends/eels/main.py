@@ -1235,9 +1235,22 @@ class EELSBackend(BaseChainBackend):
                 accessed_addresses.add(addr)
                 accessed_storage_keys.update(keys)
 
-        code = self._fork_module.get_account(env.state, signed_evm_transaction.to).code
-        message = self.fork.Message(
-            caller=env.caller,
+        # breakpoint()
+        # code = self._fork_module.get_account(env.state, signed_evm_transaction.to).code  # noqa: E501
+        # TODO state previously was part of env, make sure this is ok to use here
+        code = self._fork_module.get_account(
+            self.chain.state, signed_evm_transaction.to
+        ).code
+        # breakpoint()
+        caller = self._fork_module.recover_sender(
+            self.chain.chain_id, signed_evm_transaction
+        )
+        # breakpoint()
+
+        message = self._vm_module.Message(
+            block_env=env,
+            tx_env=env,
+            caller=caller,
             target=signed_evm_transaction.to,
             gas=signed_evm_transaction.gas,
             value=signed_evm_transaction.value,
