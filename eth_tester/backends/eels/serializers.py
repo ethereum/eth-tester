@@ -251,7 +251,6 @@ def serialize_pending_receipt(
     cumulative_gas_used: int,
     contract_address=None,
 ) -> Dict[str, Any]:
-    # breakpoint()
     tx_hash = backend_instance._get_tx_hash(tx)
     tx_gas_consumed = int(process_transaction_return[0])
 

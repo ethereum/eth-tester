@@ -594,6 +594,10 @@ class EELSBackend(BaseChainBackend):
 
         # update transactions in the block post-mining
         blocknum = int(block_header["number"])
+
+        # logIndex is sequential across all transactions in a block
+        log_index = 0
+
         for i, (trie_key, tx) in enumerate(
             block_output.transactions_trie._data.items()
         ):
@@ -646,7 +650,6 @@ class EELSBackend(BaseChainBackend):
             )
 
             updated_receipt["stateRoot"] = block_header["state_root"]
-            # breakpoint()
             for log in trie_receipt.logs:
                 updated_receipt["logs"].append(
                     {
@@ -655,11 +658,13 @@ class EELSBackend(BaseChainBackend):
                         "data": log.data,
                         "blockNumber": blocknum,
                         "blockHash": blockhash,
+                        "logIndex": log_index,
                         "transactionIndex": i,
                         "transactionHash": tx_hash,
                         "type": "mined",
                     }
                 )
+                log_index += 1
 
             updated_receipt["type"] = updated_tx["type"]
 
@@ -669,8 +674,6 @@ class EELSBackend(BaseChainBackend):
                 block_header["excess_blob_gas"]
             )
             updated_receipt["blobGasPrice"] = int(blob_gas_price)
-
-            # breakpoint()
 
             self._receipts_map[tx_hash] = updated_receipt
 
@@ -754,7 +757,6 @@ class EELSBackend(BaseChainBackend):
         )
 
     def get_transaction_receipt(self, transaction_hash):
-        # breakpoint()
         if transaction_hash in self._receipts_map:
             return self._receipts_map[transaction_hash]
 
@@ -845,7 +847,6 @@ class EELSBackend(BaseChainBackend):
 
         kw_arguments["caller"] = kw_arguments["origin"] = sender_address
         kw_arguments["traces"] = []
-        # breakpoint()
 
         """
 
@@ -906,7 +907,6 @@ class EELSBackend(BaseChainBackend):
 
         base_fee = self._pending_block["header"]["base_fee_per_gas"]
         if self.fork.is_after_fork("ethereum.cancun"):
-            # breakpoint()
             block_env = self._vm_module.BlockEnvironment(
                 chain_id=U64(self.chain.chain_id),
                 state=self.chain.state,
@@ -1158,7 +1158,6 @@ class EELSBackend(BaseChainBackend):
         self._run_message_against_evm(env, signed_evm_transaction)
 
         output = self.fork.process_transaction(env, signed_evm_transaction)
-        breakpoint()
         return output
 
     def call(self, transaction, block_number="pending"):
