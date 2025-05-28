@@ -938,11 +938,11 @@ class EELSBackend(BaseChainBackend):
                     "parent_beacon_block_root"
                 ],
             )
+            # TODO: maybe this should be pulled from somewhere?
             block_output = self._vm_module.BlockOutput(
                 block_gas_used=Uint(0),
                 transactions_trie=self._trie_module.Trie(secured=False, default=None),
                 receipts_trie=self._trie_module.Trie(secured=False, default=None),
-                # receipt_keys=tuple(),
                 block_logs=tuple(),
                 withdrawals_trie=self._trie_module.Trie(secured=False, default=None),
                 blob_gas_used=U64(0),
@@ -1165,11 +1165,28 @@ class EELSBackend(BaseChainBackend):
                 raise TransactionFailed("Transaction failed to execute.") from e
         return int(output[0])  # gas consumed
 
-    def _process_synthetic_transaction(self, transaction):
+    def _process_synthetic_transaction(self, transaction: Dict[str, Any]):
         tx_env, signed_evm_transaction = self._generate_transaction_env(transaction)
         self._run_message_against_evm(tx_env, signed_evm_transaction)
 
-        output = self.fork.process_transaction(tx_env, signed_evm_transaction)
+        block_env = self._build_block_env()
+
+        # TODO: maybe this should be pulled from somewhere?
+        block_output = self._vm_module.BlockOutput(
+            block_gas_used=Uint(0),
+            transactions_trie=self._trie_module.Trie(secured=False, default=None),
+            receipts_trie=self._trie_module.Trie(secured=False, default=None),
+            block_logs=tuple(),
+            withdrawals_trie=self._trie_module.Trie(secured=False, default=None),
+            blob_gas_used=U64(0),
+        )
+        output = self._fork_module.process_transaction(
+            block_env=block_env,
+            block_output=block_output,
+            tx=signed_evm_transaction,
+            # TODO: where to find index?
+            index=Uint(0),
+        )
         return output
 
     def call(self, transaction, block_number="pending"):
