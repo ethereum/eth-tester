@@ -430,6 +430,25 @@ class EELSBackend(BaseChainBackend):
         else:
             yield
 
+    # TODO: move somewhere more appropriate
+    def _build_block_env(self):
+        block_env_args = dict(self._pending_block["header"])
+        block_env_args["time"] = block_env_args.pop("timestamp")
+        block_env_args["block_gas_limit"] = block_env_args.pop("gas_limit")
+
+        # remove any fields that are not in the fork's BlockEnvironment
+        for prop in dict(block_env_args):
+            if prop not in self._vm_module.BlockEnvironment.__annotations__:
+                block_env_args.pop(prop)
+
+        block_env = self._vm_module.BlockEnvironment(
+            chain_id=self.chain.chain_id,
+            state=self.chain.state,
+            block_hashes=self._fork_module.get_last_256_block_hashes(self.chain),
+            **block_env_args,
+        )
+        return block_env
+
     #
     # Importing blocks
     #
@@ -440,23 +459,7 @@ class EELSBackend(BaseChainBackend):
         for calculated fields when building blocks locally.
         """
         with self._state_context_manager("pending", synthetic_state=True):
-            block_env_args = dict(self._pending_block["header"])
-            block_env_args["time"] = block_env_args.pop("timestamp")
-            block_env_args["block_gas_limit"] = block_env_args.pop("gas_limit")
-
-            # remove any fields that are not in the fork's BlockEnvironment
-            for prop in dict(block_env_args):
-                if prop not in self._vm_module.BlockEnvironment.__annotations__:
-                    block_env_args.pop(prop)
-
-            block_env = self._vm_module.BlockEnvironment(
-                chain_id=self.chain.chain_id,
-                state=self.chain.state,
-                block_hashes=self._fork_module.get_last_256_block_hashes(self.chain),
-                **block_env_args,
-            )
-
-            apply_body_args = {"block_env": block_env}
+            apply_body_args = {"block_env": self._build_block_env()}
             for prop in dict(self._pending_block):
                 if prop in self._fork_module.apply_body.__annotations__:
                     apply_body_args[prop] = self._pending_block[prop]
@@ -815,6 +818,8 @@ class EELSBackend(BaseChainBackend):
         gas_available = block_header["gas_limit"] - block_header.get(
             "gas_used", Uint(0)
         )
+
+        # TODO clean up, don't need kw_arguments anymore, just tx_env
         kw_arguments = {
             "block_hashes": self._fork_module.get_last_256_block_hashes(self.chain),
             "coinbase": block_header["coinbase"],
@@ -1161,22 +1166,22 @@ class EELSBackend(BaseChainBackend):
         return int(output[0])  # gas consumed
 
     def _process_synthetic_transaction(self, transaction):
-        env, signed_evm_transaction = self._generate_transaction_env(transaction)
-        self._run_message_against_evm(env, signed_evm_transaction)
+        tx_env, signed_evm_transaction = self._generate_transaction_env(transaction)
+        self._run_message_against_evm(tx_env, signed_evm_transaction)
 
-        output = self.fork.process_transaction(env, signed_evm_transaction)
+        output = self.fork.process_transaction(tx_env, signed_evm_transaction)
         return output
 
     def call(self, transaction, block_number="pending"):
         with self._state_context_manager(block_number, synthetic_state=True):
             transaction["gas"] = transaction.get("gas", MINIMUM_GAS_ESTIMATE)
             try:
-                env, signed_evm_transaction = self._generate_transaction_env(
+                tx_env, signed_evm_transaction = self._generate_transaction_env(
                     transaction
                 )
             except EthereumException as e:
                 raise TransactionFailed("Transaction failed to execute.") from e
-            evm = self._run_message_against_evm(env, signed_evm_transaction)
+            evm = self._run_message_against_evm(tx_env, signed_evm_transaction)
             return evm.output
 
     def apply_withdrawals(
@@ -1227,7 +1232,7 @@ class EELSBackend(BaseChainBackend):
         )
         return env, signed_transaction
 
-    def _run_message_against_evm(self, env, signed_evm_transaction):
+    def _run_message_against_evm(self, tx_env, signed_evm_transaction):
         accessed_addresses = set()
         accessed_storage_keys = set()
         if hasattr(signed_evm_transaction, "access_list"):
@@ -1235,21 +1240,18 @@ class EELSBackend(BaseChainBackend):
                 accessed_addresses.add(addr)
                 accessed_storage_keys.update(keys)
 
-        # breakpoint()
-        # code = self._fork_module.get_account(env.state, signed_evm_transaction.to).code  # noqa: E501
-        # TODO state previously was part of env, make sure this is ok to use here
         code = self._fork_module.get_account(
             self.chain.state, signed_evm_transaction.to
         ).code
-        # breakpoint()
         caller = self._fork_module.recover_sender(
             self.chain.chain_id, signed_evm_transaction
         )
-        # breakpoint()
+
+        block_env = self._build_block_env()
 
         message = self._vm_module.Message(
-            block_env=env,
-            tx_env=env,
+            block_env=block_env,
+            tx_env=tx_env,
             caller=caller,
             target=signed_evm_transaction.to,
             gas=signed_evm_transaction.gas,
@@ -1266,7 +1268,7 @@ class EELSBackend(BaseChainBackend):
             accessed_storage_keys=accessed_storage_keys,
             parent_evm=None,
         )
-        evm = self._vm_module.interpreter.process_message(message, env)
+        evm = self._vm_module.interpreter.process_message(message)
         if evm.error:
             if isinstance(evm.error, self._vm_module.exceptions.Revert):
                 str_output = str(evm.output)
