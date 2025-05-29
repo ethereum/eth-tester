@@ -7,6 +7,8 @@ from eth_utils import (
     function_abi_to_4byte_selector,
 )
 
+NON_DEFAULT_GAS_PRICE = 1000000000
+
 MATH_BYTECODE = (
     "606060405261022e806100126000396000f360606040523615610074576000357c01000000000000"
     "000000000000000000000000000000000000000000009004806316216f391461007657806361bc22"
@@ -104,6 +106,7 @@ def _deploy_math(eth_tester):
         {
             "from": eth_tester.get_accounts()[0],
             "gas": 500000,
+            "gasPrice": NON_DEFAULT_GAS_PRICE,
             "data": MATH_BYTECODE,
         }
     )

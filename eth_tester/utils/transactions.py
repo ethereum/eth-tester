@@ -131,7 +131,9 @@ def remove_matching_transaction_from_list(transaction_list, transaction):
             yield tx
 
 
-def calculate_effective_gas_price(transaction, block_header):
+def calculate_effective_gas_price(
+    transaction: Dict[str, Any], block_header: Dict[str, Any]
+):
     transaction_type = int(extract_transaction_type(transaction), 16)
 
     if transaction_type < DYNAMIC_FEE_TX_TYPE:
@@ -149,7 +151,7 @@ def calculate_effective_gas_price(transaction, block_header):
             max_priority_fee = int(transaction.max_priority_fee_per_gas)
 
         base_fee = int(
-            block_header["baseFeePerGas"]
+            block_header["base_fee_per_gas"]
             if isinstance(block_header, dict)
             else block_header.base_fee_per_gas
         )

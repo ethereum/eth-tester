@@ -6,6 +6,8 @@ from eth_utils import (
     function_abi_to_4byte_selector,
 )
 
+NON_DEFAULT_GAS_PRICE = 1000000000
+
 # The following contract burns gas relative to the current block number. The
 # higher the block number, the more gas is burned. It is used to test
 # functionality that uses block identifiers.
@@ -45,6 +47,7 @@ def _deploy_gas_burner(eth_tester):
         {
             "from": eth_tester.get_accounts()[0],
             "gas": 500000,
+            "gasPrice": NON_DEFAULT_GAS_PRICE,
             "data": GAS_BURNER_BYTECODE,
         }
     )
