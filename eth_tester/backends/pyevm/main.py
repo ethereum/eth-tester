@@ -491,8 +491,7 @@ class PyEVMBackend(BaseChainBackend):
     # Meta
     #
     def time_travel(self, to_timestamp):
-        # timestamp adjusted by 1 b/c a second is added in mine_blocks
-        self.chain.header = self.chain.header.copy(timestamp=(to_timestamp - 1))
+        self.chain.header = self.chain.header.copy(timestamp=(to_timestamp))
         self.mine_blocks()
         return to_timestamp
 

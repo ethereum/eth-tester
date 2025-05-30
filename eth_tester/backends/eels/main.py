@@ -231,7 +231,9 @@ class EELSBackend(BaseChainBackend):
         return self._state_context.receipts_map if self._state_context else {}
 
     def time_travel(self, to_timestamp):
-        self._pending_block["header"]["timestamp"] = to_timestamp
+        self._pending_block["header"]["timestamp"] = U256(to_timestamp)
+        self.mine_blocks()
+        return to_timestamp
 
     #
     # Genesis

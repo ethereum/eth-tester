@@ -1812,13 +1812,13 @@ class BaseTestBackendDirect:
         eth_tester.mine_blocks(3)
 
         # grab the block before time traveling
-        before_block = eth_tester.get_block_by_number("pending")
+        before_block = eth_tester.get_block_by_number("latest")
 
         # now travel forward 2 minutes
         eth_tester.time_travel(before_block["timestamp"] + 120)
 
         # grab the new block
-        after_block = eth_tester.get_block_by_number("pending")
+        after_block = eth_tester.get_block_by_number("latest")
 
         # test a block has been mined with expected timestamp during travel
         assert after_block["number"] == (before_block["number"] + 1)
@@ -1829,7 +1829,7 @@ class BaseTestBackendDirect:
         eth_tester.mine_blocks(3)
 
         # check the time
-        before_timestamp = eth_tester.get_block_by_number("pending")["timestamp"]
+        before_timestamp = eth_tester.get_block_by_number("latest")["timestamp"]
 
         # try to travel backwards 10 seconds
         with pytest.raises(ValidationError):
