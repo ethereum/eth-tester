@@ -402,9 +402,13 @@ class BaseTestBackendDirect:
 
             eth_tester.enable_auto_mine_transactions()
 
-        receipt = eth_tester.get_transaction_receipt(transaction_hash)
-        # assert that the raw transaction is confirmed and successful
-        assert receipt["transactionHash"] == transaction_hash
+        else:
+            # TODO if the else is removed and this block de-indented, pyevm will still
+            # successfully get a receipt here with is_pending=True
+            # but I don't think it should
+            receipt = eth_tester.get_transaction_receipt(transaction_hash)
+            # assert that the raw transaction is confirmed and successful
+            assert receipt["transactionHash"] == transaction_hash
 
     def test_send_raw_transaction_invalid_rlp_transaction(self, eth_tester):
         self.skip_if_no_evm_execution()
