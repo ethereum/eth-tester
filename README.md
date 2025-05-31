@@ -481,13 +481,13 @@ In addition to the above, the following parameters are added based on the type o
 
 - `gas_price`: Sets the price per unit of gas in wei that will be paid for transaction execution (integer).
 
-#### Access list transactions (EIP-2930)
+#### Access list transactions ([EIP-2930](https://github.com/ethereum/ercs/blob/master/ERCS/erc-2930.md))
 
 - `gas_price`: Sets the price per unit of gas in wei that will be paid for transaction execution (integer).
 - `access_list` (optional): Specifies accounts and storage slots expected to be accessed, based on the transaction, in order to
   gain a discount on the gas for those executions (see quickstart example for usage).
 
-#### Dynamic fee transactions (EIP-1559)
+#### Dynamic fee transactions ([EIP-1559](https://github.com/ethereum/ercs/blob/master/ERCS/erc-1559.md))
 
 - `max_fee_per_gas`: Sets the maximum fee per unit of gas in wei that will be paid for transaction execution (integer).
 - `max_priority_fee_per_gas`: Sets the fee per unit of gas in wei that is sent to the coinbase address as an incentive for including the transaction (integer).
