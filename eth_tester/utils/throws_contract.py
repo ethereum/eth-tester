@@ -7,6 +7,8 @@ from eth_utils import (
     function_abi_to_4byte_selector,
 )
 
+NON_DEFAULT_GAS_PRICE = 1000000000
+
 # Just for reference.
 THROWS_SOURCE = (
     """
@@ -108,6 +110,7 @@ def _deploy_throws(eth_tester, contract_name):
         {
             "from": eth_tester.get_accounts()[0],
             "gas": 500000,
+            "gasPrice": NON_DEFAULT_GAS_PRICE,
             "data": THROWS_BYTECODE[contract_name],
         }
     )

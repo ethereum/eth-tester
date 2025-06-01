@@ -8,6 +8,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Tuple,
     Union,
 )
 
@@ -38,8 +39,6 @@ from .utils import (
 
 if eels_is_available():
     from ethereum.cancun.fork import (
-        SYSTEM_ADDRESS,
-        SYSTEM_TRANSACTION_GAS,
         BlockChain,
     )
     from ethereum.crypto.hash import (
@@ -47,6 +46,9 @@ if eels_is_available():
     )
     from ethereum.exceptions import (
         EthereumException,
+    )
+    from ethereum.prague.requests import (
+        compute_requests_hash,
     )
     from ethereum.utils.hexadecimal import (
         hex_to_uint,
@@ -85,6 +87,7 @@ else:
     hex_to_uint = None
     secp256k1_sign = None
     rlp = None
+    compute_requests_hash = None
 
 
 from eth_tester.backends.base import (
@@ -112,6 +115,7 @@ from ...utils.accounts import (
     get_default_account_keys,
 )
 from ...utils.transactions import (
+    calculate_effective_gas_price,
     normalize_transaction_fields,
 )
 from ...validation.inbound import (
@@ -124,7 +128,6 @@ from .eels_normalizers import (
 from .serializers import (
     serialize_block,
     serialize_eels_transaction_for_block,
-    serialize_pending_receipt,
     serialize_transaction,
 )
 from .utils import (
@@ -160,7 +163,6 @@ class EELSBackend(BaseChainBackend):
     handles_pending_transactions = True
 
     _state_context = None
-    _account_keys = []
     _state_context_history = {}
 
     def __init__(
@@ -192,6 +194,9 @@ class EELSBackend(BaseChainBackend):
         self._transactions_module = self.fork._module("transactions")
         self._fork_types = self.fork._module("fork_types")
         self._utils_module = self.fork._module("utils")
+        self._trie_module = self.fork._module("trie")
+        self._bloom_module = self.fork._module("bloom")
+        self._account_keys = []
         self.reset_to_genesis(
             genesis_params=genesis_params,
             genesis_state=genesis_state,
@@ -226,7 +231,9 @@ class EELSBackend(BaseChainBackend):
         return self._state_context.receipts_map if self._state_context else {}
 
     def time_travel(self, to_timestamp):
-        self._pending_block["header"]["timestamp"] = to_timestamp
+        self._pending_block["header"]["timestamp"] = U256(to_timestamp)
+        self.mine_blocks()
+        return to_timestamp
 
     #
     # Genesis
@@ -425,187 +432,41 @@ class EELSBackend(BaseChainBackend):
         else:
             yield
 
+    # TODO: move somewhere more appropriate
+    def _build_block_env(self):
+        block_env_args = dict(self._pending_block["header"])
+        block_env_args["time"] = block_env_args.pop("timestamp")
+        block_env_args["block_gas_limit"] = block_env_args.pop("gas_limit")
+
+        # remove any fields that are not in the fork's BlockEnvironment
+        for prop in dict(block_env_args):
+            if prop not in self._vm_module.BlockEnvironment.__annotations__:
+                block_env_args.pop(prop)
+
+        block_env = self._vm_module.BlockEnvironment(
+            chain_id=self.chain.chain_id,
+            state=self.chain.state,
+            block_hashes=self._fork_module.get_last_256_block_hashes(self.chain),
+            **block_env_args,
+        )
+        return block_env
+
     #
     # Importing blocks
     #
-    def _internal_apply_body_validation(self) -> Any:
+    def _internal_apply_body_validation(self) -> Tuple[Any, Any]:
         """
         Use a similar approach to EELS to apply the body, only with a synthetic
         state. This is used to validate the body and generate appropriate values
         for calculated fields when building blocks locally.
         """
         with self._state_context_manager("pending", synthetic_state=True):
-            # using `pending` and `synthetic_state`, we use a copy of the current state
-            # within the context manager.
-            pending_block_header = self._pending_block["header"]
+            apply_body_args = {"block_env": self._build_block_env()}
+            for prop in dict(self._pending_block):
+                if prop in self._fork_module.apply_body.__annotations__:
+                    apply_body_args[prop] = self._pending_block[prop]
 
-            block_gas_limit = pending_block_header["gas_limit"]
-            gas_available = block_gas_limit
-            transactions_trie = self.fork.Trie(secured=False, default=None)
-            receipts_trie = self.fork.Trie(secured=False, default=None)
-            current_state = self.chain.state
-            if self._debug_mode:
-                # If debugging, sanity check that the state root copy is accurate. Turn
-                # off by default for performance.
-                if not self.fork.state_root(self.chain.state) == self.fork.state_root(
-                    current_state
-                ):
-                    raise ValidationError(
-                        "Copied state root does not match the expected state root."
-                    )
-
-            block_logs = ()
-            blob_gas_used = Uint(0)
-            latest_block_header = self.chain.latest_block.header
-            if self.fork.is_after_fork("ethereum.cancun"):
-                beacon_block_roots_contract_code = self.fork.get_account(
-                    current_state, BEACON_ROOTS_CONTRACT_ADDRESS
-                ).code
-                system_tx_message = self.fork.Message(
-                    caller=SYSTEM_ADDRESS,
-                    target=BEACON_ROOTS_CONTRACT_ADDRESS,
-                    gas=SYSTEM_TRANSACTION_GAS,
-                    value=U256(0),
-                    data=pending_block_header["parent_beacon_block_root"],
-                    code=beacon_block_roots_contract_code,
-                    depth=Uint(0),
-                    current_target=BEACON_ROOTS_CONTRACT_ADDRESS,
-                    code_address=BEACON_ROOTS_CONTRACT_ADDRESS,
-                    should_transfer_value=False,
-                    is_static=False,
-                    accessed_addresses=set(),
-                    accessed_storage_keys=set(),
-                    parent_evm=None,
-                )
-
-                system_tx_env = self.fork.Environment(
-                    caller=SYSTEM_ADDRESS,
-                    origin=SYSTEM_ADDRESS,
-                    block_hashes=self._fork_module.get_last_256_block_hashes(
-                        self.chain
-                    ),
-                    coinbase=pending_block_header["coinbase"],
-                    number=pending_block_header["number"],
-                    gas_limit=block_gas_limit,
-                    base_fee_per_gas=pending_block_header["base_fee_per_gas"],
-                    gas_price=U256(0),
-                    time=pending_block_header["timestamp"],
-                    prev_randao=pending_block_header["prev_randao"],
-                    state=current_state,
-                    chain_id=self.chain.chain_id,
-                    traces=[],
-                    excess_blob_gas=pending_block_header["excess_blob_gas"],
-                    blob_versioned_hashes=(),
-                    transient_storage=self.fork.TransientStorage(),
-                )
-                system_tx_output = self.fork.process_message_call(
-                    system_tx_message, system_tx_env
-                )
-                self.fork.destroy_touched_empty_accounts(
-                    system_tx_env.state, system_tx_output.touched_accounts
-                )
-
-            apply_body_output_dict = {"receipts_map": {}}
-            for i, tx in enumerate(self._pending_block["transactions"]):
-                snapshot_id = self.take_snapshot()
-                try:
-                    env = self._synthetic_tx_environment(tx)
-                    pre_state = self._copy_state_context().chain.state
-                    process_transaction_return = self.fork.process_transaction(env, tx)
-                    post_state = env.state
-                    contract_address = self._extract_contract_address(
-                        pre_state, post_state
-                    )
-
-                    if self.fork.is_after_fork("ethereum.cancun"):
-                        blob_gas_used += self.fork.calculate_total_blob_gas(tx)
-                        if blob_gas_used > self.fork.MAX_BLOB_GAS_PER_BLOCK:
-                            raise ValidationError(
-                                "Blob gas used exceeds the maximum allowed per block."
-                            )
-                except (EthereumException, ValidationError) as e:
-                    self.logger.warning(f"Transaction {rlp.rlp_hash(tx)} failed: {e}")
-                    self.revert_to_snapshot(snapshot_id)
-                else:
-                    gas_consumed = process_transaction_return[0]
-                    gas_available -= gas_consumed
-
-                    self.fork.trie_set(
-                        transactions_trie,
-                        rlp.encode(Uint(i)),
-                        self.fork.encode_transaction(tx),
-                    )
-
-                    apply_body_output_dict["receipts_map"][
-                        self._get_tx_hash(tx)
-                    ] = serialize_pending_receipt(
-                        self,
-                        tx,
-                        process_transaction_return,
-                        i,
-                        int(block_gas_limit - gas_available),
-                        contract_address,
-                    )
-
-                    receipt = self.fork.make_receipt(
-                        tx,
-                        process_transaction_return[2],
-                        (block_gas_limit - gas_available),
-                        process_transaction_return[1],
-                    )
-                    self.fork.trie_set(
-                        receipts_trie,
-                        rlp.encode(Uint(i)),
-                        receipt,
-                    )
-
-                    block_logs += process_transaction_return[1]
-
-            if (
-                not self.fork.is_after_fork("ethereum.paris")
-                and self._fork_module.BLOCK_REWARD is not None
-            ):
-                self._fork_module.pay_rewards(
-                    current_state,
-                    pending_block_header["number"],
-                    pending_block_header["coinbase"],
-                    self._pending_block["ommers"],
-                )
-
-            apply_body_output_dict.update(
-                {
-                    "block_gas_used": block_gas_limit - gas_available,
-                    "block_logs_bloom": self.fork.logs_bloom(block_logs),
-                }
-            )
-            if self.fork.is_after_fork("ethereum.shanghai"):
-                withdrawals_trie = self.fork.Trie(secured=False, default=None)
-                for i, wd in enumerate(self._pending_block["withdrawals"]):
-                    self.fork.trie_set(
-                        withdrawals_trie, rlp.encode(Uint(i)), rlp.encode(wd)
-                    )
-                    self.fork.process_withdrawal(current_state, wd)
-
-                    if self.fork.account_exists_and_is_empty(current_state, wd.address):
-                        self.fork.destroy_account(current_state, wd.address)
-
-                apply_body_output_dict["withdrawals_root"] = self.fork.root(
-                    withdrawals_trie
-                )
-
-            if self.fork.is_after_fork("ethereum.cancun"):
-                apply_body_output_dict["blob_gas_used"] = blob_gas_used
-                apply_body_output_dict[
-                    "excess_blob_gas"
-                ] = self._vm_module.gas.calculate_excess_blob_gas(latest_block_header)
-
-            apply_body_output_dict["state_root"] = self.fork.state_root(current_state)
-            apply_body_output_dict["tx_root"] = self.fork.root(transactions_trie)
-            apply_body_output_dict["receipt_root"] = self.fork.root(receipts_trie)
-            apply_body_output_dict["ommers_hash"] = keccak256(
-                rlp.encode(self._pending_block["ommers"])
-            )
-            return apply_body_output_dict
+            return self._state_context, self._fork_module.apply_body(**apply_body_args)
 
     def _build_new_pending_block(
         self,
@@ -648,7 +509,7 @@ class EELSBackend(BaseChainBackend):
             # the randao is probably fine for now
             "prev_randao": prev_randao or os.urandom(32),
             "nonce": nonce,
-            "parent_hash": self._fork_module.compute_header_hash(latest_block_header),
+            "parent_hash": keccak256(rlp.encode(latest_block_header)),
             "base_fee_per_gas": base_fee_per_gas,
             # TODO: can we do better than random generation for beacon parent root?
             "parent_beacon_block_root": parent_beacon_block_root or os.urandom(32),
@@ -673,6 +534,7 @@ class EELSBackend(BaseChainBackend):
         }
 
     def _mine_pending_block(self, timestamp: U256 = None) -> Dict[str, Any]:
+        # initial validation
         block = self._pending_block
         block_header = block["header"]
 
@@ -683,6 +545,7 @@ class EELSBackend(BaseChainBackend):
                 f"{self.chain.latest_block.header.number}."
             )
 
+        # timestamp validation
         block_header["difficulty"] = block_header["difficulty"]
         if block_header["timestamp"] is None:
             # set the timestamp when mining unless already set by time_travel
@@ -694,17 +557,32 @@ class EELSBackend(BaseChainBackend):
                 else current_time
             )
 
-        apply_body_output = self._internal_apply_body_validation()
-        block_header["bloom"] = apply_body_output["block_logs_bloom"]
-        block_header["gas_used"] = apply_body_output["block_gas_used"]
-        block_header["state_root"] = apply_body_output["state_root"]
-        block_header["receipt_root"] = apply_body_output["receipt_root"]
-        block_header["transactions_root"] = apply_body_output["tx_root"]
-        block_header["withdrawals_root"] = apply_body_output["withdrawals_root"]
-        block_header["blob_gas_used"] = U64(apply_body_output["blob_gas_used"])
-        block_header["excess_blob_gas"] = apply_body_output["excess_blob_gas"]
-        block_header["ommers_hash"] = apply_body_output["ommers_hash"]
+        # process block
+        (synthetic_state_context, block_output) = self._internal_apply_body_validation()
 
+        # build the header
+        block_header["state_root"] = self._state_module.state_root(
+            synthetic_state_context.chain.state
+        )
+        block_header["bloom"] = self._bloom_module.logs_bloom(block_output.block_logs)
+        block_header["transactions_root"] = self._trie_module.root(
+            block_output.transactions_trie
+        )
+        block_header["receipt_root"] = self._trie_module.root(
+            block_output.receipts_trie
+        )
+        block_header["withdrawals_root"] = self._trie_module.root(
+            block_output.withdrawals_trie
+        )
+        block_header["gas_used"] = block_output.block_gas_used
+
+        if hasattr(block_output, "blob_gas_used"):
+            block_header["blob_gas_used"] = block_output.blob_gas_used
+        if hasattr(block_output, "requests"):
+            block_header["requests_hash"] = compute_requests_hash(block_output.requests)
+        block_header["ommers_hash"] = keccak256(rlp.encode(block["ommers"]))
+
+        # build the block
         _eels_block_header = self.fork.Header(**block_header)
         _eels_block = self.fork.Block(
             header=_eels_block_header,
@@ -713,42 +591,105 @@ class EELSBackend(BaseChainBackend):
             withdrawals=tuple(block["withdrawals"]),
         )
 
+        # apply the block
         self.fork.state_transition(self.chain, _eels_block)
         assert self.fork.state_root(self.chain.state) == block_header["state_root"]
-        assert self._fork_module.compute_header_hash(
-            _eels_block_header
-        ) == self._fork_module.compute_header_hash(self.chain.latest_block.header)
+        blockhash = keccak256(rlp.encode(_eels_block_header))
+        assert blockhash == keccak256(rlp.encode(self.chain.latest_block.header))
 
+        # update transactions in the block post-mining
         blocknum = int(block_header["number"])
-        for i, tx in enumerate(block["transactions"]):
+
+        # logIndex is sequential across all transactions in a block
+        log_index = 0
+
+        for i, (trie_key, tx) in enumerate(
+            block_output.transactions_trie._data.items()
+        ):
             # update saved tx data post-mining
             tx_hash = self._get_tx_hash(tx)
             updated_tx = self._transactions_map[tx_hash]
-            updated_tx["block_number"] = blocknum
-            updated_tx["block_hash"] = self._fork_module.compute_header_hash(
-                _eels_block_header
-            )
-            updated_tx["transaction_index"] = i
+            updated_tx["blockNumber"] = blocknum
+            updated_tx["blockHash"] = blockhash
+            updated_tx["transactionIndex"] = i
             self._transactions_map[tx_hash] = updated_tx
 
-            # update receipt values in apply_body_output, post-mining
-            updated_receipt = apply_body_output["receipts_map"][tx_hash]
-            updated_receipt["block_number"] = blocknum
-            updated_receipt["block_hash"] = self._fork_module.compute_header_hash(
-                _eels_block_header
-            )
-            updated_receipt["transaction_index"] = i
-            updated_receipt["state_root"] = block_header["state_root"]
-            for log in updated_receipt["logs"]:
-                log["block_number"] = blocknum
-                log["block_hash"] = self._fork_module.compute_header_hash(
-                    _eels_block_header
+            # update trie_receipt values in apply_body_output, post-mining
+            trie_receipt = block_output.receipts_trie._data[trie_key]
+
+            # decode receipt if necessary
+            if isinstance(trie_receipt, bytes):
+                trie_receipt = rlp.decode_to(
+                    self._blocks_module.Receipt, trie_receipt[1:]
                 )
-                log["transaction_index"] = i
-                log["transaction_hash"] = tx_hash
-                log["type"] = "mined"
+
+            updated_receipt = {"logs": []}
+
+            # transaction references
+            updated_receipt["transactionHash"] = tx_hash
+            updated_receipt["transactionIndex"] = i
+            updated_receipt["blockNumber"] = blocknum
+            updated_receipt["blockHash"] = blockhash
+
+            # execution result
+            updated_receipt["status"] = int(trie_receipt.succeeded)
+
+            # TODO: not sure where to get gasUsed, using cumulative for now
+            updated_receipt["gasUsed"] = int(trie_receipt.cumulative_gas_used)
+            updated_receipt["cumulativeGasUsed"] = int(trie_receipt.cumulative_gas_used)
+            updated_receipt["effectiveGasPrice"] = calculate_effective_gas_price(
+                updated_tx,
+                block_header,
+            )
+
+            # address information
+            updated_receipt["from"] = updated_tx["from"]
+            updated_receipt["to"] = updated_tx["to"]
+
+            # TODO move this somewhere
+            def calculate_contract_address(sender_address, nonce):
+                # Contract address = keccak256(rlp([sender, nonce]))[-20:]
+                rlp_encoded = rlp.encode([sender_address, nonce])
+                hash_result = keccak256(rlp_encoded)
+                return hash_result[-20:]  # Last 20 bytes = address
+
+            updated_receipt["contractAddress"] = (
+                calculate_contract_address(
+                    updated_tx["from"], Uint(updated_tx["nonce"])
+                )
+                if not updated_tx["to"]
+                else None
+            )
+
+            updated_receipt["stateRoot"] = block_header["state_root"]
+            for log in trie_receipt.logs:
+                updated_receipt["logs"].append(
+                    {
+                        "address": log.address,
+                        "topics": log.topics,
+                        "data": log.data,
+                        "blockNumber": blocknum,
+                        "blockHash": blockhash,
+                        "logIndex": log_index,
+                        "transactionIndex": i,
+                        "transactionHash": tx_hash,
+                        "type": "mined",
+                    }
+                )
+                log_index += 1
+
+            updated_receipt["type"] = updated_tx["type"]
+
+            updated_receipt["blobGasUsed"] = int(block_header["blob_gas_used"])
+
+            blob_gas_price = self._vm_module.gas.calculate_blob_gas_price(
+                block_header["excess_blob_gas"]
+            )
+            updated_receipt["blobGasPrice"] = int(blob_gas_price)
+
             self._receipts_map[tx_hash] = updated_receipt
 
+        # update saved block data post-mining
         self._build_new_pending_block()
         self._state_context_history[blocknum] = self._copy_state_context()
         return block
@@ -757,7 +698,7 @@ class EELSBackend(BaseChainBackend):
     def mine_blocks(self, num_blocks: int = 1, coinbase=ZERO_ADDRESS):
         for _ in range(num_blocks):
             self._mine_pending_block()
-            yield self._fork_module.compute_header_hash(self.chain.latest_block.header)
+            yield keccak256(rlp.encode(self.chain.latest_block.header))
 
     #
     # Accounts
@@ -812,7 +753,7 @@ class EELSBackend(BaseChainBackend):
                 # bc of the comment above, we have to use i - 1 since we skip the ghost
                 # parent of the genesis block
                 block = self.chain.blocks[i - 1]
-                if block_hash != self._fork_module.compute_header_hash(block.header):
+                if block_hash != keccak256(rlp.encode(block.header)):
                     # sanity check, should not get here if the implementation is correct
                     raise ValueError("Block hash does not match the expected hash.")
                 return serialize_block(self, block, full_transactions=full_transactions)
@@ -840,15 +781,15 @@ class EELSBackend(BaseChainBackend):
     #
     def get_nonce(self, account, block_number="pending"):
         with self._state_context_manager(block_number):
-            return int(self.fork.get_account(self.chain.state, account).nonce)
+            return int(self._fork_module.get_account(self.chain.state, account).nonce)
 
     def get_balance(self, account, block_number="pending"):
         with self._state_context_manager(block_number):
-            return int(self.fork.get_account(self.chain.state, account).balance)
+            return int(self._fork_module.get_account(self.chain.state, account).balance)
 
     def get_code(self, account, block_number="pending"):
         with self._state_context_manager(block_number):
-            return self.fork.get_account(self.chain.state, account).code
+            return self._fork_module.get_account(self.chain.state, account).code
 
     def get_storage(
         self, account: Address, slot: Union[int, bytes], block_number="pending"
@@ -879,6 +820,8 @@ class EELSBackend(BaseChainBackend):
         gas_available = block_header["gas_limit"] - block_header.get(
             "gas_used", Uint(0)
         )
+
+        # TODO clean up, don't need kw_arguments anymore, just tx_env
         kw_arguments = {
             "block_hashes": self._fork_module.get_last_256_block_hashes(self.chain),
             "coinbase": block_header["coinbase"],
@@ -901,12 +844,13 @@ class EELSBackend(BaseChainBackend):
                 sender_address,
                 effective_gas_price,
                 blob_versioned_hashes,
+                tx_blob_gas_used,
             ) = check_tx_return
             kw_arguments["base_fee_per_gas"] = block_header["base_fee_per_gas"]
             kw_arguments["gas_price"] = effective_gas_price
             kw_arguments["blob_versioned_hashes"] = blob_versioned_hashes
             kw_arguments["excess_blob_gas"] = U64(block_header["excess_blob_gas"])
-            kw_arguments["transient_storage"] = self.fork.TransientStorage()
+            kw_arguments["transient_storage"] = self._vm_module.TransientStorage()
         elif self.fork.is_after_fork("ethereum.london"):
             sender_address, effective_gas_price = check_tx_return
             kw_arguments["base_fee_per_gas"] = block_header["base_fee_per_gas"]
@@ -917,7 +861,54 @@ class EELSBackend(BaseChainBackend):
 
         kw_arguments["caller"] = kw_arguments["origin"] = sender_address
         kw_arguments["traces"] = []
-        return self.fork.Environment(**kw_arguments)
+
+        """
+
+        Right now, kw_arguments contains:
+        'base_fee_per_gas',
+        'blob_versioned_hashes',
+        'block_hashes',
+        'caller',
+        'chain_id',
+        'coinbase',
+        'excess_blob_gas',
+        'gas_limit',
+        'gas_price',
+        'number',
+        'origin',
+        'prev_randao',
+        'state',
+        'time',
+        'traces'
+        'transient_storage',
+
+        Class TransactionEnvironment contains:
+            access_list_addresses: Set[Address]
+            access_list_storage_keys: Set[Tuple[Address, Bytes32]]
+            blob_versioned_hashes: Tuple[VersionedHash, ...]
+            gas: Uint
+            gas_price: Uint
+            index_in_block: Optional[Uint]
+            origin": Address
+            traces: List[dict]
+            transient_storage: TransientStorage
+            tx_hash: Optional[Hash32]
+
+        """
+        tx_env = {
+            "origin": sender_address,
+            "gas_price": kw_arguments["gas_price"],
+            "gas": kw_arguments["gas_limit"],
+            "access_list_addresses": set(),
+            "access_list_storage_keys": set(),
+            "transient_storage": kw_arguments["transient_storage"],
+            "blob_versioned_hashes": kw_arguments["blob_versioned_hashes"],
+            "index_in_block": None,
+            "tx_hash": None,
+            "traces": [],
+        }
+        # return self._vm_module.TransactionEnvironment(**kw_arguments)
+        return self._vm_module.TransactionEnvironment(**tx_env)
 
     def _check_transaction(self, tx: Any, gas_available: Any = None) -> Any:
         """
@@ -930,16 +921,41 @@ class EELSBackend(BaseChainBackend):
 
         base_fee = self._pending_block["header"]["base_fee_per_gas"]
         if self.fork.is_after_fork("ethereum.cancun"):
-            return self.fork.check_transaction(
-                self.chain.state,
-                tx,
-                gas_available,
-                self.chain.chain_id,
-                base_fee,
-                self._vm_module.gas.calculate_excess_blob_gas(
-                    self.chain.latest_block.header
+            block_env = self._vm_module.BlockEnvironment(
+                chain_id=U64(self.chain.chain_id),
+                state=self.chain.state,
+                block_gas_limit=Uint(gas_available),
+                block_hashes=self._fork_module.get_last_256_block_hashes(self.chain),
+                coinbase=self._pending_block["header"]["coinbase"],
+                number=Uint(self.chain.latest_block.header.number),
+                base_fee_per_gas=Uint(base_fee),
+                time=U256(int(time.time())),
+                prev_randao=self._pending_block["header"]["prev_randao"],
+                excess_blob_gas=U64(
+                    self._vm_module.gas.calculate_excess_blob_gas(
+                        self.chain.latest_block.header
+                    )
                 ),
+                parent_beacon_block_root=self._pending_block["header"][
+                    "parent_beacon_block_root"
+                ],
             )
+            # TODO: maybe this should be pulled from somewhere?
+            block_output = self._vm_module.BlockOutput(
+                block_gas_used=Uint(0),
+                transactions_trie=self._trie_module.Trie(secured=False, default=None),
+                receipts_trie=self._trie_module.Trie(secured=False, default=None),
+                block_logs=tuple(),
+                withdrawals_trie=self._trie_module.Trie(secured=False, default=None),
+                blob_gas_used=U64(0),
+            )
+
+            return self._fork_module.check_transaction(
+                block_env,
+                block_output,
+                tx,
+            )
+
         arguments = [tx]
 
         if self.fork.is_after_fork("ethereum.london"):
@@ -950,7 +966,7 @@ class EELSBackend(BaseChainBackend):
         if self.fork.is_after_fork("ethereum.spurious_dragon"):
             arguments.append(self.chain.chain_id)
 
-        return self.fork.check_transaction(*arguments)
+        return self._fork_module.check_transaction(*arguments)
 
     def _get_normalized_and_unsigned_evm_transaction(self, transaction: Dict[str, Any]):
         return normalize_transaction_fields(
@@ -1061,6 +1077,9 @@ class EELSBackend(BaseChainBackend):
         """
         Get the transaction hash of a transaction.
         """
+        if isinstance(tx, bytes):
+            tx = self.fork.decode_transaction(tx)
+
         if self.fork.is_after_fork("ethereum.berlin") and not isinstance(
             tx, self.fork.LegacyTransaction
         ):
@@ -1148,22 +1167,40 @@ class EELSBackend(BaseChainBackend):
                 raise TransactionFailed("Transaction failed to execute.") from e
         return int(output[0])  # gas consumed
 
-    def _process_synthetic_transaction(self, transaction):
-        env, signed_evm_transaction = self._generate_transaction_env(transaction)
-        self._run_message_against_evm(env, signed_evm_transaction)
-        output = self.fork.process_transaction(env, signed_evm_transaction)
+    def _process_synthetic_transaction(self, transaction: Dict[str, Any]):
+        tx_env, signed_evm_transaction = self._generate_transaction_env(transaction)
+        self._run_message_against_evm(tx_env, signed_evm_transaction)
+
+        block_env = self._build_block_env()
+
+        # TODO: maybe this should be pulled from somewhere?
+        block_output = self._vm_module.BlockOutput(
+            block_gas_used=Uint(0),
+            transactions_trie=self._trie_module.Trie(secured=False, default=None),
+            receipts_trie=self._trie_module.Trie(secured=False, default=None),
+            block_logs=tuple(),
+            withdrawals_trie=self._trie_module.Trie(secured=False, default=None),
+            blob_gas_used=U64(0),
+        )
+        output = self._fork_module.process_transaction(
+            block_env=block_env,
+            block_output=block_output,
+            tx=signed_evm_transaction,
+            # TODO: where to find index?
+            index=Uint(0),
+        )
         return output
 
     def call(self, transaction, block_number="pending"):
         with self._state_context_manager(block_number, synthetic_state=True):
             transaction["gas"] = transaction.get("gas", MINIMUM_GAS_ESTIMATE)
             try:
-                env, signed_evm_transaction = self._generate_transaction_env(
+                tx_env, signed_evm_transaction = self._generate_transaction_env(
                     transaction
                 )
             except EthereumException as e:
                 raise TransactionFailed("Transaction failed to execute.") from e
-            evm = self._run_message_against_evm(env, signed_evm_transaction)
+            evm = self._run_message_against_evm(tx_env, signed_evm_transaction)
             return evm.output
 
     def apply_withdrawals(
@@ -1214,7 +1251,7 @@ class EELSBackend(BaseChainBackend):
         )
         return env, signed_transaction
 
-    def _run_message_against_evm(self, env, signed_evm_transaction):
+    def _run_message_against_evm(self, tx_env, signed_evm_transaction):
         accessed_addresses = set()
         accessed_storage_keys = set()
         if hasattr(signed_evm_transaction, "access_list"):
@@ -1222,9 +1259,19 @@ class EELSBackend(BaseChainBackend):
                 accessed_addresses.add(addr)
                 accessed_storage_keys.update(keys)
 
-        code = self.fork.get_account(env.state, signed_evm_transaction.to).code
-        message = self.fork.Message(
-            caller=env.caller,
+        code = self._fork_module.get_account(
+            self.chain.state, signed_evm_transaction.to
+        ).code
+        caller = self._fork_module.recover_sender(
+            self.chain.chain_id, signed_evm_transaction
+        )
+
+        block_env = self._build_block_env()
+
+        message = self._vm_module.Message(
+            block_env=block_env,
+            tx_env=tx_env,
+            caller=caller,
             target=signed_evm_transaction.to,
             gas=signed_evm_transaction.gas,
             value=signed_evm_transaction.value,
@@ -1240,7 +1287,7 @@ class EELSBackend(BaseChainBackend):
             accessed_storage_keys=accessed_storage_keys,
             parent_evm=None,
         )
-        evm = self._vm_module.interpreter.process_message(message, env)
+        evm = self._vm_module.interpreter.process_message(message)
         if evm.error:
             if isinstance(evm.error, self._vm_module.exceptions.Revert):
                 str_output = str(evm.output)
@@ -1268,7 +1315,9 @@ class EELSBackend(BaseChainBackend):
         """
         Create a transient account with known pkey with the same state as the sender.
         """
-        sender_address_account = self.fork.get_account(self.chain.state, sender_address)
+        sender_address_account = self._fork_module.get_account(
+            self.chain.state, sender_address
+        )
         acct = Account.create()
         bytes_address = to_canonical_address(acct.address)
         acct_pkey = KeyAPI.PrivateKey(acct.key)

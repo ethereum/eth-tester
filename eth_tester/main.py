@@ -73,6 +73,7 @@ def handle_auto_mining(func):
     def func_wrapper(self, *args, **kwargs):
         if self.auto_mine_transactions:
             transaction_hash = func(self, *args, **kwargs)
+            # breakpoint()
             self.mine_block()
         else:
             snapshot = self.take_snapshot()
@@ -172,6 +173,7 @@ class EthereumTester:
         self.validator.validate_inbound_timestamp(to_timestamp)
         # make sure we are not traveling back in time as this is not possible.
         current_timestamp = self.get_block_by_number("pending")["timestamp"]
+        # breakpoint()
         if to_timestamp == current_timestamp:
             # no change, return immediately
             return
@@ -428,6 +430,7 @@ class EthereumTester:
 
     def mine_block(self, coinbase=ZERO_ADDRESS_HEX):
         self.validator.validate_inbound_account(coinbase)
+        # breakpoint()
         block_hash = self.mine_blocks(1, coinbase=coinbase)[0]
         return block_hash
 
@@ -522,6 +525,7 @@ class EthereumTester:
         )
         raw_transaction = self.normalizer.normalize_inbound_transaction(transaction)
 
+        # breakpoint()
         if raw_transaction["from"] in self._account_passwords:
             unlocked_until = self._account_unlock[raw_transaction["from"]]
             account_password = self._account_passwords[raw_transaction["from"]]

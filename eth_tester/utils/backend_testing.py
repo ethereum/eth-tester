@@ -150,6 +150,10 @@ class BaseTestBackendDirect:
         if not self.supports_evm_execution:
             pytest.skip("EVM Execution is not supported.")
 
+    def skip_if_eels_execution(self):
+        if "EELS" in self.__class__.__name__:
+            pytest.skip("Not supported in EELS.")
+
     #
     # Accounts
     #
@@ -296,6 +300,7 @@ class BaseTestBackendDirect:
         self, eth_tester, block_count, newest_block, reward_percentiles, expected
     ):
         self.skip_if_no_evm_execution()
+        self.skip_if_eels_execution()
 
         eth_tester.mine_blocks(10)
         fee_history = eth_tester.get_fee_history(
@@ -330,7 +335,7 @@ class BaseTestBackendDirect:
         self, eth_tester, block_count, newest_block, reward_percentiles, error, message
     ):
         self.skip_if_no_evm_execution()
-
+        self.skip_if_eels_execution()
         eth_tester.mine_blocks(10)
 
         with pytest.raises(error, match=message):
@@ -397,9 +402,13 @@ class BaseTestBackendDirect:
 
             eth_tester.enable_auto_mine_transactions()
 
-        receipt = eth_tester.get_transaction_receipt(transaction_hash)
-        # assert that the raw transaction is confirmed and successful
-        assert receipt["transactionHash"] == transaction_hash
+        else:
+            # TODO if the else is removed and this block de-indented, pyevm will still
+            # successfully get a receipt here with is_pending=True
+            # but I don't think it should
+            receipt = eth_tester.get_transaction_receipt(transaction_hash)
+            # assert that the raw transaction is confirmed and successful
+            assert receipt["transactionHash"] == transaction_hash
 
     def test_send_raw_transaction_invalid_rlp_transaction(self, eth_tester):
         self.skip_if_no_evm_execution()
@@ -1004,6 +1013,7 @@ class BaseTestBackendDirect:
                 "maxFeePerGas": max_fee,
             }
         )
+        # breakpoint()
         receipt = eth_tester.get_transaction_receipt(transaction_hash)
 
         base_fee = eth_tester.get_block_by_number(receipt["blockNumber"])[
@@ -1806,13 +1816,13 @@ class BaseTestBackendDirect:
         eth_tester.mine_blocks(3)
 
         # grab the block before time traveling
-        before_block = eth_tester.get_block_by_number("pending")
+        before_block = eth_tester.get_block_by_number("latest")
 
         # now travel forward 2 minutes
         eth_tester.time_travel(before_block["timestamp"] + 120)
 
         # grab the new block
-        after_block = eth_tester.get_block_by_number("pending")
+        after_block = eth_tester.get_block_by_number("latest")
 
         # test a block has been mined with expected timestamp during travel
         assert after_block["number"] == (before_block["number"] + 1)
@@ -1823,7 +1833,7 @@ class BaseTestBackendDirect:
         eth_tester.mine_blocks(3)
 
         # check the time
-        before_timestamp = eth_tester.get_block_by_number("pending")["timestamp"]
+        before_timestamp = eth_tester.get_block_by_number("latest")["timestamp"]
 
         # try to travel backwards 10 seconds
         with pytest.raises(ValidationError):

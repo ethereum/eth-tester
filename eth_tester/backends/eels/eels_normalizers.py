@@ -100,7 +100,8 @@ def eels_normalize_inbound_raw_blob_transaction(
     tx_dict["to"] = backend_instance._fork_types.Address(tx_dict.pop("to"))
     tx_dict["value"] = U256(tx_dict.pop("value"))
     tx_dict["data"] = tx_dict.pop("data")
-    tx_dict["access_list"] = tuple(
+    # here
+    tx_dict["access_list"] = (
         (
             backend_instance._fork_types.Address(address),
             tuple(Bytes32(hash) for hash in hashes),
